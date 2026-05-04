@@ -1,4 +1,4 @@
-# Clipster — A Fluent To-Do App for Windows 11
+# Hatch — A Fluent To-Do App for Windows 11
 
 A native WinUI 3 desktop tasks app with a friendly always-on-top paperclip mascot. No account. No cloud. No telemetry. Your tasks stay on your device — always.
 
@@ -7,12 +7,12 @@ A native WinUI 3 desktop tasks app with a friendly always-on-top paperclip masco
 
 ---
 
-## Why Clipster?
+## Why Hatch?
 
-| | Microsoft To Do | Clipster |
+| | Microsoft To Do | Hatch |
 |---|---|---|
 | Account required | Yes — Microsoft account | No account, ever |
-| Interaction model | Open app → find list → add task | One click on Clipster → type → Enter |
+| Interaction model | Open app → find list → add task | One click on Hatch → type → Enter |
 | Task capture speed | 3+ clicks | Target ≤ 4 seconds |
 | Windows 11 design | Pre-Fluent 2 | Native WinUI 3: Mica, acrylic, Segoe UI Variable |
 | Privacy | Telemetry, syncs to Microsoft servers | JSON on local disk only — nothing leaves your device |
@@ -58,13 +58,13 @@ Placeholder assets are generated automatically on first build if missing. MSIX p
 Three rules, non-negotiable:
 
 1. **No account.** Installs and runs with zero sign-in. No Microsoft account, no OAuth, no optional login — ever.
-2. **No cloud.** All data lives in `%LocalAppData%\TodoWinUI3\` on your machine. Nothing is written to any remote server.
+2. **No cloud.** All data lives in `%LocalAppData%\Hatch\` on your machine. Nothing is written to any remote server.
 3. **No telemetry.** No analytics SDK, no crash reporter, no usage pings. Fully functional with the network cable unplugged.
 
 | Data | File | Location | Leaves device? |
 |---|---|---|---|
-| Tasks | `tasks.json` | `%LocalAppData%\TodoWinUI3\` | Never |
-| Settings | `settings.json` | `%LocalAppData%\TodoWinUI3\` | Never |
+| Tasks | `tasks.json` | `%LocalAppData%\Hatch\` | Never |
+| Settings | `settings.json` | `%LocalAppData%\Hatch\` | Never |
 
 ---
 
@@ -101,7 +101,7 @@ scripts/         create-assets.ps1, setup-cert.ps1
 
 | Feature | Status |
 |---|---|
-| Always-on-top Clipster mascot (separate topmost borderless window) | Planned |
+| Always-on-top Hatch mascot (separate topmost borderless window) | Planned |
 | Quick-add task directly from mascot bubble — no main window required | Planned |
 | Contextual tip engine — tips based on actual task state (overdue count, empty My Day, etc.) | Planned |
 | Real due-date picker — calendar flyout, presets, ISO persistence | Planned |
@@ -117,7 +117,7 @@ scripts/         create-assets.ps1, setup-cert.ps1
 |---|---|
 | Keyboard shortcuts | `Win+Shift+T` to summon, `Ctrl+N` new task, `Ctrl+D` complete |
 | Reminders + toast notifications | Requires real due dates (v1.1) |
-| Focus mode | Clipster + single pinned task — everything else hidden |
+| Focus mode | Hatch + single pinned task — everything else hidden |
 
 ### Later
 
@@ -132,7 +132,7 @@ scripts/         create-assets.ps1, setup-cert.ps1
 
 ## Performance Budget
 
-Clipster lives on the desktop permanently — memory footprint is a first-class constraint.
+Hatch lives on the desktop permanently — memory footprint is a first-class constraint.
 
 | State | Working Set |
 |---|---|
