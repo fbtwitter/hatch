@@ -83,7 +83,7 @@ scripts/         create-assets.ps1, setup-cert.ps1
 
 ---
 
-## What's Shipped (v1)
+## What's Shipped (v0.0.1)
 
 - Full WinUI 3 task window — Mica backdrop, acrylic title bar, 8px corner radii
 - Add, edit, complete, and delete tasks
@@ -97,7 +97,7 @@ scripts/         create-assets.ps1, setup-cert.ps1
 
 ## Roadmap
 
-### v1.1 — In Progress
+### v1.0 — In Progress
 
 | Feature | Status |
 |---|---|
@@ -116,7 +116,7 @@ scripts/         create-assets.ps1, setup-cert.ps1
 | Feature | Notes |
 |---|---|
 | Keyboard shortcuts | `Win+Shift+T` to summon, `Ctrl+N` new task, `Ctrl+D` complete |
-| Reminders + toast notifications | Requires real due dates (v1.1) |
+| Reminders + toast notifications | Requires real due dates (v1.0) |
 | Focus mode | Hatch + single pinned task — everything else hidden |
 
 ### Later
