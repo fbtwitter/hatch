@@ -1,7 +1,9 @@
 {
-  "profiles": {
-    "Profile 1": {
-      "commandName": "Project"
+    "profiles": {
+        "todo-winui3 (Package)": {
+            "commandName": "MsixPackage",
+            "commandLineArgs": "",
+            "nativeDebugging": false
+        }
     }
-  }
 }
