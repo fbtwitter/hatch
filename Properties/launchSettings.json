@@ -1,8 +1,7 @@
 {
   "profiles": {
-    "todo-winui3": {
-      "commandName": "Executable",
-      "executablePath": "$(TargetPath)"
+    "Profile 1": {
+      "commandName": "Project"
     }
   }
 }

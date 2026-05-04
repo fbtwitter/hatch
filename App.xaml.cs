@@ -1,19 +1,24 @@
 using Microsoft.UI.Xaml;
+using TodoWinUI3.Models;
+using TodoWinUI3.Services;
 
 namespace TodoWinUI3;
 
 public partial class App : Application
 {
-    private Window? _window;
+    public static SettingsService SettingsService { get; } = new();
+    public static AppSettings Settings => SettingsService.Current;
+    public static MainWindow? MainWindowInstance { get; private set; }
 
     public App()
     {
-        this.InitializeComponent();
+        InitializeComponent();
+        SettingsService.Load();
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        _window = new MainWindow();
-        _window.Activate();
+        MainWindowInstance = new MainWindow();
+        MainWindowInstance.Activate();
     }
 }

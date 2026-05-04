@@ -21,9 +21,20 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Padding="24,28,24,8">
-            <TextBlock Text="My Tasks" Style="{ThemeResource TitleLargeTextBlockStyle}"/>
-        </Border>
+        <Grid Grid.Row="0" Padding="24,28,16,8">
+            <TextBlock Text="My Tasks"
+                       Style="{ThemeResource TitleLargeTextBlockStyle}"
+                       VerticalAlignment="Center"/>
+            <Button HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Click="SettingsButton_Click"
+                    Background="Transparent"
+                    BorderBrush="Transparent"
+                    Padding="8" MinWidth="0"
+                    ToolTipService.ToolTip="Settings">
+                <FontIcon Glyph="&#xE713;" FontSize="18"/>
+            </Button>
+        </Grid>
 
         <!-- Add task row -->
         <Grid Grid.Row="1" Padding="24,8,24,16" ColumnSpacing="8">
@@ -83,7 +94,7 @@
                                 BorderThickness="1">
                             <Grid ColumnSpacing="4">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="32"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
