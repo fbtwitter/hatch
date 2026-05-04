@@ -32,7 +32,7 @@ jobs:
           while ($parts.Count -lt 4) { $parts += '0' }
           $msixVer = ($parts[0..3]) -join '.'
           (Get-Content Package.appxmanifest -Raw) `
-            -replace 'Version="[\d\.]+"', "Version=""$msixVer""" |
+            -creplace 'Version="[\d\.]+"', "Version=""$msixVer""" |
             Set-Content Package.appxmanifest -Encoding utf8NoBOM
           "MSIX_VERSION=$msixVer" | Out-File $env:GITHUB_ENV -Append
 
