@@ -1,0 +1,126 @@
+<Page
+    x:Class="TodoWinUI3.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Padding="12,16,24,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0"
+                    Click="BackButton_Click"
+                    Style="{ThemeResource NavigationBackButtonNormalStyle}"
+                    ToolTipService.ToolTip="Back"
+                    VerticalAlignment="Center"/>
+            <TextBlock Grid.Column="1"
+                       Text="Settings"
+                       Style="{ThemeResource TitleLargeTextBlockStyle}"
+                       Margin="8,0,0,0"
+                       VerticalAlignment="Center"/>
+        </Grid>
+
+        <!-- Settings list -->
+        <ScrollViewer Grid.Row="1" Padding="24,8,24,24" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="8">
+
+                <!-- Minimize to tray -->
+                <Border Padding="16,14" CornerRadius="8"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Minimize to System Tray"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Keep running in the background when closed"
+                                       Opacity="0.6"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Margin="0,2,0,0"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="1"
+                                      IsOn="{Binding MinimizeToTray, Mode=TwoWay}"
+                                      VerticalAlignment="Center"
+                                      Margin="16,0,0,0"
+                                      OnContent=""
+                                      OffContent=""/>
+                    </Grid>
+                </Border>
+
+                <!-- App Theme -->
+                <Border Padding="16,14" CornerRadius="8"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="App Theme"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Choose your preferred color scheme"
+                                       Opacity="0.6"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Margin="0,2,0,0"/>
+                        </StackPanel>
+                        <ComboBox Grid.Column="1"
+                                  SelectedIndex="{Binding ThemeIndex, Mode=TwoWay}"
+                                  MinWidth="155"
+                                  VerticalAlignment="Center"
+                                  Margin="16,0,0,0">
+                            <ComboBoxItem Content="System Default"/>
+                            <ComboBoxItem Content="Light"/>
+                            <ComboBoxItem Content="Dark"/>
+                        </ComboBox>
+                    </Grid>
+                </Border>
+
+                <!-- Window Backdrop -->
+                <Border Padding="16,14" CornerRadius="8"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Window Backdrop"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Background material effect for the window"
+                                       Opacity="0.6"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Margin="0,2,0,0"/>
+                        </StackPanel>
+                        <ComboBox Grid.Column="1"
+                                  SelectedIndex="{Binding BackdropIndex, Mode=TwoWay}"
+                                  MinWidth="165"
+                                  VerticalAlignment="Center"
+                                  Margin="16,0,0,0">
+                            <ComboBoxItem Content="None"/>
+                            <ComboBoxItem Content="Mica"/>
+                            <ComboBoxItem Content="Mica Alt"/>
+                            <ComboBoxItem Content="Desktop Acrylic"/>
+                        </ComboBox>
+                    </Grid>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>

@@ -1,0 +1,84 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Generate placeholder assets
+        shell: pwsh
+        run: .\scripts\create-assets.ps1
+
+      - name: Set MSIX version from tag
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $parts = $tag.TrimStart('v').Split('.')
+          while ($parts.Count -lt 4) { $parts += '0' }
+          $msixVer = ($parts[0..3]) -join '.'
+          (Get-Content Package.appxmanifest -Raw) `
+            -replace 'Version="[\d\.]+"', "Version=""$msixVer""" |
+            Set-Content Package.appxmanifest
+          "MSIX_VERSION=$msixVer" | Out-File $env:GITHUB_ENV -Append
+
+      - name: Decode signing certificate
+        shell: pwsh
+        run: |
+          $pfxBytes = [Convert]::FromBase64String("${{ secrets.SIGNING_CERTIFICATE }}")
+          [IO.File]::WriteAllBytes("signing.pfx", $pfxBytes)
+          # Export public cert so users can install it once
+          $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
+            "signing.pfx", "${{ secrets.CERTIFICATE_PASSWORD }}")
+          [IO.File]::WriteAllBytes("install-cert.cer",
+            $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert))
+
+      - name: Build and package MSIX
+        shell: pwsh
+        run: |
+          dotnet build -c Release `
+            -p:Platform=x64 `
+            -p:GenerateAppxPackageOnBuild=true `
+            -p:AppxBundle=Never `
+            -p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
+            -p:AppxPackageSigningEnabled=true `
+            -p:PackageCertificateKeyFile="${{ github.workspace }}\signing.pfx" `
+            -p:PackageCertificatePassword="${{ secrets.CERTIFICATE_PASSWORD }}"
+
+      - name: Locate MSIX
+        shell: pwsh
+        run: |
+          $f = Get-ChildItem -Recurse -Filter "*.msix" -Path AppxPackages |
+               Select-Object -First 1
+          "MSIX_PATH=$($f.FullName)" | Out-File $env:GITHUB_ENV -Append
+          "MSIX_NAME=$($f.Name)"     | Out-File $env:GITHUB_ENV -Append
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: To-Do ${{ github.ref_name }}
+          body: |
+            ## Installation
+
+            **First time only — install the signing certificate so Windows trusts the package:**
+            1. Download `install-cert.cer`
+            2. Double-click it → **Install Certificate** → **Local Machine** → **Trusted People** → Finish
+
+            **Install / update the app:**
+            - Download `${{ env.MSIX_NAME }}` and double-click it
+
+            > Subsequent releases from this repo won't need the certificate step again.
+          files: |
+            ${{ env.MSIX_PATH }}
+            install-cert.cer

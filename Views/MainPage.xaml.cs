@@ -15,6 +15,7 @@ public sealed partial class MainPage : Page
     {
         this.InitializeComponent();
         this.DataContext = new MainViewModel();
+        NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
     }
 
     private void NewTaskTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -65,5 +66,10 @@ public sealed partial class MainPage : Page
     {
         var task = (TodoItem)((Button)sender).Tag;
         ViewModel.DeleteTask(task);
+    }
+
+    private void SettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        Frame.Navigate(typeof(SettingsPage));
     }
 }

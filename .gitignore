@@ -1,0 +1,19 @@
+# Build output
+bin/
+obj/
+AppxPackages/
+
+# Auto-generated MSIX assets (recreated by scripts/create-assets.ps1 on first build)
+Assets/
+
+# Signing certificate — never commit
+scripts/todo-winui3-signing.pfx
+signing.pfx
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Rider
+.idea/
