@@ -3,11 +3,11 @@ name: Release
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - "v*.*.*"
 
 jobs:
   build-and-release:
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - uses: actions/checkout@v4
@@ -15,7 +15,10 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: "9.0.x"
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
 
       - name: Generate placeholder assets
         shell: pwsh
@@ -38,23 +41,27 @@ jobs:
         run: |
           $pfxBytes = [Convert]::FromBase64String("${{ secrets.SIGNING_CERTIFICATE }}")
           [IO.File]::WriteAllBytes("signing.pfx", $pfxBytes)
-          # Export public cert so users can install it once
           $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
             "signing.pfx", "${{ secrets.CERTIFICATE_PASSWORD }}")
           [IO.File]::WriteAllBytes("install-cert.cer",
             $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert))
 
+      - name: Restore dependencies
+        shell: pwsh
+        run: dotnet restore -p:Platform=x64
+
       - name: Build and package MSIX
         shell: pwsh
         run: |
-          dotnet build -c Release `
-            -p:Platform=x64 `
-            -p:GenerateAppxPackageOnBuild=true `
-            -p:AppxBundle=Never `
-            -p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
-            -p:AppxPackageSigningEnabled=true `
-            -p:PackageCertificateKeyFile="${{ github.workspace }}\signing.pfx" `
-            -p:PackageCertificatePassword="${{ secrets.CERTIFICATE_PASSWORD }}"
+          msbuild todo-winui3.csproj `
+            /p:Configuration=Release `
+            /p:Platform=x64 `
+            /p:GenerateAppxPackageOnBuild=true `
+            /p:AppxBundle=Never `
+            /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
+            /p:AppxPackageSigningEnabled=true `
+            /p:PackageCertificateKeyFile="${{ github.workspace }}\signing.pfx" `
+            /p:PackageCertificatePassword="${{ secrets.CERTIFICATE_PASSWORD }}"
 
       - name: Locate MSIX
         shell: pwsh
