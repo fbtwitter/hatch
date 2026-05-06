@@ -1,8 +1,8 @@
 using Microsoft.UI.Xaml;
-using TodoWinUI3.Models;
-using TodoWinUI3.Services;
+using Hatch.Models;
+using Hatch.Services;
 
-namespace TodoWinUI3;
+namespace Hatch;
 
 public partial class App : Application
 {

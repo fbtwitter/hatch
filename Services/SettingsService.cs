@@ -1,7 +1,7 @@
 using System.Text.Json;
-using TodoWinUI3.Models;
+using Hatch.Models;
 
-namespace TodoWinUI3.Services;
+namespace Hatch.Services;
 
 public sealed class SettingsService
 {
@@ -13,7 +13,7 @@ public sealed class SettingsService
     public SettingsService()
     {
         var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var folder = Path.Combine(appData, "TodoWinUI3");
+        var folder = Path.Combine(appData, "Hatch");
         Directory.CreateDirectory(folder);
         _filePath = Path.Combine(folder, "settings.json");
     }

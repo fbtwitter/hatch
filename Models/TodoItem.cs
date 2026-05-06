@@ -2,7 +2,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
-namespace TodoWinUI3.Models;
+namespace Hatch.Models;
 
 public sealed class TodoItem : INotifyPropertyChanged
 {

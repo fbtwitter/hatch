@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace TodoWinUI3.Services;
+namespace Hatch.Services;
 
 public sealed class SystemTrayService : IDisposable
 {

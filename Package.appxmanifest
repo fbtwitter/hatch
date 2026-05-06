@@ -6,8 +6,8 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="TodoWinUI3"
-    Publisher="CN=TodoWinUI3"
+    Name="Hatch"
+    Publisher="CN=Hatch"
     Version="1.0.0.0" />
 
   <Properties>

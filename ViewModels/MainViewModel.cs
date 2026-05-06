@@ -3,10 +3,10 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
-using TodoWinUI3.Models;
-using TodoWinUI3.Services;
+using Hatch.Models;
+using Hatch.Services;
 
-namespace TodoWinUI3.ViewModels;
+namespace Hatch.ViewModels;
 
 public sealed class MainViewModel : INotifyPropertyChanged
 {

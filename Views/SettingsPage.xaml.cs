@@ -1,8 +1,8 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using TodoWinUI3.ViewModels;
+using Hatch.ViewModels;
 
-namespace TodoWinUI3.Views;
+namespace Hatch.Views;
 
 public sealed partial class SettingsPage : Page
 {

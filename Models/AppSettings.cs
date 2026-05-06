@@ -1,4 +1,4 @@
-namespace TodoWinUI3.Models;
+namespace Hatch.Models;
 
 public enum AppTheme { SystemDefault = 0, Light = 1, Dark = 2 }
 public enum AppBackdrop { None = 0, Mica = 1, MicaAlt = 2, DesktopAcrylic = 3 }

@@ -4,12 +4,12 @@ using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
-using TodoWinUI3.Models;
-using TodoWinUI3.Services;
-using TodoWinUI3.Views;
+using Hatch.Models;
+using Hatch.Services;
+using Hatch.Views;
 using Windows.Graphics;
 
-namespace TodoWinUI3;
+namespace Hatch;
 
 public sealed partial class MainWindow : Window
 {

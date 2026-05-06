@@ -1,11 +1,11 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
-using TodoWinUI3.Models;
-using TodoWinUI3.ViewModels;
+using Hatch.Models;
+using Hatch.ViewModels;
 using Windows.System;
 
-namespace TodoWinUI3.Views;
+namespace Hatch.Views;
 
 public sealed partial class MainPage : Page
 {

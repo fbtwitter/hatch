@@ -1,6 +1,6 @@
 using System.Windows.Input;
 
-namespace TodoWinUI3.ViewModels;
+namespace Hatch.ViewModels;
 
 public sealed class RelayCommand : ICommand
 {

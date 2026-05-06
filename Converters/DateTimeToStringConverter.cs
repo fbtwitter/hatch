@@ -1,6 +1,6 @@
 using Microsoft.UI.Xaml.Data;
 
-namespace TodoWinUI3.Converters;
+namespace Hatch.Converters;
 
 public sealed class DateTimeToStringConverter : IValueConverter
 {

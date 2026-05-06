@@ -1,7 +1,7 @@
 using Microsoft.UI.Xaml.Data;
 using Windows.UI.Text;
 
-namespace TodoWinUI3.Converters;
+namespace Hatch.Converters;
 
 public sealed class BoolToStrikethroughConverter : IValueConverter
 {

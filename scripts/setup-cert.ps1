@@ -17,13 +17,13 @@ if (-not $Password) {
     $secPwd = ConvertTo-SecureString $Password -AsPlainText -Force
 }
 
-Write-Host "`nCreating self-signed certificate (CN=TodoWinUI3, valid 10 years)..."
+Write-Host "`nCreating self-signed certificate (CN=Hatch, valid 10 years)..."
 
 $cert = New-SelfSignedCertificate `
     -Type Custom `
-    -Subject "CN=TodoWinUI3" `
+    -Subject "CN=Hatch" `
     -KeyUsage DigitalSignature `
-    -FriendlyName "TodoWinUI3 Package Signing" `
+    -FriendlyName "Hatch Package Signing" `
     -CertStoreLocation "Cert:\CurrentUser\My" `
     -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}") `
     -NotAfter (Get-Date).AddYears(10)
