@@ -7,7 +7,7 @@ AppxPackages/
 Assets/
 
 # Signing certificate — never commit
-scripts/todo-winui3-signing.pfx
+scripts/Hatch-signing.pfx
 signing.pfx
 
 # Visual Studio
