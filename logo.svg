@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512">
+  <title>Hatch Logo — Mark A · Cracked Egg + Paperclip</title>
+  
+  <path d="M50 6 C72 6 88 32 88 58 C88 80 72 94 50 94 C28 94 12 80 12 58 C12 32 28 6 50 6 Z" fill="#ffd966" stroke="#1a1a1a" stroke-width="3.5" stroke-linejoin="round"></path>
+  
+  <path d="M14 50 L24 56 L32 48 L42 58 L52 50 L60 60 L70 52 L80 60 L86 54" fill="none" stroke="#1a1a1a" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"></path>
+  
+  <g transform="translate(36 22)">
+    <path d="M4 36 Q4 40 8 40 L20 40 Q24 40 24 36 L24 10 Q24 4 18 4 L10 4 Q4 4 4 10 L4 30 Q4 33 7 33 Q10 33 10 30 L10 14 Q10 11 13 11 L15 11 Q18 11 18 14 L18 30" fill="none" stroke="#1a73e8" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path>
+  </g>
+</svg>
