@@ -43,10 +43,14 @@ jobs:
         run: |
           $pfxBytes = [Convert]::FromBase64String("${{ secrets.SIGNING_CERTIFICATE }}")
           [IO.File]::WriteAllBytes("signing.pfx", $pfxBytes)
-          $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]::new(
-            "signing.pfx", "${{ secrets.CERTIFICATE_PASSWORD }}")
+          # Import into the current-user store so SignTool can reach the private key.
+          $cert = Import-PfxCertificate `
+            -FilePath "signing.pfx" `
+            -CertStoreLocation "Cert:\CurrentUser\My" `
+            -Password (ConvertTo-SecureString "${{ secrets.CERTIFICATE_PASSWORD }}" -AsPlainText -Force)
           [IO.File]::WriteAllBytes("install-cert.cer",
             $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert))
+          "CERT_THUMBPRINT=$($cert.Thumbprint)" | Out-File $env:GITHUB_ENV -Append
 
       - name: Restore dependencies
         shell: pwsh
@@ -62,8 +66,7 @@ jobs:
             /p:AppxBundle=Never `
             /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
             /p:AppxPackageSigningEnabled=true `
-            /p:PackageCertificateKeyFile="${{ github.workspace }}\signing.pfx" `
-            /p:PackageCertificatePassword="${{ secrets.CERTIFICATE_PASSWORD }}"
+            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}"
 
       - name: Locate MSIX
         shell: pwsh
