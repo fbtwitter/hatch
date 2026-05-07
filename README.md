@@ -68,22 +68,6 @@ Three rules, non-negotiable:
 
 ---
 
-<!-- DYNAMIC: Update Project Structure when new types or folders are added -->
-
-## Project Structure
-
-```
-Models/       TodoItem (Id, Title, IsCompleted, CreatedAt)
-ViewModels/   MainViewModel, RelayCommand
-Views/        MainPage.xaml, SettingsPage.xaml
-Services/     TaskStorageService — reads/writes tasks.json
-Converters/   BoolToStrikethrough, BoolToOpacity, BoolToVisibility, DateTimeToString
-scripts/      create-assets.ps1, setup-cert.ps1
-.github/
-  workflows/  release.yml — builds and publishes MSIX on version tag push
-```
-
----
 
 <!-- DYNAMIC: Append each shipped feature here, newest version first -->
 <!-- Format:
@@ -94,20 +78,10 @@ scripts/      create-assets.ps1, setup-cert.ps1
 ## What's Shipped
 
 ### v0.1.0 — May 2026
-- Always-on-top mascot window — borderless topmost transparent overlay, persisted position, monitor-clamped on restore
-- Drag to reposition — physical-pixel drag via `GetCursorPos`, clamped to work area, position saved on release
-- Right-click context menu — "Show Main Window" and "Reset Position" via `MenuFlyout` + `ContextFlyout`
-- Hit-area alignment fix — ellipse stretches to fill 120×120 `SetWindowRgn` region (no more offset)
-- Egg mascot visual — XAML vector egg with body, shell crack, eyes, and smile using `AccentFillColorDefaultBrush`
-- Idle bob/blink animation — 2-second TranslateY bob + blink at 2.8s, 4-second loop; pauses on fullscreen hide
+Always-on-top egg mascot — drag to reposition, right-click menu, idle bob/blink animation, fullscreen auto-hide. See [release notes](../../releases/tag/v0.1.0) for details.
 
 ### v0.0.1
-- WinUI 3 task window (520×640) with backdrop picker (Mica, Mica Alt, Desktop Acrylic, None)
-- Add, edit (dialog), complete, and delete tasks; card layout with 8px corner radii; newest-first sort
-- Persistent storage — `tasks.json` and `settings.json` under `%LocalAppData%\Hatch\`
-- Settings page — light/dark/system theme toggle, backdrop picker, minimize-to-tray toggle
-- System tray icon — minimize to tray, restore on click, exit
-- MSIX packaging with self-signed certificate via GitHub Actions CI
+Basic task window — add, edit, complete, delete tasks; settings panel; system tray; MSIX packaging. See [release notes](../../releases/tag/v0.0.1) for details.
 
 ---
 
