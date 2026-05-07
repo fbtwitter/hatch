@@ -93,6 +93,14 @@ scripts/      create-assets.ps1, setup-cert.ps1
 
 ## What's Shipped
 
+### v0.1.0 — May 2026
+- Always-on-top mascot window — borderless topmost transparent overlay, persisted position, monitor-clamped on restore
+- Drag to reposition — physical-pixel drag via `GetCursorPos`, clamped to work area, position saved on release
+- Right-click context menu — "Show Main Window" and "Reset Position" via `MenuFlyout` + `ContextFlyout`
+- Hit-area alignment fix — ellipse stretches to fill 120×120 `SetWindowRgn` region (no more offset)
+- Egg mascot visual — XAML vector egg with body, shell crack, eyes, and smile using `AccentFillColorDefaultBrush`
+- Idle bob/blink animation — 2-second TranslateY bob + blink at 2.8s, 4-second loop; pauses on fullscreen hide
+
 ### v0.0.1
 - WinUI 3 task window (520×640) with backdrop picker (Mica, Mica Alt, Desktop Acrylic, None)
 - Add, edit (dialog), complete, and delete tasks; card layout with 8px corner radii; newest-first sort
@@ -115,7 +123,7 @@ scripts/      create-assets.ps1, setup-cert.ps1
 
 | Feature                                                                         | Status      |
 |---------------------------------------------------------------------------------|-------------|
-| Always-on-top Hatch mascot (separate topmost borderless window)                 | In Progress |
+| Always-on-top Hatch mascot (separate topmost borderless window)                 | Shipped     |
 | Quick-add task directly from mascot bubble — no main window required            | Planned     |
 | Contextual tip engine — tips based on actual task state                         | Planned     |
 | NavigationView rail — My Day, Important, Planned, All Tasks, custom lists       | Planned     |

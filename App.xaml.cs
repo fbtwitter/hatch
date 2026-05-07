@@ -20,10 +20,10 @@ public partial class App : Application
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
-        MascotWindowInstance = new MascotWindow();
-        MascotWindowInstance.Activate();
-
         MainWindowInstance = new MainWindow();
-        MainWindowInstance.Activate(); // takes focus back from mascot
+        MainWindowInstance.Activate();
+
+        MascotWindowInstance = new MascotWindow();
+        MascotWindowInstance.Activate(); // focus returns to MascotWindow last
     }
 }

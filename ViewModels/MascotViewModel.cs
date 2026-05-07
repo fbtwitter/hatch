@@ -1,6 +1,8 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Windows.Input;
+using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 
@@ -15,6 +17,10 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     private PeriodicTimer? _pollTimer;
     private CancellationTokenSource? _cts;
     private bool _isVisible = true;
+    private bool _isDragging;
+    private NativeMethods.POINT _dragStartCursor;
+    private int _dragStartWindowX;
+    private int _dragStartWindowY;
 
     public bool IsVisible
     {
@@ -34,7 +40,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         {
             if (App.Settings.MascotX == value) return;
             App.Settings.MascotX = value;
-            _ = App.SettingsService.SaveAsync();
+            if (!_isDragging) _ = App.SettingsService.SaveAsync();
             OnPropertyChanged();
         }
     }
@@ -46,16 +52,133 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         {
             if (App.Settings.MascotY == value) return;
             App.Settings.MascotY = value;
+            if (!_isDragging) _ = App.SettingsService.SaveAsync();
+            OnPropertyChanged();
+        }
+    }
+
+    public bool MuteAnimation
+    {
+        get => App.Settings.MuteAnimation;
+        set
+        {
+            if (App.Settings.MuteAnimation == value) return;
+            App.Settings.MuteAnimation = value;
             _ = App.SettingsService.SaveAsync();
             OnPropertyChanged();
         }
     }
 
+    // Called by SettingsViewModel so MascotWindow responds without re-saving.
+    public void RaiseMuteChanged() => OnPropertyChanged(nameof(MuteAnimation));
+
+    public string? LottieFilePath => App.Settings.LottieFilePath;
+    public void RaiseLottieFileChanged() => OnPropertyChanged(nameof(LottieFilePath));
+
+    public ICommand ResetPositionCommand    { get; }
+    public ICommand ShowMainWindowCommand   { get; }
+    public ICommand ToggleMainWindowCommand { get; }
+
     public MascotViewModel(DispatcherQueue dispatcher)
     {
         _dispatcher = dispatcher;
+        ResetPositionCommand    = new RelayCommand(_ => ResetPosition());
+        ShowMainWindowCommand   = new RelayCommand(_ => ShowMainWindow());
+        ToggleMainWindowCommand = new RelayCommand(_ => ToggleMainWindow());
         InitializePosition();
         StartFullscreenPolling();
+    }
+
+    public bool LockPosition
+    {
+        get => App.Settings.LockMascotPosition;
+        set
+        {
+            if (App.Settings.LockMascotPosition == value) return;
+            App.Settings.LockMascotPosition = value;
+            _ = App.SettingsService.SaveAsync();
+            OnPropertyChanged();
+        }
+    }
+
+    public void RaiseLockPositionChanged() => OnPropertyChanged(nameof(LockPosition));
+
+    public void BeginDrag(int windowX, int windowY)
+    {
+        if (App.Settings.LockMascotPosition) return;
+        NativeMethods.GetCursorPos(out _dragStartCursor);
+        _dragStartWindowX = windowX;
+        _dragStartWindowY = windowY;
+        _isDragging = true;
+    }
+
+    public void ContinueDrag()
+    {
+        if (!_isDragging) return;
+        NativeMethods.GetCursorPos(out var cur);
+        var newX = _dragStartWindowX + (cur.X - _dragStartCursor.X);
+        var newY = _dragStartWindowY + (cur.Y - _dragStartCursor.Y);
+
+        // Clamp to the monitor's work area during drag
+        var pt = new NativeMethods.POINT { X = newX, Y = newY };
+        var hMonitor = NativeMethods.MonitorFromPoint(pt, NativeMethods.MONITOR_DEFAULTTONEAREST);
+        var mi = new NativeMethods.MONITORINFO { cbSize = Marshal.SizeOf<NativeMethods.MONITORINFO>() };
+        if (NativeMethods.GetMonitorInfo(hMonitor, ref mi))
+        {
+            var w = mi.rcWork;
+            newX = Math.Clamp(newX, w.left, w.right  - WindowSize);
+            newY = Math.Clamp(newY, w.top,  w.bottom - WindowSize);
+        }
+
+        X = newX;
+        Y = newY;
+    }
+
+    public void EndDrag()
+    {
+        if (!_isDragging) return;
+        _isDragging = false;
+        _ = App.SettingsService.SaveAsync();
+    }
+
+    private void ResetPosition()
+    {
+        var workArea = DisplayArea.Primary.WorkArea;
+        X = workArea.X + workArea.Width  - WindowSize - EdgePadding;
+        Y = workArea.Y + workArea.Height - WindowSize - EdgePadding;
+        _ = App.SettingsService.SaveAsync();
+    }
+
+    private static void ShowMainWindow() => App.MainWindowInstance?.Activate();
+
+    private static void ToggleMainWindow()
+    {
+        var win = App.MainWindowInstance;
+        if (win == null) return;
+
+        // Visible but not the foreground window → bring to front without hiding 
+        var mainHwnd = Win32Interop.GetWindowFromWindowId(win.AppWindow.Id);
+        // var foreground = NativeMethods.GetForegroundWindow();
+        
+        // Window hidden
+        if (!win.AppWindow.IsVisible)
+        {
+            win.AppWindow.Show();
+
+            // Bring above other windows WITHOUT focus
+            NativeMethods.SetWindowPos(
+                mainHwnd,
+                NativeMethods.HWND_TOPMOST,
+                0, 0, 0, 0,
+                NativeMethods.SWP_NOMOVE |
+                NativeMethods.SWP_NOSIZE |
+                NativeMethods.SWP_NOACTIVATE);
+
+            return;
+        }
+
+        win.AppWindow.Hide();
+        
     }
 
     private void InitializePosition()
@@ -121,7 +244,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
         NativeMethods.GetWindowRect(hwnd, out var wr);
         var mr = mi.rcMonitor;
-        return wr.left <= mr.left && wr.top  <= mr.top &&
+        return wr.left <= mr.left && wr.top <= mr.top &&
                wr.right >= mr.right && wr.bottom >= mr.bottom;
     }
 
