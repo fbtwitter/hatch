@@ -28,6 +28,12 @@
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
+  <!-- Exclude the AssetGen build-time helper from the main project's compile glob -->
+  <ItemGroup>
+    <Compile Remove="scripts\AssetGen\**" />
+    <None Remove="scripts\AssetGen\**" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.0.1" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1839" PrivateAssets="all" />
@@ -39,9 +45,9 @@
     <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.3.2" />
   </ItemGroup>
 
-  <!-- Auto-generate placeholder PNG assets on first build if missing -->
+  <!-- Auto-generate PNG assets from logo.svg on first build if missing -->
   <Target Name="EnsureAssets" BeforeTargets="PrepareForBuild" Condition="!Exists('$(MSBuildProjectDirectory)\Assets\Square44x44Logo.png')">
-    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\scripts\create-assets.ps1&quot;" WorkingDirectory="$(MSBuildProjectDirectory)" />
+    <Exec Command="dotnet run --project &quot;$(MSBuildProjectDirectory)\scripts\AssetGen\AssetGen.csproj&quot; -- &quot;$(MSBuildProjectDirectory)\logo.svg&quot; &quot;$(MSBuildProjectDirectory)\Assets&quot;" WorkingDirectory="$(MSBuildProjectDirectory)" />
   </Target>
 
 </Project>
