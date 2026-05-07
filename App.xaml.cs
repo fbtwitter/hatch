@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Hatch.Models;
 using Hatch.Services;
+using Hatch.Views;
 
 namespace Hatch;
 
@@ -9,6 +10,7 @@ public partial class App : Application
     public static SettingsService SettingsService { get; } = new();
     public static AppSettings Settings => SettingsService.Current;
     public static MainWindow? MainWindowInstance { get; private set; }
+    public static MascotWindow? MascotWindowInstance { get; private set; }
 
     public App()
     {
@@ -20,5 +22,8 @@ public partial class App : Application
     {
         MainWindowInstance = new MainWindow();
         MainWindowInstance.Activate();
+
+        MascotWindowInstance = new MascotWindow();
+        MascotWindowInstance.Activate(); // focus returns to MascotWindow last
     }
 }

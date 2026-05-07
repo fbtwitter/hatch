@@ -1,9 +1,13 @@
 {
     "profiles": {
+        "Profile 1": {
+            "commandName": "Project",
+            "hotReloadEnabled": true,
+            "nativeDebugging": true
+        },
         "todo-winui3 (Package)": {
             "commandName": "MsixPackage",
-            "commandLineArgs": "",
-            "nativeDebugging": false
+            "nativeDebugging": true
         }
     }
 }

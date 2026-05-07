@@ -2,7 +2,36 @@
     x:Class="Hatch.Views.SettingsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:toolkit="using:CommunityToolkit.WinUI.Controls"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.Resources>
+        <x:Double x:Key="SettingsCardSpacing">4</x:Double>
+        <Style
+            x:Key="SettingsSectionHeaderTextBlockStyle"
+            BasedOn="{StaticResource BodyStrongTextBlockStyle}"
+            TargetType="TextBlock">
+            <Style.Setters>
+                <Setter Property="Margin" Value="1,30,0,6"/>
+            </Style.Setters>
+        </Style>
+
+        <!--
+            Toggle card: flexible left column so the toggle always stays on the right.
+            SettingsCard's built-in responsive wrap moves content below at narrow widths,
+            so toggle-only rows use this custom layout instead.
+        -->
+        <Style x:Key="ToggleCardBorderStyle" TargetType="Border">
+            <Style.Setters>
+                <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}"/>
+                <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Padding" Value="16,0"/>
+                <Setter Property="MinHeight" Value="64"/>
+            </Style.Setters>
+        </Style>
+    </Page.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -29,96 +58,166 @@
         </Grid>
 
         <!-- Settings list -->
-        <ScrollViewer Grid.Row="1" Padding="24,8,24,24" VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="8">
+        <ScrollViewer Grid.Row="1" Padding="16,0,16,24" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                <StackPanel.ChildrenTransitions>
+                    <RepositionThemeTransition/>
+                </StackPanel.ChildrenTransitions>
 
-                <!-- Minimize to tray -->
-                <Border Padding="16,14" CornerRadius="8"
-                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                        BorderThickness="1">
+                <!-- ── Appearance & behavior ────────────────────────── -->
+                <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                           Text="Appearance &amp; behavior"/>
+
+                <!-- Minimize to Tray — custom toggle card -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel VerticalAlignment="Center">
+                        <FontIcon Grid.Column="0" Glyph="&#xE8BD;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
                             <TextBlock Text="Minimize to System Tray"
                                        Style="{ThemeResource BodyStrongTextBlockStyle}"/>
                             <TextBlock Text="Keep running in the background when closed"
-                                       Opacity="0.6"
                                        Style="{ThemeResource CaptionTextBlockStyle}"
-                                       Margin="0,2,0,0"/>
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
                         </StackPanel>
-                        <ToggleSwitch Grid.Column="1"
+                        <ToggleSwitch Grid.Column="2"
                                       IsOn="{Binding MinimizeToTray, Mode=TwoWay}"
-                                      VerticalAlignment="Center"
-                                      Margin="16,0,0,0"
-                                      OnContent=""
-                                      OffContent=""/>
+                                      OnContent="On" OffContent="Off" MinWidth="80"
+                                      VerticalAlignment="Center"/>
                     </Grid>
                 </Border>
 
                 <!-- App Theme -->
-                <Border Padding="16,14" CornerRadius="8"
-                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                        BorderThickness="1">
+                <toolkit:SettingsCard
+                    Header="App Theme"
+                    Description="Choose your preferred color scheme">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE790;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <ComboBox SelectedIndex="{Binding ThemeIndex, Mode=TwoWay}" MinWidth="155">
+                        <ComboBoxItem Content="System Default"/>
+                        <ComboBoxItem Content="Light"/>
+                        <ComboBoxItem Content="Dark"/>
+                    </ComboBox>
+                </toolkit:SettingsCard>
+
+                <!-- Window Backdrop -->
+                <toolkit:SettingsCard
+                    Header="Window Backdrop"
+                    Description="Background material effect for the main window">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE771;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <ComboBox SelectedIndex="{Binding BackdropIndex, Mode=TwoWay}" MinWidth="165">
+                        <ComboBoxItem Content="None"/>
+                        <ComboBoxItem Content="Mica"/>
+                        <ComboBoxItem Content="Mica Alt"/>
+                        <ComboBoxItem Content="Desktop Acrylic"/>
+                    </ComboBox>
+                </toolkit:SettingsCard>
+
+                <!-- ── Mascot ───────────────────────────────────────── -->
+                <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                           Text="Mascot"/>
+
+                <!-- Lock Position — custom toggle card -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="App Theme"
+                        <FontIcon Grid.Column="0" Glyph="&#xE72E;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock Text="Lock Position"
                                        Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-                            <TextBlock Text="Choose your preferred color scheme"
-                                       Opacity="0.6"
+                            <TextBlock Text="Prevent the mascot from being dragged"
                                        Style="{ThemeResource CaptionTextBlockStyle}"
-                                       Margin="0,2,0,0"/>
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
                         </StackPanel>
-                        <ComboBox Grid.Column="1"
-                                  SelectedIndex="{Binding ThemeIndex, Mode=TwoWay}"
-                                  MinWidth="155"
-                                  VerticalAlignment="Center"
-                                  Margin="16,0,0,0">
-                            <ComboBoxItem Content="System Default"/>
-                            <ComboBoxItem Content="Light"/>
-                            <ComboBoxItem Content="Dark"/>
-                        </ComboBox>
+                        <ToggleSwitch Grid.Column="2"
+                                      IsOn="{Binding LockMascotPosition, Mode=TwoWay}"
+                                      OnContent="On" OffContent="Off" MinWidth="80"
+                                      VerticalAlignment="Center"/>
                     </Grid>
                 </Border>
 
-                <!-- Window Backdrop -->
-                <Border Padding="16,14" CornerRadius="8"
-                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                        BorderThickness="1">
+                <!-- Mute Animation — custom toggle card -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <StackPanel VerticalAlignment="Center">
-                            <TextBlock Text="Window Backdrop"
+                        <FontIcon Grid.Column="0" Glyph="&#xE74F;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock Text="Mute Animation"
                                        Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-                            <TextBlock Text="Background material effect for the window"
-                                       Opacity="0.6"
+                            <TextBlock Text="Pause the mascot idle animation"
                                        Style="{ThemeResource CaptionTextBlockStyle}"
-                                       Margin="0,2,0,0"/>
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
                         </StackPanel>
-                        <ComboBox Grid.Column="1"
-                                  SelectedIndex="{Binding BackdropIndex, Mode=TwoWay}"
-                                  MinWidth="165"
-                                  VerticalAlignment="Center"
-                                  Margin="16,0,0,0">
-                            <ComboBoxItem Content="None"/>
-                            <ComboBoxItem Content="Mica"/>
-                            <ComboBoxItem Content="Mica Alt"/>
-                            <ComboBoxItem Content="Desktop Acrylic"/>
-                        </ComboBox>
+                        <ToggleSwitch Grid.Column="2"
+                                      IsOn="{Binding MuteAnimation, Mode=TwoWay}"
+                                      OnContent="On" OffContent="Off" MinWidth="80"
+                                      VerticalAlignment="Center"/>
                     </Grid>
                 </Border>
+
+                <!-- Lottie Animation File -->
+                <toolkit:SettingsCard
+                    Header="Lottie Animation File"
+                    Description="{Binding LottieFileDisplay}">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE8A5;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Browse" Click="BrowseLottieButton_Click"/>
+                        <Button Content="Clear"
+                                Click="ClearLottieButton_Click"
+                                IsEnabled="{Binding HasLottieFile}"/>
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
+                <!-- ── About ────────────────────────────────────────── -->
+                <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                           Text="About"/>
+
+                <toolkit:SettingsExpander
+                    Margin="0,0,0,24"
+                    Header="Hatch"
+                    Description="Local-first task manager for Windows 11">
+                    <toolkit:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xE946;"/>
+                    </toolkit:SettingsExpander.HeaderIcon>
+                    <TextBlock Text="v0.0.1"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               VerticalAlignment="Center"/>
+                    <toolkit:SettingsExpander.Items>
+                        <toolkit:SettingsCard Header="Privacy">
+                            <toolkit:SettingsCard.Description>
+                                <TextBlock
+                                    Text="No account · No cloud · No telemetry. All data is stored locally in %LocalAppData%\Hatch\ and never leaves your device."
+                                    TextWrapping="Wrap"/>
+                            </toolkit:SettingsCard.Description>
+                        </toolkit:SettingsCard>
+                    </toolkit:SettingsExpander.Items>
+                </toolkit:SettingsExpander>
 
             </StackPanel>
         </ScrollViewer>

@@ -8,4 +8,9 @@ public sealed class AppSettings
     public AppTheme Theme { get; set; } = AppTheme.SystemDefault;
     public AppBackdrop Backdrop { get; set; } = AppBackdrop.Mica;
     public bool MinimizeToTray { get; set; } = true;
+    public int MascotX { get; set; } = -1; // -1 = not yet set; use default on first launch
+    public int MascotY { get; set; } = -1;
+    public bool MuteAnimation { get; set; } = false;
+    public bool LockMascotPosition { get; set; } = false;
+    public string? LottieFilePath { get; set; } = null;
 }
