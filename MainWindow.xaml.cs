@@ -27,7 +27,7 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        Title = "To-Do";
+        Title = "Hatch";
         AppWindow.Resize(new SizeInt32(520, 640));
         AppWindow.TitleBar.PreferredTheme = TitleBarTheme.UseDefaultAppMode;
 
@@ -52,8 +52,12 @@ public sealed partial class MainWindow : Window
             _trayService.ShowIcon();
 
         AppWindow.Closing += OnWindowClosing;
+        if (RootFrame is null)
+            throw new InvalidOperationException(
+                "RootFrame was not initialized by InitializeComponent. " +
+                "Clean and rebuild the solution to regenerate XAML code-behind files.");
         RootFrame.Navigate(typeof(MainPage));
-        ApplyTheme(settings.Theme); // RootFrame is guaranteed non-null here
+        ApplyTheme(settings.Theme);
     }
 
     // 400×490 ≈ 77% of 520×640, maintaining the window's aspect ratio.

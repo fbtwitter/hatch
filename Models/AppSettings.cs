@@ -13,4 +13,5 @@ public sealed class AppSettings
     public bool MuteAnimation { get; set; } = false;
     public bool LockMascotPosition { get; set; } = false;
     public string? LottieFilePath { get; set; } = null;
+    public string ActiveNavItem { get; set; } = "alltasks";
 }
