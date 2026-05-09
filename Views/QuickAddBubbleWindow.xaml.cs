@@ -13,11 +13,16 @@ namespace Hatch.Views;
 public sealed partial class QuickAddBubbleWindow : Window
 {
     private readonly IntPtr _hwnd;
+    private Storyboard? _fadeIn;
+    private Storyboard? _fadeOut;
+    private bool _isClosed = false;
 
     public QuickAddBubbleWindow()
     {
         InitializeComponent();
 
+        _fadeIn  = (Storyboard)BubbleRoot.Resources["ConfirmationFadeIn"];
+        _fadeOut = (Storyboard)BubbleRoot.Resources["ConfirmationFadeOut"];
         _hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
 
         // Borderless, compact bubble window
@@ -53,7 +58,7 @@ public sealed partial class QuickAddBubbleWindow : Window
             App.MascotWindowInstance?.ViewModel.ToggleMainWindowCommand.Execute(null);
         };
         CloseButton.Click += (_, _) => Close();
-        Closed += (_, _) => OnWindowClosed();
+        Closed += (_, _) => { _isClosed = true; OnWindowClosed(); };
 
         // Disable Add when title is empty
         TaskTitleBox.TextChanged += (_, _) =>
@@ -205,38 +210,31 @@ public sealed partial class QuickAddBubbleWindow : Window
 
     private async Task ShowConfirmationAsync()
     {
-        // Set subtitle to the list name that received the task
         var selectedList = ListSelector.SelectedItem as TaskList;
         ConfirmationText.Text = selectedList != null ? $"Added to \"{selectedList.Name}\"" : string.Empty;
 
-        // Reset opacity before showing
         ConfirmationOverlay.Opacity = 0;
-
         BubbleContent.Visibility = Visibility.Collapsed;
         ConfirmationOverlay.Visibility = Visibility.Visible;
 
-        // Play spring pop-in
-        var fadeIn = (Storyboard)BubbleRoot.Resources["ConfirmationFadeIn"];
-        fadeIn.Begin();
+        _fadeIn?.Begin();
 
-        // Hold for the user to read it (pop-in is 0.45 s, hold remainder up to 1.2 s total)
         await Task.Delay(800);
 
-        // Play shrink + fade out
-        var fadeOut = (Storyboard)BubbleRoot.Resources["ConfirmationFadeOut"];
+        if (_isClosed) return;
 
         var tcs = new TaskCompletionSource<bool>();
-        fadeOut.Completed += (_, _) => tcs.TrySetResult(true);
-        fadeOut.Begin();
+        void OnCompleted(object? _, object __) => tcs.TrySetResult(true);
+        _fadeOut!.Completed += OnCompleted;
+        _fadeOut.Begin();
         await tcs.Task;
+        _fadeOut.Completed -= OnCompleted;
 
-        Close();
+        if (!_isClosed)
+            Close();
     }
 
     private void OnWindowClosed()
     {
-        // Notify mascot that bubble closed
-        var mascotVm = App.MainWindowInstance?.Content as FrameworkElement;
-        // We'll handle this differently in MascotViewModel
     }
 }

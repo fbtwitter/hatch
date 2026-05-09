@@ -8,7 +8,7 @@
         <TitleBar
             x:Name="MainTitleBar"
             Title="Hatch"
-            IsBackButtonVisible="True"
+            IsBackButtonVisible="False"
             IsPaneToggleButtonVisible="True"
             BackRequested="TitleBar_BackRequested"
             PaneToggleRequested="TitleBar_PaneToggleRequested"/>
@@ -17,6 +17,8 @@
             x:Name="NavView"
             Grid.Row="1"
             PaneDisplayMode="Auto"
+            CompactPaneLength="48"
+            OpenPaneLength="180"
             SelectionChanged="NavView_SelectionChanged"
             IsSettingsVisible="True"
             IsBackButtonVisible="Collapsed"
