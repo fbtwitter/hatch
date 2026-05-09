@@ -9,6 +9,8 @@ public sealed partial class MainPage : Page
 {
     private readonly MainViewModel _viewModel = new();
 
+    public MainViewModel ViewModel => _viewModel;
+
     public MainPage()
     {
         this.InitializeComponent();
