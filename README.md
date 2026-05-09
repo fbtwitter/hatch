@@ -77,6 +77,9 @@ Three rules, non-negotiable:
 
 ## What's Shipped
 
+### v0.2.1.1 — May 2026
+App icon in title bar and taskbar. Empty state UI with contextual guidance for each list view. Improved My Day sorting: prioritizes overdue/due today tasks, then starred. Task list code refactoring for cleaner templates. See [release notes](../../releases/tag/v0.2.1.1) for details.
+
 ### v0.2.1 — May 2026
 Single-click quick-add bubble from mascot — no main window required. "Task added!" confirmation with checkmark fades after 600ms. Mascot wiggles once per session for delight. Due date picker with presets (Today/Tomorrow/custom date). See [release notes](../../releases/tag/v0.2.1) for details.
 
