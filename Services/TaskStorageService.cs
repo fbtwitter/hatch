@@ -7,7 +7,7 @@ public sealed class TaskStorageService
 {
     private readonly string _filePath;
 
-    private static readonly JsonSerializerOptions _options = new() { WriteIndented = true };
+    private static readonly JsonSerializerOptions _options = new();
 
     public TaskStorageService()
     {
@@ -37,5 +37,11 @@ public sealed class TaskStorageService
     {
         var json = JsonSerializer.Serialize(tasks, _options);
         await File.WriteAllTextAsync(_filePath, json);
+    }
+
+    public void ResetDataFile()
+    {
+        if (File.Exists(_filePath))
+            File.Delete(_filePath);
     }
 }

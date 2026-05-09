@@ -1,75 +1,68 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
-using Hatch.Models;
+using Microsoft.UI.Xaml.Media.Animation;
 using Hatch.ViewModels;
-using Windows.System;
 
 namespace Hatch.Views;
 
 public sealed partial class MainPage : Page
 {
-    private MainViewModel ViewModel => (MainViewModel)DataContext;
+    private readonly MainViewModel _viewModel = new();
 
     public MainPage()
     {
         this.InitializeComponent();
-        this.DataContext = new MainViewModel();
         NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
     }
 
-    private void NewTaskTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+    protected override void OnNavigatedTo(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
     {
-        if (e.Key == VirtualKey.Enter && ViewModel.AddTaskCommand.CanExecute(null))
-            ViewModel.AddTaskCommand.Execute(null);
+        base.OnNavigatedTo(e);
+        SelectNavItem(_viewModel.ActiveNavItem);
+        NavigateToTaskList();
     }
 
-    private void CheckBox_Checked(object sender, RoutedEventArgs e)
+    private void SelectNavItem(string tag)
     {
-        var task = (TodoItem)((CheckBox)sender).Tag;
-        ViewModel.SetTaskCompleted(task, true);
-    }
-
-    private void CheckBox_Unchecked(object sender, RoutedEventArgs e)
-    {
-        var task = (TodoItem)((CheckBox)sender).Tag;
-        ViewModel.SetTaskCompleted(task, false);
-    }
-
-    private async void EditButton_Click(object sender, RoutedEventArgs e)
-    {
-        var task = (TodoItem)((Button)sender).Tag;
-
-        var editBox = new TextBox
+        var items = new[] { MyDayItem, ImportantItem, PlannedItem, AllTasksItem };
+        foreach (var item in items)
         {
-            Text = task.Title,
-            MinWidth = 300,
-            PlaceholderText = "Task title"
-        };
+            if (item.Tag?.ToString() == tag)
+            {
+                NavView.SelectedItem = item;
+                break;
+            }
+        }
+    }
 
-        var dialog = new ContentDialog
+    private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+    {
+        if (args.IsSettingsSelected)
         {
-            Title = "Edit Task",
-            Content = editBox,
-            PrimaryButtonText = "Save",
-            SecondaryButtonText = "Cancel",
-            DefaultButton = ContentDialogButton.Primary,
-            XamlRoot = this.XamlRoot
-        };
-
-        var result = await dialog.ShowAsync();
-        if (result == ContentDialogResult.Primary && !string.IsNullOrWhiteSpace(editBox.Text))
-            ViewModel.UpdateTaskTitle(task, editBox.Text.Trim());
+            ContentFrame.Navigate(typeof(SettingsPage), null, new DrillInNavigationTransitionInfo());
+        }
+        else if (args.SelectedItem is NavigationViewItem item && item.Tag is string tag)
+        {
+            _viewModel.ActiveNavItem = tag;
+            NavigateToTaskList();
+        }
     }
 
-    private void DeleteButton_Click(object sender, RoutedEventArgs e)
+    private void NavigateToTaskList()
     {
-        var task = (TodoItem)((Button)sender).Tag;
-        ViewModel.DeleteTask(task);
+        ContentFrame.Navigate(typeof(TaskListPage), _viewModel, new DrillInNavigationTransitionInfo());
     }
 
-    private void SettingsButton_Click(object sender, RoutedEventArgs e)
+    private void TitleBar_BackRequested(TitleBar sender, object args)
     {
-        Frame.Navigate(typeof(SettingsPage));
+        if (ContentFrame.CanGoBack)
+        {
+            ContentFrame.GoBack();
+        }
+    }
+
+    private void TitleBar_PaneToggleRequested(TitleBar sender, object args)
+    {
+        NavView.IsPaneOpen = !NavView.IsPaneOpen;
     }
 }
