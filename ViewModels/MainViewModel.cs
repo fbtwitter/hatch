@@ -44,20 +44,66 @@ public sealed class MainViewModel : INotifyPropertyChanged
             RefreshActiveTasks();
             OnPropertyChanged(nameof(IsTaskListEmpty));
             OnPropertyChanged(nameof(PlannedGroups));
+            OnPropertyChanged(nameof(EmptyStateGlyph));
+            OnPropertyChanged(nameof(EmptyStateHeadline));
+            OnPropertyChanged(nameof(EmptyStateSubtext));
             App.Settings.ActiveNavItem = value;
             _ = App.SettingsService.SaveAsync();
         }
     }
 
+    public string EmptyStateGlyph => _activeNavItem switch
+    {
+        "myday"     => "\uE706", // Sun
+        "important" => "\uE735", // Star
+        "planned"   => "\uED28", // Calendar
+        _           => "\uE762"  // Document
+    };
+
+    public string EmptyStateHeadline => _activeNavItem switch
+    {
+        "myday"     => "Your day is clear",
+        "important" => "No important tasks",
+        "planned"   => "Nothing planned yet",
+        _           => "No tasks yet"
+    };
+
+    public string EmptyStateSubtext => _activeNavItem switch
+    {
+        "myday"     => "Add tasks to My Day from All Tasks",
+        "important" => "Star a task to see it here",
+        "planned"   => "Set a due date on a task to see it here",
+        _           => "Add a task above to get started"
+    };
+
+    private bool MatchesFilter(TodoItem task) => _activeNavItem switch
+    {
+        "myday"     => task.IsInMyDay,
+        "important" => task.IsStarred,
+        "planned"   => task.DueDate != null,
+        _           => true
+    };
+
     private void RefreshActiveTasks()
     {
         ActiveTasks.Clear();
+        var today = DateTime.Today;
         var filtered = _activeNavItem switch
         {
-            "myday" => Tasks.Where(t => t.IsInMyDay).OrderByDescending(t => t.CreatedAt),
+            // Priority order: overdue/due today → starred → rest; completed always last
+            "myday" => Tasks
+                .Where(t => t.IsInMyDay)
+                .OrderBy(t => t.IsCompleted)
+                .ThenBy(t =>
+                {
+                    if (t.DueDate.HasValue && t.DueDate.Value.Date <= today) return 0;
+                    if (t.IsStarred) return 1;
+                    return 2;
+                })
+                .ThenBy(t => t.DueDate ?? DateTimeOffset.MaxValue),
             "important" => Tasks.Where(t => t.IsStarred).OrderByDescending(t => t.CreatedAt),
-            "planned" => Tasks.Where(t => t.DueDate != null).OrderBy(t => t.DueDate),
-            _ => Tasks.OrderByDescending(t => t.CreatedAt)
+            "planned"   => Tasks.Where(t => t.DueDate != null).OrderBy(t => t.DueDate),
+            _           => Tasks.OrderByDescending(t => t.CreatedAt)
         };
 
         foreach (var task in filtered)
@@ -105,9 +151,25 @@ public sealed class MainViewModel : INotifyPropertyChanged
             _ => AddTask(),
             _ => !string.IsNullOrWhiteSpace(NewTaskText));
 
-        Tasks.CollectionChanged += (_, _) =>
+        Tasks.CollectionChanged += (_, e) =>
         {
-            RefreshActiveTasks();
+            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add && e.NewItems != null)
+            {
+                foreach (TodoItem task in e.NewItems)
+                {
+                    if (MatchesFilter(task))
+                        ActiveTasks.Insert(0, task);
+                }
+            }
+            else if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Remove && e.OldItems != null)
+            {
+                foreach (TodoItem task in e.OldItems)
+                    ActiveTasks.Remove(task);
+            }
+            else
+            {
+                RefreshActiveTasks();
+            }
             OnPropertyChanged(nameof(IsTaskListEmpty));
             OnPropertyChanged(nameof(PlannedGroups));
         };
@@ -169,33 +231,20 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         if (sender is not TodoItem task) return;
 
-        // Only update ActiveTasks if the property affects the current view's filter
-        bool affectsCurrentView = _activeNavItem switch
+        bool filterProp = e.PropertyName is
+            nameof(TodoItem.IsInMyDay) or
+            nameof(TodoItem.IsStarred) or
+            nameof(TodoItem.DueDate)   or
+            nameof(TodoItem.IsCompleted);
+
+        if (filterProp)
         {
-            "myday" => e.PropertyName == nameof(TodoItem.IsInMyDay),
-            "important" => e.PropertyName == nameof(TodoItem.IsStarred),
-            "planned" => e.PropertyName == nameof(TodoItem.DueDate),
-            _ => false
-        };
-
-        if (affectsCurrentView)
-        {
-            bool matchesCurrentFilter = _activeNavItem switch
-            {
-                "myday" => task.IsInMyDay,
-                "important" => task.IsStarred,
-                "planned" => task.DueDate != null,
-                _ => true
-            };
-
-            bool isInActiveView = ActiveTasks.Contains(task);
-
-            // Add task if it now matches the filter
-            if (matchesCurrentFilter && !isInActiveView)
-                ActiveTasks.Add(task);
-            // Remove task if it no longer matches the filter
-            else if (!matchesCurrentFilter && isInActiveView)
-                ActiveTasks.Remove(task);
+            bool matches = MatchesFilter(task);
+            bool inView  = ActiveTasks.Contains(task);
+            if (matches && !inView)  ActiveTasks.Add(task);
+            if (!matches && inView)  ActiveTasks.Remove(task);
+            OnPropertyChanged(nameof(IsTaskListEmpty));
+            OnPropertyChanged(nameof(PlannedGroups));
         }
 
         SaveAsync();
