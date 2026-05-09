@@ -77,6 +77,9 @@ Three rules, non-negotiable:
 
 ## What's Shipped
 
+### v0.2.1 — May 2026
+Single-click quick-add bubble from mascot — no main window required. "Task added!" confirmation with checkmark fades after 600ms. Mascot wiggles once per session for delight. Due date picker with presets (Today/Tomorrow/custom date). See [release notes](../../releases/tag/v0.2.1) for details.
+
 ### v0.2.0 — May 2026
 NavigationView rail with My Day, Important, Planned, All Tasks smart lists. Planned list groups by Today/Tomorrow/This week/Later. Navigation state persists. Smooth UX with debounced saves and surgical updates. See [release notes](../../releases/tag/v0.2.0) for details.
 
@@ -102,14 +105,14 @@ Basic task window — add, edit, complete, delete tasks; settings panel; system 
 |---------------------------------------------------------------------------------|-------------|
 | Always-on-top Hatch mascot (separate topmost borderless window)                 | Shipped     |
 | NavigationView rail — My Day, Important, Planned, All Tasks, custom lists       | Shipped     |
-| Quick-add task directly from mascot bubble — no main window required            | Planned     |
+| Quick-add task directly from mascot bubble — no main window required            | Shipped     |
+| Mascot mute / opt-in bubble — silent by default after first session             | In Progress |
 | Contextual tip engine — tips based on actual task state                         | Planned     |
 | Task list polish — star toggle, open/completed grouping, notes field            | Planned     |
 | Details pane — slide-in panel replacing modal dialog                            | Planned     |
 | Real due-date picker — calendar flyout, presets, ISO persistence                | Planned     |
 | List CRUD + color tags — create, rename, recolor, delete custom lists           | Planned     |
 | Settings polish — 6 accent hues, mascot controls                                | Planned     |
-| Mascot mute / opt-in bubble — silent by default after first session             | Planned     |
 | Privacy & no-account first-run onboarding screen                                | Planned     |
 | Appreciation purchase ($5, one-time) — cosmetic-only, nothing gated             | Planned     |
 
