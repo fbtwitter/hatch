@@ -3,7 +3,9 @@ using Microsoft.UI;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Navigation;
 using Hatch.Models;
 using Hatch.Services;
 using Hatch.Views;
@@ -29,6 +31,7 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         Title = "Hatch";
         AppWindow.Resize(new SizeInt32(520, 640));
+        ExtendsContentIntoTitleBar = true;
         AppWindow.TitleBar.PreferredTheme = TitleBarTheme.UseDefaultAppMode;
 
         var settings = App.Settings;
@@ -57,6 +60,7 @@ public sealed partial class MainWindow : Window
                 "RootFrame was not initialized by InitializeComponent. " +
                 "Clean and rebuild the solution to regenerate XAML code-behind files.");
         RootFrame.Navigate(typeof(MainPage));
+        RootFrame.Navigated += OnFrameNavigated;
         ApplyTheme(settings.Theme);
     }
 
@@ -146,5 +150,16 @@ public sealed partial class MainWindow : Window
         }
         _trayService?.Dispose();
         _trayService = null;
+    }
+
+    private void OnFrameNavigated(object? sender, NavigationEventArgs e)
+    {
+        if (RootFrame?.Content is MainPage mainPage)
+        {
+            if (mainPage.FindName("MainTitleBar") is TitleBar titleBar)
+            {
+                SetTitleBar(titleBar);
+            }
+        }
     }
 }

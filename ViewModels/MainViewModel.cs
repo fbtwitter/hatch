@@ -13,8 +13,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private readonly TaskStorageService _storage;
     private string _newTaskText = string.Empty;
     private string _activeNavItem = "alltasks";
+    private CancellationTokenSource? _saveCancelToken;
 
     public ObservableCollection<TodoItem> Tasks { get; } = [];
+    public ObservableCollection<TodoItem> ActiveTasks { get; } = [];
 
     public string NewTaskText
     {
@@ -38,7 +40,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             if (_activeNavItem == value) return;
             _activeNavItem = value;
             OnPropertyChanged();
-            OnPropertyChanged(nameof(ActiveTasks));
+            RefreshActiveTasks();
             OnPropertyChanged(nameof(IsTaskListEmpty));
             OnPropertyChanged(nameof(PlannedGroups));
             App.Settings.ActiveNavItem = value;
@@ -46,15 +48,19 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    public IList<TodoItem> ActiveTasks
+    private void RefreshActiveTasks()
     {
-        get => _activeNavItem switch
+        ActiveTasks.Clear();
+        var filtered = _activeNavItem switch
         {
-            "myday" => new List<TodoItem>(Tasks.Where(t => t.IsInMyDay).OrderByDescending(t => t.CreatedAt)),
-            "important" => new List<TodoItem>(Tasks.Where(t => t.IsStarred).OrderByDescending(t => t.CreatedAt)),
-            "planned" => new List<TodoItem>(Tasks.Where(t => t.DueDate != null).OrderBy(t => t.DueDate)),
-            _ => new List<TodoItem>(Tasks.OrderByDescending(t => t.CreatedAt))
+            "myday" => Tasks.Where(t => t.IsInMyDay).OrderByDescending(t => t.CreatedAt),
+            "important" => Tasks.Where(t => t.IsStarred).OrderByDescending(t => t.CreatedAt),
+            "planned" => Tasks.Where(t => t.DueDate != null).OrderBy(t => t.DueDate),
+            _ => Tasks.OrderByDescending(t => t.CreatedAt)
         };
+
+        foreach (var task in filtered)
+            ActiveTasks.Add(task);
     }
 
     public IList<PlannedGroup> PlannedGroups
@@ -100,8 +106,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         Tasks.CollectionChanged += (_, _) =>
         {
+            RefreshActiveTasks();
             OnPropertyChanged(nameof(IsTaskListEmpty));
-            OnPropertyChanged(nameof(ActiveTasks));
             OnPropertyChanged(nameof(PlannedGroups));
         };
 
@@ -116,39 +122,111 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             var tasks = await _storage.LoadTasksAsync();
             foreach (var task in tasks.OrderByDescending(t => t.CreatedAt))
+            {
+                AttachTaskPropertyChangedHandler(task);
                 Tasks.Add(task);
+            }
+            RefreshActiveTasks();
         }
         catch { }
     }
 
     private void AddTask()
     {
-        Tasks.Insert(0, new TodoItem { Title = NewTaskText.Trim() });
+        var task = new TodoItem { Title = NewTaskText.Trim() };
+
+        // Set appropriate properties based on which page user is adding from
+        switch (_activeNavItem)
+        {
+            case "myday":
+                task.IsInMyDay = true;
+                break;
+            case "important":
+                task.IsStarred = true;
+                break;
+            case "planned":
+                task.DueDate = DateTimeOffset.Now;
+                break;
+        }
+
+        AttachTaskPropertyChangedHandler(task);
+        Tasks.Insert(0, task);
         NewTaskText = string.Empty;
-        _ = SaveAsync();
+        SaveAsync();
+    }
+
+    private void AttachTaskPropertyChangedHandler(TodoItem task)
+    {
+        task.PropertyChanged -= TaskPropertyChanged;
+        task.PropertyChanged += TaskPropertyChanged;
+    }
+
+    private void TaskPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is not TodoItem task) return;
+
+        // Only update ActiveTasks if the property affects the current view's filter
+        bool affectsCurrentView = _activeNavItem switch
+        {
+            "myday" => e.PropertyName == nameof(TodoItem.IsInMyDay),
+            "important" => e.PropertyName == nameof(TodoItem.IsStarred),
+            "planned" => e.PropertyName == nameof(TodoItem.DueDate),
+            _ => false
+        };
+
+        if (affectsCurrentView)
+        {
+            bool matchesCurrentFilter = _activeNavItem switch
+            {
+                "myday" => task.IsInMyDay,
+                "important" => task.IsStarred,
+                "planned" => task.DueDate != null,
+                _ => true
+            };
+
+            bool isInActiveView = ActiveTasks.Contains(task);
+
+            // Add task if it now matches the filter
+            if (matchesCurrentFilter && !isInActiveView)
+                ActiveTasks.Add(task);
+            // Remove task if it no longer matches the filter
+            else if (!matchesCurrentFilter && isInActiveView)
+                ActiveTasks.Remove(task);
+        }
+
+        SaveAsync();
     }
 
     public void DeleteTask(TodoItem task)
     {
+        task.PropertyChanged -= TaskPropertyChanged;
         Tasks.Remove(task);
-        _ = SaveAsync();
+        SaveAsync();
     }
 
-    public void SetTaskCompleted(TodoItem task, bool completed)
-    {
-        task.IsCompleted = completed;
-        _ = SaveAsync();
-    }
 
     public void UpdateTaskTitle(TodoItem task, string newTitle)
     {
         task.Title = newTitle;
-        _ = SaveAsync();
+        SaveAsync();
     }
 
-    private async Task SaveAsync()
+
+    private void SaveAsync()
     {
-        try { await _storage.SaveTasksAsync(Tasks); }
+        _saveCancelToken?.Cancel();
+        _saveCancelToken = new CancellationTokenSource();
+        _ = DoSaveAsync(_saveCancelToken.Token);
+    }
+
+    private async Task DoSaveAsync(CancellationToken ct)
+    {
+        try
+        {
+            await Task.Delay(500, ct);
+            await _storage.SaveTasksAsync(Tasks);
+        }
+        catch (OperationCanceledException) { }
         catch { }
     }
 

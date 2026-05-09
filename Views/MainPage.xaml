@@ -4,7 +4,23 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <NavigationView x:Name="NavView" PaneDisplayMode="Auto" SelectionChanged="NavView_SelectionChanged" IsSettingsVisible="True">
+    <Grid RowDefinitions="Auto,*">
+        <TitleBar
+            x:Name="MainTitleBar"
+            Title="Hatch"
+            IsBackButtonVisible="True"
+            IsPaneToggleButtonVisible="True"
+            BackRequested="TitleBar_BackRequested"
+            PaneToggleRequested="TitleBar_PaneToggleRequested"/>
+
+        <NavigationView
+            x:Name="NavView"
+            Grid.Row="1"
+            PaneDisplayMode="Auto"
+            SelectionChanged="NavView_SelectionChanged"
+            IsSettingsVisible="True"
+            IsBackButtonVisible="Collapsed"
+            IsPaneToggleButtonVisible="False">
         <NavigationView.MenuItems>
             <NavigationViewItem x:Name="MyDayItem" Content="My Day" Tag="myday" Icon="Calendar"/>
             <NavigationViewItem x:Name="ImportantItem" Content="Important" Tag="important" Icon="Favorite"/>
@@ -14,8 +30,10 @@
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
             <NavigationViewItem x:Name="AllTasksItem" Content="All Tasks" Tag="alltasks" Icon="List"/>
+            <NavigationViewItemSeparator/>
         </NavigationView.MenuItems>
 
         <Frame x:Name="ContentFrame"/>
-    </NavigationView>
+        </NavigationView>
+    </Grid>
 </Page>
