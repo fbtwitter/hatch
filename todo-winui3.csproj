@@ -51,8 +51,15 @@
   </ItemGroup>
 
   <!-- Auto-generate PNG assets from logo.svg on first build if missing -->
-  <Target Name="EnsureAssets" BeforeTargets="PrepareForBuild" Condition="!Exists('$(MSBuildProjectDirectory)\Assets\Square44x44Logo.png')">
+  <Target Name="EnsureAssets" BeforeTargets="PrepareForBuild" Condition="!Exists('$(MSBuildProjectDirectory)\Assets\Hatch.ico')">
     <Exec Command="dotnet run --project &quot;$(MSBuildProjectDirectory)\scripts\AssetGen\AssetGen.csproj&quot; -- &quot;$(MSBuildProjectDirectory)\logo.svg&quot; &quot;$(MSBuildProjectDirectory)\Assets&quot;" WorkingDirectory="$(MSBuildProjectDirectory)" />
   </Target>
+
+  <ItemGroup>
+    <ApplicationIcon Include="Assets\Hatch.ico" Condition="Exists('Assets\Hatch.ico')"/>
+    <Content Include="Assets\Hatch.ico" Condition="Exists('Assets\Hatch.ico')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
 </Project>
