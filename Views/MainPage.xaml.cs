@@ -52,4 +52,17 @@ public sealed partial class MainPage : Page
     {
         ContentFrame.Navigate(typeof(TaskListPage), _viewModel, new DrillInNavigationTransitionInfo());
     }
+
+    private void TitleBar_BackRequested(TitleBar sender, object args)
+    {
+        if (ContentFrame.CanGoBack)
+        {
+            ContentFrame.GoBack();
+        }
+    }
+
+    private void TitleBar_PaneToggleRequested(TitleBar sender, object args)
+    {
+        NavView.IsPaneOpen = !NavView.IsPaneOpen;
+    }
 }

@@ -49,19 +49,6 @@ public sealed partial class TaskListPage : Page
             ViewModel.AddTaskCommand.Execute(null);
     }
 
-    private void CheckBox_Checked(object sender, RoutedEventArgs e)
-    {
-        var task = (TodoItem)((CheckBox)sender).Tag;
-        if (task is null) return;
-        ViewModel.SetTaskCompleted(task, true);
-    }
-
-    private void CheckBox_Unchecked(object sender, RoutedEventArgs e)
-    {
-        var task = (TodoItem)((CheckBox)sender).Tag;
-        if (task is null) return;
-        ViewModel.SetTaskCompleted(task, false);
-    }
 
     private async void EditButton_Click(object sender, RoutedEventArgs e)
     {
@@ -93,5 +80,13 @@ public sealed partial class TaskListPage : Page
     {
         var task = (TodoItem)((Button)sender).Tag;
         ViewModel.DeleteTask(task);
+    }
+
+    private void StarButton_Click(object sender, RoutedEventArgs e)
+    {
+        var task = (TodoItem)((Button)sender).Tag;
+        if (task is null) return;
+        task.IsStarred = !task.IsStarred;
+        // PropertyChanged handler automatically saves
     }
 }

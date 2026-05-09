@@ -11,6 +11,7 @@
         <converters:BoolToOpacityConverter x:Key="BoolToOpacity"/>
         <converters:DateTimeToStringConverter x:Key="DateTimeToString"/>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <converters:BoolToStarGlyphConverter x:Key="BoolToStarGlyph"/>
     </Page.Resources>
 
     <Grid>
@@ -89,11 +90,9 @@
                                 </Grid.ColumnDefinitions>
 
                                 <CheckBox Grid.Column="0"
-                                          IsChecked="{x:Bind IsCompleted, Mode=OneWay}"
-                                          Checked="CheckBox_Checked"
-                                          Unchecked="CheckBox_Unchecked"
-                                          Tag="{x:Bind}"
+                                          IsChecked="{x:Bind IsCompleted, Mode=TwoWay}"
                                           VerticalAlignment="Center"/>
+                                          <!-- x:Bind TwoWay automatically saves on property change -->
 
                                 <StackPanel Grid.Column="1"
                                             VerticalAlignment="Center"
@@ -111,6 +110,13 @@
                                 <StackPanel Grid.Column="2"
                                             Orientation="Horizontal"
                                             VerticalAlignment="Center">
+                                    <Button Tag="{x:Bind}"
+                                            Click="StarButton_Click"
+                                            ToolTipService.ToolTip="Mark as important"
+                                            Padding="8,6"
+                                            MinWidth="0">
+                                        <FontIcon Glyph="{x:Bind IsStarred, Converter={StaticResource BoolToStarGlyph}, Mode=OneWay}" FontSize="14"/>
+                                    </Button>
                                     <Button Tag="{x:Bind}"
                                             Click="EditButton_Click"
                                             ToolTipService.ToolTip="Edit task"
