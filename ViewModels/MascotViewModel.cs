@@ -21,6 +21,9 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     private NativeMethods.POINT _dragStartCursor;
     private int _dragStartWindowX;
     private int _dragStartWindowY;
+    private bool _isBubbleOpen;
+    private int _bubbleX;
+    private int _bubbleY;
 
     public bool IsVisible
     {
@@ -75,9 +78,43 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     public string? LottieFilePath => App.Settings.LottieFilePath;
     public void RaiseLottieFileChanged() => OnPropertyChanged(nameof(LottieFilePath));
 
+    public bool IsBubbleOpen
+    {
+        get => _isBubbleOpen;
+        private set
+        {
+            if (_isBubbleOpen == value) return;
+            _isBubbleOpen = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public int BubbleX
+    {
+        get => _bubbleX;
+        private set
+        {
+            if (_bubbleX == value) return;
+            _bubbleX = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public int BubbleY
+    {
+        get => _bubbleY;
+        private set
+        {
+            if (_bubbleY == value) return;
+            _bubbleY = value;
+            OnPropertyChanged();
+        }
+    }
+
     public ICommand ResetPositionCommand    { get; }
     public ICommand ShowMainWindowCommand   { get; }
     public ICommand ToggleMainWindowCommand { get; }
+    public ICommand ToggleBubbleCommand     { get; }
 
     public MascotViewModel(DispatcherQueue dispatcher)
     {
@@ -85,6 +122,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         ResetPositionCommand    = new RelayCommand(_ => ResetPosition());
         ShowMainWindowCommand   = new RelayCommand(_ => ShowMainWindow());
         ToggleMainWindowCommand = new RelayCommand(_ => ToggleMainWindow());
+        ToggleBubbleCommand     = new RelayCommand(_ => ToggleBubble());
         InitializePosition();
         StartFullscreenPolling();
     }
@@ -178,7 +216,36 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         }
 
         win.AppWindow.Hide();
-        
+
+    }
+
+    private void ToggleBubble()
+    {
+        if (IsBubbleOpen)
+        {
+            IsBubbleOpen = false;
+        }
+        else
+        {
+            // Position bubble to the left of mascot
+            int bubbleWidth = 280;
+            int bubbleHeight = 200;
+            BubbleX = X - bubbleWidth - 10;
+            BubbleY = Y + (WindowSize - bubbleHeight) / 2;
+
+            // Clamp to monitor work area
+            var pt = new NativeMethods.POINT { X = BubbleX, Y = BubbleY };
+            var hMonitor = NativeMethods.MonitorFromPoint(pt, NativeMethods.MONITOR_DEFAULTTONEAREST);
+            var mi = new NativeMethods.MONITORINFO { cbSize = Marshal.SizeOf<NativeMethods.MONITORINFO>() };
+            if (NativeMethods.GetMonitorInfo(hMonitor, ref mi))
+            {
+                var w = mi.rcWork;
+                BubbleX = Math.Clamp(BubbleX, w.left, w.right - bubbleWidth);
+                BubbleY = Math.Clamp(BubbleY, w.top, w.bottom - bubbleHeight);
+            }
+
+            IsBubbleOpen = true;
+        }
     }
 
     private void InitializePosition()

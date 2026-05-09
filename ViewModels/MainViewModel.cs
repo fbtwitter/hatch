@@ -17,6 +17,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public ObservableCollection<TodoItem> Tasks { get; } = [];
     public ObservableCollection<TodoItem> ActiveTasks { get; } = [];
+    public ObservableCollection<TaskList> Lists { get; } = [];
 
     public string NewTaskText
     {
@@ -113,6 +114,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         _activeNavItem = App.Settings.ActiveNavItem;
 
+        // Initialize default list
+        Lists.Add(new TaskList { Name = "All Tasks", Id = Guid.Empty });
+
         _ = LoadAsync();
     }
 
@@ -155,7 +159,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         SaveAsync();
     }
 
-    private void AttachTaskPropertyChangedHandler(TodoItem task)
+    public void AttachTaskPropertyChangedHandler(TodoItem task)
     {
         task.PropertyChanged -= TaskPropertyChanged;
         task.PropertyChanged += TaskPropertyChanged;
@@ -212,7 +216,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     }
 
 
-    private void SaveAsync()
+    public void SaveAsync()
     {
         _saveCancelToken?.Cancel();
         _saveCancelToken = new CancellationTokenSource();
