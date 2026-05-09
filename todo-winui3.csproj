@@ -9,14 +9,18 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <UseWinUI>true</UseWinUI>
-    <EnableXamlDiagnostics>true</EnableXamlDiagnostics>
+    <EnableXamlDiagnostics>false</EnableXamlDiagnostics>
     <Platforms>x64;x86;arm64</Platforms>
     <!-- Signing and package generation are handled by CI; disabled locally -->
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
     <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>
   </PropertyGroup>
 
-  <!-- Debug: unpackaged so XAML Hot Reload works without deploying MSIX -->
+  <!-- Debug: unpackaged so XAML Hot Reload works without deploying MSIX.
+       Uses the system-installed Windows App SDK runtime via the SDK's built-in
+       bootstrapper auto-initializer (WindowsAppRuntimeAutoInitializer.cs).
+       Do NOT use WindowsAppSDKSelfContained here — it conflicts with the
+       bootstrapper flow and causes 0x80040154 Class not registered at startup. -->
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <WindowsPackageType>None</WindowsPackageType>
     <EnableMsixTooling>false</EnableMsixTooling>

@@ -1,0 +1,92 @@
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
+using Hatch.Models;
+using Hatch.ViewModels;
+using Windows.System;
+
+namespace Hatch.Views;
+
+public sealed partial class TaskListPage : Page
+{
+    private MainViewModel ViewModel => (MainViewModel)DataContext;
+
+    public TaskListPage()
+    {
+        this.InitializeComponent();
+        NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
+    }
+
+    protected override void OnNavigatedTo(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        if (e.Parameter is MainViewModel vm)
+        {
+            DataContext = vm;
+            UpdateHeaderText(vm.ActiveNavItem);
+            vm.PropertyChanged += (s, args) =>
+            {
+                if (args.PropertyName == nameof(MainViewModel.ActiveNavItem))
+                    UpdateHeaderText(vm.ActiveNavItem);
+            };
+        }
+    }
+
+    private void UpdateHeaderText(string navItem)
+    {
+        HeaderText.Text = navItem switch
+        {
+            "myday" => "My Day",
+            "important" => "Important",
+            "planned" => "Planned",
+            _ => "All Tasks"
+        };
+    }
+
+    private void NewTaskTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == VirtualKey.Enter && ViewModel.AddTaskCommand.CanExecute(null))
+            ViewModel.AddTaskCommand.Execute(null);
+    }
+
+
+    private async void EditButton_Click(object sender, RoutedEventArgs e)
+    {
+        var task = (TodoItem)((Button)sender).Tag;
+
+        var editBox = new TextBox
+        {
+            Text = task.Title,
+            MinWidth = 300,
+            PlaceholderText = "Task title"
+        };
+
+        var dialog = new ContentDialog
+        {
+            Title = "Edit Task",
+            Content = editBox,
+            PrimaryButtonText = "Save",
+            SecondaryButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = this.XamlRoot
+        };
+
+        var result = await dialog.ShowAsync();
+        if (result == ContentDialogResult.Primary && !string.IsNullOrWhiteSpace(editBox.Text))
+            ViewModel.UpdateTaskTitle(task, editBox.Text.Trim());
+    }
+
+    private void DeleteButton_Click(object sender, RoutedEventArgs e)
+    {
+        var task = (TodoItem)((Button)sender).Tag;
+        ViewModel.DeleteTask(task);
+    }
+
+    private void StarButton_Click(object sender, RoutedEventArgs e)
+    {
+        var task = (TodoItem)((Button)sender).Tag;
+        if (task is null) return;
+        task.IsStarred = !task.IsStarred;
+        // PropertyChanged handler automatically saves
+    }
+}

@@ -1,0 +1,142 @@
+<Page
+    x:Class="Hatch.Views.TaskListPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:models="using:Hatch.Models"
+    xmlns:converters="using:Hatch.Converters"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.Resources>
+        <converters:BoolToStrikethroughConverter x:Key="BoolToStrikethrough"/>
+        <converters:BoolToOpacityConverter x:Key="BoolToOpacity"/>
+        <converters:DateTimeToStringConverter x:Key="DateTimeToString"/>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <converters:BoolToStarGlyphConverter x:Key="BoolToStarGlyph"/>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0" Padding="24,28,16,8" x:Name="HeaderText" Text="My Tasks"
+                   Style="{ThemeResource TitleLargeTextBlockStyle}"
+                   VerticalAlignment="Center"/>
+
+        <!-- Add task row -->
+        <Grid Grid.Row="1" Padding="24,8,24,16" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="NewTaskTextBox"
+                     Grid.Column="0"
+                     PlaceholderText="What needs to be done?"
+                     Text="{Binding NewTaskText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     KeyDown="NewTaskTextBox_KeyDown"/>
+            <Button Grid.Column="1"
+                    Content="Add"
+                    Command="{Binding AddTaskCommand}"
+                    Style="{ThemeResource AccentButtonStyle}"
+                    MinWidth="80"/>
+        </Grid>
+
+        <!-- Content area -->
+        <Grid Grid.Row="2">
+
+            <!-- Empty state -->
+            <StackPanel HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Spacing="6"
+                        Visibility="{Binding IsTaskListEmpty, Converter={StaticResource BoolToVisibility}}">
+                <FontIcon Glyph="&#xE762;" FontSize="44" Opacity="0.25" HorizontalAlignment="Center"/>
+                <TextBlock Text="No tasks yet"
+                           HorizontalAlignment="Center"
+                           Opacity="0.45"
+                           Style="{ThemeResource BodyTextBlockStyle}"/>
+                <TextBlock Text="Add a task above to get started"
+                           HorizontalAlignment="Center"
+                           Opacity="0.3"
+                           Style="{ThemeResource CaptionTextBlockStyle}"/>
+            </StackPanel>
+
+            <!-- Task list -->
+            <ListView ItemsSource="{Binding ActiveTasks}"
+                      SelectionMode="None"
+                      Padding="20,0,20,24"
+                      Visibility="{Binding IsTaskListEmpty, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="0,3"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="models:TodoItem">
+                        <Border Padding="12,10"
+                                CornerRadius="8"
+                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                BorderThickness="1">
+                            <Grid ColumnSpacing="4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="32"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <CheckBox Grid.Column="0"
+                                          IsChecked="{x:Bind IsCompleted, Mode=TwoWay}"
+                                          VerticalAlignment="Center"/>
+                                          <!-- x:Bind TwoWay automatically saves on property change -->
+
+                                <StackPanel Grid.Column="1"
+                                            VerticalAlignment="Center"
+                                            Spacing="2">
+                                    <TextBlock Text="{x:Bind Title, Mode=OneWay}"
+                                               TextDecorations="{x:Bind IsCompleted, Converter={StaticResource BoolToStrikethrough}, Mode=OneWay}"
+                                               Opacity="{x:Bind IsCompleted, Converter={StaticResource BoolToOpacity}, Mode=OneWay}"
+                                               TextWrapping="Wrap"
+                                               Style="{ThemeResource BodyTextBlockStyle}"/>
+                                    <TextBlock Text="{x:Bind CreatedAt, Converter={StaticResource DateTimeToString}, Mode=OneTime}"
+                                               Opacity="0.5"
+                                               Style="{ThemeResource CaptionTextBlockStyle}"/>
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="2"
+                                            Orientation="Horizontal"
+                                            VerticalAlignment="Center">
+                                    <Button Tag="{x:Bind}"
+                                            Click="StarButton_Click"
+                                            ToolTipService.ToolTip="Mark as important"
+                                            Padding="8,6"
+                                            MinWidth="0">
+                                        <FontIcon Glyph="{x:Bind IsStarred, Converter={StaticResource BoolToStarGlyph}, Mode=OneWay}" FontSize="14"/>
+                                    </Button>
+                                    <Button Tag="{x:Bind}"
+                                            Click="EditButton_Click"
+                                            ToolTipService.ToolTip="Edit task"
+                                            Padding="8,6"
+                                            MinWidth="0">
+                                        <FontIcon Glyph="&#xE70F;" FontSize="14"/>
+                                    </Button>
+                                    <Button Tag="{x:Bind}"
+                                            Click="DeleteButton_Click"
+                                            ToolTipService.ToolTip="Delete task"
+                                            Padding="8,6"
+                                            MinWidth="0">
+                                        <FontIcon Glyph="&#xE74D;" FontSize="14"/>
+                                    </Button>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </Grid>
+    </Grid>
+</Page>

@@ -77,6 +77,9 @@ Three rules, non-negotiable:
 
 ## What's Shipped
 
+### v0.2.0 — May 2026
+NavigationView rail with My Day, Important, Planned, All Tasks smart lists. Planned list groups by Today/Tomorrow/This week/Later. Navigation state persists. Smooth UX with debounced saves and surgical updates. See [release notes](../../releases/tag/v0.2.0) for details.
+
 ### v0.1.0 — May 2026
 Always-on-top egg mascot — drag to reposition, right-click menu, idle bob/blink animation, fullscreen auto-hide. See [release notes](../../releases/tag/v0.1.0) for details.
 
@@ -98,9 +101,9 @@ Basic task window — add, edit, complete, delete tasks; settings panel; system 
 | Feature                                                                         | Status      |
 |---------------------------------------------------------------------------------|-------------|
 | Always-on-top Hatch mascot (separate topmost borderless window)                 | Shipped     |
+| NavigationView rail — My Day, Important, Planned, All Tasks, custom lists       | Shipped     |
 | Quick-add task directly from mascot bubble — no main window required            | Planned     |
 | Contextual tip engine — tips based on actual task state                         | Planned     |
-| NavigationView rail — My Day, Important, Planned, All Tasks, custom lists       | Planned     |
 | Task list polish — star toggle, open/completed grouping, notes field            | Planned     |
 | Details pane — slide-in panel replacing modal dialog                            | Planned     |
 | Real due-date picker — calendar flyout, presets, ISO persistence                | Planned     |

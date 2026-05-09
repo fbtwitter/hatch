@@ -8,7 +8,8 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Animation;
 using System.Numerics;
 using Windows.Graphics;
-using Windows.Storage;
+using System.Runtime.InteropServices.WindowsRuntime;
+using Windows.Storage.Streams;
 using WinUIEx;
 using Hatch.ViewModels;
 
@@ -57,9 +58,6 @@ public sealed partial class MascotWindow : Window
         AppWindow.Resize(new SizeInt32(MascotViewModel.WindowSize, MascotViewModel.WindowSize));
 
         _hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
-
-        // Remove WS_TILEDWINDOW (caption bar, resize border) at the Win32 level.
-        HwndExtensions.ToggleWindowStyle(_hwnd, false, WindowStyle.TiledWindow);
 
         // Suppress the 1 px accent-coloured frame Windows 11 draws on every window.
         var noBorder = NativeMethods.DWMWA_COLOR_NONE;
@@ -129,10 +127,17 @@ public sealed partial class MascotWindow : Window
             {
                 // LottieVisualSource.UriSource does not support file:// URIs — the internal
                 // UriLoader falls through to HttpClient which rejects file:// schemes.
-                // Use SetSourceAsync(StorageFile) to load local files reliably.
+                // StorageFile.GetFileFromPathAsync requires package identity which is not
+                // available in unpackaged apps. Instead, read the file into a memory stream
+                // and supply it via SetSourceAsync(IRandomAccessStream).
                 var source = new LottieVisualSource();
-                var storageFile = await StorageFile.GetFileFromPathAsync(path!);
-                await source.SetSourceAsync(storageFile);
+                using var fileStream = File.OpenRead(path!);
+                var memStream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+                var outputStream = memStream.GetOutputStreamAt(0);
+                await fileStream.CopyToAsync(outputStream.AsStreamForWrite());
+                await outputStream.FlushAsync();
+                memStream.Seek(0);
+                await source.SetSourceAsync(memStream);
                 LottiePlayer.Source = source;
                 LottiePlayer.Visibility = Visibility.Visible;
                 MascotRoot.Visibility = Visibility.Collapsed;

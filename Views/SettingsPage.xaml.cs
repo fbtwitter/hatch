@@ -15,6 +15,7 @@ public sealed partial class SettingsPage : Page
         InitializeComponent();
         _viewModel = new SettingsViewModel();
         DataContext = _viewModel;
+        NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
     }
 
     private void BackButton_Click(object sender, RoutedEventArgs e)
