@@ -43,6 +43,12 @@ public sealed partial class MainWindow : Window
 
         _hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
 
+        // Apply the app icon to the taskbar button, title bar, and Alt+Tab switcher.
+        // The ICO is generated from logo.svg by AssetGen at build time.
+        var icoPath = Path.Combine(AppContext.BaseDirectory, "Assets", "Hatch.ico");
+        if (File.Exists(icoPath))
+            AppWindow.SetIcon(icoPath);
+
         // SetWindowSubclass intercepts only at the native level — no managed overhead
         // per message. WindowMessageMonitor routes every WM_* through EventArgs which
         // added noticeable lag during resize/interaction.
