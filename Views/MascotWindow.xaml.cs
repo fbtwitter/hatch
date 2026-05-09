@@ -21,6 +21,7 @@ public sealed partial class MascotWindow : Window
 
     private readonly IntPtr _hwnd;
     private Storyboard? _idleAnimation;
+    private QuickAddBubbleWindow? _bubbleWindow;
 
     // Tracks whether LottiePlayer.PlayAsync has been called at least once for the
     // current source. Resume() is only valid after a Pause(); before first play we
@@ -88,7 +89,28 @@ public sealed partial class MascotWindow : Window
         ApplyLottieSource();
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
-        Closed += (_, _) => ViewModel.Dispose();
+        ViewModel.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(MascotViewModel.IsBubbleOpen))
+            {
+                if (ViewModel.IsBubbleOpen)
+                {
+                    _bubbleWindow = new QuickAddBubbleWindow();
+                    _bubbleWindow.PositionRelativeToMascot(ViewModel.X, ViewModel.Y, MascotViewModel.WindowSize);
+                    _bubbleWindow.Activate();
+                }
+                else if (_bubbleWindow != null)
+                {
+                    _bubbleWindow.Close();
+                    _bubbleWindow = null;
+                }
+            }
+        };
+        Closed += (_, _) =>
+        {
+            _bubbleWindow?.Close();
+            ViewModel.Dispose();
+        };
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -206,7 +228,7 @@ public sealed partial class MascotWindow : Window
 
     private void OnTapped(object sender, TappedRoutedEventArgs e)
     {
-        ViewModel.ToggleMainWindowCommand.Execute(null);
+        ViewModel.ToggleBubbleCommand.Execute(null);
     }
 
     private void OnPointerPressed(object sender, PointerRoutedEventArgs e)

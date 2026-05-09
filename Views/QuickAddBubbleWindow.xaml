@@ -1,0 +1,66 @@
+<Window
+    x:Class="Hatch.Views.QuickAddBubbleWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <StackPanel x:Name="BubbleContent"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="12"
+                Padding="16"
+                Width="300">
+        <!-- Header with close button -->
+        <Grid>
+            <TextBlock Text="Add Task" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+            <Button x:Name="CloseButton"
+                    Content="✕"
+                    Padding="4"
+                    MinWidth="32"
+                    MinHeight="32"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Background="Transparent"
+                    FontSize="16"/>
+        </Grid>
+
+        <!-- Task title input -->
+        <TextBox x:Name="TaskTitleBox"
+                 PlaceholderText="What needs to be done?"
+                 AcceptsReturn="False"/>
+
+        <!-- List selector -->
+        <StackPanel>
+            <TextBlock Text="Add to:"
+                       Style="{ThemeResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Margin="0,0,0,4"/>
+            <ComboBox x:Name="ListSelector" MinWidth="0"/>
+        </StackPanel>
+
+        <!-- Date preset chips -->
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <ToggleButton x:Name="TodayButton"
+                          Content="Today"
+                          Padding="12,6"
+                          MinWidth="0"
+                          FontSize="12"/>
+            <ToggleButton x:Name="TomorrowButton"
+                          Content="Tomorrow"
+                          Padding="12,6"
+                          MinWidth="0"
+                          FontSize="12"/>
+        </StackPanel>
+
+        <!-- Add button -->
+        <Button x:Name="AddButton"
+                Content="Add Task"
+                HorizontalAlignment="Stretch"
+                Padding="8,10"
+                Style="{ThemeResource AccentButtonStyle}"/>
+    </StackPanel>
+
+</Window>
