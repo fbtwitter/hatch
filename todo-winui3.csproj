@@ -23,6 +23,7 @@
        bootstrapper flow and causes 0x80040154 Class not registered at startup. -->
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <WindowsPackageType>None</WindowsPackageType>
+        <WindowsAppSDKDeploymentManagerInitialize>false</WindowsAppSDKDeploymentManagerInitialize>
     <EnableMsixTooling>false</EnableMsixTooling>
   </PropertyGroup>
 

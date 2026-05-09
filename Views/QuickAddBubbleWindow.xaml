@@ -7,60 +7,139 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <StackPanel x:Name="BubbleContent"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center"
-                Spacing="12"
-                Padding="16"
-                Width="300">
-        <!-- Header with close button -->
-        <Grid>
-            <TextBlock Text="Add Task" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-            <Button x:Name="CloseButton"
-                    Content="✕"
-                    Padding="4"
-                    MinWidth="32"
-                    MinHeight="32"
-                    HorizontalAlignment="Right"
-                    VerticalAlignment="Top"
-                    Background="Transparent"
-                    FontSize="16"/>
-        </Grid>
+    <Grid x:Name="BubbleRoot">
+        <Grid.Resources>
+            <Storyboard x:Key="ConfirmationFadeIn">
+                <DoubleAnimation Storyboard.TargetName="ConfirmationOverlay"
+                                 Storyboard.TargetProperty="Opacity"
+                                 From="0" To="1" Duration="0:0:0.2">
+                    <DoubleAnimation.EasingFunction>
+                        <CubicEase EasingMode="EaseOut"/>
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+            </Storyboard>
 
-        <!-- Task title input -->
-        <TextBox x:Name="TaskTitleBox"
-                 PlaceholderText="What needs to be done?"
-                 AcceptsReturn="False"/>
+            <Storyboard x:Key="ConfirmationFadeOut">
+                <DoubleAnimation Storyboard.TargetName="ConfirmationOverlay"
+                                 Storyboard.TargetProperty="Opacity"
+                                 From="1" To="0" Duration="0:0:0.2">
+                    <DoubleAnimation.EasingFunction>
+                        <CubicEase EasingMode="EaseIn"/>
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+            </Storyboard>
+        </Grid.Resources>
 
-        <!-- List selector -->
-        <StackPanel>
-            <TextBlock Text="Add to:"
+        <!-- Confirmation overlay (initially hidden, driven by ShowConfirmationAsync) -->
+        <StackPanel x:Name="ConfirmationOverlay"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="16"
+                    Opacity="0"
+                    Visibility="Collapsed">
+
+            <!-- Segoe Fluent checkmark inside an accent-tinted circle -->
+            <Border Width="56" Height="56"
+                    CornerRadius="28"
+                    Background="{ThemeResource SystemFillColorSuccessBackgroundBrush}"
+                    HorizontalAlignment="Center">
+                <FontIcon Glyph="&#xE73E;"
+                          FontSize="26"
+                          FontFamily="Segoe Fluent Icons"
+                          Foreground="{ThemeResource SystemFillColorSuccessBrush}"/>
+            </Border>
+
+            <!-- "Task added!" headline -->
+            <TextBlock Text="Task added!"
+                       TextAlignment="Center"
+                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+
+            <!-- Dynamic subtitle set by code-behind; kept as ConfirmationText for compat -->
+            <TextBlock x:Name="ConfirmationText"
+                       TextAlignment="Center"
                        Style="{ThemeResource CaptionTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                       Margin="0,0,0,4"/>
-            <ComboBox x:Name="ListSelector" MinWidth="0"/>
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
         </StackPanel>
 
-        <!-- Date preset chips -->
-        <StackPanel Orientation="Horizontal" Spacing="8">
-            <ToggleButton x:Name="TodayButton"
-                          Content="Today"
-                          Padding="12,6"
-                          MinWidth="0"
-                          FontSize="12"/>
-            <ToggleButton x:Name="TomorrowButton"
-                          Content="Tomorrow"
-                          Padding="12,6"
-                          MinWidth="0"
-                          FontSize="12"/>
+        <!-- Form content (shown initially) -->
+        <StackPanel x:Name="BubbleContent"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"
+                    Spacing="12"
+                    Padding="16"
+                    Width="300">
+
+            <!-- Header with close button -->
+            <Grid>
+                <TextBlock Text="Add Task" Style="{ThemeResource BodyStrongTextBlockStyle}"
+                           VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            Spacing="2">
+                    <Button x:Name="OpenMainWindowButton"
+                            ToolTipService.ToolTip="Open main window"
+                            Style="{ThemeResource SubtleButtonStyle}"
+                            Padding="8"
+                            MinWidth="0">
+                        <FontIcon Glyph="&#xE8A5;" FontSize="12"
+                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    </Button>
+                    <Button x:Name="CloseButton"
+                            Style="{ThemeResource SubtleButtonStyle}"
+                            Padding="8"
+                            MinWidth="0">
+                        <FontIcon Glyph="&#xE711;" FontSize="12"
+                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <!-- Task title input -->
+            <TextBox x:Name="TaskTitleBox"
+                     PlaceholderText="What needs to be done?"
+                     AcceptsReturn="False"/>
+
+            <!-- List selector -->
+            <StackPanel>
+                <TextBlock Text="Add to:"
+                           Style="{ThemeResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           Margin="0,0,0,4"/>
+                <ComboBox x:Name="ListSelector"
+                          HorizontalAlignment="Stretch"
+                          PlaceholderText="No lists yet"/>
+            </StackPanel>
+
+            <!-- Due date selector -->
+            <StackPanel>
+                <TextBlock Text="Due date:"
+                           Style="{ThemeResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           Margin="0,0,0,4"/>
+                <ComboBox x:Name="DatePresetSelector"
+                          HorizontalAlignment="Stretch"
+                          SelectionChanged="DatePresetSelector_SelectionChanged">
+                    <ComboBoxItem x:Name="NoDateItem" Content="No date" IsSelected="True"/>
+                    <ComboBoxItem Content="Today"/>
+                    <ComboBoxItem Content="Tomorrow"/>
+                    <ComboBoxItem Content="Pick a date…"/>
+                </ComboBox>
+                <CalendarDatePicker x:Name="CustomDatePicker"
+                                    HorizontalAlignment="Stretch"
+                                    PlaceholderText="Choose a date"
+                                    Visibility="Collapsed"
+                                    Margin="0,6,0,0"/>
+            </StackPanel>
+
+            <!-- Add button -->
+            <Button x:Name="AddButton"
+                    Content="Add Task"
+                    HorizontalAlignment="Stretch"
+                    Padding="8,10"
+                    Style="{ThemeResource AccentButtonStyle}"/>
+
         </StackPanel>
 
-        <!-- Add button -->
-        <Button x:Name="AddButton"
-                Content="Add Task"
-                HorizontalAlignment="Stretch"
-                Padding="8,10"
-                Style="{ThemeResource AccentButtonStyle}"/>
-    </StackPanel>
+    </Grid>
 
 </Window>
