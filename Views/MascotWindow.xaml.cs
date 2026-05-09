@@ -21,12 +21,18 @@ public sealed partial class MascotWindow : Window
 
     private readonly IntPtr _hwnd;
     private Storyboard? _idleAnimation;
+    private Storyboard? _wiggleAnimation;
     private QuickAddBubbleWindow? _bubbleWindow;
+    private bool _wigglePlayed = false;
+    private bool _hasDragged = false;
 
     // Tracks whether LottiePlayer.PlayAsync has been called at least once for the
     // current source. Resume() is only valid after a Pause(); before first play we
     // must call PlayAsync so the source actually starts loading and rendering.
     private bool _lottieStarted = false;
+
+    // Kept alive to prevent GC — the native subclass holds a function pointer to it
+    private NativeMethods.SUBCLASSPROC? _subclassProc;
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
@@ -40,6 +46,13 @@ public sealed partial class MascotWindow : Window
         ViewModel = new MascotViewModel(DispatcherQueue);
 
         _idleAnimation = MascotGrid.Resources["IdleAnimation"] as Storyboard;
+        // Wiggle is built in code so it targets MascotGridTransform (works for both Canvas and Lottie)
+        MascotGridTransform.CenterX = MascotViewModel.WindowSize / 2.0;
+        MascotGridTransform.CenterY = MascotViewModel.WindowSize / 2.0;
+        _wiggleAnimation = BuildWiggleStoryboard();
+
+        // Defer idle animation until after the window is shown to avoid startup lag
+        Activated += OnFirstActivated;
 
         // True desktop transparency — TransparentTintBackdrop makes the compositor
         // surface fully transparent so XAML's Transparent background shows the desktop.
@@ -95,22 +108,32 @@ public sealed partial class MascotWindow : Window
             {
                 if (ViewModel.IsBubbleOpen)
                 {
+                    _wigglePlayed = false;
                     _bubbleWindow = new QuickAddBubbleWindow();
                     _bubbleWindow.PositionRelativeToMascot(ViewModel.X, ViewModel.Y, MascotViewModel.WindowSize);
+                    _bubbleWindow.Closed += (_, _) =>
+                    {
+                        _bubbleWindow = null;
+                        ViewModel.CloseBubble();
+                    };
                     _bubbleWindow.Activate();
                 }
                 else if (_bubbleWindow != null)
                 {
-                    _bubbleWindow.Close();
+                    var closing = _bubbleWindow;
                     _bubbleWindow = null;
+                    try { closing.Close(); } catch { /* window may already be closing */ }
                 }
             }
         };
         Closed += (_, _) =>
         {
+            UnregisterHotKey();
             _bubbleWindow?.Close();
             ViewModel.Dispose();
         };
+
+        RegisterHotKey();
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -228,18 +251,28 @@ public sealed partial class MascotWindow : Window
 
     private void OnTapped(object sender, TappedRoutedEventArgs e)
     {
+        // Suppress tap if the pointer moved (drag just ended)
+        if (_hasDragged)
+        {
+            _hasDragged = false;
+            return;
+        }
+
         ViewModel.ToggleBubbleCommand.Execute(null);
     }
 
     private void OnPointerPressed(object sender, PointerRoutedEventArgs e)
     {
         if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed) return;
+        _hasDragged = false;
         ViewModel.BeginDrag(AppWindow.Position.X, AppWindow.Position.Y);
         ((UIElement)sender).CapturePointer(e.Pointer);
     }
 
     private void OnPointerMoved(object sender, PointerRoutedEventArgs e)
     {
+        if (ViewModel.IsDragging)
+            _hasDragged = true;
         ViewModel.ContinueDrag();
     }
 
@@ -247,5 +280,80 @@ public sealed partial class MascotWindow : Window
     {
         ViewModel.EndDrag();
         ((UIElement)sender).ReleasePointerCapture(e.Pointer);
+    }
+
+    internal void RegisterHotKey()
+    {
+        var settings = App.Settings;
+        NativeMethods.RegisterHotKey(
+            _hwnd,
+            NativeMethods.HOTKEY_ID,
+            settings.HotkeyModifiers | NativeMethods.MOD_NOREPEAT,
+            settings.HotkeyVirtualKey);
+
+        // Install a native subclass to intercept WM_HOTKEY without polling
+        _subclassProc = SubclassProc;
+        NativeMethods.SetWindowSubclass(_hwnd, _subclassProc, 1, 0);
+    }
+
+    internal void UnregisterHotKey()
+    {
+        NativeMethods.UnregisterHotKey(_hwnd, NativeMethods.HOTKEY_ID);
+        if (_subclassProc != null)
+        {
+            NativeMethods.RemoveWindowSubclass(_hwnd, _subclassProc, 1);
+            _subclassProc = null;
+        }
+    }
+
+    private IntPtr SubclassProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam, nuint uIdSubclass, nuint dwRefData)
+    {
+        if (uMsg == NativeMethods.WM_HOTKEY && (int)wParam == NativeMethods.HOTKEY_ID)
+        {
+            DispatcherQueue.TryEnqueue(() => ViewModel.ToggleBubbleCommand.Execute(null));
+            return IntPtr.Zero;
+        }
+        return NativeMethods.DefSubclassProc(hWnd, uMsg, wParam, lParam);
+    }
+
+    private void OnFirstActivated(object sender, WindowActivatedEventArgs e)
+    {
+        Activated -= OnFirstActivated;
+        UpdateAnimationState();
+    }
+
+    private Storyboard BuildWiggleStoryboard()
+    {
+        // Key frames: 0 → -7 → 7 → -7 → 7 → -7 → 0  over 480 ms
+        // Targets MascotGridTransform so both the Canvas mascot and Lottie player wiggle.
+        double[] angles = [0, -7, 7, -7, 7, -7, 0];
+        double[] times  = [0, 0.08, 0.16, 0.24, 0.32, 0.40, 0.48];
+        var ease = new CubicEase { EasingMode = EasingMode.EaseInOut };
+
+        var anim = new DoubleAnimationUsingKeyFrames();
+        Storyboard.SetTarget(anim, MascotGridTransform);
+        Storyboard.SetTargetProperty(anim, "Rotation");
+
+        for (int i = 0; i < angles.Length; i++)
+        {
+            anim.KeyFrames.Add(new EasingDoubleKeyFrame
+            {
+                KeyTime        = KeyTime.FromTimeSpan(TimeSpan.FromSeconds(times[i])),
+                Value          = angles[i],
+                EasingFunction = ease
+            });
+        }
+
+        var sb = new Storyboard();
+        sb.Children.Add(anim);
+        return sb;
+    }
+
+    public void PlayWiggleAnimation()
+    {
+        if (_wigglePlayed || ViewModel.MuteAnimation) return;
+        _wigglePlayed = true;
+        _wiggleAnimation?.Stop();
+        _wiggleAnimation?.Begin();
     }
 }

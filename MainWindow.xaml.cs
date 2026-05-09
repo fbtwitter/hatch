@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Hatch.Models;
 using Hatch.Services;
+using Hatch.ViewModels;
 using Hatch.Views;
 using Windows.Graphics;
 
@@ -19,6 +20,8 @@ public sealed partial class MainWindow : Window
     private NativeMethods.SUBCLASSPROC? _subclassProc;
     private IntPtr _hwnd;
     private bool _isExiting;
+
+    public MainViewModel ViewModel { get; } = new MainViewModel();
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
@@ -59,9 +62,12 @@ public sealed partial class MainWindow : Window
             throw new InvalidOperationException(
                 "RootFrame was not initialized by InitializeComponent. " +
                 "Clean and rebuild the solution to regenerate XAML code-behind files.");
-        RootFrame.Navigate(typeof(MainPage));
+        RootFrame.Navigate(typeof(MainPage), ViewModel);
         RootFrame.Navigated += OnFrameNavigated;
         ApplyTheme(settings.Theme);
+
+        // Position near mascot on first launch
+        MascotViewModel.PositionMainWindowNearMascot(this);
     }
 
     // 400×490 ≈ 77% of 520×640, maintaining the window's aspect ratio.
@@ -124,6 +130,7 @@ public sealed partial class MainWindow : Window
     {
         DispatcherQueue.TryEnqueue(() =>
         {
+            MascotViewModel.PositionMainWindowNearMascot(this);
             ShowWindow(_hwnd, SW_RESTORE);
             AppWindow.Show(true);
         });

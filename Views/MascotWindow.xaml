@@ -9,11 +9,14 @@
         SetWindowRgn (applied in code-behind) routes mouse events to the egg only.
     -->
     <Grid x:Name="MascotGrid"
-          Background="Transparent"
-          PointerPressed="OnPointerPressed"
-          PointerMoved="OnPointerMoved"
-          PointerReleased="OnPointerReleased"
-          Tapped="OnTapped">
+      Background="Transparent"
+      PointerPressed="OnPointerPressed"
+      PointerMoved="OnPointerMoved"
+      PointerReleased="OnPointerReleased"
+      Tapped="OnTapped">
+    <Grid.RenderTransform>
+        <CompositeTransform x:Name="MascotGridTransform"/>
+    </Grid.RenderTransform>
 
         <Grid.Resources>
             <!-- 4-second idle cycle: 2 gentle bobs + 1 blink at 2.8 s -->
@@ -21,7 +24,7 @@
 
                 <DoubleAnimationUsingKeyFrames
                     Storyboard.TargetName="MascotRoot"
-                    Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.Y)">
+                    Storyboard.TargetProperty="(UIElement.RenderTransform).(CompositeTransform.TranslateY)">
                     <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0">
                         <EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction>
                     </EasingDoubleKeyFrame>
@@ -58,7 +61,8 @@
                 </DoubleAnimationUsingKeyFrames>
 
             </Storyboard>
-        </Grid.Resources>
+
+            </Grid.Resources>
 
         <Grid.ContextFlyout>
             <MenuFlyout>
@@ -99,7 +103,7 @@
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center">
             <Canvas.RenderTransform>
-                <TranslateTransform/>
+                <CompositeTransform/>
             </Canvas.RenderTransform>
 
             <!-- Egg body: accent fill, white border -->
