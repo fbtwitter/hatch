@@ -12,6 +12,78 @@
         <converters:DateTimeToStringConverter x:Key="DateTimeToString"/>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
         <converters:BoolToStarGlyphConverter x:Key="BoolToStarGlyph"/>
+
+        <CollectionViewSource x:Name="PlannedGroupsSource"
+                              IsSourceGrouped="True"
+                              ItemsPath="Items"/>
+
+        <!-- Shared item template used by both flat and grouped lists -->
+        <DataTemplate x:Key="TaskItemTemplate" x:DataType="models:TodoItem">
+            <Grid Margin="0,3"
+                  Padding="12,10"
+                  ColumnSpacing="4"
+                  Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="32"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <CheckBox Grid.Column="0"
+                          IsChecked="{x:Bind IsCompleted, Mode=TwoWay}"
+                          VerticalAlignment="Center"/>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{x:Bind Title, Mode=OneWay}"
+                               TextDecorations="{x:Bind IsCompleted, Converter={StaticResource BoolToStrikethrough}, Mode=OneWay}"
+                               Opacity="{x:Bind IsCompleted, Converter={StaticResource BoolToOpacity}, Mode=OneWay}"
+                               TextWrapping="NoWrap"
+                               TextTrimming="CharacterEllipsis"
+                               Style="{ThemeResource BodyTextBlockStyle}"/>
+                    <TextBlock Text="{x:Bind CreatedAt, Converter={StaticResource DateTimeToString}, Mode=OneTime}"
+                               Opacity="0.5"
+                               Style="{ThemeResource CaptionTextBlockStyle}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Tag="{x:Bind}"
+                            Click="StarButton_Click"
+                            ToolTipService.ToolTip="Mark as important"
+                            IsTabStop="False"
+                            Padding="8,6" MinWidth="0">
+                        <FontIcon Glyph="{x:Bind IsStarred, Converter={StaticResource BoolToStarGlyph}, Mode=OneWay}" FontSize="14"/>
+                    </Button>
+                    <Button Tag="{x:Bind}"
+                            Click="EditButton_Click"
+                            ToolTipService.ToolTip="Edit task"
+                            IsTabStop="False"
+                            Padding="8,6" MinWidth="0">
+                        <FontIcon Glyph="&#xE70F;" FontSize="14"/>
+                    </Button>
+                    <Button Tag="{x:Bind}"
+                            Click="DeleteButton_Click"
+                            ToolTipService.ToolTip="Delete task"
+                            IsTabStop="False"
+                            Padding="8,6" MinWidth="0">
+                        <FontIcon Glyph="&#xE74D;" FontSize="14"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </DataTemplate>
+
+        <Style x:Key="TaskListViewItemStyle" TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0,3"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <ContentPresenter HorizontalAlignment="Stretch"/>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Page.Resources>
 
     <Grid>
@@ -47,95 +119,65 @@
         <!-- Content area -->
         <Grid Grid.Row="2">
 
-            <!-- Empty state -->
+            <!-- Empty state — context-aware per nav view -->
             <StackPanel HorizontalAlignment="Center"
                         VerticalAlignment="Center"
-                        Spacing="6"
+                        Spacing="8"
+                        MaxWidth="260"
                         Visibility="{Binding IsTaskListEmpty, Converter={StaticResource BoolToVisibility}}">
-                <FontIcon Glyph="&#xE762;" FontSize="44" Opacity="0.25" HorizontalAlignment="Center"/>
-                <TextBlock Text="No tasks yet"
+                <FontIcon Glyph="{Binding EmptyStateGlyph}"
+                          FontSize="48"
+                          Opacity="0.2"
+                          HorizontalAlignment="Center"/>
+                <TextBlock Text="{Binding EmptyStateHeadline}"
                            HorizontalAlignment="Center"
+                           TextAlignment="Center"
                            Opacity="0.45"
-                           Style="{ThemeResource BodyTextBlockStyle}"/>
-                <TextBlock Text="Add a task above to get started"
+                           Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                <TextBlock Text="{Binding EmptyStateSubtext}"
                            HorizontalAlignment="Center"
+                           TextAlignment="Center"
+                           TextWrapping="WrapWholeWords"
                            Opacity="0.3"
                            Style="{ThemeResource CaptionTextBlockStyle}"/>
             </StackPanel>
 
-            <!-- Task list -->
-            <ListView ItemsSource="{Binding ActiveTasks}"
+            <!-- Flat list — My Day, Important, All Tasks -->
+            <ListView x:Name="FlatListView"
+                      ItemsSource="{Binding ActiveTasks}"
                       SelectionMode="None"
                       Padding="20,0,20,24"
+                      ItemTemplate="{StaticResource TaskItemTemplate}"
+                      ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
                       Visibility="{Binding IsTaskListEmpty, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
-                <ListView.ItemContainerStyle>
-                    <Style TargetType="ListViewItem">
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                        <Setter Property="Padding" Value="0"/>
-                        <Setter Property="Margin" Value="0,3"/>
-                    </Style>
-                </ListView.ItemContainerStyle>
-                <ListView.ItemTemplate>
-                    <DataTemplate x:DataType="models:TodoItem">
-                        <Border Padding="12,10"
-                                CornerRadius="8"
-                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                                BorderThickness="1">
-                            <Grid ColumnSpacing="4">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="32"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
+                <ListView.ItemContainerTransitions>
+                    <TransitionCollection/>
+                </ListView.ItemContainerTransitions>
+            </ListView>
 
-                                <CheckBox Grid.Column="0"
-                                          IsChecked="{x:Bind IsCompleted, Mode=TwoWay}"
-                                          VerticalAlignment="Center"/>
-                                          <!-- x:Bind TwoWay automatically saves on property change -->
-
-                                <StackPanel Grid.Column="1"
-                                            VerticalAlignment="Center"
-                                            Spacing="2">
-                                    <TextBlock Text="{x:Bind Title, Mode=OneWay}"
-                                               TextDecorations="{x:Bind IsCompleted, Converter={StaticResource BoolToStrikethrough}, Mode=OneWay}"
-                                               Opacity="{x:Bind IsCompleted, Converter={StaticResource BoolToOpacity}, Mode=OneWay}"
-                                               TextWrapping="Wrap"
-                                               Style="{ThemeResource BodyTextBlockStyle}"/>
-                                    <TextBlock Text="{x:Bind CreatedAt, Converter={StaticResource DateTimeToString}, Mode=OneTime}"
-                                               Opacity="0.5"
-                                               Style="{ThemeResource CaptionTextBlockStyle}"/>
-                                </StackPanel>
-
-                                <StackPanel Grid.Column="2"
-                                            Orientation="Horizontal"
-                                            VerticalAlignment="Center">
-                                    <Button Tag="{x:Bind}"
-                                            Click="StarButton_Click"
-                                            ToolTipService.ToolTip="Mark as important"
-                                            Padding="8,6"
-                                            MinWidth="0">
-                                        <FontIcon Glyph="{x:Bind IsStarred, Converter={StaticResource BoolToStarGlyph}, Mode=OneWay}" FontSize="14"/>
-                                    </Button>
-                                    <Button Tag="{x:Bind}"
-                                            Click="EditButton_Click"
-                                            ToolTipService.ToolTip="Edit task"
-                                            Padding="8,6"
-                                            MinWidth="0">
-                                        <FontIcon Glyph="&#xE70F;" FontSize="14"/>
-                                    </Button>
-                                    <Button Tag="{x:Bind}"
-                                            Click="DeleteButton_Click"
-                                            ToolTipService.ToolTip="Delete task"
-                                            Padding="8,6"
-                                            MinWidth="0">
-                                        <FontIcon Glyph="&#xE74D;" FontSize="14"/>
-                                    </Button>
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ListView.ItemTemplate>
+            <!-- Grouped list — Planned view only -->
+            <ListView x:Name="GroupedListView"
+                      ItemsSource="{Binding Source={StaticResource PlannedGroupsSource}, Path=View}"
+                      SelectionMode="None"
+                      Padding="20,0,20,24"
+                      ItemTemplate="{StaticResource TaskItemTemplate}"
+                      ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
+                      Visibility="Collapsed">
+                <ListView.ItemContainerTransitions>
+                    <TransitionCollection/>
+                </ListView.ItemContainerTransitions>
+                <ListView.GroupStyle>
+                    <GroupStyle>
+                        <GroupStyle.HeaderTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}"
+                                           Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                           Margin="0,12,0,4"
+                                           Opacity="0.7"/>
+                            </DataTemplate>
+                        </GroupStyle.HeaderTemplate>
+                    </GroupStyle>
+                </ListView.GroupStyle>
             </ListView>
         </Grid>
     </Grid>
