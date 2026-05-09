@@ -49,8 +49,28 @@ internal static class NativeMethods
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     internal static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO lpmi);
 
+    [DllImport("shcore.dll")]
+    internal static extern int GetDpiForMonitor(
+        IntPtr hMonitor, uint dpiType, out uint dpiX, out uint dpiY);
+
+    internal const uint MDT_EFFECTIVE_DPI = 0;
+
     [DllImport("user32.dll")]
     internal static extern bool GetCursorPos(out POINT lpPoint);
+
+    [DllImport("user32.dll")]
+    internal static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+
+    [DllImport("user32.dll")]
+    internal static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
+    internal const int  HOTKEY_ID    = 0x4001;
+    internal const uint WM_HOTKEY    = 0x0312;
+    internal const uint MOD_ALT      = 0x0001;
+    internal const uint MOD_CONTROL  = 0x0002;
+    internal const uint MOD_SHIFT    = 0x0004;
+    internal const uint MOD_WIN      = 0x0008;
+    internal const uint MOD_NOREPEAT = 0x4000;
 
     // comctl32 — native window subclassing (zero per-message overhead vs managed monitors)
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]

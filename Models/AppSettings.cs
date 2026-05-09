@@ -15,4 +15,8 @@ public sealed class AppSettings
     public string? LottieFilePath { get; set; } = null;
     public string ActiveNavItem { get; set; } = "alltasks";
     public Guid LastUsedListId { get; set; } = Guid.Empty;
+
+    // Global hotkey — default Ctrl+Shift+Space
+    public uint HotkeyModifiers { get; set; } = 0x0002 | 0x0004; // MOD_CONTROL | MOD_SHIFT
+    public uint HotkeyVirtualKey { get; set; } = 0x20;            // VK_SPACE
 }

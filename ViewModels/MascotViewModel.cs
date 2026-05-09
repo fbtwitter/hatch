@@ -5,6 +5,7 @@ using System.Windows.Input;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
+using Hatch.Views;
 
 namespace Hatch.ViewModels;
 
@@ -77,6 +78,10 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
     public string? LottieFilePath => App.Settings.LottieFilePath;
     public void RaiseLottieFileChanged() => OnPropertyChanged(nameof(LottieFilePath));
+
+    public bool IsDragging => _isDragging;
+
+    public void CloseBubble() => IsBubbleOpen = false;
 
     public bool IsBubbleOpen
     {
@@ -194,16 +199,17 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         var win = App.MainWindowInstance;
         if (win == null) return;
 
-        // Visible but not the foreground window → bring to front without hiding 
         var mainHwnd = Win32Interop.GetWindowFromWindowId(win.AppWindow.Id);
-        // var foreground = NativeMethods.GetForegroundWindow();
-        
-        // Window hidden
+
         if (!win.AppWindow.IsVisible)
         {
+            // Close the bubble if open — only one panel at a time
+            if (App.MascotWindowInstance?.ViewModel.IsBubbleOpen == true)
+                App.MascotWindowInstance.ViewModel.CloseBubble();
+
+            PositionMainWindowNearMascot(win);
             win.AppWindow.Show();
 
-            // Bring above other windows WITHOUT focus
             NativeMethods.SetWindowPos(
                 mainHwnd,
                 NativeMethods.HWND_TOPMOST,
@@ -216,7 +222,42 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         }
 
         win.AppWindow.Hide();
+    }
 
+    internal static void PositionMainWindowNearMascot(MainWindow win)
+    {
+        const int logicalWidth  = 520;
+        const int logicalHeight = 640;
+        const int gap           = 12;
+
+        int mascotX = App.Settings.MascotX;
+        int mascotY = App.Settings.MascotY;
+
+        var pt       = new NativeMethods.POINT { X = mascotX + WindowSize / 2, Y = mascotY + WindowSize / 2 };
+        var hMonitor = NativeMethods.MonitorFromPoint(pt, NativeMethods.MONITOR_DEFAULTTONEAREST);
+        var mi       = new NativeMethods.MONITORINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.MONITORINFO>() };
+        if (!NativeMethods.GetMonitorInfo(hMonitor, ref mi)) return;
+
+        NativeMethods.GetDpiForMonitor(hMonitor, NativeMethods.MDT_EFFECTIVE_DPI, out uint dpiX, out _);
+        double scale       = dpiX / 96.0;
+        int winWidth       = (int)Math.Round(logicalWidth  * scale);
+        int winHeight      = (int)Math.Round(logicalHeight * scale);
+        int scaledGap      = (int)Math.Round(gap * scale);
+
+        var w = mi.rcWork;
+
+        // Prefer left of mascot; flip to right if it doesn't fit
+        int x = mascotX - winWidth - scaledGap;
+        if (x < w.left)
+            x = mascotX + WindowSize + scaledGap;
+
+        // Vertically centre the main window on the mascot
+        int mascotCenterY = mascotY + WindowSize / 2;
+        int y = mascotCenterY - winHeight / 2;
+        y = Math.Clamp(y, w.top + scaledGap, w.bottom - winHeight);
+        x = Math.Clamp(x, w.left, w.right - winWidth);
+
+        win.AppWindow.Move(new Windows.Graphics.PointInt32(x, y));
     }
 
     private void ToggleBubble()
@@ -227,28 +268,15 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         }
         else
         {
-            // Position bubble to the left of mascot
-            int bubbleWidth = 280;
-            int bubbleHeight = 200;
-            BubbleX = X - bubbleWidth - 10;
-            BubbleY = Y + (WindowSize - bubbleHeight) / 2;
-
-            // Clamp to monitor work area
-            var pt = new NativeMethods.POINT { X = BubbleX, Y = BubbleY };
-            var hMonitor = NativeMethods.MonitorFromPoint(pt, NativeMethods.MONITOR_DEFAULTTONEAREST);
-            var mi = new NativeMethods.MONITORINFO { cbSize = Marshal.SizeOf<NativeMethods.MONITORINFO>() };
-            if (NativeMethods.GetMonitorInfo(hMonitor, ref mi))
-            {
-                var w = mi.rcWork;
-                BubbleX = Math.Clamp(BubbleX, w.left, w.right - bubbleWidth);
-                BubbleY = Math.Clamp(BubbleY, w.top, w.bottom - bubbleHeight);
-            }
-
             IsBubbleOpen = true;
+
+            // Hide the main window after the bubble is already opening — only one panel at a time.
+            // Hiding first causes a focus-transition stall that makes the bubble feel slow.
+            if (App.MainWindowInstance?.AppWindow.IsVisible == true)
+                App.MainWindowInstance.AppWindow.Hide();
         }
     }
-
-    private void InitializePosition()
+            private void InitializePosition()
     {
         if (App.Settings.MascotX < 0 || App.Settings.MascotY < 0)
         {

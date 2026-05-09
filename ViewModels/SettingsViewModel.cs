@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Hatch.Models;
 using Hatch.Services;
+using Hatch.Views;
 
 namespace Hatch.ViewModels;
 
@@ -97,6 +98,96 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         LottieFilePath = path;
         App.MascotWindowInstance?.ViewModel.RaiseLottieFileChanged();
+    }
+
+    public uint HotkeyModifiers
+    {
+        get => _settings.Current.HotkeyModifiers;
+        set
+        {
+            if (_settings.Current.HotkeyModifiers == value) return;
+            _settings.Current.HotkeyModifiers = value;
+            ReRegisterHotKey();
+            _ = _settings.SaveAsync();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HotkeyDescription));
+            OnPropertyChanged(nameof(HotkeyCtrl));
+            OnPropertyChanged(nameof(HotkeyShift));
+            OnPropertyChanged(nameof(HotkeyAlt));
+        }
+    }
+
+    public bool HotkeyCtrl
+    {
+        get => (HotkeyModifiers & NativeMethods.MOD_CONTROL) != 0;
+        set => HotkeyModifiers = value
+            ? HotkeyModifiers | NativeMethods.MOD_CONTROL
+            : HotkeyModifiers & ~NativeMethods.MOD_CONTROL;
+    }
+
+    public bool HotkeyShift
+    {
+        get => (HotkeyModifiers & NativeMethods.MOD_SHIFT) != 0;
+        set => HotkeyModifiers = value
+            ? HotkeyModifiers | NativeMethods.MOD_SHIFT
+            : HotkeyModifiers & ~NativeMethods.MOD_SHIFT;
+    }
+
+    public bool HotkeyAlt
+    {
+        get => (HotkeyModifiers & NativeMethods.MOD_ALT) != 0;
+        set => HotkeyModifiers = value
+            ? HotkeyModifiers | NativeMethods.MOD_ALT
+            : HotkeyModifiers & ~NativeMethods.MOD_ALT;
+    }
+
+    public uint HotkeyVirtualKey
+    {
+        get => _settings.Current.HotkeyVirtualKey;
+        set
+        {
+            if (_settings.Current.HotkeyVirtualKey == value) return;
+            _settings.Current.HotkeyVirtualKey = value;
+            ReRegisterHotKey();
+            _ = _settings.SaveAsync();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HotkeyDescription));
+        }
+    }
+
+    public string HotkeyDescription
+    {
+        get
+        {
+            var parts = new System.Text.StringBuilder();
+            if ((HotkeyModifiers & NativeMethods.MOD_CONTROL) != 0) parts.Append("Ctrl+");
+            if ((HotkeyModifiers & NativeMethods.MOD_SHIFT)   != 0) parts.Append("Shift+");
+            if ((HotkeyModifiers & NativeMethods.MOD_ALT)     != 0) parts.Append("Alt+");
+            if ((HotkeyModifiers & NativeMethods.MOD_WIN)     != 0) parts.Append("Win+");
+            parts.Append(VkToLabel(HotkeyVirtualKey));
+            return parts.ToString();
+        }
+    }
+
+    private static string VkToLabel(uint vk) => vk switch
+    {
+        0x20 => "Space",
+        0xBB => "+",
+        0xBC => ",",
+        0xBE => ".",
+        0xBF => "/",
+        0xC0 => "`",
+        >= 0x30 and <= 0x39 => ((char)vk).ToString(),
+        >= 0x41 and <= 0x5A => ((char)vk).ToString(),
+        _ => $"0x{vk:X2}"
+    };
+
+    private static void ReRegisterHotKey()
+    {
+        var mascot = App.MascotWindowInstance;
+        if (mascot is null) return;
+        mascot.UnregisterHotKey();
+        mascot.RegisterHotKey();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

@@ -181,6 +181,43 @@
                     </StackPanel>
                 </toolkit:SettingsCard>
 
+                <!-- Quick-add global hotkey -->
+                <toolkit:SettingsExpander Header="Quick-Add Hotkey"
+                                          Description="{Binding HotkeyDescription}">
+                    <toolkit:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xE92E;"/>
+                    </toolkit:SettingsExpander.HeaderIcon>
+                    <TextBlock Text="{Binding HotkeyDescription}"
+                               VerticalAlignment="Center"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <toolkit:SettingsExpander.Items>
+                        <!-- Modifier keys -->
+                        <toolkit:SettingsCard Header="Modifiers">
+                            <StackPanel Orientation="Horizontal" Spacing="16">
+                                <CheckBox Content="Ctrl"
+                                          IsChecked="{Binding HotkeyCtrl, Mode=TwoWay}"/>
+                                <CheckBox Content="Shift"
+                                          IsChecked="{Binding HotkeyShift, Mode=TwoWay}"/>
+                                <CheckBox Content="Alt"
+                                          IsChecked="{Binding HotkeyAlt, Mode=TwoWay}"/>
+                            </StackPanel>
+                        </toolkit:SettingsCard>
+                        <!-- Key -->
+                        <toolkit:SettingsCard Header="Key">
+                            <ComboBox x:Name="HotkeyKeySelector"
+                                      MinWidth="120"
+                                      SelectionChanged="HotkeyKeySelector_SelectionChanged">
+                                <ComboBoxItem Content="Space" Tag="32"/>
+                                <ComboBoxItem Content="A" Tag="65"/>
+                                <ComboBoxItem Content="Q" Tag="81"/>
+                                <ComboBoxItem Content="T" Tag="84"/>
+                                <ComboBoxItem Content="N" Tag="78"/>
+                                <ComboBoxItem Content="+" Tag="187"/>
+                            </ComboBox>
+                        </toolkit:SettingsCard>
+                    </toolkit:SettingsExpander.Items>
+                </toolkit:SettingsExpander>
+
                 <!-- ── About ────────────────────────────────────────── -->
                 <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
                            Text="About"/>
