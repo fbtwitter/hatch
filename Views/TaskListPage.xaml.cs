@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Hatch.Models;
 using Hatch.ViewModels;
@@ -9,6 +10,7 @@ namespace Hatch.Views;
 
 public sealed partial class TaskListPage : Page
 {
+    private MainViewModel? _vm;
     private MainViewModel ViewModel => (MainViewModel)DataContext;
 
     public TaskListPage()
@@ -20,27 +22,56 @@ public sealed partial class TaskListPage : Page
     protected override void OnNavigatedTo(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-        if (e.Parameter is MainViewModel vm)
-        {
-            DataContext = vm;
-            UpdateHeaderText(vm.ActiveNavItem);
-            vm.PropertyChanged += (s, args) =>
-            {
-                if (args.PropertyName == nameof(MainViewModel.ActiveNavItem))
-                    UpdateHeaderText(vm.ActiveNavItem);
-            };
-        }
+        if (e.Parameter is not MainViewModel vm) return;
+
+        if (_vm != null)
+            _vm.PropertyChanged -= OnViewModelPropertyChanged;
+
+        _vm = vm;
+        DataContext = vm;
+        UpdateView(vm.ActiveNavItem);
+        vm.PropertyChanged += OnViewModelPropertyChanged;
     }
 
-    private void UpdateHeaderText(string navItem)
+    protected override void OnNavigatedFrom(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
+    {
+        base.OnNavigatedFrom(e);
+        if (_vm != null)
+            _vm.PropertyChanged -= OnViewModelPropertyChanged;
+    }
+
+    private void OnViewModelPropertyChanged(object? s, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        if (_vm == null) return;
+        if (args.PropertyName == nameof(MainViewModel.ActiveNavItem))
+            UpdateView(_vm.ActiveNavItem);
+        else if (args.PropertyName == nameof(MainViewModel.PlannedGroups) && _vm.ActiveNavItem == "planned")
+            RefreshPlannedGroups();
+    }
+
+    private void UpdateView(string navItem)
     {
         HeaderText.Text = navItem switch
         {
-            "myday" => "My Day",
+            "myday"     => "My Day",
             "important" => "Important",
-            "planned" => "Planned",
-            _ => "All Tasks"
+            "planned"   => "Planned",
+            _           => "All Tasks"
         };
+
+        var isPlanned = navItem == "planned";
+        FlatListView.Visibility    = isPlanned ? Visibility.Collapsed : Visibility.Visible;
+        GroupedListView.Visibility = isPlanned ? Visibility.Visible   : Visibility.Collapsed;
+
+        if (isPlanned)
+            RefreshPlannedGroups();
+    }
+
+    private void RefreshPlannedGroups()
+    {
+        if (_vm == null) return;
+        var cvs = (CollectionViewSource)Resources["PlannedGroupsSource"];
+        cvs.Source = _vm.PlannedGroups;
     }
 
     private void NewTaskTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -48,7 +79,6 @@ public sealed partial class TaskListPage : Page
         if (e.Key == VirtualKey.Enter && ViewModel.AddTaskCommand.CanExecute(null))
             ViewModel.AddTaskCommand.Execute(null);
     }
-
 
     private async void EditButton_Click(object sender, RoutedEventArgs e)
     {
@@ -87,6 +117,5 @@ public sealed partial class TaskListPage : Page
         var task = (TodoItem)((Button)sender).Tag;
         if (task is null) return;
         task.IsStarred = !task.IsStarred;
-        // PropertyChanged handler automatically saves
     }
 }

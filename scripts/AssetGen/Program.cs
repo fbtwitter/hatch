@@ -10,31 +10,85 @@ Directory.CreateDirectory(outDir);
 
 var svg = SvgDocument.Open(logoPath);
 
-void Save(string name, int canvasW, int canvasH, bool whiteBg = false)
+// Render the SVG into a transparent bitmap at the given size.
+// paddingFraction: fraction of each side left empty (0 = fill entire canvas).
+Bitmap RenderSvg(int w, int h, float paddingFraction = 0f, bool whiteBg = false)
 {
-    using var canvas = new Bitmap(canvasW, canvasH, PixelFormat.Format32bppArgb);
+    var canvas = new Bitmap(w, h, PixelFormat.Format32bppArgb);
     using var g = Graphics.FromImage(canvas);
-
     g.Clear(whiteBg ? Color.White : Color.Transparent);
     g.InterpolationMode = InterpolationMode.HighQualityBicubic;
     g.SmoothingMode     = SmoothingMode.AntiAlias;
 
-    // Fit the square SVG into the canvas with 8% padding on each side.
-    int logoSize = (int)(Math.Min(canvasW, canvasH) * 0.84);
-    int offsetX  = (canvasW - logoSize) / 2;
-    int offsetY  = (canvasH - logoSize) / 2;
+    int logoW   = (int)(w * (1f - paddingFraction * 2));
+    int logoH   = (int)(h * (1f - paddingFraction * 2));
+    int offsetX = (w - logoW) / 2;
+    int offsetY = (h - logoH) / 2;
 
-    using var logo = svg.Draw(logoSize, logoSize);
-    g.DrawImage(logo, offsetX, offsetY, logoSize, logoSize);
+    using var logo = svg.Draw(logoW, logoH);
+    g.DrawImage(logo, offsetX, offsetY, logoW, logoH);
+    return canvas;
+}
 
-    canvas.Save(Path.Combine(outDir, name), ImageFormat.Png);
+void Save(string name, int canvasW, int canvasH, float padding = 0f, bool whiteBg = false)
+{
+    using var bmp = RenderSvg(canvasW, canvasH, padding, whiteBg);
+    bmp.Save(Path.Combine(outDir, name), ImageFormat.Png);
     Console.WriteLine($"  {name} ({canvasW}x{canvasH})");
 }
 
+// Build a multi-resolution ICO using PNG-in-ICO (supported on Windows Vista+).
+// Each entry is a full PNG blob embedded directly in the ICO container.
+void SaveIco(string name, int[] sizes)
+{
+    var entries = new List<(int size, byte[] pngData)>();
+    foreach (var size in sizes)
+    {
+        using var bmp = RenderSvg(size, size);
+        using var ms  = new MemoryStream();
+        bmp.Save(ms, ImageFormat.Png);
+        entries.Add((size, ms.ToArray()));
+    }
+
+    var icoPath = Path.Combine(outDir, name);
+    using var fs = new FileStream(icoPath, FileMode.Create, FileAccess.Write);
+    using var bw = new BinaryWriter(fs);
+
+    // ICONDIR header (6 bytes)
+    bw.Write((short)0);                    // reserved
+    bw.Write((short)1);                    // type = ICO
+    bw.Write((short)entries.Count);
+
+    // ICONDIRENTRY array — each 16 bytes
+    int dataOffset = 6 + entries.Count * 16;
+    foreach (var (size, data) in entries)
+    {
+        bw.Write((byte)(size >= 256 ? 0 : size)); // width  (0 encodes 256)
+        bw.Write((byte)(size >= 256 ? 0 : size)); // height
+        bw.Write((byte)0);    // colour count (0 = no palette)
+        bw.Write((byte)0);    // reserved
+        bw.Write((short)1);   // colour planes
+        bw.Write((short)32);  // bits per pixel
+        bw.Write(data.Length);
+        bw.Write(dataOffset);
+        dataOffset += data.Length;
+    }
+
+    // Image data blobs
+    foreach (var (_, data) in entries)
+        bw.Write(data);
+
+    Console.WriteLine($"  {name} ({string.Join(", ", sizes.Select(s => $"{s}px"))})");
+}
+
 Console.WriteLine("Generating Hatch assets...");
+// PNG assets — no padding so the logo fills the full tile
 Save("Square44x44Logo.png",    44,  44);
 Save("Square150x150Logo.png", 150, 150);
 Save("Wide310x150Logo.png",   310, 150);
 Save("StoreLogo.png",          50,  50);
-Save("SplashScreen.png",      620, 300, whiteBg: true);
+// Splash screen keeps a little breathing room on a white background
+Save("SplashScreen.png",      620, 300, padding: 0.15f, whiteBg: true);
+// Multi-resolution ICO for taskbar / title bar / Alt+Tab switcher
+SaveIco("Hatch.ico", [16, 24, 32, 48, 256]);
 Console.WriteLine("Done.");

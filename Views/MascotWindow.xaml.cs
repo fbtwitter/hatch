@@ -177,10 +177,11 @@ public sealed partial class MascotWindow : Window
                 // and supply it via SetSourceAsync(IRandomAccessStream).
                 var source = new LottieVisualSource();
                 using var fileStream = File.OpenRead(path!);
-                var memStream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
+                using var memStream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
                 var outputStream = memStream.GetOutputStreamAt(0);
                 await fileStream.CopyToAsync(outputStream.AsStreamForWrite());
                 await outputStream.FlushAsync();
+                outputStream.Dispose();
                 memStream.Seek(0);
                 await source.SetSourceAsync(memStream);
                 LottiePlayer.Source = source;
