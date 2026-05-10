@@ -17,6 +17,8 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     private readonly DispatcherQueue _dispatcher;
     private PeriodicTimer? _pollTimer;
     private CancellationTokenSource? _cts;
+    private PeriodicTimer? _hideRestoreTimer;
+    private CancellationTokenSource? _hideRestoreCts;
     private bool _isVisible = true;
     private bool _isDragging;
     private NativeMethods.POINT _dragStartCursor;
@@ -25,6 +27,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     private bool _isBubbleOpen;
     private int _bubbleX;
     private int _bubbleY;
+    private bool _isMascotHidden;
 
     public bool IsVisible
     {
@@ -116,20 +119,42 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
-    public ICommand ResetPositionCommand    { get; }
-    public ICommand ShowMainWindowCommand   { get; }
-    public ICommand ToggleMainWindowCommand { get; }
-    public ICommand ToggleBubbleCommand     { get; }
+    public ICommand ResetPositionCommand      { get; }
+    public ICommand ShowMainWindowCommand     { get; }
+    public ICommand ToggleMainWindowCommand   { get; }
+    public ICommand ToggleBubbleCommand       { get; }
+    public ICommand HideFor1HourCommand       { get; }
+    public ICommand HideFor3HoursCommand      { get; }
+    public ICommand HideUntilTomorrowCommand  { get; }
+    public ICommand HideUntilRestartCommand   { get; }
+    public ICommand RestoreFromHideCommand    { get; }
+
+    public bool IsMascotHidden
+    {
+        get => _isMascotHidden;
+        private set
+        {
+            if (_isMascotHidden == value) return;
+            _isMascotHidden = value;
+            OnPropertyChanged();
+        }
+    }
 
     public MascotViewModel(DispatcherQueue dispatcher)
     {
         _dispatcher = dispatcher;
-        ResetPositionCommand    = new RelayCommand(_ => ResetPosition());
-        ShowMainWindowCommand   = new RelayCommand(_ => ShowMainWindow());
-        ToggleMainWindowCommand = new RelayCommand(_ => ToggleMainWindow());
-        ToggleBubbleCommand     = new RelayCommand(_ => ToggleBubble());
+        ResetPositionCommand     = new RelayCommand(_ => ResetPosition());
+        ShowMainWindowCommand    = new RelayCommand(_ => ShowMainWindow());
+        ToggleMainWindowCommand  = new RelayCommand(_ => ToggleMainWindow());
+        ToggleBubbleCommand      = new RelayCommand(_ => ToggleBubble());
+        HideFor1HourCommand      = new RelayCommand(_ => HideFor(TimeSpan.FromHours(1)));
+        HideFor3HoursCommand     = new RelayCommand(_ => HideFor(TimeSpan.FromHours(3)));
+        HideUntilTomorrowCommand = new RelayCommand(_ => HideFor(UntilTomorrow()));
+        HideUntilRestartCommand  = new RelayCommand(_ => HideUntilRestart());
+        RestoreFromHideCommand   = new RelayCommand(_ => RestoreFromHide());
         InitializePosition();
         StartFullscreenPolling();
+        CheckHideExpiration();
     }
 
     public bool LockPosition
@@ -317,16 +342,27 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         {
             while (await _pollTimer!.WaitForNextTickAsync(ct))
             {
-                var isFull = IsForegroundWindowFullscreen();
+                var isFull = App.Settings.HideWhenFullscreen && IsForegroundWindowFullscreen();
                 _dispatcher.TryEnqueue(() => IsVisible = !isFull);
             }
         }
         catch (OperationCanceledException) { }
     }
 
-    // Returns true when a non-Hatch window covers an entire monitor (games, video, presentations).
+    // Returns true when the user is in a context where Hatch should stay out of the way:
+    // fullscreen window covering a monitor, D3D fullscreen (games), or Windows presentation mode.
     private static bool IsForegroundWindowFullscreen()
     {
+        // Fast path: presentation mode or D3D fullscreen (games) via shell API.
+        if (NativeMethods.SHQueryUserNotificationState(out var quns) == 0)
+        {
+            if (quns == NativeMethods.QUERY_USER_NOTIFICATION_STATE.QUNS_PRESENTATION_MODE ||
+                quns == NativeMethods.QUERY_USER_NOTIFICATION_STATE.QUNS_RUNNING_D3D_FULL_SCREEN ||
+                quns == NativeMethods.QUERY_USER_NOTIFICATION_STATE.QUNS_BUSY)
+                return true;
+        }
+
+        // Geometry check: any non-Hatch window that covers the full monitor bounds.
         var hwnd = NativeMethods.GetForegroundWindow();
         if (hwnd == IntPtr.Zero) return false;
 
@@ -343,11 +379,161 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
                wr.right >= mr.right && wr.bottom >= mr.bottom;
     }
 
+    private static TimeSpan UntilTomorrow()
+    {
+        var tomorrow = DateTime.Now.Date.AddDays(1);
+        return tomorrow - DateTime.Now;
+    }
+
+    private void HideFor(TimeSpan duration)
+    {
+        var hideUntil = DateTime.UtcNow.Add(duration);
+        App.Settings.HideUntilTicks = hideUntil.Ticks;
+        _ = App.SettingsService.SaveAsync();
+
+        IsMascotHidden = true;
+
+        if (IsBubbleOpen)
+            CloseBubble();
+
+        if (App.MainWindowInstance?.GetTrayService() is { } tray)
+        {
+            tray.SetTooltip("Hatch is hidden — right-click to restore");
+            tray.SetHiddenState(true);
+            tray.ShowBalloon("Hatch hidden", FormatHideDuration(duration));
+        }
+
+        StartHideRestoreTimer();
+    }
+
+    private void HideUntilRestart()
+    {
+        // No expiry tick — stays hidden until the app is restarted
+        App.Settings.HideUntilTicks = long.MaxValue;
+        _ = App.SettingsService.SaveAsync();
+
+        IsMascotHidden = true;
+
+        if (IsBubbleOpen)
+            CloseBubble();
+
+        if (App.MainWindowInstance?.GetTrayService() is { } tray)
+        {
+            tray.SetTooltip("Hatch is hidden — right-click to restore");
+            tray.SetHiddenState(true);
+            tray.ShowBalloon("Hatch hidden", "Hidden until restart. Right-click the tray icon to restore.");
+        }
+
+        // No timer needed — only restores via RestoreFromHide()
+    }
+
+    private static string FormatHideDuration(TimeSpan duration)
+    {
+        if (duration.TotalHours >= 23)
+            return "Hidden until tomorrow. Right-click the tray icon to restore.";
+        if (duration.TotalHours >= 2)
+            return $"Hidden for {(int)duration.TotalHours} hours. Right-click the tray icon to restore.";
+        return "Hidden for 1 hour. Right-click the tray icon to restore.";
+    }
+
+    // Applied on cold start when settings indicate the mascot was already hidden.
+    // No balloon here — the user didn't just take an action.
+    private static void ApplyHiddenTrayState()
+    {
+        if (App.MainWindowInstance?.GetTrayService() is { } tray)
+        {
+            tray.SetTooltip("Hatch is hidden — right-click to restore");
+            tray.SetHiddenState(true);
+        }
+    }
+
+    private void RestoreFromHide()
+    {
+        App.Settings.HideUntilTicks = null;
+        _ = App.SettingsService.SaveAsync();
+
+        IsMascotHidden = false;
+        StopHideRestoreTimer();
+
+        if (App.MainWindowInstance?.GetTrayService() is { } tray)
+        {
+            tray.SetTooltip("Hatch");
+            tray.SetHiddenState(false);
+        }
+    }
+
+    private void CheckHideExpiration()
+    {
+        if (App.Settings.HideUntilTicks == null)
+        {
+            IsMascotHidden = false;
+            return;
+        }
+
+        // long.MaxValue means "until restart" — stay hidden, no timer needed
+        if (App.Settings.HideUntilTicks.Value == long.MaxValue)
+        {
+            IsMascotHidden = true;
+            ApplyHiddenTrayState();
+            return;
+        }
+
+        var hideUntil = new DateTime(App.Settings.HideUntilTicks.Value, DateTimeKind.Utc);
+        if (DateTime.UtcNow >= hideUntil)
+        {
+            RestoreFromHide();
+            return;
+        }
+
+        IsMascotHidden = true;
+        ApplyHiddenTrayState();
+        StartHideRestoreTimer();
+    }
+
+    private void StartHideRestoreTimer()
+    {
+        StopHideRestoreTimer();
+        _hideRestoreCts = new CancellationTokenSource();
+        _hideRestoreTimer = new PeriodicTimer(TimeSpan.FromSeconds(10));
+        _ = PollHideExpirationAsync(_hideRestoreCts.Token);
+    }
+
+    private void StopHideRestoreTimer()
+    {
+        _hideRestoreCts?.Cancel();
+        _hideRestoreCts?.Dispose();
+        _hideRestoreCts = null;
+        _hideRestoreTimer?.Dispose();
+        _hideRestoreTimer = null;
+    }
+
+    private async Task PollHideExpirationAsync(CancellationToken ct)
+    {
+        try
+        {
+            while (await _hideRestoreTimer!.WaitForNextTickAsync(ct))
+            {
+                if (App.Settings.HideUntilTicks != null &&
+                    App.Settings.HideUntilTicks.Value != long.MaxValue)
+                {
+                    var hideUntil = new DateTime(App.Settings.HideUntilTicks.Value, DateTimeKind.Utc);
+                    if (DateTime.UtcNow >= hideUntil)
+                    {
+                        _dispatcher.TryEnqueue(() => RestoreFromHide());
+                        break;
+                    }
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
     public void Dispose()
     {
         _cts?.Cancel();
         _cts?.Dispose();
         _pollTimer?.Dispose();
+        StopHideRestoreTimer();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

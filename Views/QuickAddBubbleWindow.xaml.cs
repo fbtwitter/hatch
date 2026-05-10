@@ -51,6 +51,23 @@ public sealed partial class QuickAddBubbleWindow : Window
                                        : mainVm.Lists.Count > 0 ? 0 : -1;
         }
 
+        // Show first-run intro if needed
+        if (!App.Settings.FirstRunComplete)
+        {
+            IntroMessage.Visibility = Visibility.Visible;
+            var gotItButton = IntroMessage.Children[2] as Button;
+            if (gotItButton != null)
+            {
+                gotItButton.Click += async (_, _) =>
+                {
+                    IntroMessage.Visibility = Visibility.Collapsed;
+                    App.Settings.FirstRunComplete = true;
+                    await App.SettingsService.SaveAsync();
+                    TaskTitleBox.Focus(FocusState.Programmatic);
+                };
+            }
+        }
+
         AddButton.Click += AddButton_Click;
         OpenMainWindowButton.Click += (_, _) =>
         {

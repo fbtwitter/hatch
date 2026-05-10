@@ -34,6 +34,13 @@ public sealed partial class MascotWindow : Window
     // Kept alive to prevent GC — the native subclass holds a function pointer to it
     private NativeMethods.SUBCLASSPROC? _subclassProc;
 
+    private Storyboard? _idleFadeOut;
+    private Storyboard? _idleFadeIn;
+    private Storyboard? _hoverIn;
+    private Storyboard? _hoverOut;
+    private DispatcherTimer? _inactivityTimer;
+    private bool _isFaded = false;
+
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
     private const int SW_HIDE          = 0;
@@ -46,6 +53,20 @@ public sealed partial class MascotWindow : Window
         ViewModel = new MascotViewModel(DispatcherQueue);
 
         _idleAnimation = MascotGrid.Resources["IdleAnimation"] as Storyboard;
+        _idleFadeOut   = MascotGrid.Resources["IdleFadeOut"]   as Storyboard;
+        _idleFadeIn    = MascotGrid.Resources["IdleFadeIn"]    as Storyboard;
+        _hoverIn       = MascotGrid.Resources["HoverIn"]       as Storyboard;
+        _hoverOut      = MascotGrid.Resources["HoverOut"]      as Storyboard;
+
+        // Inactivity timer — fades the mascot after 30 s of no interaction
+        _inactivityTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
+        _inactivityTimer.Tick += (_, _) =>
+        {
+            _inactivityTimer.Stop();
+            _isFaded = true;
+            _idleFadeOut?.Begin();
+        };
+        _inactivityTimer.Start();
         // Wiggle is built in code so it targets MascotGridTransform (works for both Canvas and Lottie)
         MascotGridTransform.CenterX = MascotViewModel.WindowSize / 2.0;
         MascotGridTransform.CenterY = MascotViewModel.WindowSize / 2.0;
@@ -88,10 +109,8 @@ public sealed partial class MascotWindow : Window
         NativeMethods.DwmSetWindowAttribute(
             _hwnd, NativeMethods.DWMWA_WINDOW_CORNER_PREFERENCE, ref noRound, sizeof(uint));
 
-        // Always-on-top via P/Invoke
-        NativeMethods.SetWindowPos(_hwnd, NativeMethods.HWND_TOPMOST,
-            0, 0, 0, 0,
-            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+        // Always-on-top via P/Invoke — respects the persisted setting
+        ApplyAlwaysOnTop(App.Settings.MascotAlwaysOnTop);
 
         // Elliptical region mask for the default egg mascot; removed when Lottie is active.
         SetEggRegion();
@@ -125,9 +144,14 @@ public sealed partial class MascotWindow : Window
                     try { closing.Close(); } catch { /* window may already be closing */ }
                 }
             }
+            else if (e.PropertyName == nameof(MascotViewModel.IsMascotHidden))
+            {
+                ShowWindow(_hwnd, ViewModel.IsMascotHidden ? SW_HIDE : SW_SHOWNOACTIVATE);
+            }
         };
         Closed += (_, _) =>
         {
+            _inactivityTimer?.Stop();
             UnregisterHotKey();
             _bubbleWindow?.Close();
             ViewModel.Dispose();
@@ -250,6 +274,36 @@ public sealed partial class MascotWindow : Window
         NativeMethods.SetWindowRgn(_hwnd, hRgn, true);
     }
 
+    public void ApplyAlwaysOnTop(bool alwaysOnTop)
+    {
+        var insert = alwaysOnTop ? NativeMethods.HWND_TOPMOST : NativeMethods.HWND_NOTOPMOST;
+        NativeMethods.SetWindowPos(_hwnd, insert,
+            0, 0, 0, 0,
+            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+    }
+
+    private void ResetInactivity()
+    {
+        _inactivityTimer?.Stop();
+        if (_isFaded)
+        {
+            _isFaded = false;
+            _idleFadeIn?.Begin();
+        }
+        _inactivityTimer?.Start();
+    }
+
+    private void OnPointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        ResetInactivity();
+        _hoverIn?.Begin();
+    }
+
+    private void OnPointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        _hoverOut?.Begin();
+    }
+
     private void OnTapped(object sender, TappedRoutedEventArgs e)
     {
         // Suppress tap if the pointer moved (drag just ended)
@@ -266,6 +320,7 @@ public sealed partial class MascotWindow : Window
     {
         if (!e.GetCurrentPoint(null).Properties.IsLeftButtonPressed) return;
         _hasDragged = false;
+        ResetInactivity();
         ViewModel.BeginDrag(AppWindow.Position.X, AppWindow.Position.Y);
         ((UIElement)sender).CapturePointer(e.Pointer);
     }
@@ -321,6 +376,12 @@ public sealed partial class MascotWindow : Window
     {
         Activated -= OnFirstActivated;
         UpdateAnimationState();
+
+        // Auto-open bubble on first run with intro copy
+        if (!App.Settings.FirstRunComplete)
+        {
+            DispatcherQueue.TryEnqueue(() => ViewModel.ToggleBubbleCommand.Execute(null));
+        }
     }
 
     private Storyboard BuildWiggleStoryboard()

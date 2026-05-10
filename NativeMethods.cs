@@ -4,7 +4,8 @@ namespace Hatch;
 
 internal static class NativeMethods
 {
-    internal static readonly IntPtr HWND_TOPMOST = new(-1);
+    internal static readonly IntPtr HWND_TOPMOST    = new(-1);
+    internal static readonly IntPtr HWND_NOTOPMOST = new(-2);
     internal const uint SWP_NOSIZE     = 0x0001;
     internal const uint SWP_NOMOVE     = 0x0002;
     internal const uint SWP_NOACTIVATE = 0x0010;
@@ -131,4 +132,20 @@ internal static class NativeMethods
         public RECT rcWork;
         public uint dwFlags;
     }
+
+    // SHQueryUserNotificationState — detects presentation mode, D3D fullscreen, busy state.
+    internal enum QUERY_USER_NOTIFICATION_STATE
+    {
+        QUNS_NOT_PRESENT             = 1, // screen saver / locked / fast-user-switched
+        QUNS_BUSY                    = 2, // fullscreen app (non-D3D)
+        QUNS_RUNNING_D3D_FULL_SCREEN = 3, // D3D fullscreen (games)
+        QUNS_PRESENTATION_MODE       = 4, // Windows presentation mode active
+        QUNS_ACCEPTS_NOTIFICATIONS   = 5, // normal desktop — show everything
+        QUNS_QUIET_TIME              = 6, // first hour after new user login
+        QUNS_APP                     = 7, // Windows Store app is foreground
+    }
+
+    [DllImport("shell32.dll")]
+    internal static extern int SHQueryUserNotificationState(
+        out QUERY_USER_NOTIFICATION_STATE pquns);
 }
