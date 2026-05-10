@@ -77,6 +77,9 @@ Three rules, non-negotiable:
 
 ## What's Shipped
 
+### v0.2.2 — May 2026
+First-run onboarding bubble with welcome message. Mascot silent by default after first session. "Hide for..." submenu with 1 hour, 3 hours, until tomorrow, or until restart options. Inactivity fade (30s idle → 40% opacity) with hover scale animation. System tray dynamic tooltip shows hidden state; click to restore. Auto-restore after expiration via PeriodicTimer. SettingsPage mascot controls (always on top, hide when fullscreen). See [release notes](../../releases/tag/v0.2.2) for details.
+
 ### v0.2.1.1 — May 2026
 App icon in title bar and taskbar. Empty state UI with contextual guidance for each list view. Improved My Day sorting: prioritizes overdue/due today tasks, then starred. Task list code refactoring for cleaner templates. See [release notes](../../releases/tag/v0.2.1.1) for details.
 
@@ -109,8 +112,8 @@ Basic task window — add, edit, complete, delete tasks; settings panel; system 
 | Always-on-top Hatch mascot (separate topmost borderless window)                 | Shipped     |
 | NavigationView rail — My Day, Important, Planned, All Tasks, custom lists       | Shipped     |
 | Quick-add task directly from mascot bubble — no main window required            | Shipped     |
-| Mascot mute / opt-in bubble — silent by default after first session             | In Progress |
-| Contextual tip engine — tips based on actual task state                         | Planned     |
+| Mascot mute / opt-in bubble — silent by default after first session             | Shipped     |
+| Contextual tip engine — tips based on actual task state                         | In Progress |
 | Task list polish — star toggle, open/completed grouping, notes field            | Planned     |
 | Details pane — slide-in panel replacing modal dialog                            | Planned     |
 | Real due-date picker — calendar flyout, presets, ISO persistence                | Planned     |
