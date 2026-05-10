@@ -163,6 +163,58 @@
                     </Grid>
                 </Border>
 
+                <!-- Always on Top — custom toggle card -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE89F;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock Text="Always on Top"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Keep the mascot above all other windows"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="2"
+                                      IsOn="{Binding MascotAlwaysOnTop, Mode=TwoWay}"
+                                      OnContent="On" OffContent="Off" MinWidth="80"
+                                      VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Hide When Fullscreen — custom toggle card -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE92C;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock Text="Hide During Fullscreen &amp; Games"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Automatically hide when a fullscreen app, game, or presentation is active"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="2"
+                                      IsOn="{Binding HideWhenFullscreen, Mode=TwoWay}"
+                                      OnContent="On" OffContent="Off" MinWidth="80"
+                                      VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
                 <!-- Lottie Animation File -->
                 <toolkit:SettingsCard
                     Header="Lottie Animation File"

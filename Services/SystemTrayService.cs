@@ -5,16 +5,20 @@ namespace Hatch.Services;
 public sealed class SystemTrayService : IDisposable
 {
     private const uint NIM_ADD = 0;
+    private const uint NIM_MODIFY = 1;
     private const uint NIM_DELETE = 2;
     private const int NIF_MESSAGE = 0x01;
     private const int NIF_ICON = 0x02;
     private const int NIF_TIP = 0x04;
+    private const int NIF_INFO = 0x10;
+    private const uint NIIF_NOSOUND = 0x10;
     private const uint WM_TRAYICON = 0x0401;
     private const int WM_LBUTTONUP = 0x0202;
     private const int WM_LBUTTONDBLCLK = 0x0203;
     private const int WM_RBUTTONUP = 0x0205;
     private const uint MF_STRING = 0x00;
     private const uint MF_SEPARATOR = 0x800;
+    private const uint MF_POPUP = 0x10;
     private const uint TPM_RIGHTBUTTON = 0x02;
     private const uint TPM_RETURNCMD = 0x0100;
     private const int GWLP_WNDPROC = -4;
@@ -49,6 +53,14 @@ public sealed class SystemTrayService : IDisposable
     [DllImport("user32.dll")]
     private static extern IntPtr LoadIcon(IntPtr hInstance, IntPtr lpIconName);
 
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr LoadImage(IntPtr hInst, string name, uint type,
+        int cx, int cy, uint fuLoad);
+
+    private const uint IMAGE_ICON = 1;
+    private const uint LR_LOADFROMFILE = 0x10;
+    private const uint LR_DEFAULTSIZE = 0x40;
+
     [DllImport("user32.dll")]
     private static extern bool GetCursorPos(out POINT lpPoint);
 
@@ -80,6 +92,9 @@ public sealed class SystemTrayService : IDisposable
     private static extern int GetWindowLong32(IntPtr hWnd, int nIndex);
 
     [DllImport("user32.dll")]
+    private static extern bool DestroyIcon(IntPtr hIcon);
+
+    [DllImport("user32.dll")]
     private static extern IntPtr CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
 
     private static IntPtr SetWndLong(IntPtr hwnd, int index, IntPtr value) =>
@@ -100,9 +115,16 @@ public sealed class SystemTrayService : IDisposable
     private NOTIFYICONDATA _nid;
     private bool _iconVisible;
     private bool _disposed;
+    private string _currentTooltip = "Hatch";
+    private IntPtr _normalIcon;
+    private IntPtr _hiddenIcon;
 
     public event Action? ShowRequested;
     public event Action? ExitRequested;
+    public event Action? RestoreMascotRequested;
+    public event Action<HideDuration>? HideMascotRequested;
+
+    public enum HideDuration { OneHour, ThreeHours, UntilTomorrow, UntilRestart }
 
     public void Initialize(IntPtr hwnd)
     {
@@ -111,6 +133,18 @@ public sealed class SystemTrayService : IDisposable
         _wndProcDelegate = new WndProc(WndProcHandler);
         _originalWndProc = SetWndLong(hwnd, GWLP_WNDPROC, Marshal.GetFunctionPointerForDelegate(_wndProcDelegate));
 
+        var baseDir = AppContext.BaseDirectory;
+        var icoPath       = Path.Combine(baseDir, "Assets", "Hatch.ico");
+        var hiddenIcoPath = Path.Combine(baseDir, "Assets", "HatchHidden.ico");
+
+        _normalIcon = File.Exists(icoPath)
+            ? LoadImage(IntPtr.Zero, icoPath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE)
+            : LoadIcon(IntPtr.Zero, new IntPtr(0x7F00));
+
+        _hiddenIcon = File.Exists(hiddenIcoPath)
+            ? LoadImage(IntPtr.Zero, hiddenIcoPath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE)
+            : _normalIcon;
+
         _nid = new NOTIFYICONDATA
         {
             cbSize = Marshal.SizeOf<NOTIFYICONDATA>(),
@@ -118,9 +152,43 @@ public sealed class SystemTrayService : IDisposable
             uID = 1,
             uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP,
             uCallbackMessage = (int)WM_TRAYICON,
-            hIcon = LoadIcon(IntPtr.Zero, new IntPtr(0x7F00)), // IDI_APPLICATION
-            szTip = "To-Do"
+            hIcon = _normalIcon,
+            szTip = _currentTooltip
         };
+    }
+
+    public void SetTooltip(string tooltip)
+    {
+        if (_currentTooltip == tooltip) return;
+        _currentTooltip = tooltip;
+
+        if (_iconVisible)
+        {
+            _nid.szTip = tooltip;
+            Shell_NotifyIcon(NIM_MODIFY, ref _nid);
+        }
+    }
+
+    public void SetHiddenState(bool hidden)
+    {
+        _nid.hIcon  = hidden ? _hiddenIcon : _normalIcon;
+        _nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+        if (_iconVisible)
+            Shell_NotifyIcon(NIM_MODIFY, ref _nid);
+    }
+
+    public void ShowBalloon(string title, string text)
+    {
+        if (!_iconVisible) return;
+        _nid.uFlags      = NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_INFO;
+        _nid.szInfoTitle = title;
+        _nid.szInfo      = text;
+        _nid.dwInfoFlags = (int)NIIF_NOSOUND;
+        Shell_NotifyIcon(NIM_MODIFY, ref _nid);
+        // Reset so future NIM_MODIFY calls don't re-trigger the balloon
+        _nid.uFlags      = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+        _nid.szInfo      = string.Empty;
+        _nid.szInfoTitle = string.Empty;
     }
 
     public void ShowIcon()
@@ -159,8 +227,24 @@ public sealed class SystemTrayService : IDisposable
     {
         GetCursorPos(out var pt);
         var menu = CreatePopupMenu();
-        AppendMenu(menu, MF_STRING, new IntPtr(1), "Open To-Do");
+
+        bool isMascotHidden = App.MascotWindowInstance?.ViewModel.IsMascotHidden ?? false;
+        string mainLabel = isMascotHidden ? "Restore Hatch" : "Open Hatch";
+
+        AppendMenu(menu, MF_STRING, new IntPtr(1), mainLabel);
         AppendMenu(menu, MF_SEPARATOR, IntPtr.Zero, null);
+
+        if (!isMascotHidden)
+        {
+            var hideMenu = CreatePopupMenu();
+            AppendMenu(hideMenu, MF_STRING, new IntPtr(10), "1 hour");
+            AppendMenu(hideMenu, MF_STRING, new IntPtr(11), "3 hours");
+            AppendMenu(hideMenu, MF_STRING, new IntPtr(12), "Until tomorrow");
+            AppendMenu(hideMenu, MF_STRING, new IntPtr(13), "Until restart");
+            AppendMenu(menu, MF_POPUP, hideMenu, "Hide for...");
+            AppendMenu(menu, MF_SEPARATOR, IntPtr.Zero, null);
+        }
+
         AppendMenu(menu, MF_STRING, new IntPtr(2), "Exit");
 
         SetForegroundWindow(_hwnd);
@@ -168,7 +252,16 @@ public sealed class SystemTrayService : IDisposable
         DestroyMenu(menu);
 
         if (cmd == 1)
-            ShowRequested?.Invoke();
+        {
+            if (isMascotHidden)
+                RestoreMascotRequested?.Invoke();
+            else
+                ShowRequested?.Invoke();
+        }
+        else if (cmd == 10) HideMascotRequested?.Invoke(HideDuration.OneHour);
+        else if (cmd == 11) HideMascotRequested?.Invoke(HideDuration.ThreeHours);
+        else if (cmd == 12) HideMascotRequested?.Invoke(HideDuration.UntilTomorrow);
+        else if (cmd == 13) HideMascotRequested?.Invoke(HideDuration.UntilRestart);
         else if (cmd == 2)
             ExitRequested?.Invoke();
     }
@@ -186,6 +279,16 @@ public sealed class SystemTrayService : IDisposable
         {
             SetWndLong(_hwnd, GWLP_WNDPROC, _originalWndProc);
             _originalWndProc = IntPtr.Zero;
+        }
+        if (_hiddenIcon != IntPtr.Zero && _hiddenIcon != _normalIcon)
+        {
+            DestroyIcon(_hiddenIcon);
+            _hiddenIcon = IntPtr.Zero;
+        }
+        if (_normalIcon != IntPtr.Zero)
+        {
+            DestroyIcon(_normalIcon);
+            _normalIcon = IntPtr.Zero;
         }
     }
 }

@@ -100,6 +100,31 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         App.MascotWindowInstance?.ViewModel.RaiseLottieFileChanged();
     }
 
+    public bool HideWhenFullscreen
+    {
+        get => _settings.Current.HideWhenFullscreen;
+        set
+        {
+            if (_settings.Current.HideWhenFullscreen == value) return;
+            _settings.Current.HideWhenFullscreen = value;
+            _ = _settings.SaveAsync();
+            OnPropertyChanged();
+        }
+    }
+
+    public bool MascotAlwaysOnTop
+    {
+        get => _settings.Current.MascotAlwaysOnTop;
+        set
+        {
+            if (_settings.Current.MascotAlwaysOnTop == value) return;
+            _settings.Current.MascotAlwaysOnTop = value;
+            _ = _settings.SaveAsync();
+            App.MascotWindowInstance?.ApplyAlwaysOnTop(value);
+            OnPropertyChanged();
+        }
+    }
+
     public uint HotkeyModifiers
     {
         get => _settings.Current.HotkeyModifiers;
