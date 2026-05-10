@@ -10,6 +10,8 @@
     -->
     <Grid x:Name="MascotGrid"
       Background="Transparent"
+      PointerEntered="OnPointerEntered"
+      PointerExited="OnPointerExited"
       PointerPressed="OnPointerPressed"
       PointerMoved="OnPointerMoved"
       PointerReleased="OnPointerReleased"
@@ -62,6 +64,58 @@
 
             </Storyboard>
 
+            <!-- Inactivity fade: full opacity → 0.4 over 2 s (starts after 30 s idle) -->
+            <Storyboard x:Key="IdleFadeOut">
+                <DoubleAnimation
+                    Storyboard.TargetName="MascotGrid"
+                    Storyboard.TargetProperty="Opacity"
+                    To="0.4" Duration="0:0:2">
+                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseInOut"/></DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+            </Storyboard>
+
+            <!-- Restore opacity instantly on hover/interaction -->
+            <Storyboard x:Key="IdleFadeIn">
+                <DoubleAnimation
+                    Storyboard.TargetName="MascotGrid"
+                    Storyboard.TargetProperty="Opacity"
+                    To="1.0" Duration="0:0:0.2">
+                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+            </Storyboard>
+
+            <!-- Hover: subtle scale up -->
+            <Storyboard x:Key="HoverIn">
+                <DoubleAnimation
+                    Storyboard.TargetName="MascotGridTransform"
+                    Storyboard.TargetProperty="ScaleX"
+                    To="1.06" Duration="0:0:0.15">
+                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+                <DoubleAnimation
+                    Storyboard.TargetName="MascotGridTransform"
+                    Storyboard.TargetProperty="ScaleY"
+                    To="1.06" Duration="0:0:0.15">
+                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+            </Storyboard>
+
+            <!-- Hover end: return to normal scale -->
+            <Storyboard x:Key="HoverOut">
+                <DoubleAnimation
+                    Storyboard.TargetName="MascotGridTransform"
+                    Storyboard.TargetProperty="ScaleX"
+                    To="1.0" Duration="0:0:0.2">
+                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseInOut"/></DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+                <DoubleAnimation
+                    Storyboard.TargetName="MascotGridTransform"
+                    Storyboard.TargetProperty="ScaleY"
+                    To="1.0" Duration="0:0:0.2">
+                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseInOut"/></DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+            </Storyboard>
+
             </Grid.Resources>
 
         <Grid.ContextFlyout>
@@ -70,6 +124,17 @@
                                 Command="{x:Bind ViewModel.ShowMainWindowCommand}"/>
                 <MenuFlyoutItem Text="Reset Position"
                                 Command="{x:Bind ViewModel.ResetPositionCommand}"/>
+                <MenuFlyoutSeparator/>
+                <MenuFlyoutSubItem Text="Hide for...">
+                    <MenuFlyoutItem Text="1 hour"
+                                    Command="{x:Bind ViewModel.HideFor1HourCommand}"/>
+                    <MenuFlyoutItem Text="3 hours"
+                                    Command="{x:Bind ViewModel.HideFor3HoursCommand}"/>
+                    <MenuFlyoutItem Text="Until tomorrow"
+                                    Command="{x:Bind ViewModel.HideUntilTomorrowCommand}"/>
+                    <MenuFlyoutItem Text="Until restart"
+                                    Command="{x:Bind ViewModel.HideUntilRestartCommand}"/>
+                </MenuFlyoutSubItem>
             </MenuFlyout>
         </Grid.ContextFlyout>
 

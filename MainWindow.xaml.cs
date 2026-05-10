@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Windows.Input;
 using Microsoft.UI;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Windowing;
@@ -59,6 +60,8 @@ public sealed partial class MainWindow : Window
         _trayService.Initialize(_hwnd);
         _trayService.ShowRequested += RestoreWindow;
         _trayService.ExitRequested += OnExitRequested;
+        _trayService.RestoreMascotRequested += RestoreMascot;
+        _trayService.HideMascotRequested += OnHideMascotRequested;
 
         if (settings.MinimizeToTray)
             _trayService.ShowIcon();
@@ -132,6 +135,8 @@ public sealed partial class MainWindow : Window
         else                _trayService?.HideIcon();
     }
 
+    public SystemTrayService? GetTrayService() => _trayService;
+
     private void RestoreWindow()
     {
         DispatcherQueue.TryEnqueue(() =>
@@ -139,6 +144,32 @@ public sealed partial class MainWindow : Window
             MascotViewModel.PositionMainWindowNearMascot(this);
             ShowWindow(_hwnd, SW_RESTORE);
             AppWindow.Show(true);
+        });
+    }
+
+    private void RestoreMascot()
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            App.MascotWindowInstance?.ViewModel.RestoreFromHideCommand.Execute(null);
+        });
+    }
+
+    private void OnHideMascotRequested(SystemTrayService.HideDuration duration)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            var vm = App.MascotWindowInstance?.ViewModel;
+            if (vm == null) return;
+            ICommand cmd = duration switch
+            {
+                SystemTrayService.HideDuration.OneHour      => vm.HideFor1HourCommand,
+                SystemTrayService.HideDuration.ThreeHours   => vm.HideFor3HoursCommand,
+                SystemTrayService.HideDuration.UntilTomorrow => vm.HideUntilTomorrowCommand,
+                SystemTrayService.HideDuration.UntilRestart  => vm.HideUntilRestartCommand,
+                _ => vm.HideFor1HourCommand
+            };
+            cmd.Execute(null);
         });
     }
 

@@ -15,6 +15,10 @@ public sealed class AppSettings
     public string? LottieFilePath { get; set; } = null;
     public string ActiveNavItem { get; set; } = "alltasks";
     public Guid LastUsedListId { get; set; } = Guid.Empty;
+    public bool FirstRunComplete { get; set; } = false;
+    public long? HideUntilTicks { get; set; } = null; // DateTime.UtcNow.Ticks when hide expires
+    public bool MascotAlwaysOnTop { get; set; } = true;
+    public bool HideWhenFullscreen { get; set; } = true;
 
     // Global hotkey — default Ctrl+Shift+Space
     public uint HotkeyModifiers { get; set; } = 0x0002 | 0x0004; // MOD_CONTROL | MOD_SHIFT

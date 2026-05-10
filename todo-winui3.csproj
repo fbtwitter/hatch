@@ -60,6 +60,9 @@
     <Content Include="Assets\Hatch.ico" Condition="Exists('Assets\Hatch.ico')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Assets\HatchHidden.ico" Condition="Exists('Assets\HatchHidden.ico')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
