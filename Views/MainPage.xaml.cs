@@ -75,6 +75,14 @@ public sealed partial class MainPage : Page
             ContentFrame.GoBack();
         }
         MainTitleBar.IsBackButtonVisible = ContentFrame.CanGoBack;
+
+        // Sync the NavView indicator to the current page after navigating back
+        if (ContentFrame.Content is TaskListPage)
+        {
+            _suppressNavigation = true;
+            SelectNavItem(_viewModel.ActiveNavItem);
+            _suppressNavigation = false;
+        }
     }
 
     private void TitleBar_PaneToggleRequested(TitleBar sender, object args)

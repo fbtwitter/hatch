@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Hatch.Models;
 using Hatch.ViewModels;
+using Hatch.Helpers;
 using Windows.Graphics;
 
 namespace Hatch.Views;
@@ -24,6 +25,10 @@ public sealed partial class QuickAddBubbleWindow : Window
         _fadeIn  = (Storyboard)BubbleRoot.Resources["ConfirmationFadeIn"];
         _fadeOut = (Storyboard)BubbleRoot.Resources["ConfirmationFadeOut"];
         _hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
+
+        // Mirror the theme from the main window so this separate window
+        // always respects the user's Light/Dark/System setting.
+        ApplyCurrentTheme();
 
         // Borderless, compact bubble window
         var presenter = OverlappedPresenter.Create();
@@ -111,14 +116,24 @@ public sealed partial class QuickAddBubbleWindow : Window
         this.Activated += OnFirstActivated;
     }
 
+    /// <summary>
+    /// Mirrors the theme from the main window's RootFrame into this window's
+    /// root element so Light/Dark/System settings are respected end-to-end.
+    /// Call this whenever the app theme changes.
+    /// </summary>
+    public void ApplyCurrentTheme()
+    {
+        if (App.MainWindowInstance?.Content is not FrameworkElement mainRoot) return;
+        BubbleRoot.RequestedTheme = mainRoot.ActualTheme switch
+        {
+            ElementTheme.Light => ElementTheme.Light,
+            ElementTheme.Dark  => ElementTheme.Dark,
+            _                  => ElementTheme.Default
+        };
+    }
+
     private void DatePresetSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (CustomDatePicker is null) return; // Not yet initialized during InitializeComponent
-
-        var isCustom = DatePresetSelector.SelectedIndex == 3;
-        CustomDatePicker.Visibility = isCustom ? Visibility.Visible : Visibility.Collapsed;
-        // Expand window when the calendar picker row appears
-        AppWindow.Resize(new Windows.Graphics.SizeInt32(340, isCustom ? 370 : 320));
     }
 
     public void PositionRelativeToMascot(int mascotX, int mascotY, int mascotWidth)
@@ -200,10 +215,11 @@ public sealed partial class QuickAddBubbleWindow : Window
 
         task.DueDate = (DatePresetSelector.SelectedIndex) switch
         {
-            1 => DateTimeOffset.Now,                  // Today
-            2 => DateTimeOffset.Now.AddDays(1),       // Tomorrow
-            3 => CustomDatePicker.Date,               // Pick a date
-            _ => null                                 // No date
+            1 => new DateTimeOffset(DueDatePresets.GetToday(DateTime.Today)),
+            2 => new DateTimeOffset(DueDatePresets.GetTomorrow(DateTime.Today)),
+            3 => new DateTimeOffset(DueDatePresets.GetThisWeekend(DateTime.Today)),
+            4 => new DateTimeOffset(DueDatePresets.GetNextWeek(DateTime.Today)),
+            _ => (DateTimeOffset?)null
         };
 
         mainVm.Tasks.Insert(0, task);
