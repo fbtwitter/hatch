@@ -124,6 +124,8 @@
                                 Command="{x:Bind ViewModel.ShowMainWindowCommand}"/>
                 <MenuFlyoutItem Text="Reset Position"
                                 Command="{x:Bind ViewModel.ResetPositionCommand}"/>
+                <MenuFlyoutItem Text="Resize Mascot"
+                                Click="OnResizeMenuItemClick"/>
                 <MenuFlyoutSeparator/>
                 <MenuFlyoutSubItem Text="Hide for...">
                     <MenuFlyoutItem Text="1 hour"
