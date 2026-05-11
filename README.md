@@ -77,6 +77,9 @@ Three rules, non-negotiable:
 
 ## What's Shipped
 
+### v0.2.3.2 — May 2026
+Manual mascot resizing with slider (60–200px) and preset buttons (Small/Medium/Large) in Settings. "Mascot Settings..." context menu opens Settings page. Dynamic scaling for both animated and vector mascots via Viewbox wrapping. Window position automatically maintains after resize.
+
 ### v0.2.3 — May 2026
 Theme-aware due-date chip colors that update dynamically when switching between light/dark modes. Larger, crisp app icons (2x scale) for high-DPI displays. Proper text contrast on all backgrounds. See [release notes](../../releases/tag/v0.2.3) for details.
 
