@@ -91,6 +91,12 @@ jobs:
             /p:AppxPackageSigningEnabled=true `
             /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}"
 
+      - name: Debug - List AppxPackages contents
+        shell: pwsh
+        run: |
+          Write-Host "Contents of AppxPackages:"
+          Get-ChildItem -Recurse -Path AppxPackages | Select-Object FullName
+
       - name: Create MSIX bundle
         shell: pwsh
         run: |
