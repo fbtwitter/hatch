@@ -29,6 +29,15 @@ jobs:
         shell: pwsh
         run: .\scripts\create-assets.ps1
 
+      - name: Create AppxPackages directory
+        shell: pwsh
+        run: |
+          $dir = "${{ github.workspace }}\AppxPackages"
+          if (!(Test-Path $dir)) {
+            New-Item -ItemType Directory -Path $dir -Force | Out-Null
+            Write-Host "Created AppxPackages directory: $dir"
+          }
+
       - name: Set MSIX version from tag
         shell: pwsh
         run: |
@@ -58,43 +67,58 @@ jobs:
       - name: Build x64 MSIX
         shell: pwsh
         run: |
-          msbuild todo-winui3.csproj `
+          $result = msbuild todo-winui3.csproj `
             /p:Configuration=Release `
             /p:Platform=x64 `
             /p:GenerateAppxPackageOnBuild=true `
             /p:AppxBundle=Never `
             /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
             /p:AppxPackageSigningEnabled=true `
-            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}"
-          Write-Host "x64 build output:"
+            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}" `
+            /verbosity:detailed
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "x64 build failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
+          Write-Host "x64 build completed successfully"
           Get-ChildItem -Recurse -Path AppxPackages -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
 
       - name: Build x86 MSIX
         shell: pwsh
         run: |
-          msbuild todo-winui3.csproj `
+          $result = msbuild todo-winui3.csproj `
             /p:Configuration=Release `
             /p:Platform=x86 `
             /p:GenerateAppxPackageOnBuild=true `
             /p:AppxBundle=Never `
             /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
             /p:AppxPackageSigningEnabled=true `
-            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}"
-          Write-Host "x86 build output:"
+            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}" `
+            /verbosity:detailed
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "x86 build failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
+          Write-Host "x86 build completed successfully"
           Get-ChildItem -Recurse -Path AppxPackages -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
 
       - name: Build arm64 MSIX
         shell: pwsh
         run: |
-          msbuild todo-winui3.csproj `
+          $result = msbuild todo-winui3.csproj `
             /p:Configuration=Release `
             /p:Platform=arm64 `
             /p:GenerateAppxPackageOnBuild=true `
             /p:AppxBundle=Never `
             /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
             /p:AppxPackageSigningEnabled=true `
-            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}"
-          Write-Host "arm64 build output:"
+            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}" `
+            /verbosity:detailed
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "arm64 build failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
+          Write-Host "arm64 build completed successfully"
           Get-ChildItem -Recurse -Path AppxPackages -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
 
       - name: Debug - Check all files in workspace
