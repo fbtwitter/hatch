@@ -31,6 +31,7 @@
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <WindowsPackageType>MSIX</WindowsPackageType>
     <EnableMsixTooling>true</EnableMsixTooling>
+    <GenerateAppxPackageOnBuild>true</GenerateAppxPackageOnBuild>
   </PropertyGroup>
 
   <!-- Exclude the AssetGen build-time helper from the main project's compile glob -->
