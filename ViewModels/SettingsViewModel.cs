@@ -114,6 +114,20 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         }
     }
 
+    public int MascotSize
+    {
+        get => _settings.Current.MascotSize;
+        set
+        {
+            var clamped = Math.Clamp(value, 60, 200);
+            if (_settings.Current.MascotSize == clamped) return;
+            _settings.Current.MascotSize = clamped;
+            _ = _settings.SaveAsync();
+            App.MascotWindowInstance?.ViewModel.RaiseWindowSizeChanged();
+            OnPropertyChanged();
+        }
+    }
+
     public bool MascotAlwaysOnTop
     {
         get => _settings.Current.MascotAlwaysOnTop;

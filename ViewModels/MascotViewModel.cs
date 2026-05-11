@@ -96,6 +96,14 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     public string? LottieFilePath => App.Settings.LottieFilePath;
     public void RaiseLottieFileChanged() => OnPropertyChanged(nameof(LottieFilePath));
 
+    // Called by SettingsViewModel after saving MascotSize so MascotWindow responds without re-saving.
+    public void RaiseWindowSizeChanged()
+    {
+        OnPropertyChanged(nameof(Size));
+        OnPropertyChanged(nameof(WindowSize));
+        ClampToWorkArea();
+    }
+
     public bool IsDragging => _isDragging;
 
     public void CloseBubble() => IsBubbleOpen = false;
@@ -246,7 +254,19 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         ClampToWorkArea();
     }
 
-    private static void ShowMainWindow() => App.MainWindowInstance?.Activate();
+    private static void ShowMainWindow()
+    {
+        var win = App.MainWindowInstance;
+        if (win == null) return;
+
+        // Close the bubble if open — only one panel at a time
+        if (App.MascotWindowInstance?.ViewModel.IsBubbleOpen == true)
+            App.MascotWindowInstance.ViewModel.CloseBubble();
+
+        PositionMainWindowNearMascot(win);
+        win.AppWindow.Show();
+        win.Activate();
+    }
 
     private static void ToggleMainWindow()
     {
@@ -317,6 +337,13 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
     private void ToggleBubble()
     {
+        // If the main window is visible, tapping the mascot dismisses it — no bubble.
+        if (App.MainWindowInstance?.AppWindow.IsVisible == true)
+        {
+            App.MainWindowInstance.AppWindow.Hide();
+            return;
+        }
+
         if (IsBubbleOpen)
         {
             IsBubbleOpen = false;
@@ -324,11 +351,6 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         else
         {
             IsBubbleOpen = true;
-
-            // Hide the main window after the bubble is already opening — only one panel at a time.
-            // Hiding first causes a focus-transition stall that makes the bubble feel slow.
-            if (App.MainWindowInstance?.AppWindow.IsVisible == true)
-                App.MainWindowInstance.AppWindow.Hide();
         }
     }
     private void InitializePosition()
@@ -356,8 +378,10 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
         var w = mi.rcWork;
         var size = WindowSize;
-        App.Settings.MascotX = Math.Clamp(App.Settings.MascotX, w.left, w.right  - size);
-        App.Settings.MascotY = Math.Clamp(App.Settings.MascotY, w.top,  w.bottom - size);
+        // Route through the property setters so PropertyChanged fires and
+        // MascotWindow.AppWindow.Move() is invoked for the live window.
+        X = Math.Clamp(App.Settings.MascotX, w.left, w.right  - size);
+        Y = Math.Clamp(App.Settings.MascotY, w.top,  w.bottom - size);
     }
 
     private void StartFullscreenPolling()
@@ -406,6 +430,11 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
         NativeMethods.GetWindowRect(hwnd, out var wr);
         var mr = mi.rcMonitor;
+
+        // Maximized windows are positioned at -8,-8 (invisible resize border) so their
+        // RECT exceeds rcMonitor on all sides — exclude them; they are not true fullscreen.
+        if (NativeMethods.IsZoomed(hwnd)) return false;
+
         return wr.left <= mr.left && wr.top <= mr.top &&
                wr.right >= mr.right && wr.bottom >= mr.bottom;
     }

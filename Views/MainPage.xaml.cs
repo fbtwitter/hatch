@@ -68,6 +68,15 @@ public sealed partial class MainPage : Page
         MainTitleBar.IsBackButtonVisible = false;
     }
 
+    public void NavigateToSettingsPage()
+    {
+        ContentFrame.Navigate(typeof(SettingsPage), null, new DrillInNavigationTransitionInfo());
+        MainTitleBar.IsBackButtonVisible = true;
+        _suppressNavigation = true;
+        NavView.SelectedItem = NavView.SettingsItem;
+        _suppressNavigation = false;
+    }
+
     private void TitleBar_BackRequested(TitleBar sender, object args)
     {
         if (ContentFrame.CanGoBack)

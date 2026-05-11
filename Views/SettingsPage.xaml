@@ -230,6 +230,34 @@
                     </StackPanel>
                 </toolkit:SettingsCard>
 
+                <!-- Mascot Size -->
+                <toolkit:SettingsExpander Header="Mascot Size"
+                                          Description="Choose how large the mascot appears on screen">
+                    <toolkit:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xE744;"/>
+                    </toolkit:SettingsExpander.HeaderIcon>
+                    <TextBlock x:Name="MascotSizeHeaderLabel"
+                               VerticalAlignment="Center"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <toolkit:SettingsExpander.Items>
+                        <toolkit:SettingsCard Header="Presets">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="Small"  Tag="80"  Click="MascotSizePreset_Click" MinWidth="72"/>
+                                <Button Content="Medium" Tag="120" Click="MascotSizePreset_Click" MinWidth="72"/>
+                                <Button Content="Large"  Tag="160" Click="MascotSizePreset_Click" MinWidth="72"/>
+                            </StackPanel>
+                        </toolkit:SettingsCard>
+                        <toolkit:SettingsCard Header="Custom">
+                            <Slider x:Name="MascotSizeSlider"
+                                    Minimum="60" Maximum="200"
+                                    StepFrequency="1" TickFrequency="20"
+                                    TickPlacement="Outside"
+                                    Width="200"
+                                    ValueChanged="MascotSizeSlider_ValueChanged"/>
+                        </toolkit:SettingsCard>
+                    </toolkit:SettingsExpander.Items>
+                </toolkit:SettingsExpander>
+
                 <!-- Quick-add global hotkey -->
                 <toolkit:SettingsExpander Header="Quick-Add Hotkey"
                                           Description="{Binding HotkeyDescription}">

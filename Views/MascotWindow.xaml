@@ -124,8 +124,8 @@
                                 Command="{x:Bind ViewModel.ShowMainWindowCommand}"/>
                 <MenuFlyoutItem Text="Reset Position"
                                 Command="{x:Bind ViewModel.ResetPositionCommand}"/>
-                <MenuFlyoutItem Text="Resize Mascot"
-                                Click="OnResizeMenuItemClick"/>
+                <MenuFlyoutItem Text="Mascot Settings&#x2026;"
+                                Click="OnMascotSettingsMenuItemClick"/>
                 <MenuFlyoutSeparator/>
                 <MenuFlyoutSubItem Text="Hide for...">
                     <MenuFlyoutItem Text="1 hour"
@@ -142,7 +142,8 @@
 
         <!-- Lottie player — hidden until a .json file is set in Settings -->
         <AnimatedVisualPlayer x:Name="LottiePlayer"
-                              Width="120" Height="120"
+                              Width="{x:Bind ViewModel.WindowSize, Mode=OneWay}"
+                              Height="{x:Bind ViewModel.WindowSize, Mode=OneWay}"
                               HorizontalAlignment="Center"
                               VerticalAlignment="Center"
                               AutoPlay="False"
@@ -165,13 +166,17 @@
             Then remove the Storyboard from Grid.Resources and the
             _idleAnimation field + calls from MascotWindow.xaml.cs.
         -->
-        <Canvas x:Name="MascotRoot"
-                Width="180" Height="120"
+        <Viewbox x:Name="MascotRoot"
+                Width="{x:Bind ViewModel.WindowSize, Mode=OneWay}"
+                Height="{x:Bind ViewModel.WindowSize, Mode=OneWay}"
+                Stretch="Uniform"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center">
-            <Canvas.RenderTransform>
+            <Viewbox.RenderTransform>
                 <CompositeTransform/>
-            </Canvas.RenderTransform>
+            </Viewbox.RenderTransform>
+
+            <Canvas Width="120" Height="120">
 
             <!-- Egg body: accent fill, white border -->
             <Ellipse Canvas.Left="16" Canvas.Top="10"
@@ -206,7 +211,8 @@
                   StrokeEndLineCap="Round"
                   Data="M 48,70 Q 60,81 72,70"/>
 
-        </Canvas>
+            </Canvas>
+        </Viewbox>
 
     </Grid>
 

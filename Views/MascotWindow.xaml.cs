@@ -291,7 +291,18 @@ public sealed partial class MascotWindow : Window
         AppWindow.Resize(new SizeInt32(newSize, newSize));
         MascotGridTransform.CenterX = newSize / 2.0;
         MascotGridTransform.CenterY = newSize / 2.0;
-        SetEggRegion(newSize);
+
+        // Only re-apply the elliptical region when the egg mascot is active.
+        // When Lottie is active SetWindowRgn was cleared to IntPtr.Zero and
+        // must stay that way so the rectangular Lottie canvas receives input.
+        if (LottiePlayer.Visibility != Visibility.Visible)
+            SetEggRegion(newSize);
+
+        // Reposition the window to the (already clamped) stored coordinates.
+        // ResizeByValue → ClampToWorkArea updates X/Y in settings but the
+        // PropertyChanged for X/Y fires before the window is resized, so we
+        // apply the final move here once the new size is committed.
+        AppWindow.Move(new PointInt32(ViewModel.X, ViewModel.Y));
     }
 
     public void ApplyAlwaysOnTop(bool alwaysOnTop)
@@ -449,42 +460,22 @@ public sealed partial class MascotWindow : Window
         _wiggleAnimation?.Begin();
     }
 
-    private async void OnResizeMenuItemClick(object sender, RoutedEventArgs e)
+    private void OnMascotSettingsMenuItemClick(object sender, RoutedEventArgs e)
     {
-        var dialog = new ContentDialog
-        {
-            Title = "Resize Mascot",
-            PrimaryButtonText = "Apply",
-            CloseButtonText = "Cancel",
-            XamlRoot = Content.XamlRoot
-        };
+        // Show the main window and navigate straight to Settings.
+        // XamlRoot for any dialog is guaranteed correct there.
+        var win = App.MainWindowInstance;
+        if (win == null) return;
 
-        var stackPanel = new StackPanel { Spacing = 12, Padding = new Thickness(12) };
-        var currentSize = ViewModel.WindowSize;
+        MascotViewModel.PositionMainWindowNearMascot(win);
+        win.AppWindow.Show();
 
-        var slider = new Slider
-        {
-            Minimum = 40,
-            Maximum = 300,
-            Value = currentSize,
-            StepFrequency = 5,
-            TickFrequency = 10
-        };
+        var mainHwnd = Win32Interop.GetWindowFromWindowId(win.AppWindow.Id);
+        NativeMethods.SetWindowPos(
+            mainHwnd, NativeMethods.HWND_TOPMOST,
+            0, 0, 0, 0,
+            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
 
-        var textBlock = new TextBlock { Text = $"Size: {currentSize}px" };
-        slider.ValueChanged += (_, _) =>
-        {
-            textBlock.Text = $"Size: {(int)slider.Value}px";
-        };
-
-        stackPanel.Children.Add(slider);
-        stackPanel.Children.Add(textBlock);
-        dialog.Content = stackPanel;
-
-        var result = await dialog.ShowAsync();
-        if (result == ContentDialogResult.Primary)
-        {
-            ViewModel.ResizeByValue((int)slider.Value);
-        }
+        win.NavigateToSettings();
     }
 }
