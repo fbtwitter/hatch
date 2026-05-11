@@ -41,6 +41,12 @@ internal static class NativeMethods
     [DllImport("user32.dll")]
     internal static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
 
+    // Returns true when the window is maximized (WS_MAXIMIZE state).
+    // Maximized windows overlap rcMonitor due to their hidden -8px resize border,
+    // so they must be excluded from the true-fullscreen geometry check.
+    [DllImport("user32.dll")]
+    internal static extern bool IsZoomed(IntPtr hWnd);
+
     [DllImport("user32.dll")]
     internal static extern IntPtr MonitorFromPoint(POINT pt, uint dwFlags);
 

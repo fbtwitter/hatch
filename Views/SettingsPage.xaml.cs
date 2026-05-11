@@ -18,7 +18,12 @@ public sealed partial class SettingsPage : Page
         NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
 
         // Pre-select the currently saved hotkey key in the ComboBox
-        Loaded += (_, _) => SyncHotkeyKeySelector();
+        // and initialise the mascot size slider/label
+        Loaded += (_, _) =>
+        {
+            SyncHotkeyKeySelector();
+            SyncMascotSizeSlider();
+        };
     }
 
     private void BackButton_Click(object sender, RoutedEventArgs e)
@@ -67,6 +72,29 @@ public sealed partial class SettingsPage : Page
             item.Tag is string tag && uint.TryParse(tag, out var vk))
         {
             _viewModel.HotkeyVirtualKey = vk;
+        }
+    }
+
+    private void SyncMascotSizeSlider()
+    {
+        MascotSizeSlider.Value = Math.Clamp(_viewModel.MascotSize, 60, 200);
+        MascotSizeHeaderLabel.Text = $"{_viewModel.MascotSize}px";
+    }
+
+    private void MascotSizeSlider_ValueChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        if (_viewModel is null) return;
+
+        var size = (int)MascotSizeSlider.Value;
+        MascotSizeHeaderLabel.Text = $"{size}px";
+        _viewModel.MascotSize = size;
+    }
+
+    private void MascotSizePreset_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string tag && int.TryParse(tag, out var size))
+        {
+            MascotSizeSlider.Value = size;
         }
     }
 }
