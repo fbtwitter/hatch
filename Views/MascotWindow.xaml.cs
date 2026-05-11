@@ -4,6 +4,8 @@ using CommunityToolkit.WinUI.Lottie;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Animation;
 using System.Numerics;
@@ -68,8 +70,8 @@ public sealed partial class MascotWindow : Window
         };
         _inactivityTimer.Start();
         // Wiggle is built in code so it targets MascotGridTransform (works for both Canvas and Lottie)
-        MascotGridTransform.CenterX = MascotViewModel.WindowSize / 2.0;
-        MascotGridTransform.CenterY = MascotViewModel.WindowSize / 2.0;
+        MascotGridTransform.CenterX = ViewModel.WindowSize / 2.0;
+        MascotGridTransform.CenterY = ViewModel.WindowSize / 2.0;
         _wiggleAnimation = BuildWiggleStoryboard();
 
         // Defer idle animation until after the window is shown to avoid startup lag
@@ -92,7 +94,7 @@ public sealed partial class MascotWindow : Window
         // Suppress Alt+Tab / taskbar entry — mascot is ambient UI
         AppWindow.IsShownInSwitchers = false;
 
-        AppWindow.Resize(new SizeInt32(MascotViewModel.WindowSize, MascotViewModel.WindowSize));
+        AppWindow.Resize(new SizeInt32(ViewModel.WindowSize, ViewModel.WindowSize));
 
         _hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
 
@@ -130,7 +132,7 @@ public sealed partial class MascotWindow : Window
                     _wigglePlayed = false;
                     _bubbleWindow = new QuickAddBubbleWindow();
                     App.BubbleWindowInstance = _bubbleWindow;
-                    _bubbleWindow.PositionRelativeToMascot(ViewModel.X, ViewModel.Y, MascotViewModel.WindowSize);
+                    _bubbleWindow.PositionRelativeToMascot(ViewModel.X, ViewModel.Y, ViewModel.WindowSize);
                     _bubbleWindow.Closed += (_, _) =>
                     {
                         _bubbleWindow = null;
@@ -149,6 +151,10 @@ public sealed partial class MascotWindow : Window
             else if (e.PropertyName == nameof(MascotViewModel.IsMascotHidden))
             {
                 ShowWindow(_hwnd, ViewModel.IsMascotHidden ? SW_HIDE : SW_SHOWNOACTIVATE);
+            }
+            else if (e.PropertyName == nameof(MascotViewModel.WindowSize))
+            {
+                ApplyWindowResize();
             }
         };
         Closed += (_, _) =>
@@ -268,12 +274,24 @@ public sealed partial class MascotWindow : Window
         }
     }
 
-    // OS takes ownership of hRgn after SetWindowRgn — do not DeleteObject.
     private void SetEggRegion()
     {
-        var hRgn = NativeMethods.CreateEllipticRgn(
-            0, 0, MascotViewModel.WindowSize, MascotViewModel.WindowSize);
+        SetEggRegion(ViewModel.WindowSize);
+    }
+
+    private void SetEggRegion(int size)
+    {
+        var hRgn = NativeMethods.CreateEllipticRgn(0, 0, size, size);
         NativeMethods.SetWindowRgn(_hwnd, hRgn, true);
+    }
+
+    private void ApplyWindowResize()
+    {
+        var newSize = ViewModel.WindowSize;
+        AppWindow.Resize(new SizeInt32(newSize, newSize));
+        MascotGridTransform.CenterX = newSize / 2.0;
+        MascotGridTransform.CenterY = newSize / 2.0;
+        SetEggRegion(newSize);
     }
 
     public void ApplyAlwaysOnTop(bool alwaysOnTop)
@@ -429,5 +447,44 @@ public sealed partial class MascotWindow : Window
         _wigglePlayed = true;
         _wiggleAnimation?.Stop();
         _wiggleAnimation?.Begin();
+    }
+
+    private async void OnResizeMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        var dialog = new ContentDialog
+        {
+            Title = "Resize Mascot",
+            PrimaryButtonText = "Apply",
+            CloseButtonText = "Cancel",
+            XamlRoot = Content.XamlRoot
+        };
+
+        var stackPanel = new StackPanel { Spacing = 12, Padding = new Thickness(12) };
+        var currentSize = ViewModel.WindowSize;
+
+        var slider = new Slider
+        {
+            Minimum = 40,
+            Maximum = 300,
+            Value = currentSize,
+            StepFrequency = 5,
+            TickFrequency = 10
+        };
+
+        var textBlock = new TextBlock { Text = $"Size: {currentSize}px" };
+        slider.ValueChanged += (_, _) =>
+        {
+            textBlock.Text = $"Size: {(int)slider.Value}px";
+        };
+
+        stackPanel.Children.Add(slider);
+        stackPanel.Children.Add(textBlock);
+        dialog.Content = stackPanel;
+
+        var result = await dialog.ShowAsync();
+        if (result == ContentDialogResult.Primary)
+        {
+            ViewModel.ResizeByValue((int)slider.Value);
+        }
     }
 }
