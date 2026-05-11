@@ -105,7 +105,7 @@ jobs:
 
           # Collect MSIX files (they live inside per-arch subdirectories)
           $msixFiles = Get-ChildItem -Recurse -Filter "*.msix" -Path AppxPackages |
-            Where-Object { $_.Name -notmatch "Dependencies" }
+            Where-Object { $_.FullName -notmatch "\\Dependencies\\" }
 
           Write-Host "Found MSIX files:"
           $msixFiles | ForEach-Object { Write-Host "  $($_.FullName)" }
