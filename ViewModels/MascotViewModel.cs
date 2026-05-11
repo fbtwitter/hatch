@@ -11,7 +11,6 @@ namespace Hatch.ViewModels;
 
 public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 {
-    internal const int WindowSize = 120;
     private const int EdgePadding = 20;
 
     private readonly DispatcherQueue _dispatcher;
@@ -64,6 +63,21 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
+    public int WindowSize => App.Settings.MascotSize;
+
+    public int Size
+    {
+        get => App.Settings.MascotSize;
+        set
+        {
+            if (App.Settings.MascotSize == value) return;
+            App.Settings.MascotSize = Math.Max(40, value); // Minimum 40px
+            _ = App.SettingsService.SaveAsync();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(WindowSize));
+        }
+    }
+
     public bool MuteAnimation
     {
         get => App.Settings.MuteAnimation;
@@ -81,6 +95,14 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
     public string? LottieFilePath => App.Settings.LottieFilePath;
     public void RaiseLottieFileChanged() => OnPropertyChanged(nameof(LottieFilePath));
+
+    // Called by SettingsViewModel after saving MascotSize so MascotWindow responds without re-saving.
+    public void RaiseWindowSizeChanged()
+    {
+        OnPropertyChanged(nameof(Size));
+        OnPropertyChanged(nameof(WindowSize));
+        ClampToWorkArea();
+    }
 
     public bool IsDragging => _isDragging;
 
@@ -128,6 +150,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     public ICommand HideUntilTomorrowCommand  { get; }
     public ICommand HideUntilRestartCommand   { get; }
     public ICommand RestoreFromHideCommand    { get; }
+    public ICommand OpenResizeCommand         { get; }
 
     public bool IsMascotHidden
     {
@@ -152,6 +175,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         HideUntilTomorrowCommand = new RelayCommand(_ => HideFor(UntilTomorrow()));
         HideUntilRestartCommand  = new RelayCommand(_ => HideUntilRestart());
         RestoreFromHideCommand   = new RelayCommand(_ => RestoreFromHide());
+        OpenResizeCommand        = new RelayCommand(_ => OpenResize());
         InitializePosition();
         StartFullscreenPolling();
         CheckHideExpiration();
@@ -194,8 +218,9 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         if (NativeMethods.GetMonitorInfo(hMonitor, ref mi))
         {
             var w = mi.rcWork;
-            newX = Math.Clamp(newX, w.left, w.right  - WindowSize);
-            newY = Math.Clamp(newY, w.top,  w.bottom - WindowSize);
+            var size = WindowSize;
+            newX = Math.Clamp(newX, w.left, w.right  - size);
+            newY = Math.Clamp(newY, w.top,  w.bottom - size);
         }
 
         X = newX;
@@ -212,12 +237,36 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     private void ResetPosition()
     {
         var workArea = DisplayArea.Primary.WorkArea;
-        X = workArea.X + workArea.Width  - WindowSize - EdgePadding;
-        Y = workArea.Y + workArea.Height - WindowSize - EdgePadding;
+        var size = WindowSize;
+        X = workArea.X + workArea.Width  - size - EdgePadding;
+        Y = workArea.Y + workArea.Height - size - EdgePadding;
         _ = App.SettingsService.SaveAsync();
     }
 
-    private static void ShowMainWindow() => App.MainWindowInstance?.Activate();
+    private void OpenResize()
+    {
+        // Placeholder — the actual resize UI is handled by MascotWindow
+    }
+
+    public void ResizeByValue(int newSize)
+    {
+        Size = newSize;
+        ClampToWorkArea();
+    }
+
+    private static void ShowMainWindow()
+    {
+        var win = App.MainWindowInstance;
+        if (win == null) return;
+
+        // Close the bubble if open — only one panel at a time
+        if (App.MascotWindowInstance?.ViewModel.IsBubbleOpen == true)
+            App.MascotWindowInstance.ViewModel.CloseBubble();
+
+        PositionMainWindowNearMascot(win);
+        win.AppWindow.Show();
+        win.Activate();
+    }
 
     private static void ToggleMainWindow()
     {
@@ -257,8 +306,9 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
         int mascotX = App.Settings.MascotX;
         int mascotY = App.Settings.MascotY;
+        int windowSize = App.Settings.MascotSize;
 
-        var pt       = new NativeMethods.POINT { X = mascotX + WindowSize / 2, Y = mascotY + WindowSize / 2 };
+        var pt       = new NativeMethods.POINT { X = mascotX + windowSize / 2, Y = mascotY + windowSize / 2 };
         var hMonitor = NativeMethods.MonitorFromPoint(pt, NativeMethods.MONITOR_DEFAULTTONEAREST);
         var mi       = new NativeMethods.MONITORINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.MONITORINFO>() };
         if (!NativeMethods.GetMonitorInfo(hMonitor, ref mi)) return;
@@ -274,10 +324,10 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         // Prefer left of mascot; flip to right if it doesn't fit
         int x = mascotX - winWidth - scaledGap;
         if (x < w.left)
-            x = mascotX + WindowSize + scaledGap;
+            x = mascotX + windowSize + scaledGap;
 
         // Vertically centre the main window on the mascot
-        int mascotCenterY = mascotY + WindowSize / 2;
+        int mascotCenterY = mascotY + windowSize / 2;
         int y = mascotCenterY - winHeight / 2;
         y = Math.Clamp(y, w.top + scaledGap, w.bottom - winHeight);
         x = Math.Clamp(x, w.left, w.right - winWidth);
@@ -287,6 +337,13 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
     private void ToggleBubble()
     {
+        // If the main window is visible, tapping the mascot dismisses it — no bubble.
+        if (App.MainWindowInstance?.AppWindow.IsVisible == true)
+        {
+            App.MainWindowInstance.AppWindow.Hide();
+            return;
+        }
+
         if (IsBubbleOpen)
         {
             IsBubbleOpen = false;
@@ -294,20 +351,16 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         else
         {
             IsBubbleOpen = true;
-
-            // Hide the main window after the bubble is already opening — only one panel at a time.
-            // Hiding first causes a focus-transition stall that makes the bubble feel slow.
-            if (App.MainWindowInstance?.AppWindow.IsVisible == true)
-                App.MainWindowInstance.AppWindow.Hide();
         }
     }
-            private void InitializePosition()
+    private void InitializePosition()
     {
         if (App.Settings.MascotX < 0 || App.Settings.MascotY < 0)
         {
             var workArea = DisplayArea.Primary.WorkArea;
-            App.Settings.MascotX = workArea.X + workArea.Width  - WindowSize - EdgePadding;
-            App.Settings.MascotY = workArea.Y + workArea.Height - WindowSize - EdgePadding;
+            var size = WindowSize;
+            App.Settings.MascotX = workArea.X + workArea.Width  - size - EdgePadding;
+            App.Settings.MascotY = workArea.Y + workArea.Height - size - EdgePadding;
             _ = App.SettingsService.SaveAsync();
         }
         else
@@ -316,8 +369,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
-    // Clamps stored position so the window stays fully inside its monitor's work area.
-    private static void ClampToWorkArea()
+    private void ClampToWorkArea()
     {
         var pt = new NativeMethods.POINT { X = App.Settings.MascotX, Y = App.Settings.MascotY };
         var hMonitor = NativeMethods.MonitorFromPoint(pt, NativeMethods.MONITOR_DEFAULTTONEAREST);
@@ -325,8 +377,11 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         if (!NativeMethods.GetMonitorInfo(hMonitor, ref mi)) return;
 
         var w = mi.rcWork;
-        App.Settings.MascotX = Math.Clamp(App.Settings.MascotX, w.left, w.right  - WindowSize);
-        App.Settings.MascotY = Math.Clamp(App.Settings.MascotY, w.top,  w.bottom - WindowSize);
+        var size = WindowSize;
+        // Route through the property setters so PropertyChanged fires and
+        // MascotWindow.AppWindow.Move() is invoked for the live window.
+        X = Math.Clamp(App.Settings.MascotX, w.left, w.right  - size);
+        Y = Math.Clamp(App.Settings.MascotY, w.top,  w.bottom - size);
     }
 
     private void StartFullscreenPolling()
@@ -375,6 +430,11 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
         NativeMethods.GetWindowRect(hwnd, out var wr);
         var mr = mi.rcMonitor;
+
+        // Maximized windows are positioned at -8,-8 (invisible resize border) so their
+        // RECT exceeds rcMonitor on all sides — exclude them; they are not true fullscreen.
+        if (NativeMethods.IsZoomed(hwnd)) return false;
+
         return wr.left <= mr.left && wr.top <= mr.top &&
                wr.right >= mr.right && wr.bottom >= mr.bottom;
     }
