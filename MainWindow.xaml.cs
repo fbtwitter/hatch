@@ -154,6 +154,13 @@ public sealed partial class MainWindow : Window
         else                _trayService?.HideIcon();
     }
 
+    public void NavigateToSettings()
+    {
+        // RootFrame holds MainPage; ask it to navigate its ContentFrame to SettingsPage
+        if (RootFrame.Content is MainPage mainPage)
+            mainPage.NavigateToSettingsPage();
+    }
+
     public SystemTrayService? GetTrayService() => _trayService;
 
     private void RestoreWindow()

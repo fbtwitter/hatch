@@ -4,6 +4,8 @@ using CommunityToolkit.WinUI.Lottie;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media.Animation;
 using System.Numerics;
@@ -68,8 +70,8 @@ public sealed partial class MascotWindow : Window
         };
         _inactivityTimer.Start();
         // Wiggle is built in code so it targets MascotGridTransform (works for both Canvas and Lottie)
-        MascotGridTransform.CenterX = MascotViewModel.WindowSize / 2.0;
-        MascotGridTransform.CenterY = MascotViewModel.WindowSize / 2.0;
+        MascotGridTransform.CenterX = ViewModel.WindowSize / 2.0;
+        MascotGridTransform.CenterY = ViewModel.WindowSize / 2.0;
         _wiggleAnimation = BuildWiggleStoryboard();
 
         // Defer idle animation until after the window is shown to avoid startup lag
@@ -92,7 +94,7 @@ public sealed partial class MascotWindow : Window
         // Suppress Alt+Tab / taskbar entry — mascot is ambient UI
         AppWindow.IsShownInSwitchers = false;
 
-        AppWindow.Resize(new SizeInt32(MascotViewModel.WindowSize, MascotViewModel.WindowSize));
+        AppWindow.Resize(new SizeInt32(ViewModel.WindowSize, ViewModel.WindowSize));
 
         _hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
 
@@ -130,7 +132,7 @@ public sealed partial class MascotWindow : Window
                     _wigglePlayed = false;
                     _bubbleWindow = new QuickAddBubbleWindow();
                     App.BubbleWindowInstance = _bubbleWindow;
-                    _bubbleWindow.PositionRelativeToMascot(ViewModel.X, ViewModel.Y, MascotViewModel.WindowSize);
+                    _bubbleWindow.PositionRelativeToMascot(ViewModel.X, ViewModel.Y, ViewModel.WindowSize);
                     _bubbleWindow.Closed += (_, _) =>
                     {
                         _bubbleWindow = null;
@@ -149,6 +151,10 @@ public sealed partial class MascotWindow : Window
             else if (e.PropertyName == nameof(MascotViewModel.IsMascotHidden))
             {
                 ShowWindow(_hwnd, ViewModel.IsMascotHidden ? SW_HIDE : SW_SHOWNOACTIVATE);
+            }
+            else if (e.PropertyName == nameof(MascotViewModel.WindowSize))
+            {
+                ApplyWindowResize();
             }
         };
         Closed += (_, _) =>
@@ -268,12 +274,35 @@ public sealed partial class MascotWindow : Window
         }
     }
 
-    // OS takes ownership of hRgn after SetWindowRgn — do not DeleteObject.
     private void SetEggRegion()
     {
-        var hRgn = NativeMethods.CreateEllipticRgn(
-            0, 0, MascotViewModel.WindowSize, MascotViewModel.WindowSize);
+        SetEggRegion(ViewModel.WindowSize);
+    }
+
+    private void SetEggRegion(int size)
+    {
+        var hRgn = NativeMethods.CreateEllipticRgn(0, 0, size, size);
         NativeMethods.SetWindowRgn(_hwnd, hRgn, true);
+    }
+
+    private void ApplyWindowResize()
+    {
+        var newSize = ViewModel.WindowSize;
+        AppWindow.Resize(new SizeInt32(newSize, newSize));
+        MascotGridTransform.CenterX = newSize / 2.0;
+        MascotGridTransform.CenterY = newSize / 2.0;
+
+        // Only re-apply the elliptical region when the egg mascot is active.
+        // When Lottie is active SetWindowRgn was cleared to IntPtr.Zero and
+        // must stay that way so the rectangular Lottie canvas receives input.
+        if (LottiePlayer.Visibility != Visibility.Visible)
+            SetEggRegion(newSize);
+
+        // Reposition the window to the (already clamped) stored coordinates.
+        // ResizeByValue → ClampToWorkArea updates X/Y in settings but the
+        // PropertyChanged for X/Y fires before the window is resized, so we
+        // apply the final move here once the new size is committed.
+        AppWindow.Move(new PointInt32(ViewModel.X, ViewModel.Y));
     }
 
     public void ApplyAlwaysOnTop(bool alwaysOnTop)
@@ -429,5 +458,24 @@ public sealed partial class MascotWindow : Window
         _wigglePlayed = true;
         _wiggleAnimation?.Stop();
         _wiggleAnimation?.Begin();
+    }
+
+    private void OnMascotSettingsMenuItemClick(object sender, RoutedEventArgs e)
+    {
+        // Show the main window and navigate straight to Settings.
+        // XamlRoot for any dialog is guaranteed correct there.
+        var win = App.MainWindowInstance;
+        if (win == null) return;
+
+        MascotViewModel.PositionMainWindowNearMascot(win);
+        win.AppWindow.Show();
+
+        var mainHwnd = Win32Interop.GetWindowFromWindowId(win.AppWindow.Id);
+        NativeMethods.SetWindowPos(
+            mainHwnd, NativeMethods.HWND_TOPMOST,
+            0, 0, 0, 0,
+            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+
+        win.NavigateToSettings();
     }
 }
