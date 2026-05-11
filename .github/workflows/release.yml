@@ -19,24 +19,12 @@ jobs:
         with:
           dotnet-version: "9.0.x"
 
-      - name: Restore dependencies
-        run: dotnet restore
-
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
       - name: Generate placeholder assets
         shell: pwsh
         run: .\scripts\create-assets.ps1
-
-      - name: Create AppxPackages directory
-        shell: pwsh
-        run: |
-          $dir = "${{ github.workspace }}\AppxPackages"
-          if (!(Test-Path $dir)) {
-            New-Item -ItemType Directory -Path $dir -Force | Out-Null
-            Write-Host "Created AppxPackages directory: $dir"
-          }
 
       - name: Set MSIX version from tag
         shell: pwsh
@@ -54,179 +42,101 @@ jobs:
         shell: pwsh
         run: |
           $pfxBytes = [Convert]::FromBase64String("${{ secrets.SIGNING_CERTIFICATE }}")
-          [IO.File]::WriteAllBytes("signing.pfx", $pfxBytes)
-          # Import into the current-user store so SignTool can reach the private key.
+          [IO.File]::WriteAllBytes("${{ github.workspace }}\signing.pfx", $pfxBytes)
           $cert = Import-PfxCertificate `
-            -FilePath "signing.pfx" `
+            -FilePath "${{ github.workspace }}\signing.pfx" `
             -CertStoreLocation "Cert:\CurrentUser\My" `
             -Password (ConvertTo-SecureString "${{ secrets.CERTIFICATE_PASSWORD }}" -AsPlainText -Force)
-          [IO.File]::WriteAllBytes("install-cert.cer",
-            $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert))
+          [IO.File]::WriteAllBytes(
+            "${{ github.workspace }}\install-cert.cer",
+            $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert)
+          )
           "CERT_THUMBPRINT=$($cert.Thumbprint)" | Out-File $env:GITHUB_ENV -Append
+          Write-Host "Certificate thumbprint: $($cert.Thumbprint)"
+
+      - name: Restore dependencies
+        shell: pwsh
+        run: msbuild todo-winui3.csproj /t:Restore /p:Configuration=Release
 
       - name: Build x64 MSIX
         shell: pwsh
         run: |
-          $result = msbuild todo-winui3.csproj `
+          msbuild todo-winui3.csproj `
             /p:Configuration=Release `
             /p:Platform=x64 `
             /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
             /p:AppxPackageSigningEnabled=true `
-            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}" `
-            /verbosity:detailed
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "x64 build failed with exit code $LASTEXITCODE"
-            exit $LASTEXITCODE
-          }
-          Write-Host "x64 build completed successfully"
-          Get-ChildItem -Recurse -Path AppxPackages -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
+            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Build x86 MSIX
         shell: pwsh
         run: |
-          $result = msbuild todo-winui3.csproj `
+          msbuild todo-winui3.csproj `
             /p:Configuration=Release `
             /p:Platform=x86 `
             /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
             /p:AppxPackageSigningEnabled=true `
-            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}" `
-            /verbosity:detailed
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "x86 build failed with exit code $LASTEXITCODE"
-            exit $LASTEXITCODE
-          }
-          Write-Host "x86 build completed successfully"
-          Get-ChildItem -Recurse -Path AppxPackages -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
+            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Build arm64 MSIX
         shell: pwsh
         run: |
-          $result = msbuild todo-winui3.csproj `
+          msbuild todo-winui3.csproj `
             /p:Configuration=Release `
             /p:Platform=arm64 `
             /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
             /p:AppxPackageSigningEnabled=true `
-            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}" `
-            /verbosity:detailed
-          if ($LASTEXITCODE -ne 0) {
-            Write-Host "arm64 build failed with exit code $LASTEXITCODE"
-            exit $LASTEXITCODE
-          }
-          Write-Host "arm64 build completed successfully"
-          Get-ChildItem -Recurse -Path AppxPackages -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
+            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Debug - Check build output for MSIX files
+      - name: Collect MSIX files and create bundle
         shell: pwsh
         run: |
-          Write-Host "=== Checking for MSIX files ==="
-          Write-Host "`nAll MSIX files in entire workspace:"
-          Get-ChildItem -Recurse -Filter "*.msix" -Path . -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
+          # Find the Windows SDK MakeAppx.exe
+          $makeAppx = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" `
+            -Filter "MakeAppx.exe" -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match "x64" } |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+          if (-not $makeAppx) { Write-Error "MakeAppx.exe not found"; exit 1 }
+          Write-Host "Using MakeAppx: $($makeAppx.FullName)"
 
-          Write-Host "`nChecking bin directories:"
-          Get-ChildItem -Recurse -Path "bin" -Filter "*.msix" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
+          # Collect MSIX files (they live inside per-arch subdirectories)
+          $msixFiles = Get-ChildItem -Recurse -Filter "*.msix" -Path AppxPackages |
+            Where-Object { $_.Name -notmatch "Dependencies" }
 
-          Write-Host "`nChecking AppxPackages directory:"
-          if (Test-Path AppxPackages) {
-            Get-ChildItem -Recurse -Path AppxPackages | ForEach-Object { Write-Host $_.FullName }
-          } else {
-            Write-Host "AppxPackages directory does not exist"
-          }
+          Write-Host "Found MSIX files:"
+          $msixFiles | ForEach-Object { Write-Host "  $($_.FullName)" }
 
-          Write-Host "`nContents of bin/x64/Release/:"
-          if (Test-Path "bin/x64/Release") {
-            Get-ChildItem -Recurse "bin/x64/Release" | Where-Object { $_.PSIsContainer -eq $false } | Select-Object -First 20 | ForEach-Object { Write-Host $_.FullName }
-          } else {
-            Write-Host "Directory does not exist"
-          }
+          if ($msixFiles.Count -eq 0) { Write-Error "No MSIX files found"; exit 1 }
 
-      - name: Setup Windows SDK
-        shell: pwsh
-        run: |
-          $sdkPath = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin\*\x64" -ErrorAction SilentlyContinue | Select-Object -First 1
-          if ($sdkPath) {
-            $env:PATH = "$($sdkPath.FullName);$env:PATH"
-            "PATH=$env:PATH" | Out-File $env:GITHUB_ENV -Append
-          }
+          # Copy them flat into a staging folder so MakeAppx /d can find them
+          $stagingDir = "${{ github.workspace }}\BundleStaging"
+          New-Item -ItemType Directory -Path $stagingDir -Force | Out-Null
+          $msixFiles | ForEach-Object { Copy-Item $_.FullName -Destination $stagingDir }
 
-      - name: Create MSIX bundle
-        shell: pwsh
-        run: |
-          if (!(Test-Path "AppxPackages")) {
-            Write-Host "AppxPackages directory not found, skipping bundle creation"
-            "BUNDLE_PATH=" | Out-File $env:GITHUB_ENV -Append
-            "BUNDLE_NAME=" | Out-File $env:GITHUB_ENV -Append
-            exit 0
-          }
-
-          $x64 = Get-ChildItem -Recurse -Filter "*_x64_*.msix" -Path AppxPackages | Select-Object -First 1
-          $x86 = Get-ChildItem -Recurse -Filter "*_x86_*.msix" -Path AppxPackages | Select-Object -First 1
-          $arm64 = Get-ChildItem -Recurse -Filter "*_arm64_*.msix" -Path AppxPackages | Select-Object -First 1
-          $packages = @()
-          if ($x64) { $packages += $x64.FullName }
-          if ($x86) { $packages += $x86.FullName }
-          if ($arm64) { $packages += $arm64.FullName }
-
-          if ($packages.Count -eq 0) {
-            Write-Host "No MSIX files found, skipping bundle creation"
-            "BUNDLE_PATH=" | Out-File $env:GITHUB_ENV -Append
-            "BUNDLE_NAME=" | Out-File $env:GITHUB_ENV -Append
-            exit 0
-          }
-
-          $mappingFile = @"
-          <?xml version="1.0" encoding="utf-8"?>
-          <MsixBundleMetadata xmlns="http://schemas.microsoft.com/appx/msixbundle/2015/02">
-            <Packages>
-          "@
-          foreach ($pkg in $packages) {
-            if (Test-Path $pkg) {
-              $name = Split-Path $pkg -Leaf
-              $mappingFile += "`n      <Package FileName=""$name"" />"
+          # Export per-arch env vars for the release notes
+          $msixFiles | ForEach-Object {
+            if ($_.Name -match "_x64_") {
+              "X64_MSIX_NAME=$($_.Name)" | Out-File $env:GITHUB_ENV -Append
+            } elseif ($_.Name -match "_x86_") {
+              "X86_MSIX_NAME=$($_.Name)" | Out-File $env:GITHUB_ENV -Append
+            } elseif ($_.Name -match "_arm64_") {
+              "ARM64_MSIX_NAME=$($_.Name)" | Out-File $env:GITHUB_ENV -Append
             }
           }
-          $mappingFile += "`n    </Packages>`n  </MsixBundleMetadata>"
-          $mappingFile | Out-File "mapping.xml" -Encoding utf8NoBOM
 
+          # Create the bundle
           $bundleName = "Hatch_${{ env.MSIX_VERSION }}_bundle.msixbundle"
-          MakeAppx.exe bundle /d "AppxPackages" /p $bundleName /mf mapping.xml
-          "BUNDLE_PATH=$(Get-Item $bundleName | Select-Object -ExpandProperty FullName)" | Out-File $env:GITHUB_ENV -Append
+          $bundlePath = "${{ github.workspace }}\$bundleName"
+          & $makeAppx.FullName bundle /d $stagingDir /p $bundlePath /overwrite
+          if ($LASTEXITCODE -ne 0) { Write-Error "MakeAppx bundle failed"; exit $LASTEXITCODE }
+
+          "BUNDLE_PATH=$bundlePath" | Out-File $env:GITHUB_ENV -Append
           "BUNDLE_NAME=$bundleName" | Out-File $env:GITHUB_ENV -Append
-
-      - name: Locate and list MSIX packages
-        shell: pwsh
-        run: |
-          Write-Host "Searching for MSIX files in AppxPackages..."
-          Get-ChildItem -Recurse -Filter "*.msix" -Path AppxPackages -ErrorAction SilentlyContinue | ForEach-Object {
-            Write-Host "Found: $($_.FullName)"
-          }
-
-          $x64 = Get-ChildItem -Recurse -Filter "*_x64_*.msix" -Path AppxPackages -ErrorAction SilentlyContinue | Select-Object -First 1
-          $x86 = Get-ChildItem -Recurse -Filter "*_x86_*.msix" -Path AppxPackages -ErrorAction SilentlyContinue | Select-Object -First 1
-          $arm64 = Get-ChildItem -Recurse -Filter "*_arm64_*.msix" -Path AppxPackages -ErrorAction SilentlyContinue | Select-Object -First 1
-
-          if ($x64) { "X64_MSIX_PATH=$($x64.FullName)" | Out-File $env:GITHUB_ENV -Append }
-          if ($x86) { "X86_MSIX_PATH=$($x86.FullName)" | Out-File $env:GITHUB_ENV -Append }
-          if ($arm64) { "ARM64_MSIX_PATH=$($arm64.FullName)" | Out-File $env:GITHUB_ENV -Append }
-          if ($x64) { "X64_MSIX_NAME=$($x64.Name)" | Out-File $env:GITHUB_ENV -Append }
-          if ($x86) { "X86_MSIX_NAME=$($x86.Name)" | Out-File $env:GITHUB_ENV -Append }
-          if ($arm64) { "ARM64_MSIX_NAME=$($arm64.Name)" | Out-File $env:GITHUB_ENV -Append }
-
-      - name: Prepare release files list
-        shell: pwsh
-        run: |
-          $files = @("install-cert.cer")
-          if ("${{ env.BUNDLE_PATH }}" -ne "") { $files += "${{ env.BUNDLE_PATH }}" }
-          if ("${{ env.X64_MSIX_PATH }}" -ne "") { $files += "${{ env.X64_MSIX_PATH }}" }
-          if ("${{ env.X86_MSIX_PATH }}" -ne "") { $files += "${{ env.X86_MSIX_PATH }}" }
-          if ("${{ env.ARM64_MSIX_PATH }}" -ne "") { $files += "${{ env.ARM64_MSIX_PATH }}" }
-
-          Write-Host "Release files to upload:"
-          $files | ForEach-Object { Write-Host "  $_" }
-
-          $filesContent = $files -join "`n"
-          "RELEASE_FILES<<EOF" | Out-File $env:GITHUB_ENV -Append
-          $filesContent | Out-File $env:GITHUB_ENV -Append
-          "EOF" | Out-File $env:GITHUB_ENV -Append
+          Write-Host "Bundle created: $bundlePath"
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
@@ -240,13 +150,16 @@ jobs:
             1. Download `install-cert.cer`
             2. Double-click it → **Install Certificate** → **Local Machine** → **Trusted People** → Finish
 
-            **Install / update the app:**
-            ${{ env.BUNDLE_NAME != '' && format('- **Recommended:** Download `{0}` for automatic architecture detection', env.BUNDLE_NAME) || '- Individual platform packages below:' }}
-            - **Choose your platform:**
-              ${{ env.X64_MSIX_NAME != '' && format('- **Intel/AMD 64-bit:** `{0}`', env.X64_MSIX_NAME) || '- **Intel/AMD 64-bit:** Not available' }}
-              ${{ env.X86_MSIX_NAME != '' && format('- **Intel/AMD 32-bit:** `{0}`', env.X86_MSIX_NAME) || '- **Intel/AMD 32-bit:** Not available' }}
-              ${{ env.ARM64_MSIX_NAME != '' && format('- **ARM 64-bit:** `{0}`', env.ARM64_MSIX_NAME) || '- **ARM 64-bit:** Not available' }}
-            - Double-click the file to install
+            **Install the app:**
+            - **Recommended:** Download `${{ env.BUNDLE_NAME }}` — Windows picks the right architecture automatically
+            - Or choose your platform manually:
+              - **Intel/AMD 64-bit:** `${{ env.X64_MSIX_NAME }}`
+              - **Intel/AMD 32-bit:** `${{ env.X86_MSIX_NAME }}`
+              - **ARM 64-bit:** `${{ env.ARM64_MSIX_NAME }}`
+            - Double-click the downloaded file to install
 
-            > Subsequent releases from this repo won't need the certificate step again.
-          files: ${{ env.RELEASE_FILES }}
+            > Subsequent updates from this repo won't need the certificate step again.
+          files: |
+            install-cert.cer
+            ${{ env.BUNDLE_PATH }}
+            AppxPackages/**/*.msix
