@@ -52,4 +52,11 @@ public sealed class TodoItem : INotifyPropertyChanged
 
     private void OnPropertyChanged([CallerMemberName] string? name = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+    /// <summary>
+    /// Re-raises PropertyChanged for DueDate so theme-sensitive converters
+    /// re-evaluate without modifying the collection.
+    /// </summary>
+    public void RefreshDueDateBinding()
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DueDate)));
 }

@@ -52,11 +52,7 @@ jobs:
             $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert))
           "CERT_THUMBPRINT=$($cert.Thumbprint)" | Out-File $env:GITHUB_ENV -Append
 
-      - name: Restore dependencies
-        shell: pwsh
-        run: dotnet restore -p:Platform=x64
-
-      - name: Build and package MSIX
+      - name: Build x64 MSIX
         shell: pwsh
         run: |
           msbuild todo-winui3.csproj `
@@ -68,13 +64,70 @@ jobs:
             /p:AppxPackageSigningEnabled=true `
             /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}"
 
-      - name: Locate MSIX
+      - name: Build x86 MSIX
         shell: pwsh
         run: |
-          $f = Get-ChildItem -Recurse -Filter "*.msix" -Path AppxPackages |
-               Select-Object -First 1
-          "MSIX_PATH=$($f.FullName)" | Out-File $env:GITHUB_ENV -Append
-          "MSIX_NAME=$($f.Name)"     | Out-File $env:GITHUB_ENV -Append
+          msbuild todo-winui3.csproj `
+            /p:Configuration=Release `
+            /p:Platform=x86 `
+            /p:GenerateAppxPackageOnBuild=true `
+            /p:AppxBundle=Never `
+            /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
+            /p:AppxPackageSigningEnabled=true `
+            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}"
+
+      - name: Build arm64 MSIX
+        shell: pwsh
+        run: |
+          msbuild todo-winui3.csproj `
+            /p:Configuration=Release `
+            /p:Platform=arm64 `
+            /p:GenerateAppxPackageOnBuild=true `
+            /p:AppxBundle=Never `
+            /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
+            /p:AppxPackageSigningEnabled=true `
+            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}"
+
+      - name: Create MSIX bundle
+        shell: pwsh
+        run: |
+          $packages = @(
+            (Get-ChildItem -Recurse -Filter "*_x64_*.msix" -Path AppxPackages | Select-Object -First 1).FullName,
+            (Get-ChildItem -Recurse -Filter "*_x86_*.msix" -Path AppxPackages | Select-Object -First 1).FullName,
+            (Get-ChildItem -Recurse -Filter "*_arm64_*.msix" -Path AppxPackages | Select-Object -First 1).FullName
+          )
+          $mappingFile = @"
+          <?xml version="1.0" encoding="utf-8"?>
+          <MsixBundleMetadata xmlns="http://schemas.microsoft.com/appx/msixbundle/2015/02">
+            <Packages>
+          "@
+          foreach ($pkg in $packages) {
+            if (Test-Path $pkg) {
+              $name = Split-Path $pkg -Leaf
+              $mappingFile += "`n      <Package FileName=""$name"" />"
+            }
+          }
+          $mappingFile += "`n    </Packages>`n  </MsixBundleMetadata>"
+          $mappingFile | Out-File "mapping.xml" -Encoding utf8NoBOM
+
+          $bundleName = "Hatch_${{ env.MSIX_VERSION }}_bundle.msixbundle"
+          MakeAppx.exe bundle /d "AppxPackages" /p $bundleName /mf mapping.xml
+          "BUNDLE_PATH=$(Get-Item $bundleName | Select-Object -ExpandProperty FullName)" | Out-File $env:GITHUB_ENV -Append
+          "BUNDLE_NAME=$bundleName" | Out-File $env:GITHUB_ENV -Append
+
+      - name: Locate MSIX packages
+        shell: pwsh
+        run: |
+          $x64 = Get-ChildItem -Recurse -Filter "*_x64_*.msix" -Path AppxPackages | Select-Object -First 1
+          $x86 = Get-ChildItem -Recurse -Filter "*_x86_*.msix" -Path AppxPackages | Select-Object -First 1
+          $arm64 = Get-ChildItem -Recurse -Filter "*_arm64_*.msix" -Path AppxPackages | Select-Object -First 1
+
+          "X64_MSIX_PATH=$($x64.FullName)" | Out-File $env:GITHUB_ENV -Append
+          "X64_MSIX_NAME=$($x64.Name)" | Out-File $env:GITHUB_ENV -Append
+          "X86_MSIX_PATH=$($x86.FullName)" | Out-File $env:GITHUB_ENV -Append
+          "X86_MSIX_NAME=$($x86.Name)" | Out-File $env:GITHUB_ENV -Append
+          "ARM64_MSIX_PATH=$($arm64.FullName)" | Out-File $env:GITHUB_ENV -Append
+          "ARM64_MSIX_NAME=$($arm64.Name)" | Out-File $env:GITHUB_ENV -Append
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
@@ -89,9 +142,17 @@ jobs:
             2. Double-click it → **Install Certificate** → **Local Machine** → **Trusted People** → Finish
 
             **Install / update the app:**
-            - Download `${{ env.MSIX_NAME }}` and double-click it
+            - **Recommended:** Download `${{ env.BUNDLE_NAME }}` for automatic architecture detection
+            - **Or choose your platform:**
+              - **Intel/AMD 64-bit:** `${{ env.X64_MSIX_NAME }}`
+              - **Intel/AMD 32-bit:** `${{ env.X86_MSIX_NAME }}`
+              - **ARM 64-bit:** `${{ env.ARM64_MSIX_NAME }}`
+            - Double-click the file to install
 
             > Subsequent releases from this repo won't need the certificate step again.
           files: |
-            ${{ env.MSIX_PATH }}
+            ${{ env.BUNDLE_PATH }}
+            ${{ env.X64_MSIX_PATH }}
+            ${{ env.X86_MSIX_PATH }}
+            ${{ env.ARM64_MSIX_PATH }}
             install-cert.cer
