@@ -115,16 +115,28 @@ jobs:
           Write-Host "arm64 build completed successfully"
           Get-ChildItem -Recurse -Path AppxPackages -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
 
-      - name: Debug - Check all files in workspace
+      - name: Debug - Check build output for MSIX files
         shell: pwsh
         run: |
-          Write-Host "All MSIX files:"
+          Write-Host "=== Checking for MSIX files ==="
+          Write-Host "`nAll MSIX files in entire workspace:"
           Get-ChildItem -Recurse -Filter "*.msix" -Path . -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
-          Write-Host "`nAppxPackages directory contents:"
+
+          Write-Host "`nChecking bin directories:"
+          Get-ChildItem -Recurse -Path "bin" -Filter "*.msix" -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_.FullName }
+
+          Write-Host "`nChecking AppxPackages directory:"
           if (Test-Path AppxPackages) {
             Get-ChildItem -Recurse -Path AppxPackages | ForEach-Object { Write-Host $_.FullName }
           } else {
             Write-Host "AppxPackages directory does not exist"
+          }
+
+          Write-Host "`nContents of bin/x64/Release/:"
+          if (Test-Path "bin/x64/Release") {
+            Get-ChildItem -Recurse "bin/x64/Release" | Where-Object { $_.PSIsContainer -eq $false } | Select-Object -First 20 | ForEach-Object { Write-Host $_.FullName }
+          } else {
+            Write-Host "Directory does not exist"
           }
 
       - name: Setup Windows SDK
