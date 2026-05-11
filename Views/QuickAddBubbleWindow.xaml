@@ -131,14 +131,10 @@
                     <ComboBoxItem x:Name="NoDateItem" Content="No date" IsSelected="True"/>
                     <ComboBoxItem Content="Today"/>
                     <ComboBoxItem Content="Tomorrow"/>
-                    <ComboBoxItem Content="Pick a date…"/>
+                    <ComboBoxItem Content="This weekend"/>
+                    <ComboBoxItem Content="Next week"/>
                 </ComboBox>
-                <CalendarDatePicker x:Name="CustomDatePicker"
-                                    HorizontalAlignment="Stretch"
-                                    PlaceholderText="Choose a date"
-                                    Visibility="Collapsed"
-                                    Margin="0,6,0,0"/>
-            </StackPanel>
+                </StackPanel>
 
             <!-- Add button -->
             <Button x:Name="AddButton"

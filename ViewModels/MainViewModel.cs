@@ -3,17 +3,22 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using Hatch.Helpers;
 using Hatch.Models;
 using Hatch.Services;
+using Microsoft.UI.Dispatching;
 
 namespace Hatch.ViewModels;
 
 public sealed class MainViewModel : INotifyPropertyChanged
 {
     private readonly TaskStorageService _storage;
+    private readonly DispatcherQueue _dispatcherQueue;
     private string _newTaskText = string.Empty;
     private string _activeNavItem = "alltasks";
     private CancellationTokenSource? _saveCancelToken;
+    private bool _isBulkLoading = false;
+    private int _themeVersion = 0;
 
     public ObservableCollection<TodoItem> Tasks { get; } = [];
     public ObservableCollection<TodoItem> ActiveTasks { get; } = [];
@@ -33,6 +38,25 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public bool IsTaskListEmpty => ActiveTasks.Count == 0;
 
+    public bool IsPlannedEmpty => !Tasks.Any(t => t.DueDate != null && !t.IsCompleted);
+
+    public int ThemeVersion
+    {
+        get => _themeVersion;
+        private set
+        {
+            if (_themeVersion == value) return;
+            _themeVersion = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public void NotifyThemeChanged()
+    {
+        ThemeVersion = _themeVersion + 1;
+        RefreshActiveTasks();
+    }
+
     public string ActiveNavItem
     {
         get => _activeNavItem;
@@ -41,14 +65,17 @@ public sealed class MainViewModel : INotifyPropertyChanged
             if (_activeNavItem == value) return;
             _activeNavItem = value;
             OnPropertyChanged();
-            RefreshActiveTasks();
             OnPropertyChanged(nameof(IsTaskListEmpty));
             OnPropertyChanged(nameof(PlannedGroups));
+            OnPropertyChanged(nameof(IsPlannedEmpty));
             OnPropertyChanged(nameof(EmptyStateGlyph));
             OnPropertyChanged(nameof(EmptyStateHeadline));
             OnPropertyChanged(nameof(EmptyStateSubtext));
             App.Settings.ActiveNavItem = value;
             _ = App.SettingsService.SaveAsync();
+            // Defer one frame so the page shell renders before the list rebuilds,
+            // without the visible pause that Low priority causes mid-navigation.
+            _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, RefreshActiveTasks);
         }
     }
 
@@ -62,32 +89,32 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public string EmptyStateHeadline => _activeNavItem switch
     {
-        "myday"     => "Your day is clear",
-        "important" => "No important tasks",
-        "planned"   => "Nothing planned yet",
-        _           => "No tasks yet"
+        "myday"     => Strings.EmptyState_MyDay_Headline,
+        "important" => Strings.EmptyState_Important_Headline,
+        "planned"   => Strings.EmptyState_Planned_Headline,
+        _           => Strings.EmptyState_AllTasks_Headline
     };
 
     public string EmptyStateSubtext => _activeNavItem switch
     {
-        "myday"     => "Add tasks to My Day from All Tasks",
-        "important" => "Star a task to see it here",
-        "planned"   => "Set a due date on a task to see it here",
-        _           => "Add a task above to get started"
+        "myday"     => Strings.EmptyState_MyDay_Subtext,
+        "important" => Strings.EmptyState_Important_Subtext,
+        "planned"   => Strings.EmptyState_Planned_Subtext,
+        _           => Strings.EmptyState_AllTasks_Subtext
     };
 
     private bool MatchesFilter(TodoItem task) => _activeNavItem switch
     {
         "myday"     => task.IsInMyDay,
         "important" => task.IsStarred,
-        "planned"   => task.DueDate != null,
+        "planned"   => task.DueDate != null && !task.IsCompleted,
         _           => true
     };
 
     private void RefreshActiveTasks()
     {
         ActiveTasks.Clear();
-        var today = DateTime.Today;
+        var today = DateTimeOffset.Now.Date;
         var filtered = _activeNavItem switch
         {
             // Priority order: overdue/due today → starred → rest; completed always last
@@ -96,44 +123,57 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 .OrderBy(t => t.IsCompleted)
                 .ThenBy(t =>
                 {
-                    if (t.DueDate.HasValue && t.DueDate.Value.Date <= today) return 0;
+                    if (t.DueDate.HasValue && t.DueDate.Value.ToLocalTime().Date <= today) return 0;
                     if (t.IsStarred) return 1;
                     return 2;
                 })
                 .ThenBy(t => t.DueDate ?? DateTimeOffset.MaxValue),
             "important" => Tasks.Where(t => t.IsStarred).OrderByDescending(t => t.CreatedAt),
-            "planned"   => Tasks.Where(t => t.DueDate != null).OrderBy(t => t.DueDate),
+            "planned"   => Tasks.Where(t => t.DueDate != null && !t.IsCompleted).OrderBy(t => t.DueDate),
             _           => Tasks.OrderByDescending(t => t.CreatedAt)
         };
 
         foreach (var task in filtered)
             ActiveTasks.Add(task);
+
+        OnPropertyChanged(nameof(IsTaskListEmpty));
     }
 
     public IList<PlannedGroup> PlannedGroups
     {
         get
         {
+            // Design decision: tasks without a due date are intentionally excluded from
+            // Planned. Planned is a time-based planning view — undated tasks belong in
+            // All Tasks. The empty-state subtext already guides users to set a due date.
             var groups = new List<PlannedGroup>();
-            var today = DateTime.Today;
+            var today = DateTimeOffset.Now.Date;
             var tomorrow = today.AddDays(1);
             var weekEnd = today.AddDays(7 - (int)today.DayOfWeek);
 
-            var tasksWithDue = Tasks.Where(t => t.DueDate != null).GroupBy(t =>
+            var tasksWithDue = Tasks.Where(t => t.DueDate != null && !t.IsCompleted).GroupBy(t =>
             {
-                var dueDate = t.DueDate!.Value.Date;
-                if (dueDate == today) return "Today";
-                if (dueDate == tomorrow) return "Tomorrow";
-                if (dueDate <= weekEnd) return "This week";
-                return "Later";
-            }).OrderBy(g => Array.IndexOf(new[] { "Today", "Tomorrow", "This week", "Later" }, g.Key));
+                var dueDate = t.DueDate!.Value.ToLocalTime().Date;
+                if (dueDate < today)    return Strings.PlannedGroup_Overdue;
+                if (dueDate == today)   return Strings.PlannedGroup_Today;
+                if (dueDate == tomorrow) return Strings.PlannedGroup_Tomorrow;
+                if (dueDate <= weekEnd) return Strings.PlannedGroup_ThisWeek;
+                return Strings.PlannedGroup_Later;
+            }).OrderBy(g => Array.IndexOf(
+                new[] {
+                    Strings.PlannedGroup_Overdue,
+                    Strings.PlannedGroup_Today,
+                    Strings.PlannedGroup_Tomorrow,
+                    Strings.PlannedGroup_ThisWeek,
+                    Strings.PlannedGroup_Later
+                }, g.Key));
 
             foreach (var group in tasksWithDue)
             {
                 groups.Add(new PlannedGroup
                 {
                     Name = group.Key,
-                    Items = new ObservableCollection<TodoItem>(group.OrderByDescending(t => t.CreatedAt))
+                    Items = new ObservableCollection<TodoItem>(group.OrderBy(t => t.DueDate))
                 });
             }
 
@@ -146,6 +186,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public MainViewModel()
     {
         _storage = new TaskStorageService();
+        _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
         AddTaskCommand = new RelayCommand(
             _ => AddTask(),
@@ -153,15 +194,19 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         Tasks.CollectionChanged += (_, e) =>
         {
-            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add && e.NewItems != null)
+            // Skip during bulk load — LoadAsync calls RefreshActiveTasks once at the end.
+            if (_isBulkLoading) return;
+
+            if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
             {
+                // Incremental insert keeps the UI fast for normal single-task adds.
+                // Insert at 0 is correct because AddTask() prepends and all sorted
+                // views put the newest task first.
                 foreach (TodoItem task in e.NewItems)
-                {
                     if (MatchesFilter(task))
                         ActiveTasks.Insert(0, task);
-                }
             }
-            else if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Remove && e.OldItems != null)
+            else if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems != null)
             {
                 foreach (TodoItem task in e.OldItems)
                     ActiveTasks.Remove(task);
@@ -170,14 +215,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
             {
                 RefreshActiveTasks();
             }
+
             OnPropertyChanged(nameof(IsTaskListEmpty));
             OnPropertyChanged(nameof(PlannedGroups));
+            OnPropertyChanged(nameof(IsPlannedEmpty));
+            if (_activeNavItem == "planned")
+                OnPropertyChanged(nameof(ActiveNavItem));
         };
 
-        _activeNavItem = App.Settings.ActiveNavItem;
-
         // Initialize default list
-        Lists.Add(new TaskList { Name = "All Tasks", Id = Guid.Empty });
+        Lists.Add(new TaskList { Name = Strings.List_AllTasks_Name, Id = Guid.Empty });
 
         _ = LoadAsync();
     }
@@ -187,14 +234,19 @@ public sealed class MainViewModel : INotifyPropertyChanged
         try
         {
             var tasks = await _storage.LoadTasksAsync();
+            _isBulkLoading = true;
             foreach (var task in tasks.OrderByDescending(t => t.CreatedAt))
             {
                 AttachTaskPropertyChangedHandler(task);
                 Tasks.Add(task);
             }
+            _isBulkLoading = false;
             RefreshActiveTasks();
+            OnPropertyChanged(nameof(IsTaskListEmpty));
+            OnPropertyChanged(nameof(PlannedGroups));
+            OnPropertyChanged(nameof(IsPlannedEmpty));
         }
-        catch { }
+        catch { _isBulkLoading = false; }
     }
 
     private void AddTask()
@@ -211,7 +263,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 task.IsStarred = true;
                 break;
             case "planned":
-                task.DueDate = DateTimeOffset.Now;
+                task.DueDate = new DateTimeOffset(DateTime.Today);
                 break;
         }
 
@@ -239,15 +291,115 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         if (filterProp)
         {
-            bool matches = MatchesFilter(task);
-            bool inView  = ActiveTasks.Contains(task);
-            if (matches && !inView)  ActiveTasks.Add(task);
-            if (!matches && inView)  ActiveTasks.Remove(task);
-            OnPropertyChanged(nameof(IsTaskListEmpty));
-            OnPropertyChanged(nameof(PlannedGroups));
+            _dispatcherQueue.TryEnqueue(() =>
+            {
+                if (e.PropertyName == nameof(TodoItem.IsCompleted))
+                    ApplyCompletedChange(task);
+                else if (e.PropertyName == nameof(TodoItem.DueDate))
+                    ApplyDueDateChange(task);
+                else if (e.PropertyName == nameof(TodoItem.IsStarred))
+                    ApplyStarredChange(task);
+                else
+                {
+                    RefreshActiveTasks();
+                    OnPropertyChanged(nameof(IsTaskListEmpty));
+                    OnPropertyChanged(nameof(PlannedGroups));
+                    OnPropertyChanged(nameof(IsPlannedEmpty));
+                }
+            });
         }
 
         SaveAsync();
+    }
+
+    // Surgical update for IsCompleted — avoids Clear()+rebuild which causes item
+    // container destruction and the resulting checkbox blink / access violation.
+    private void ApplyCompletedChange(TodoItem task)
+    {
+        switch (_activeNavItem)
+        {
+            case "planned":
+                // Planned filters out completed tasks entirely.
+                if (task.IsCompleted)
+                    ActiveTasks.Remove(task);
+                else if (!ActiveTasks.Contains(task) && task.DueDate != null)
+                    ActiveTasks.Add(task);   // unchecked: re-insert (order refresh below)
+                OnPropertyChanged(nameof(PlannedGroups));
+                OnPropertyChanged(nameof(IsPlannedEmpty));
+                OnPropertyChanged(nameof(IsTaskListEmpty));
+                break;
+
+            case "myday":
+                // Completed tasks sort to the bottom in My Day.
+                // Move rather than recreate so the container stays alive.
+                if (ActiveTasks.Contains(task))
+                {
+                    int target = task.IsCompleted ? ActiveTasks.Count - 1 : 0;
+                    int current = ActiveTasks.IndexOf(task);
+                    if (current != target)
+                        ActiveTasks.Move(current, target);
+                }
+                OnPropertyChanged(nameof(IsTaskListEmpty));
+                break;
+
+            default:
+                // alltasks / important: IsCompleted doesn't change membership or order.
+                // x:Bind handles strikethrough + opacity — no collection change needed.
+                break;
+        }
+    }
+
+    // Surgical update for DueDate — avoids full Clear()+rebuild.
+    // x:Bind already re-evaluates the date chip on the row; we only need to
+    // touch ActiveTasks when the view's filter/membership actually changes.
+    private void ApplyDueDateChange(TodoItem task)
+    {
+        switch (_activeNavItem)
+        {
+            case "planned":
+                // Planned shows tasks with a date and not completed.
+                bool shouldBeInPlanned = task.DueDate != null && !task.IsCompleted;
+                bool isInPlanned = ActiveTasks.Contains(task);
+                if (shouldBeInPlanned && !isInPlanned)
+                    ActiveTasks.Add(task);
+                else if (!shouldBeInPlanned && isInPlanned)
+                    ActiveTasks.Remove(task);
+                OnPropertyChanged(nameof(PlannedGroups));
+                OnPropertyChanged(nameof(IsPlannedEmpty));
+                OnPropertyChanged(nameof(IsTaskListEmpty));
+                break;
+
+            case "alltasks":
+            case "myday":
+            case "important":
+            default:
+                // DueDate doesn't affect membership or sort order in these views.
+                // x:Bind converters on the chip handle the visual update automatically.
+                OnPropertyChanged(nameof(PlannedGroups));
+                break;
+        }
+    }
+
+    private void ApplyStarredChange(TodoItem task)
+    {
+        switch (_activeNavItem)
+        {
+            case "important":
+                // Important view only shows starred tasks — add or remove accordingly.
+                bool shouldBeInImportant = task.IsStarred;
+                bool isInImportant = ActiveTasks.Contains(task);
+                if (shouldBeInImportant && !isInImportant)
+                    ActiveTasks.Insert(0, task);
+                else if (!shouldBeInImportant && isInImportant)
+                    ActiveTasks.Remove(task);
+                OnPropertyChanged(nameof(IsTaskListEmpty));
+                break;
+
+            default:
+                // All other views keep the task regardless — the star glyph updates
+                // automatically via x:Bind. No list rebuild needed.
+                break;
+        }
     }
 
     public void DeleteTask(TodoItem task)
@@ -258,12 +410,48 @@ public sealed class MainViewModel : INotifyPropertyChanged
     }
 
 
+    public void UpdateTask(TodoItem task, string newTitle, DateTimeOffset? newDueDate, bool newStarred)
+    {
+        // Unsubscribe while applying all changes to avoid multiple intermediate
+        // refreshes firing for each property — one single refresh at the end.
+        task.PropertyChanged -= TaskPropertyChanged;
+
+        task.Title     = newTitle;
+        task.DueDate   = newDueDate;
+        task.IsStarred = newStarred;
+
+        task.PropertyChanged += TaskPropertyChanged;
+
+        // Apply in-place: keep scroll position by only removing/adding when membership
+        // actually changes. x:Bind handles the visual update for title/date/star glyph.
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            bool inList = ActiveTasks.Contains(task);
+            bool shouldBeInList = MatchesFilter(task);
+
+            if (!shouldBeInList && inList)
+                ActiveTasks.Remove(task);
+            else if (shouldBeInList && !inList)
+                ActiveTasks.Insert(0, task);
+
+            OnPropertyChanged(nameof(IsTaskListEmpty));
+            OnPropertyChanged(nameof(PlannedGroups));
+            OnPropertyChanged(nameof(IsPlannedEmpty));
+        });
+
+        SaveAsync();
+    }
+
     public void UpdateTaskTitle(TodoItem task, string newTitle)
     {
         task.Title = newTitle;
         SaveAsync();
     }
 
+    public void UpdateTaskDueDate(TodoItem task, DateTimeOffset? newDueDate)
+    {
+        task.DueDate = newDueDate;
+    }
 
     public void SaveAsync()
     {

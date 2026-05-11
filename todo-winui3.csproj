@@ -19,7 +19,7 @@
   <!-- Debug: unpackaged so XAML Hot Reload works without deploying MSIX.
        Uses the system-installed Windows App SDK runtime via the SDK's built-in
        bootstrapper auto-initializer (WindowsAppRuntimeAutoInitializer.cs).
-       Do NOT use WindowsAppSDKSelfContained here — it conflicts with the
+       Do NOT use WindowsAppSDKSelfContained here â€” it conflicts with the
        bootstrapper flow and causes 0x80040154 Class not registered at startup. -->
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <WindowsPackageType>None</WindowsPackageType>
@@ -45,7 +45,7 @@
     <!-- Required: MSIX build tasks were compiled against .NET 8 and probe for this assembly at build time -->
     <PackageReference Include="System.Security.Permissions" Version="8.0.0" />
     <PackageReference Include="WinUIEx" Version="2.9.0" />
-    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.250402" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
     <PackageReference Include="CommunityToolkit.WinUI.Lottie" Version="8.2.250604" />
     <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.3.2" />
   </ItemGroup>

@@ -10,8 +10,58 @@
         <converters:BoolToStrikethroughConverter x:Key="BoolToStrikethrough"/>
         <converters:BoolToOpacityConverter x:Key="BoolToOpacity"/>
         <converters:DateTimeToStringConverter x:Key="DateTimeToString"/>
+        <converters:DueDateToStringConverter x:Key="DueDateToString"/>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
         <converters:BoolToStarGlyphConverter x:Key="BoolToStarGlyph"/>
+        <converters:DueDateToChipVisibilityConverter x:Key="DueDateToChipVisibility"/>
+        <converters:DueDateToChipBrushConverter x:Key="DueDateToChipBrush"/>
+        <converters:DueDateToChipForegroundConverter x:Key="DueDateToChipForeground"/>
+        <converters:DueDateToChipGlyphConverter x:Key="DueDateToChipGlyph"/>
+        <converters:PlannedGroupNameToForegroundConverter x:Key="PlannedGroupNameToForeground"/>
+        <converters:BoolToStarTooltipConverter x:Key="BoolToStarTooltip"/>
+
+        <!-- Chip button: preserves the chip color on hover/press instead of flashing WinUI default grey -->
+        <Style x:Key="ChipButtonStyle" TargetType="Button">
+            <Setter Property="Padding" Value="8,2"/>
+            <Setter Property="MinWidth" Value="0"/>
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="4"/>
+            <Setter Property="IsTabStop" Value="False"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid x:Name="RootGrid"
+                              Background="{TemplateBinding Background}"
+                              CornerRadius="{TemplateBinding CornerRadius}"
+                              Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                            <VisualStateManager.VisualStateGroups>
+                                <VisualStateGroup x:Name="CommonStates">
+                                    <VisualState x:Name="Normal"/>
+                                    <VisualState x:Name="PointerOver">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootGrid.Opacity" Value="0.75"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Pressed">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootGrid.Opacity" Value="0.55"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                    <VisualState x:Name="Disabled">
+                                        <VisualState.Setters>
+                                            <Setter Target="RootGrid.Opacity" Value="0.4"/>
+                                        </VisualState.Setters>
+                                    </VisualState>
+                                </VisualStateGroup>
+                            </VisualStateManager.VisualStateGroups>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
         <CollectionViewSource x:Name="PlannedGroupsSource"
                               IsSourceGrouped="True"
@@ -31,43 +81,117 @@
 
                 <CheckBox Grid.Column="0"
                           IsChecked="{x:Bind IsCompleted, Mode=TwoWay}"
-                          VerticalAlignment="Center"/>
+                          VerticalAlignment="Center"
+                          x:Uid="Task_CheckBox"/>
 
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                <!-- Title + date chip — fades as a unit when completed -->
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2"
+                            Opacity="{x:Bind IsCompleted, Converter={StaticResource BoolToOpacity}, Mode=OneWay}">
                     <TextBlock Text="{x:Bind Title, Mode=OneWay}"
                                TextDecorations="{x:Bind IsCompleted, Converter={StaticResource BoolToStrikethrough}, Mode=OneWay}"
-                               Opacity="{x:Bind IsCompleted, Converter={StaticResource BoolToOpacity}, Mode=OneWay}"
                                TextWrapping="NoWrap"
                                TextTrimming="CharacterEllipsis"
                                Style="{ThemeResource BodyTextBlockStyle}"/>
-                    <TextBlock Text="{x:Bind CreatedAt, Converter={StaticResource DateTimeToString}, Mode=OneTime}"
-                               Opacity="0.5"
-                               Style="{ThemeResource CaptionTextBlockStyle}"/>
+
+                    <!-- Date chip — visible when a due date is set; clicking opens the flyout -->
+                    <Button Tag="{x:Bind}"
+                            Click="ChipDateButton_Click"
+                            Visibility="{x:Bind DueDate, Converter={StaticResource DueDateToChipVisibility}, Mode=OneWay}"
+                            Background="{x:Bind DueDate, Converter={StaticResource DueDateToChipBrush}, Mode=OneWay}"
+                            Style="{StaticResource ChipButtonStyle}"
+                            x:Uid="Task_DateChipButton">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <FontIcon Glyph="{x:Bind DueDate, Converter={StaticResource DueDateToChipGlyph}, Mode=OneWay}"
+                                      FontSize="11"
+                                      Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
+                                      VerticalAlignment="Center"/>
+                            <TextBlock Text="{x:Bind DueDate, Converter={StaticResource DueDateToString}, Mode=OneWay}"
+                                       Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- No-date placeholder:
+                         outer Border collapses when IsCompleted=true  (done tasks don't need a date prompt)
+                         inner Button collapses when DueDate is already set (don't show "Add date" alongside the real chip) -->
+                    <Border Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
+                        <Button Tag="{x:Bind}"
+                                Click="ChipDateButton_Click"
+                                Visibility="{x:Bind DueDate, Converter={StaticResource DueDateToChipVisibility}, ConverterParameter=Invert, Mode=OneWay}"
+                                Padding="0" MinWidth="0" MinHeight="0"
+                                Background="Transparent" BorderThickness="0"
+                                IsTabStop="False"
+                                x:Uid="Task_AddDateButton">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <FontIcon Glyph="&#xE787;" FontSize="11"
+                                          Opacity="0.35"
+                                          VerticalAlignment="Center"/>
+                                <TextBlock x:Uid="Task_AddDateText"
+                                           Opacity="0.35"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </Border>
                 </StackPanel>
 
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                <!--
+                    Always-visible action strip.
+                    ☆  star/unstar
+                    ✏  edit
+                    ⋯  overflow menu — Delete lives here, keeping the trash icon off the main row
+                -->
+                <StackPanel Grid.Column="2"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center"
+                            Spacing="0">
+
                     <Button Tag="{x:Bind}"
                             Click="StarButton_Click"
-                            ToolTipService.ToolTip="Mark as important"
+                            ToolTipService.ToolTip="{x:Bind IsStarred, Converter={StaticResource BoolToStarTooltip}, Mode=OneWay}"
+                            Style="{ThemeResource SubtleButtonStyle}"
                             IsTabStop="False"
                             Padding="8,6" MinWidth="0">
-                        <FontIcon Glyph="{x:Bind IsStarred, Converter={StaticResource BoolToStarGlyph}, Mode=OneWay}" FontSize="14"/>
+                        <FontIcon Glyph="{x:Bind IsStarred, Converter={StaticResource BoolToStarGlyph}, Mode=OneWay}"
+                                  FontSize="14"
+                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                     </Button>
+
                     <Button Tag="{x:Bind}"
                             Click="EditButton_Click"
-                            ToolTipService.ToolTip="Edit task"
+                            x:Uid="Task_EditButton"
+                            Style="{ThemeResource SubtleButtonStyle}"
                             IsTabStop="False"
                             Padding="8,6" MinWidth="0">
-                        <FontIcon Glyph="&#xE70F;" FontSize="14"/>
+                        <FontIcon Glyph="&#xE70F;" FontSize="14"
+                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                     </Button>
+
+                    <!-- ⋯ overflow — destructive and future actions live here -->
                     <Button Tag="{x:Bind}"
-                            Click="DeleteButton_Click"
-                            ToolTipService.ToolTip="Delete task"
+                            Click="OverflowButton_Click"
+                            x:Uid="Task_OverflowButton"
+                            Style="{ThemeResource SubtleButtonStyle}"
                             IsTabStop="False"
                             Padding="8,6" MinWidth="0">
-                        <FontIcon Glyph="&#xE74D;" FontSize="14"/>
+                        <FontIcon Glyph="&#xE712;" FontSize="14"
+                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        <Button.Flyout>
+                            <MenuFlyout Placement="BottomEdgeAlignedRight">
+                                <MenuFlyoutItem Tag="{x:Bind}"
+                                                x:Uid="Task_DeleteMenuItem"
+                                                Click="DeleteButton_Click">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon Glyph="&#xE74D;"/>
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                            </MenuFlyout>
+                        </Button.Flyout>
                     </Button>
+
                 </StackPanel>
+
             </Grid>
         </DataTemplate>
 
@@ -106,43 +230,44 @@
             </Grid.ColumnDefinitions>
             <TextBox x:Name="NewTaskTextBox"
                      Grid.Column="0"
-                     PlaceholderText="What needs to be done?"
+                     x:Uid="NewTask_TextBox"
                      Text="{Binding NewTaskText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                      KeyDown="NewTaskTextBox_KeyDown"/>
             <Button Grid.Column="1"
                     Content="Add"
                     Command="{Binding AddTaskCommand}"
                     Style="{ThemeResource AccentButtonStyle}"
-                    MinWidth="80"/>
+                    MinWidth="80"
+                    x:Uid="NewTask_AddButton"/>
         </Grid>
 
         <!-- Content area -->
         <Grid Grid.Row="2">
 
-            <!-- Empty state — context-aware per nav view -->
-            <StackPanel HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        Spacing="8"
-                        MaxWidth="260"
-                        Visibility="{Binding IsTaskListEmpty, Converter={StaticResource BoolToVisibility}}">
-                <FontIcon Glyph="{Binding EmptyStateGlyph}"
-                          FontSize="48"
-                          Opacity="0.2"
-                          HorizontalAlignment="Center"/>
-                <TextBlock Text="{Binding EmptyStateHeadline}"
-                           HorizontalAlignment="Center"
-                           TextAlignment="Center"
-                           Opacity="0.45"
-                           Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-                <TextBlock Text="{Binding EmptyStateSubtext}"
-                           HorizontalAlignment="Center"
-                           TextAlignment="Center"
-                           TextWrapping="WrapWholeWords"
-                           Opacity="0.3"
-                           Style="{ThemeResource CaptionTextBlockStyle}"/>
-            </StackPanel>
+            <!-- Empty state — flat views (My Day, Important, All Tasks) -->
+                <StackPanel HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="8"
+                            MaxWidth="260"
+                            Visibility="{Binding IsTaskListEmpty, Converter={StaticResource BoolToVisibility}}">
+                    <FontIcon Glyph="{Binding EmptyStateGlyph, FallbackValue=&#xE762;}"
+                              FontSize="48"
+                              Foreground="{ThemeResource TextFillColorDisabledBrush}"
+                              HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding EmptyStateHeadline}"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                    <TextBlock Text="{Binding EmptyStateSubtext}"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               TextWrapping="WrapWholeWords"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               Style="{ThemeResource CaptionTextBlockStyle}"/>
+                </StackPanel>
 
-            <!-- Flat list — My Day, Important, All Tasks -->
+                <!-- Flat list — My Day, Important, All Tasks -->
             <ListView x:Name="FlatListView"
                       ItemsSource="{Binding ActiveTasks}"
                       SelectionMode="None"
@@ -153,11 +278,14 @@
                 <ListView.ItemContainerTransitions>
                     <TransitionCollection/>
                 </ListView.ItemContainerTransitions>
+                <ListView.Transitions>
+                    <TransitionCollection/>
+                </ListView.Transitions>
             </ListView>
 
             <!-- Grouped list — Planned view only -->
             <ListView x:Name="GroupedListView"
-                      ItemsSource="{Binding Source={StaticResource PlannedGroupsSource}, Path=View}"
+                      ItemsSource="{x:Bind PlannedGroupsSource.View, Mode=OneWay}"
                       SelectionMode="None"
                       Padding="20,0,20,24"
                       ItemTemplate="{StaticResource TaskItemTemplate}"
@@ -172,8 +300,9 @@
                             <DataTemplate>
                                 <TextBlock Text="{Binding Name}"
                                            Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorPrimaryBrush}"
                                            Margin="0,12,0,4"
-                                           Opacity="0.7"/>
+                                           Opacity="0.85"/>
                             </DataTemplate>
                         </GroupStyle.HeaderTemplate>
                     </GroupStyle>

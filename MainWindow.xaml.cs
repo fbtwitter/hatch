@@ -38,10 +38,6 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         AppWindow.TitleBar.PreferredTheme = TitleBarTheme.UseDefaultAppMode;
 
-        var settings = App.Settings;
-        ApplyBackdrop(settings.Backdrop);
-        ApplyTheme(settings.Theme);
-
         _hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
 
         // Apply the app icon to the taskbar button, title bar, and Alt+Tab switcher.
@@ -63,7 +59,7 @@ public sealed partial class MainWindow : Window
         _trayService.RestoreMascotRequested += RestoreMascot;
         _trayService.HideMascotRequested += OnHideMascotRequested;
 
-        if (settings.MinimizeToTray)
+        if (App.Settings.MinimizeToTray)
             _trayService.ShowIcon();
 
         AppWindow.Closing += OnWindowClosing;
@@ -73,10 +69,33 @@ public sealed partial class MainWindow : Window
                 "Clean and rebuild the solution to regenerate XAML code-behind files.");
         RootFrame.Navigate(typeof(MainPage), ViewModel);
         RootFrame.Navigated += OnFrameNavigated;
-        ApplyTheme(settings.Theme);
 
-        // Position near mascot on first launch
-        MascotViewModel.PositionMainWindowNearMascot(this);
+        // Defer backdrop and theme application to first Activated so the compositor
+        // (DWM/WarpPal) is fully initialised. Setting SystemBackdrop in the constructor
+        // races against DWM setup and causes a null vtable dereference in
+        // Microsoft.UI.Xaml.dll on startup (access violation 0xC0000005).
+        Activated += OnFirstActivated;
+
+        // Position near mascot on first launch — deferred until after MascotWindow is ready
+        Activated += (_, _) =>
+        {
+            try
+            {
+                MascotViewModel.PositionMainWindowNearMascot(this);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Position error: {ex}");
+            }
+        };
+    }
+
+    private void OnFirstActivated(object sender, WindowActivatedEventArgs e)
+    {
+        Activated -= OnFirstActivated;
+        var settings = App.Settings;
+        ApplyBackdrop(settings.Backdrop);
+        ApplyTheme(settings.Theme);
     }
 
     // 400×490 ≈ 77% of 520×640, maintaining the window's aspect ratio.

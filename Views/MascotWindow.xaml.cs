@@ -48,9 +48,9 @@ public sealed partial class MascotWindow : Window
 
     public MascotWindow()
     {
-        InitializeComponent();
-
         ViewModel = new MascotViewModel(DispatcherQueue);
+
+        InitializeComponent();
 
         _idleAnimation = MascotGrid.Resources["IdleAnimation"] as Storyboard;
         _idleFadeOut   = MascotGrid.Resources["IdleFadeOut"]   as Storyboard;
@@ -75,9 +75,11 @@ public sealed partial class MascotWindow : Window
         // Defer idle animation until after the window is shown to avoid startup lag
         Activated += OnFirstActivated;
 
-        // True desktop transparency — TransparentTintBackdrop makes the compositor
-        // surface fully transparent so XAML's Transparent background shows the desktop.
-        SystemBackdrop = new TransparentTintBackdrop();
+        // True desktop transparency — deferred to first Activated so the compositor
+        // is fully initialised before TransparentTintBackdrop acquires DComp interfaces.
+        // Setting SystemBackdrop in the constructor races against DWM/WarpPal setup and
+        // causes a null vtable dereference inside Microsoft.UI.Xaml.dll on startup.
+        Activated += OnFirstActivatedSetBackdrop;
 
         // Borderless, non-resizable, no title bar chrome
         var presenter = OverlappedPresenter.Create();
@@ -118,8 +120,6 @@ public sealed partial class MascotWindow : Window
         // Restore persisted position (already clamped to work area by ViewModel)
         AppWindow.Move(new PointInt32(ViewModel.X, ViewModel.Y));
 
-        ApplyLottieSource();
-
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         ViewModel.PropertyChanged += (_, e) =>
         {
@@ -129,10 +129,12 @@ public sealed partial class MascotWindow : Window
                 {
                     _wigglePlayed = false;
                     _bubbleWindow = new QuickAddBubbleWindow();
+                    App.BubbleWindowInstance = _bubbleWindow;
                     _bubbleWindow.PositionRelativeToMascot(ViewModel.X, ViewModel.Y, MascotViewModel.WindowSize);
                     _bubbleWindow.Closed += (_, _) =>
                     {
                         _bubbleWindow = null;
+                        App.BubbleWindowInstance = null;
                         ViewModel.CloseBubble();
                     };
                     _bubbleWindow.Activate();
@@ -372,10 +374,20 @@ public sealed partial class MascotWindow : Window
         return NativeMethods.DefSubclassProc(hWnd, uMsg, wParam, lParam);
     }
 
+    private void OnFirstActivatedSetBackdrop(object sender, WindowActivatedEventArgs e)
+    {
+        Activated -= OnFirstActivatedSetBackdrop;
+        SystemBackdrop = new TransparentTintBackdrop();
+    }
+
     private void OnFirstActivated(object sender, WindowActivatedEventArgs e)
     {
         Activated -= OnFirstActivated;
-        UpdateAnimationState();
+        // ApplyLottieSource is called here (deferred from the constructor) so the
+        // DComp/WarpPal compositor is fully initialised before any Storyboard or
+        // AnimatedVisualPlayer touches it. Calling it in the constructor races
+        // against DWM setup and causes a null vtable dereference (0xC0000005).
+        ApplyLottieSource();
 
         // Auto-open bubble on first run with intro copy
         if (!App.Settings.FirstRunComplete)
