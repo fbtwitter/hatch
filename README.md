@@ -77,6 +77,9 @@ Three rules, non-negotiable:
 
 ## What's Shipped
 
+### v0.2.3 — May 2026
+Theme-aware due-date chip colors that update dynamically when switching between light/dark modes. Larger, crisp app icons (2x scale) for high-DPI displays. Proper text contrast on all backgrounds. See [release notes](../../releases/tag/v0.2.3) for details.
+
 ### v0.2.2 — May 2026
 First-run onboarding bubble with welcome message. Mascot silent by default after first session. "Hide for..." submenu with 1 hour, 3 hours, until tomorrow, or until restart options. Inactivity fade (30s idle → 40% opacity) with hover scale animation. System tray dynamic tooltip shows hidden state; click to restore. Auto-restore after expiration via PeriodicTimer. SettingsPage mascot controls (always on top, hide when fullscreen). See [release notes](../../releases/tag/v0.2.2) for details.
 

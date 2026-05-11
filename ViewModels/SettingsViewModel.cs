@@ -31,6 +31,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             if ((int)_settings.Current.Theme == value) return;
             _settings.Current.Theme = (AppTheme)value;
             App.MainWindowInstance?.ApplyTheme(_settings.Current.Theme);
+            App.MainWindowInstance?.ViewModel.NotifyThemeChanged();
+            App.BubbleWindowInstance?.ApplyCurrentTheme();
             _ = _settings.SaveAsync();
             OnPropertyChanged();
         }

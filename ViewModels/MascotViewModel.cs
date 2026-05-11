@@ -381,8 +381,8 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
     private static TimeSpan UntilTomorrow()
     {
-        var tomorrow = DateTime.Now.Date.AddDays(1);
-        return tomorrow - DateTime.Now;
+        var tomorrow = DateTimeOffset.Now.Date.AddDays(1);
+        return tomorrow - DateTimeOffset.Now;
     }
 
     private void HideFor(TimeSpan duration)

@@ -11,7 +11,11 @@
             IsBackButtonVisible="False"
             IsPaneToggleButtonVisible="True"
             BackRequested="TitleBar_BackRequested"
-            PaneToggleRequested="TitleBar_PaneToggleRequested"/>
+            PaneToggleRequested="TitleBar_PaneToggleRequested">
+            <TitleBar.IconSource>
+                <BitmapIconSource UriSource="ms-appx:///Assets/Square44x44Logo.png" ShowAsMonochrome="False"/>
+            </TitleBar.IconSource>
+        </TitleBar>
 
         <NavigationView
             x:Name="NavView"
@@ -24,14 +28,14 @@
             IsBackButtonVisible="Collapsed"
             IsPaneToggleButtonVisible="False">
         <NavigationView.MenuItems>
-            <NavigationViewItem x:Name="MyDayItem" Content="My Day" Tag="myday" Icon="Calendar"/>
-            <NavigationViewItem x:Name="ImportantItem" Content="Important" Tag="important" Icon="Favorite"/>
-            <NavigationViewItem x:Name="PlannedItem" Content="Planned" Tag="planned">
+            <NavigationViewItem x:Name="MyDayItem" x:Uid="Nav_MyDay" Tag="myday" Icon="Calendar"/>
+            <NavigationViewItem x:Name="ImportantItem" x:Uid="Nav_Important" Tag="important" Icon="Favorite"/>
+            <NavigationViewItem x:Name="PlannedItem" x:Uid="Nav_Planned" Tag="planned">
                 <NavigationViewItem.Icon>
                     <FontIcon Glyph="&#xED28;"/>
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
-            <NavigationViewItem x:Name="AllTasksItem" Content="All Tasks" Tag="alltasks" Icon="List"/>
+            <NavigationViewItem x:Name="AllTasksItem" x:Uid="Nav_AllTasks" Tag="alltasks" Icon="List"/>
             <NavigationViewItemSeparator/>
         </NavigationView.MenuItems>
 

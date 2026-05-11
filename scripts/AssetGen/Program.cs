@@ -105,17 +105,17 @@ void SaveIco(string name, int[] sizes, Func<int, Bitmap>? bitmapFactory = null)
 }
 
 Console.WriteLine("Generating Hatch assets...");
-// PNG assets — no padding so the logo fills the full tile
-Save("Square44x44Logo.png",    44,  44);
-Save("Square150x150Logo.png", 150, 150);
-Save("Wide310x150Logo.png",   310, 150);
-Save("StoreLogo.png",          50,  50);
+// PNG assets — larger sizes for high-DPI displays
+Save("Square44x44Logo.png",    88,  88);
+Save("Square150x150Logo.png", 300, 300);
+Save("Wide310x150Logo.png",   620, 300);
+Save("StoreLogo.png",         100, 100);
 // Splash screen keeps a little breathing room on a white background
-Save("SplashScreen.png",      620, 300, padding: 0.15f, whiteBg: true);
+Save("SplashScreen.png",     1240, 600, padding: 0.15f, whiteBg: true);
 // Multi-resolution ICO for taskbar / title bar / Alt+Tab switcher
-SaveIco("Hatch.ico", [16, 24, 32, 48, 256]);
+SaveIco("Hatch.ico", [16, 24, 32, 48, 64, 128, 256]);
 // Greyed-out variant shown in the tray when the mascot is hidden
-SaveIco("HatchHidden.ico", [16, 24, 32, 48, 256], size =>
+SaveIco("HatchHidden.ico", [16, 24, 32, 48, 64, 128, 256], size =>
 {
     using var normal = RenderSvg(size, size);
     return ToGreyscale(normal);

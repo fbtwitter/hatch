@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <!-- ── Navigation (x:Uid mapped — Content + ToolTip) ────────── -->
+  <data name="Nav_MyDay.Content" xml:space="preserve"><value>My Day</value></data>
+  <data name="Nav_MyDay.ToolTipService.ToolTip" xml:space="preserve"><value>My Day — tasks you've added to focus on today</value></data>
+  <data name="Nav_Important.Content" xml:space="preserve"><value>Important</value></data>
+  <data name="Nav_Important.ToolTipService.ToolTip" xml:space="preserve"><value>Important — tasks you've starred</value></data>
+  <data name="Nav_Planned.Content" xml:space="preserve"><value>Planned</value></data>
+  <data name="Nav_Planned.ToolTipService.ToolTip" xml:space="preserve"><value>Planned — tasks with a due date, grouped by when they're due</value></data>
+  <data name="Nav_AllTasks.Content" xml:space="preserve"><value>All Tasks</value></data>
+  <data name="Nav_AllTasks.ToolTipService.ToolTip" xml:space="preserve"><value>All Tasks — every task you've created</value></data>
+
+  <!-- ── Page headers ───────────────────────────────────────── -->
+  <data name="Header_MyDay" xml:space="preserve"><value>My Day</value></data>
+  <data name="Header_Important" xml:space="preserve"><value>Important</value></data>
+  <data name="Header_Planned" xml:space="preserve"><value>Planned</value></data>
+  <data name="Header_AllTasks" xml:space="preserve"><value>All Tasks</value></data>
+
+  <!-- ── Empty states ───────────────────────────────────────── -->
+  <data name="EmptyState_MyDay_Headline" xml:space="preserve"><value>Your day is clear</value></data>
+  <data name="EmptyState_MyDay_Subtext" xml:space="preserve"><value>Add tasks to My Day from All Tasks</value></data>
+  <data name="EmptyState_Important_Headline" xml:space="preserve"><value>No important tasks</value></data>
+  <data name="EmptyState_Important_Subtext" xml:space="preserve"><value>Star a task to see it here</value></data>
+  <data name="EmptyState_Planned_Headline" xml:space="preserve"><value>Nothing planned yet</value></data>
+  <data name="EmptyState_Planned_Subtext" xml:space="preserve"><value>Set a due date on a task to see it here</value></data>
+  <data name="EmptyState_AllTasks_Headline" xml:space="preserve"><value>No tasks yet</value></data>
+  <data name="EmptyState_AllTasks_Subtext" xml:space="preserve"><value>Add a task above to get started</value></data>
+
+  <!-- ── Task list row ──────────────────────────────────────── -->
+  <data name="Task_Tooltip_MarkComplete" xml:space="preserve"><value>Mark as complete</value></data>
+  <data name="Task_Tooltip_ChangeDueDate" xml:space="preserve"><value>Change due date</value></data>
+  <data name="Task_Tooltip_SetDueDate" xml:space="preserve"><value>Set a due date — makes this task appear in Planned</value></data>
+  <data name="Task_Chip_AddDate" xml:space="preserve"><value>Add date</value></data>
+  <data name="Task_Tooltip_Star_Add" xml:space="preserve"><value>Mark as important</value></data>
+  <data name="Task_Tooltip_Star_Remove" xml:space="preserve"><value>Remove from Important</value></data>
+  <data name="Task_Tooltip_Edit" xml:space="preserve"><value>Edit task</value></data>
+  <data name="Task_Tooltip_More" xml:space="preserve"><value>More options</value></data>
+  <data name="Task_Menu_Delete" xml:space="preserve"><value>Delete task</value></data>
+
+  <!-- ── New task input (x:Uid mapped) ────────────────────────── -->
+  <data name="NewTask_TextBox.PlaceholderText" xml:space="preserve"><value>What needs to be done?</value></data>
+  <data name="NewTask_AddButton.ToolTipService.ToolTip" xml:space="preserve"><value>Add task (Enter)</value></data>
+
+  <!-- ── Task row x:Uid mapped ──────────────────────────────── -->
+  <data name="Task_CheckBox.ToolTipService.ToolTip" xml:space="preserve"><value>Mark as complete</value></data>
+  <data name="Task_DateChipButton.ToolTipService.ToolTip" xml:space="preserve"><value>Change due date</value></data>
+  <data name="Task_AddDateButton.ToolTipService.ToolTip" xml:space="preserve"><value>Set a due date — makes this task appear in Planned</value></data>
+  <data name="Task_AddDateText.Text" xml:space="preserve"><value>Add date</value></data>
+  <data name="Task_EditButton.ToolTipService.ToolTip" xml:space="preserve"><value>Edit task</value></data>
+  <data name="Task_OverflowButton.ToolTipService.ToolTip" xml:space="preserve"><value>More options</value></data>
+  <data name="Task_DeleteMenuItem.Text" xml:space="preserve"><value>Delete task</value></data>
+
+  <!-- ── Due date chip labels ───────────────────────────────── -->
+  <data name="DueDate_Today" xml:space="preserve"><value>Due today</value></data>
+  <data name="DueDate_Tomorrow" xml:space="preserve"><value>Tomorrow</value></data>
+  <data name="DueDate_Overdue" xml:space="preserve"><value>Overdue ({0}d)</value><comment>{0} = number of days overdue</comment></data>
+
+  <!-- ── Planned group headers ──────────────────────────────── -->
+  <data name="PlannedGroup_Overdue" xml:space="preserve"><value>Overdue</value></data>
+  <data name="PlannedGroup_Today" xml:space="preserve"><value>Today</value></data>
+  <data name="PlannedGroup_Tomorrow" xml:space="preserve"><value>Tomorrow</value></data>
+  <data name="PlannedGroup_ThisWeek" xml:space="preserve"><value>This week</value></data>
+  <data name="PlannedGroup_Later" xml:space="preserve"><value>Later</value></data>
+
+  <!-- ── Edit task dialog ───────────────────────────────────── -->
+  <data name="EditTask_Title" xml:space="preserve"><value>Edit task</value></data>
+  <data name="EditTask_Section_Title" xml:space="preserve"><value>TITLE</value></data>
+  <data name="EditTask_Section_DueDate" xml:space="preserve"><value>DUE DATE</value></data>
+  <data name="EditTask_TitlePlaceholder" xml:space="preserve"><value>Task title</value></data>
+  <data name="EditTask_Save" xml:space="preserve"><value>Save</value></data>
+  <data name="EditTask_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="EditTask_MarkImportant" xml:space="preserve"><value>Mark as important</value></data>
+  <data name="EditTask_ClearDate" xml:space="preserve"><value>Clear date</value></data>
+  <data name="EditTask_DatePlaceholder" xml:space="preserve"><value>Pick a custom date…</value></data>
+
+  <!-- ── Date presets (used in edit dialog and flyout) ─────── -->
+  <data name="DatePreset_Today" xml:space="preserve"><value>Today</value></data>
+  <data name="DatePreset_Tomorrow" xml:space="preserve"><value>Tomorrow</value></data>
+  <data name="DatePreset_Weekend" xml:space="preserve"><value>Weekend</value></data>
+  <data name="DatePreset_NextWeek" xml:space="preserve"><value>Next week</value></data>
+
+  <!-- ── Quick Add bubble window ────────────────────────────── -->
+  <data name="QuickAdd_Tooltip_OpenMain" xml:space="preserve"><value>Open main window</value></data>
+  <data name="QuickAdd_Placeholder" xml:space="preserve"><value>What needs to be done?</value></data>
+  <data name="QuickAdd_Label_AddTo" xml:space="preserve"><value>Add to:</value></data>
+  <data name="QuickAdd_Placeholder_NoLists" xml:space="preserve"><value>No lists yet</value></data>
+  <data name="QuickAdd_Label_DueDate" xml:space="preserve"><value>Due date:</value></data>
+  <data name="QuickAdd_Date_NoDate" xml:space="preserve"><value>No date</value></data>
+  <data name="QuickAdd_Date_Today" xml:space="preserve"><value>Today</value></data>
+  <data name="QuickAdd_Date_Tomorrow" xml:space="preserve"><value>Tomorrow</value></data>
+  <data name="QuickAdd_Date_Weekend" xml:space="preserve"><value>This weekend</value></data>
+  <data name="QuickAdd_Date_NextWeek" xml:space="preserve"><value>Next week</value></data>
+  <data name="QuickAdd_Button_Add" xml:space="preserve"><value>Add Task</value></data>
+
+  <!-- ── Default list name ─────────────────────────────────── -->
+  <data name="List_AllTasks_Name" xml:space="preserve"><value>All Tasks</value></data>
+</root>
