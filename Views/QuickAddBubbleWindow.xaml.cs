@@ -24,6 +24,8 @@ public sealed partial class QuickAddBubbleWindow : Window
     private CancellationTokenSource? _tipDismissCts;
     private bool _tipDismissPaused = false;
     private int _tipDismissRemainingMs = 0;
+    private bool _tipWasShown = false;
+    private bool _tipAutoDissmissCompleted = false;
 
     public QuickAddBubbleWindow()
     {
@@ -287,6 +289,12 @@ public sealed partial class QuickAddBubbleWindow : Window
     private void OnWindowClosed()
     {
         _tipDismissCts?.Cancel();
+
+        // If tip was shown but auto-dismiss didn't complete, user closed early = dismissal
+        if (_tipWasShown && !_tipAutoDissmissCompleted)
+        {
+            RecordTipDismissal();
+        }
     }
 
     private void ShowContextualTip()
@@ -294,11 +302,22 @@ public sealed partial class QuickAddBubbleWindow : Window
         var mainVm = GetMainViewModel();
         if (mainVm == null) return;
 
+        // Check if in cooldown period (adaptive silence)
+        var today = DateTime.Today;
+        if (App.Settings.TipAutoOpenCooldownUntil.HasValue &&
+            today < App.Settings.TipAutoOpenCooldownUntil.Value)
+        {
+            // In cooldown — don't show tip
+            return;
+        }
+
         var tip = _tipEngine.GetTip(mainVm.Tasks);
         TipTextBlock.Text = tip;
         TipBubble.Visibility = Visibility.Visible;
         TipBubble.Opacity = 0;
         _tipDismissPaused = false;
+        _tipWasShown = true;
+        _tipAutoDissmissCompleted = false;
 
         _tipDismissCts?.Cancel();
         _tipDismissCts = new CancellationTokenSource();
@@ -306,7 +325,6 @@ public sealed partial class QuickAddBubbleWindow : Window
         _tipFadeIn?.Begin();
 
         // Check if this is a new daily tip
-        var today = DateTime.Today;
         bool isNewDay = App.Settings.LastTipShowDate?.Date != today;
         if (isNewDay)
         {
@@ -322,6 +340,11 @@ public sealed partial class QuickAddBubbleWindow : Window
         {
             _tipDismissRemainingMs = 5000;
             _ = ScheduleTipDismissAsync(_tipDismissCts.Token);
+        }
+        else
+        {
+            // High-priority tips: if shown without manual dismissal, engagement
+            _ = TrackEngagementOnCloseAsync();
         }
     }
 
@@ -356,6 +379,10 @@ public sealed partial class QuickAddBubbleWindow : Window
 
             if (ct.IsCancellationRequested) return;
 
+            // Auto-dismiss completed — user didn't manually close = engagement
+            _tipAutoDissmissCompleted = true;
+            ResetTipDismissalCounter();
+
             _tipFadeOut?.Begin();
             await Task.Delay(150, ct);
             if (ct.IsCancellationRequested) return;
@@ -363,6 +390,38 @@ public sealed partial class QuickAddBubbleWindow : Window
             TipBubble.Visibility = Visibility.Collapsed;
         }
         catch (OperationCanceledException) { }
+    }
+
+    private async Task TrackEngagementOnCloseAsync()
+    {
+        // High-priority tips: wait for bubble close to track engagement
+        await Task.Delay(10); // Minimal delay to avoid race with close event
+        if (!_isClosed && _tipWasShown && !_tipAutoDissmissCompleted)
+        {
+            // Bubble is still open and tip wasn't auto-dismissed = engagement
+            ResetTipDismissalCounter();
+        }
+    }
+
+    private void ResetTipDismissalCounter()
+    {
+        if (App.Settings.ConsecutiveTipDismissals > 0)
+        {
+            App.Settings.ConsecutiveTipDismissals = 0;
+            _ = App.SettingsService.SaveAsync();
+        }
+    }
+
+    private void RecordTipDismissal()
+    {
+        App.Settings.ConsecutiveTipDismissals++;
+        if (App.Settings.ConsecutiveTipDismissals >= 3)
+        {
+            // Adaptive silence: cooldown for 3 days
+            App.Settings.TipAutoOpenCooldownUntil = DateTime.Today.AddDays(3);
+            App.Settings.ConsecutiveTipDismissals = 0;
+        }
+        _ = App.SettingsService.SaveAsync();
     }
 
     private void TipBubble_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
