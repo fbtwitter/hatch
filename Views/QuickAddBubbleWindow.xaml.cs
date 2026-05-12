@@ -9,6 +9,7 @@ using Hatch.ViewModels;
 using Hatch.Helpers;
 using Hatch.Services;
 using Windows.Graphics;
+using Microsoft.UI.Xaml.Input;
 
 namespace Hatch.Views;
 
@@ -26,6 +27,7 @@ public sealed partial class QuickAddBubbleWindow : Window
     private int _tipDismissRemainingMs = 0;
     private bool _tipWasShown = false;
     private bool _tipAutoDissmissCompleted = false;
+    private Tip? _currentTip;
 
     public QuickAddBubbleWindow()
     {
@@ -311,8 +313,20 @@ public sealed partial class QuickAddBubbleWindow : Window
             return;
         }
 
-        var tip = _tipEngine.GetTip(mainVm.Tasks);
-        TipTextBlock.Text = tip;
+        _currentTip = _tipEngine.GetTip(mainVm.Tasks);
+        TipTextBlock.Text = _currentTip.Text;
+
+        // Show action button if available
+        if (_currentTip.Action != null)
+        {
+            TipActionButton.Content = _currentTip.Action.Label;
+            TipActionButton.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            TipActionButton.Visibility = Visibility.Collapsed;
+        }
+
         TipBubble.Visibility = Visibility.Visible;
         TipBubble.Opacity = 0;
         _tipDismissPaused = false;
@@ -335,7 +349,7 @@ public sealed partial class QuickAddBubbleWindow : Window
 
         // High-priority tips (overdue, My Day empty): stay visible indefinitely
         // Low-priority tips (fallback): auto-dismiss after 5s (pausable on hover)
-        bool isHighPriority = tip.Contains("overdue") || tip.Contains("empty");
+        bool isHighPriority = _currentTip.Text.Contains("overdue") || _currentTip.Text.Contains("empty");
         if (!isHighPriority)
         {
             _tipDismissRemainingMs = 5000;
@@ -429,8 +443,62 @@ public sealed partial class QuickAddBubbleWindow : Window
         _tipDismissPaused = true;
     }
 
-    private void TipBubble_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    private void TipBubble_PointerExited(object sender, PointerRoutedEventArgs e)
     {
         _tipDismissPaused = false;
+    }
+
+    private void TipActionButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentTip?.Action == null) return;
+
+        Close();
+        ExecuteTipAction(_currentTip.Action.Type);
+    }
+
+    private void ExecuteTipAction(TipActionType actionType)
+    {
+        var mainVm = GetMainViewModel();
+        var mainWindow = App.MainWindowInstance;
+        if (mainVm == null || mainWindow == null) return;
+
+        switch (actionType)
+        {
+            case TipActionType.ViewOverdue:
+                mainVm.ActiveNavItem = "planned";
+                mainWindow.Activate();
+                break;
+
+            case TipActionType.ViewMyDay:
+                mainVm.ActiveNavItem = "myday";
+                mainWindow.Activate();
+                break;
+
+            case TipActionType.AddSampleTask:
+                AddSampleTask(mainVm);
+                mainWindow.Activate();
+                break;
+
+            case TipActionType.OpenMainWindow:
+                mainWindow.Activate();
+                break;
+
+            case TipActionType.None:
+            default:
+                break;
+        }
+    }
+
+    private void AddSampleTask(MainViewModel mainVm)
+    {
+        var sampleTask = new TodoItem
+        {
+            Title = "Example: Click to edit task name",
+            ListId = mainVm.Lists.Count > 0 ? mainVm.Lists[0].Id : Guid.Empty
+        };
+
+        mainVm.Tasks.Insert(0, sampleTask);
+        mainVm.AttachTaskPropertyChangedHandler(sampleTask);
+        mainVm.SaveAsync();
     }
 }
