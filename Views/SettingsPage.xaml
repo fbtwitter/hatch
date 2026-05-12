@@ -78,6 +78,32 @@
                     </Grid>
                 </Border>
 
+                <!-- Run at Startup — custom toggle card -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE896;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock Text="Run at startup"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Hatch will launch automatically"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="2"
+                                      IsOn="{Binding RunAtStartup, Mode=TwoWay}"
+                                      OnContent="On" OffContent="Off" MinWidth="80"
+                                      VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
                 <!-- App Theme -->
                 <toolkit:SettingsCard
                     Header="App Theme"

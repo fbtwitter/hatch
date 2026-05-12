@@ -22,7 +22,7 @@
             Grid.Row="1"
             PaneDisplayMode="Auto"
             CompactPaneLength="48"
-            OpenPaneLength="180"
+            OpenPaneLength="192"
             SelectionChanged="NavView_SelectionChanged"
             IsSettingsVisible="True"
             IsBackButtonVisible="Collapsed"

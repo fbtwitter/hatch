@@ -77,18 +77,7 @@ public sealed partial class MainWindow : Window
         // Microsoft.UI.Xaml.dll on startup (access violation 0xC0000005).
         Activated += OnFirstActivated;
 
-        // Position near mascot on first launch — deferred until after MascotWindow is ready
-        Activated += (_, _) =>
-        {
-            try
-            {
-                MascotViewModel.PositionMainWindowNearMascot(this);
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Position error: {ex}");
-            }
-        };
+        Activated += OnPositionNearMascot;
     }
 
     private void OnFirstActivated(object sender, WindowActivatedEventArgs e)
@@ -97,6 +86,24 @@ public sealed partial class MainWindow : Window
         var settings = App.Settings;
         ApplyBackdrop(settings.Backdrop);
         ApplyTheme(settings.Theme);
+    }
+
+    private void OnPositionNearMascot(object sender, WindowActivatedEventArgs e)
+    {
+        Activated -= OnPositionNearMascot;
+        if (App.Settings.MascotX < 0 || App.Settings.MascotY < 0 || !App.Settings.FirstRunComplete)
+        {
+            try
+            {
+                MascotViewModel.PositionMainWindowNearMascot(this);
+                App.Settings.FirstRunComplete = true;
+                _ = App.SettingsService.SaveAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Position error: {ex}");
+            }
+        }
     }
 
     // 400×490 ≈ 77% of 520×640, maintaining the window's aspect ratio.
@@ -168,7 +175,7 @@ public sealed partial class MainWindow : Window
     {
         DispatcherQueue.TryEnqueue(() =>
         {
-            MascotViewModel.PositionMainWindowNearMascot(this);
+            // Do not reposition the window when restoring from tray; just show it
             ShowWindow(_hwnd, SW_RESTORE);
             AppWindow.Show(true);
         });
@@ -212,7 +219,14 @@ public sealed partial class MainWindow : Window
         {
             args.Cancel = true;
             ShowWindow(_hwnd, SW_HIDE);
-            NativeMethods.EmptyWorkingSet(Process.GetCurrentProcess().Handle);
+            try
+            {
+                NativeMethods.EmptyWorkingSet(Process.GetCurrentProcess().Handle);
+            }
+            catch
+            {
+                // P/Invoke may fail in some environments; not critical for functionality
+            }
             return;
         }
         if (_subclassProc is not null)

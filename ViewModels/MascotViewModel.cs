@@ -338,7 +338,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     private void ToggleBubble()
     {
         // If the main window is visible, tapping the mascot dismisses it — no bubble.
-        if (App.MainWindowInstance?.AppWindow.IsVisible == true)
+        if (App.MainWindowInstance?.AppWindow != null && App.MainWindowInstance.AppWindow.IsVisible)
         {
             App.MainWindowInstance.AppWindow.Hide();
             return;

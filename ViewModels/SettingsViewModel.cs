@@ -9,6 +9,7 @@ namespace Hatch.ViewModels;
 public sealed class SettingsViewModel : INotifyPropertyChanged
 {
     private readonly SettingsService _settings = App.SettingsService;
+    private readonly StartupRegistryService _startupRegistry = new();
 
     public bool MinimizeToTray
     {
@@ -109,6 +110,19 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (_settings.Current.HideWhenFullscreen == value) return;
             _settings.Current.HideWhenFullscreen = value;
+            _ = _settings.SaveAsync();
+            OnPropertyChanged();
+        }
+    }
+
+    public bool RunAtStartup
+    {
+        get => _settings.Current.RunAtStartup;
+        set
+        {
+            if (_settings.Current.RunAtStartup == value) return;
+            _settings.Current.RunAtStartup = value;
+            _startupRegistry.SetStartupEnabled(value);
             _ = _settings.SaveAsync();
             OnPropertyChanged();
         }
