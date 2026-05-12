@@ -26,6 +26,8 @@ public sealed class AppSettings
     public uint HotkeyModifiers { get; set; } = 0x0002 | 0x0004; // MOD_CONTROL | MOD_SHIFT
     public uint HotkeyVirtualKey { get; set; } = 0x20;            // VK_SPACE
 
-    // Tip Engine — tracks when a new daily tip was shown; used for mascot indicator
+    // Tip Engine — adaptive silence on repeated dismissals
     public DateTime? LastTipShowDate { get; set; } = null;
+    public int ConsecutiveTipDismissals { get; set; } = 0;
+    public DateTime? TipAutoOpenCooldownUntil { get; set; } = null;
 }
