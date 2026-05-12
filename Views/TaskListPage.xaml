@@ -312,10 +312,18 @@
                                       HorizontalContentAlignment="Stretch"
                                       Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibility}}">
                                 <Expander.Header>
-                                    <TextBlock Text="{Binding Name}"
-                                               Style="{ThemeResource BodyStrongTextBlockStyle}"
-                                               Foreground="{ThemeResource TextFillColorPrimaryBrush}"
-                                               Opacity="0.85"/>
+                                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                                   Style="{ThemeResource BodyTextBlockStyle}"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding CountLabel}"
+                                                   Visibility="{Binding HasCountLabel, Converter={StaticResource BoolToVisibility}}"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                                   VerticalAlignment="Center"/>
+                                    </StackPanel>
                                 </Expander.Header>
 
                                 <!-- Tasks in this group -->
