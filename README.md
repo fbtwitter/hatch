@@ -14,7 +14,7 @@ Fast. Private. Local-first.
 
 </div>
 
-> A native WinUI 3 desktop app with a friendly always-on-top paperclip mascot.  
+> A native WinUI 3 desktop app with a friendly always-on-top eggclip mascot.  
 > Capture tasks in ≤4 seconds from anywhere. No account. No cloud. No telemetry.
 
 ---
