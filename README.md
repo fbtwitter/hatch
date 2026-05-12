@@ -1,6 +1,6 @@
 <div align="center">
 
-![Hatch Logo](logo.svg){ width="140" height="140" }
+<img src="logo.svg" width="140" height="140" alt="Hatch Logo">
 
 # Hatch — Frictionless Task Capture for Windows 11
 
@@ -220,7 +220,7 @@ MIT License — See [LICENSE](LICENSE) file.
 
 <div align="center">
 
-![Hatch Logo](logo.svg){ width="100" height="100" }
+<img src="logo.svg" width="100" height="100" alt="Hatch Logo">
 
 **Built with ❤️ for Windows 11. No account. No cloud. No compromise.**
 
