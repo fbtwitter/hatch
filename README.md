@@ -10,7 +10,7 @@ Fast. Private. Local-first.
 ![.NET 9](https://img.shields.io/badge/.NET-9-512BD4?style=flat-square&logo=.net)
 ![WinUI 3](https://img.shields.io/badge/WinUI-3-0078D4?style=flat-square)
 ![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![v0.2.6](https://img.shields.io/badge/Version-v0.2.6-blue?style=flat-square)
+![v0.3.0](https://img.shields.io/badge/Version-v0.3.0-blue?style=flat-square)
 
 </div>
 
@@ -132,10 +132,11 @@ Hatch lives on your desktop permanently. Memory is a first-class constraint.
 
 ## 🛣️ What's Shipped
 
-Latest releases have been moving fast. Latest production version is **v0.2.6** (May 12, 2026).
+Latest releases have been moving fast. Latest production version is **v0.3.0** (May 12, 2026).
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.3.0** | May 12 | Contextual tip engine, adaptive silence, actionable tips, dynamic bubble sizing |
 | **v0.2.6** | May 12 | Run at startup toggle, mascot auto-launch on OS boot, responsive UI |
 | **v0.2.5** | May 12 | Memory optimization (<50MB idle), CPU reduction (80% less fullscreen polling) |
 | **v0.2.4** | May | Manual mascot resizing with presets + custom slider |
@@ -156,15 +157,14 @@ Latest releases have been moving fast. Latest production version is **v0.2.6** (
 
 Core features: contextual tips, details pane, due-date picker, custom lists, privacy onboarding, appreciation cosmetics.
 
-**In Progress:**
-- Contextual tip engine (priority: overdue ≥1 → My Day empty → completed today → first open)
+**v0.4.0 — Task Details + List Management (next):**
+- Completed task grouping — collapsible Expander separating open vs done
+- Details pane — slide-in panel with notes, My Day toggle, due date, created-at
+- List CRUD — create / rename / recolor / delete custom lists from nav rail
+- Accent hue picker — 6 color swatches in Settings
 
-**Planned:**
-- Task list polish (star, grouping, notes)
-- Details pane (slide-in side panel)
-- Real due-date picker (calendar, presets)
-- List CRUD (create, rename, recolor, delete)
-- Privacy first-run screen
+**Planned (post v0.4.0):**
+- Privacy first-run onboarding screen
 - Appreciation purchase ($5, cosmetics only)
 
 ### Next (Post-v1.0)
