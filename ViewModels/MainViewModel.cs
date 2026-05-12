@@ -25,7 +25,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private bool _isUndoBarVisible;
 
     private readonly CompletedTaskGroup _openGroup = new() { Name = "Open", EmptyMessage = "All done! 🎉" };
-    private readonly CompletedTaskGroup _completedGroup = new() { Name = "Completed (0)" };
+    private readonly CompletedTaskGroup _completedGroup = new() { Name = "Completed", TrackCount = true };
     private readonly IList<CompletedTaskGroup> _flatGroupedTasks;
 
     public ObservableCollection<TodoItem> Tasks { get; } = [];
@@ -166,12 +166,6 @@ public sealed class MainViewModel : INotifyPropertyChanged
         foreach (var task in ActiveTasks.Where(t => t.IsCompleted))
             _completedGroup.Items.Add(task);
 
-        UpdateCompletedGroupName();
-    }
-
-    private void UpdateCompletedGroupName()
-    {
-        _completedGroup.Name = $"Completed ({_completedGroup.Items.Count})";
     }
 
     private void MoveBetweenFlatGroups(TodoItem task)
@@ -188,8 +182,6 @@ public sealed class MainViewModel : INotifyPropertyChanged
             if (!_openGroup.Items.Contains(task))
                 _openGroup.Items.Insert(0, task);
         }
-
-        UpdateCompletedGroupName();
     }
 
     public IList<PlannedGroup> PlannedGroups
