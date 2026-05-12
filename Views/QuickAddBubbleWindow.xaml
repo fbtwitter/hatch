@@ -87,9 +87,17 @@
                     Visibility="Collapsed"
                     PointerEntered="TipBubble_PointerEntered"
                     PointerExited="TipBubble_PointerExited">
-                <TextBlock x:Name="TipTextBlock"
-                           TextWrapping="Wrap"
-                           Style="{ThemeResource BodyTextBlockStyle}"/>
+                <StackPanel Spacing="8">
+                    <TextBlock x:Name="TipTextBlock"
+                               TextWrapping="Wrap"
+                               Style="{ThemeResource BodyTextBlockStyle}"/>
+                    <Button x:Name="TipActionButton"
+                            Visibility="Collapsed"
+                            HorizontalAlignment="Stretch"
+                            Padding="8,6"
+                            Click="TipActionButton_Click"
+                            Style="{ThemeResource AccentButtonStyle}"/>
+                </StackPanel>
             </Border>
 
             <!-- First-run onboarding message (shown only on first run) -->

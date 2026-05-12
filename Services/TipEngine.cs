@@ -37,7 +37,7 @@ public sealed class TipEngine
 
     private static int _greetingIndex = 0;
 
-    public string GetTip(IReadOnlyList<TodoItem> tasks)
+    public Tip GetTip(IReadOnlyList<TodoItem> tasks)
     {
         var now = DateTime.Now;
         var today = now.Date;
@@ -48,32 +48,56 @@ public sealed class TipEngine
             t.DueDate.Value.ToLocalTime().Date < today);
 
         if (overdueTasks >= 1)
-            return $"You have {overdueTasks} overdue task{(overdueTasks > 1 ? "s" : "")}";
+            return new Tip
+            {
+                Text = $"You have {overdueTasks} overdue task{(overdueTasks > 1 ? "s" : "")}",
+                Action = new TipAction { Label = "View overdue", Type = TipActionType.ViewOverdue }
+            };
 
         // 2. Check My Day empty (no time condition — prompt planning any time)
         var myDayTasks = tasks.Count(t => t.IsInMyDay && !t.IsCompleted);
         if (myDayTasks == 0)
-            return "Your My Day list is empty—ready to plan?";
+            return new Tip
+            {
+                Text = "Your My Day list is empty—ready to plan?",
+                Action = new TipAction { Label = "Plan My Day", Type = TipActionType.ViewMyDay }
+            };
 
         // 3. Check ≥ 5 tasks completed (no time tracking, so this checks total completed)
         var completedCount = tasks.Count(t => t.IsCompleted);
 
         if (completedCount >= 5)
-            return $"Great progress! {completedCount} tasks completed.";
+            return new Tip
+            {
+                Text = $"Great progress! {completedCount} tasks completed.",
+                Action = null
+            };
 
         // 4. Check first open of day (any uncompleted task exists)
         var hasOpenTasks = tasks.Any(t => !t.IsCompleted);
         if (hasOpenTasks)
-            return GetTimeBasedGreeting();
+            return new Tip
+            {
+                Text = GetTimeBasedGreeting(),
+                Action = null
+            };
 
         // 5. No tasks exist
         if (tasks.Count == 0)
-            return "Your task list is empty. Add one to get started.";
+            return new Tip
+            {
+                Text = "Your task list is empty. Add one to get started.",
+                Action = new TipAction { Label = "Add sample task", Type = TipActionType.AddSampleTask }
+            };
 
         // 6. Rotating anytime greetings
-        var tip = AnytimeGreetings[_greetingIndex % AnytimeGreetings.Length];
+        var tipText = AnytimeGreetings[_greetingIndex % AnytimeGreetings.Length];
         _greetingIndex++;
-        return tip;
+        return new Tip
+        {
+            Text = tipText,
+            Action = null
+        };
     }
 
     private string GetTimeBasedGreeting()
