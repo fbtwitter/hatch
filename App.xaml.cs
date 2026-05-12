@@ -1,4 +1,5 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Windowing;
 using Hatch.Models;
 using Hatch.Services;
 using Hatch.Views;
@@ -26,6 +27,16 @@ public partial class App : Application
         try
         {
             IsStartupLaunch = Settings.RunAtStartup && string.IsNullOrEmpty(args.Arguments);
+
+            // Initialize mascot position if unset, so main window can position relative to it
+            if (Settings.MascotX < 0 || Settings.MascotY < 0)
+            {
+                var workArea = DisplayArea.Primary.WorkArea;
+                int size = Settings.MascotSize;
+                Settings.MascotX = workArea.X + workArea.Width - size - 12;
+                Settings.MascotY = workArea.Y + workArea.Height - size - 12;
+                _ = SettingsService.SaveAsync();
+            }
 
             MainWindowInstance = new MainWindow();
             if (!IsStartupLaunch)
