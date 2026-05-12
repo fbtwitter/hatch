@@ -299,9 +299,10 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="models:CompletedTaskGroup">
                         <StackPanel Spacing="4">
-                            <!-- Expander for each group (Open / Completed) -->
+                            <!-- Expander stays mounted permanently; hidden when group has no items -->
                             <Expander x:Name="GroupExpander"
-                                      HorizontalContentAlignment="Stretch">
+                                      HorizontalContentAlignment="Stretch"
+                                      Visibility="{Binding HasItems, Converter={StaticResource BoolToVisibility}}">
                                 <Expander.Header>
                                     <TextBlock Text="{Binding Name}"
                                                Style="{ThemeResource BodyStrongTextBlockStyle}"

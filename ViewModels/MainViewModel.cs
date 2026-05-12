@@ -24,6 +24,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private DispatcherQueueTimer? _undoDismissTimer;
     private bool _isUndoBarVisible;
 
+    private readonly CompletedTaskGroup _openGroup = new() { Name = "Open" };
+    private readonly CompletedTaskGroup _completedGroup = new() { Name = "Completed (0)" };
+    private readonly IList<CompletedTaskGroup> _flatGroupedTasks;
+
     public ObservableCollection<TodoItem> Tasks { get; } = [];
     public ObservableCollection<TodoItem> ActiveTasks { get; } = [];
     public ObservableCollection<TaskList> Lists { get; } = [];
@@ -147,8 +151,45 @@ public sealed class MainViewModel : INotifyPropertyChanged
         foreach (var task in filtered)
             ActiveTasks.Add(task);
 
+        RebuildFlatGroups();
         OnPropertyChanged(nameof(IsTaskListEmpty));
-        OnPropertyChanged(nameof(FlatGroupedTasks));
+    }
+
+    private void RebuildFlatGroups()
+    {
+        _openGroup.Items.Clear();
+        _completedGroup.Items.Clear();
+
+        foreach (var task in ActiveTasks.Where(t => !t.IsCompleted))
+            _openGroup.Items.Add(task);
+
+        foreach (var task in ActiveTasks.Where(t => t.IsCompleted))
+            _completedGroup.Items.Add(task);
+
+        UpdateCompletedGroupName();
+    }
+
+    private void UpdateCompletedGroupName()
+    {
+        _completedGroup.Name = $"Completed ({_completedGroup.Items.Count})";
+    }
+
+    private void MoveBetweenFlatGroups(TodoItem task)
+    {
+        if (task.IsCompleted)
+        {
+            _openGroup.Items.Remove(task);
+            if (!_completedGroup.Items.Contains(task))
+                _completedGroup.Items.Add(task);
+        }
+        else
+        {
+            _completedGroup.Items.Remove(task);
+            if (!_openGroup.Items.Contains(task))
+                _openGroup.Items.Insert(0, task);
+        }
+
+        UpdateCompletedGroupName();
     }
 
     public IList<PlannedGroup> PlannedGroups
@@ -193,37 +234,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    public IList<CompletedTaskGroup> FlatGroupedTasks
-    {
-        get
-        {
-            var groups = new List<CompletedTaskGroup>();
-
-            var openTasks = new ObservableCollection<TodoItem>(
-                ActiveTasks.Where(t => !t.IsCompleted)
-            );
-            groups.Add(new CompletedTaskGroup
-            {
-                Name = "Open",
-                Items = openTasks
-            });
-
-            var completedTasks = new ObservableCollection<TodoItem>(
-                ActiveTasks.Where(t => t.IsCompleted)
-            );
-
-            if (completedTasks.Count > 0)
-            {
-                groups.Add(new CompletedTaskGroup
-                {
-                    Name = $"Completed ({completedTasks.Count})",
-                    Items = completedTasks
-                });
-            }
-
-            return groups;
-        }
-    }
+    public IList<CompletedTaskGroup> FlatGroupedTasks => _flatGroupedTasks;
 
     public ICommand AddTaskCommand { get; }
 
@@ -237,6 +248,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
             _ => !string.IsNullOrWhiteSpace(NewTaskText));
 
         UndoLastCompletionCommand = new RelayCommand(_ => UndoLastCompletion());
+
+        _flatGroupedTasks = [_openGroup, _completedGroup];
 
         Tasks.CollectionChanged += (_, e) =>
         {
@@ -380,7 +393,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             case "alltasks":
             default:
                 // Delay the group move so the strikethrough/fade animation is visible
-                // before the task jumps to the Completed group.
+                // before the task moves between groups.
                 if (task.IsCompleted)
                     _lastCompletedTask = task;
 
@@ -389,9 +402,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 timer.IsRepeating = false;
                 timer.Tick += (_, _) =>
                 {
-                    OnPropertyChanged(nameof(FlatGroupedTasks));
-                    OnPropertyChanged(nameof(IsTaskListEmpty));
                     timer.Stop();
+                    MoveBetweenFlatGroups(task);
+                    OnPropertyChanged(nameof(IsTaskListEmpty));
 
                     if (task.IsCompleted)
                         ShowUndoBar();
