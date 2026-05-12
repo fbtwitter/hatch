@@ -313,7 +313,20 @@ public sealed partial class QuickAddBubbleWindow : Window
             return;
         }
 
-        _currentTip = _tipEngine.GetTip(mainVm.Tasks);
+        // Track user activity
+        App.Settings.LastUserActivityTime = DateTime.Now;
+        _ = App.SettingsService.SaveAsync();
+
+        _currentTip = _tipEngine.GetTip(mainVm.Tasks,
+                                       App.Settings.LastMeaningfulTipTime,
+                                       App.Settings.LastUserActivityTime);
+
+        // If tip is null (suppressed fallback), don't show anything
+        if (_currentTip == null)
+        {
+            return;
+        }
+
         TipTextBlock.Text = _currentTip.Message;
 
         // Show action button if available
@@ -338,14 +351,21 @@ public sealed partial class QuickAddBubbleWindow : Window
 
         _tipFadeIn?.Begin();
 
+        // Track meaningful tips for smart fallback suppression
+        if (_currentTip.IsMeaningful)
+        {
+            App.Settings.LastMeaningfulTipTime = DateTime.Now;
+        }
+
         // Check if this is a new daily tip
         bool isNewDay = App.Settings.LastTipShowDate?.Date != today;
         if (isNewDay)
         {
             App.Settings.LastTipShowDate = today;
-            _ = App.SettingsService.SaveAsync();
             SignalMascotDailyTip();
         }
+
+        _ = App.SettingsService.SaveAsync();
 
         // Use Severity and DismissAfterMs to determine timeout
         if (_currentTip.DismissAfterMs > 0)

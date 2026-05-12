@@ -6,6 +6,7 @@ public class Tip
     public TipSeverity Severity { get; set; } = TipSeverity.Info;
     public TipAction? Action { get; set; }
     public int DismissAfterMs { get; set; } = 5000;  // 5s default for low-priority
+    public bool IsMeaningful { get; set; } = true;   // false = fallback tip (suppress if user active recently)
 }
 
 public class TipAction

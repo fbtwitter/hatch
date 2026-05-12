@@ -30,4 +30,8 @@ public sealed class AppSettings
     public DateTime? LastTipShowDate { get; set; } = null;
     public int ConsecutiveTipDismissals { get; set; } = 0;
     public DateTime? TipAutoOpenCooldownUntil { get; set; } = null;
+
+    // Tip Engine — smart fallback suppression (avoid filler)
+    public DateTime? LastMeaningfulTipTime { get; set; } = null;      // overdue, My Day, progress
+    public DateTime? LastUserActivityTime { get; set; } = null;       // bubble open, app activation
 }
