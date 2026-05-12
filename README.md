@@ -1,4 +1,8 @@
-# 🥚 Hatch — Frictionless Task Capture for Windows 11
+<div align="center">
+
+![Hatch Logo](logo.svg)
+
+# Hatch — Frictionless Task Capture for Windows 11
 
 Fast. Private. Local-first.
 
@@ -7,6 +11,8 @@ Fast. Private. Local-first.
 ![WinUI 3](https://img.shields.io/badge/WinUI-3-0078D4?style=flat-square)
 ![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 ![v0.2.6](https://img.shields.io/badge/Version-v0.2.6-blue?style=flat-square)
+
+</div>
 
 > A native WinUI 3 desktop app with a friendly always-on-top paperclip mascot.  
 > Capture tasks in ≤4 seconds from anywhere. No account. No cloud. No telemetry.
@@ -214,8 +220,10 @@ MIT License — See [LICENSE](LICENSE) file.
 
 <div align="center">
 
+![Hatch Logo](logo.svg)
+
 **Built with ❤️ for Windows 11. No account. No cloud. No compromise.**
 
-[⬆ Back to top](#-hatch--frictionless-task-capture-for-windows-11)
+[⬆ Back to top](#hatch--frictionless-task-capture-for-windows-11)
 
 </div>
