@@ -68,7 +68,6 @@ public sealed partial class MascotWindow : Window
             _isFaded = true;
             _idleFadeOut?.Begin();
         };
-        _inactivityTimer.Start();
         // Wiggle is built in code so it targets MascotGridTransform (works for both Canvas and Lottie)
         MascotGridTransform.CenterX = ViewModel.WindowSize / 2.0;
         MascotGridTransform.CenterY = ViewModel.WindowSize / 2.0;
@@ -175,7 +174,15 @@ public sealed partial class MascotWindow : Window
             case nameof(MascotViewModel.IsVisible):
                 ShowWindow(_hwnd, ViewModel.IsVisible ? SW_SHOWNOACTIVATE : SW_HIDE);
                 // Treat coming back from fullscreen hide as a fresh start for Lottie
-                if (!ViewModel.IsVisible) _lottieStarted = false;
+                if (!ViewModel.IsVisible)
+                {
+                    _lottieStarted = false;
+                    _inactivityTimer?.Stop();
+                }
+                else
+                {
+                    ResetInactivity();
+                }
                 UpdateAnimationState();
                 break;
             case nameof(MascotViewModel.MuteAnimation):
@@ -315,6 +322,7 @@ public sealed partial class MascotWindow : Window
 
     private void ResetInactivity()
     {
+        if (!ViewModel.IsVisible) return;
         _inactivityTimer?.Stop();
         if (_isFaded)
         {

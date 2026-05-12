@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
 using Microsoft.UI;
@@ -211,6 +212,7 @@ public sealed partial class MainWindow : Window
         {
             args.Cancel = true;
             ShowWindow(_hwnd, SW_HIDE);
+            NativeMethods.EmptyWorkingSet(Process.GetCurrentProcess().Handle);
             return;
         }
         if (_subclassProc is not null)
