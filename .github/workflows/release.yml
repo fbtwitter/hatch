@@ -146,10 +146,14 @@ jobs:
         run: |
           $tag = "${{ github.ref_name }}"
           $assetName = "Microsoft.WindowsAppRuntime.2.msix"
-          $release = gh release view $tag --json assets -q ".assets[].name"
-          if ($release -contains $assetName) {
-            echo "RUNTIME_ASSET_EXISTS=true" | Out-File $env:GITHUB_ENV -Append
-          } else {
+          try {
+            $release = gh release view $tag --json assets -q ".assets[].name" 2>$null
+            if ($release -contains $assetName) {
+              echo "RUNTIME_ASSET_EXISTS=true" | Out-File $env:GITHUB_ENV -Append
+            } else {
+              echo "RUNTIME_ASSET_EXISTS=false" | Out-File $env:GITHUB_ENV -Append
+            }
+          } catch {
             echo "RUNTIME_ASSET_EXISTS=false" | Out-File $env:GITHUB_ENV -Append
           }
 
