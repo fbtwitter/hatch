@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Media.Animation;
 using Hatch.Models;
 using Hatch.ViewModels;
 using Hatch.Helpers;
+using Hatch.Services;
 using Windows.Graphics;
 
 namespace Hatch.Views;
@@ -14,8 +15,10 @@ namespace Hatch.Views;
 public sealed partial class QuickAddBubbleWindow : Window
 {
     private readonly IntPtr _hwnd;
+    private readonly TipEngine _tipEngine = new();
     private Storyboard? _fadeIn;
     private Storyboard? _fadeOut;
+    private Storyboard? _tipFadeIn;
     private bool _isClosed = false;
 
     public QuickAddBubbleWindow()
@@ -24,6 +27,7 @@ public sealed partial class QuickAddBubbleWindow : Window
 
         _fadeIn  = (Storyboard)BubbleRoot.Resources["ConfirmationFadeIn"];
         _fadeOut = (Storyboard)BubbleRoot.Resources["ConfirmationFadeOut"];
+        _tipFadeIn = (Storyboard)BubbleRoot.Resources["TipFadeIn"];
         _hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
 
         // Mirror the theme from the main window so this separate window
@@ -72,6 +76,9 @@ public sealed partial class QuickAddBubbleWindow : Window
                 };
             }
         }
+
+        // Evaluate and display contextual tip
+        EvaluateAndShowTip();
 
         AddButton.Click += AddButton_Click;
         OpenMainWindowButton.Click += (_, _) =>
@@ -269,5 +276,29 @@ public sealed partial class QuickAddBubbleWindow : Window
 
     private void OnWindowClosed()
     {
+    }
+
+    private void EvaluateAndShowTip()
+    {
+        var mainVm = GetMainViewModel();
+        if (mainVm == null) return;
+
+        var tip = _tipEngine.GetTip(mainVm.Tasks);
+        TipTextBlock.Text = tip;
+
+        var today = DateTime.Today;
+        var isNewDay = App.Settings.LastTipShowDate?.Date != today;
+
+        if (isNewDay)
+        {
+            TipBubble.Visibility = Visibility.Visible;
+            _tipFadeIn?.Begin();
+            App.Settings.LastTipShowDate = today;
+            _ = App.SettingsService.SaveAsync();
+        }
+        else
+        {
+            TipBubble.Visibility = Visibility.Collapsed;
+        }
     }
 }
