@@ -26,6 +26,12 @@
                                  Storyboard.TargetProperty="Opacity"
                                  From="0" To="1" Duration="0:0:0.2"/>
             </Storyboard>
+
+            <Storyboard x:Key="TipFadeOut">
+                <DoubleAnimation Storyboard.TargetName="TipBubble"
+                                 Storyboard.TargetProperty="Opacity"
+                                 From="1" To="0" Duration="0:0:0.15"/>
+            </Storyboard>
         </Grid.Resources>
 
         <!-- Confirmation overlay (initially hidden, driven by ShowConfirmationAsync) -->
@@ -78,7 +84,9 @@
                     CornerRadius="8"
                     Padding="12"
                     Opacity="0"
-                    Visibility="Collapsed">
+                    Visibility="Collapsed"
+                    PointerEntered="TipBubble_PointerEntered"
+                    PointerExited="TipBubble_PointerExited">
                 <TextBlock x:Name="TipTextBlock"
                            TextWrapping="Wrap"
                            Style="{ThemeResource BodyTextBlockStyle}"/>

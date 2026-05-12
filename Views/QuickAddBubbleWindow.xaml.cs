@@ -19,7 +19,11 @@ public sealed partial class QuickAddBubbleWindow : Window
     private Storyboard? _fadeIn;
     private Storyboard? _fadeOut;
     private Storyboard? _tipFadeIn;
+    private Storyboard? _tipFadeOut;
     private bool _isClosed = false;
+    private CancellationTokenSource? _tipDismissCts;
+    private bool _tipDismissPaused = false;
+    private int _tipDismissRemainingMs = 0;
 
     public QuickAddBubbleWindow()
     {
@@ -28,6 +32,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         _fadeIn  = (Storyboard)BubbleRoot.Resources["ConfirmationFadeIn"];
         _fadeOut = (Storyboard)BubbleRoot.Resources["ConfirmationFadeOut"];
         _tipFadeIn = (Storyboard)BubbleRoot.Resources["TipFadeIn"];
+        _tipFadeOut = (Storyboard)BubbleRoot.Resources["TipFadeOut"];
         _hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
 
         // Mirror the theme from the main window so this separate window
@@ -77,8 +82,8 @@ public sealed partial class QuickAddBubbleWindow : Window
             }
         }
 
-        // Evaluate and display contextual tip
-        EvaluateAndShowTip();
+        // Show contextual tip when bubble opens
+        ShowContextualTip();
 
         AddButton.Click += AddButton_Click;
         OpenMainWindowButton.Click += (_, _) =>
@@ -276,29 +281,77 @@ public sealed partial class QuickAddBubbleWindow : Window
 
     private void OnWindowClosed()
     {
+        _tipDismissCts?.Cancel();
     }
 
-    private void EvaluateAndShowTip()
+    private void ShowContextualTip()
     {
         var mainVm = GetMainViewModel();
         if (mainVm == null) return;
 
         var tip = _tipEngine.GetTip(mainVm.Tasks);
         TipTextBlock.Text = tip;
+        TipBubble.Visibility = Visibility.Visible;
+        TipBubble.Opacity = 0;
+        _tipDismissPaused = false;
 
-        var today = DateTime.Today;
-        var isNewDay = App.Settings.LastTipShowDate?.Date != today;
+        _tipDismissCts?.Cancel();
+        _tipDismissCts = new CancellationTokenSource();
 
-        if (isNewDay)
+        _tipFadeIn?.Begin();
+
+        // High-priority tips (overdue, My Day empty): stay visible indefinitely
+        // Low-priority tips (fallback): auto-dismiss after 5s (pausable on hover)
+        bool isHighPriority = tip.Contains("overdue") || tip.Contains("empty");
+        if (!isHighPriority)
         {
-            TipBubble.Visibility = Visibility.Visible;
-            _tipFadeIn?.Begin();
-            App.Settings.LastTipShowDate = today;
-            _ = App.SettingsService.SaveAsync();
+            _tipDismissRemainingMs = 5000;
+            _ = ScheduleTipDismissAsync(_tipDismissCts.Token);
         }
-        else
+    }
+
+    private async Task ScheduleTipDismissAsync(CancellationToken ct)
+    {
+        try
         {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+            while (_tipDismissRemainingMs > 0 && !ct.IsCancellationRequested)
+            {
+                if (_tipDismissPaused)
+                {
+                    await Task.Delay(50, ct);
+                    continue;
+                }
+
+                int elapsed = (int)stopwatch.ElapsedMilliseconds;
+                _tipDismissRemainingMs -= elapsed;
+                stopwatch.Restart();
+
+                if (_tipDismissRemainingMs <= 0)
+                    break;
+
+                await Task.Delay(Math.Min(50, _tipDismissRemainingMs), ct);
+            }
+
+            if (ct.IsCancellationRequested) return;
+
+            _tipFadeOut?.Begin();
+            await Task.Delay(150, ct);
+            if (ct.IsCancellationRequested) return;
+
             TipBubble.Visibility = Visibility.Collapsed;
         }
+        catch (OperationCanceledException) { }
+    }
+
+    private void TipBubble_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        _tipDismissPaused = true;
+    }
+
+    private void TipBubble_PointerExited(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        _tipDismissPaused = false;
     }
 }
