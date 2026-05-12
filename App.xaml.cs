@@ -12,6 +12,7 @@ public partial class App : Application
     public static MainWindow? MainWindowInstance { get; private set; }
     public static MascotWindow? MascotWindowInstance { get; private set; }
     public static QuickAddBubbleWindow? BubbleWindowInstance { get; set; }
+    public static bool IsStartupLaunch { get; private set; } = false;
 
     public App()
     {
@@ -24,8 +25,11 @@ public partial class App : Application
     {
         try
         {
+            IsStartupLaunch = Settings.RunAtStartup && string.IsNullOrEmpty(args.Arguments);
+
             MainWindowInstance = new MainWindow();
-            MainWindowInstance.Activate();
+            if (!IsStartupLaunch)
+                MainWindowInstance.Activate();
 
             MascotWindowInstance = new MascotWindow();
             MascotWindowInstance.Activate(); // focus returns to MascotWindow last

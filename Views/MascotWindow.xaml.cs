@@ -426,8 +426,8 @@ public sealed partial class MascotWindow : Window
         // against DWM setup and causes a null vtable dereference (0xC0000005).
         ApplyLottieSource();
 
-        // Auto-open bubble on first run with intro copy
-        if (!App.Settings.FirstRunComplete)
+        // Auto-open bubble on first run with intro copy, but not on startup launch
+        if (!App.Settings.FirstRunComplete && !App.IsStartupLaunch)
         {
             DispatcherQueue.TryEnqueue(() => ViewModel.ToggleBubbleCommand.Execute(null));
         }
