@@ -4,17 +4,38 @@ namespace Hatch.Services;
 
 public sealed class TipEngine
 {
-    private static readonly string[] FallbackTips =
+    private static readonly string[] MorningGreetings =
     [
-        "You're all caught up",
-        "One step at a time",
-        "Stay focused",
-        "Great progress so far",
+        "Good morning",
+        "What's the priority today?",
+        "Ready to plan your day?"
+    ];
+
+    private static readonly string[] AfternoonGreetings =
+    [
+        "Small steps count",
+        "Let's clear one thing first",
+        "How's the day going?",
+        "Keep the momentum"
+    ];
+
+    private static readonly string[] EveningGreetings =
+    [
+        "Great work today",
+        "Tomorrow's a new slate",
+        "You earned this",
+        "Wrap up strong"
+    ];
+
+    private static readonly string[] AnytimeGreetings =
+    [
         "You've got this",
+        "One task at a time",
+        "You're all caught up",
         "Every task counts"
     ];
 
-    private static int _fallbackIndex = 0;
+    private static int _greetingIndex = 0;
 
     public string GetTip(IReadOnlyList<TodoItem> tasks)
     {
@@ -40,18 +61,30 @@ public sealed class TipEngine
         if (completedCount >= 5)
             return $"Great progress! {completedCount} tasks completed.";
 
-        // 4. Check first open of day (any uncompleted task exists + first session)
+        // 4. Check first open of day (any uncompleted task exists)
         var hasOpenTasks = tasks.Any(t => !t.IsCompleted);
         if (hasOpenTasks)
-            return "Ready to tackle your day?";
+            return GetTimeBasedGreeting();
 
         // 5. No tasks exist
         if (tasks.Count == 0)
             return "Your task list is empty. Add one to get started.";
 
-        // 6. Rotating fallback
-        var tip = FallbackTips[_fallbackIndex % FallbackTips.Length];
-        _fallbackIndex++;
+        // 6. Rotating anytime greetings
+        var tip = AnytimeGreetings[_greetingIndex % AnytimeGreetings.Length];
+        _greetingIndex++;
         return tip;
+    }
+
+    private string GetTimeBasedGreeting()
+    {
+        var hour = DateTime.Now.Hour;
+        var index = _greetingIndex++;
+
+        return hour < 12
+            ? MorningGreetings[index % MorningGreetings.Length]
+            : hour < 18
+                ? AfternoonGreetings[index % AfternoonGreetings.Length]
+                : EveningGreetings[index % EveningGreetings.Length];
     }
 }

@@ -26,6 +26,6 @@ public sealed class AppSettings
     public uint HotkeyModifiers { get; set; } = 0x0002 | 0x0004; // MOD_CONTROL | MOD_SHIFT
     public uint HotkeyVirtualKey { get; set; } = 0x20;            // VK_SPACE
 
-    // Tip Engine — tracks when bubble was last auto-opened to enforce one-per-day
+    // Tip Engine — tracks when a new daily tip was shown; used for mascot indicator
     public DateTime? LastTipShowDate { get; set; } = null;
 }

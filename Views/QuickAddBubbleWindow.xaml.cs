@@ -92,7 +92,12 @@ public sealed partial class QuickAddBubbleWindow : Window
             App.MascotWindowInstance?.ViewModel.ToggleMainWindowCommand.Execute(null);
         };
         CloseButton.Click += (_, _) => Close();
-        Closed += (_, _) => { _isClosed = true; OnWindowClosed(); };
+        Closed += (_, _) =>
+        {
+            _isClosed = true;
+            OnWindowClosed();
+            App.MascotWindowInstance?.ViewModel.HideDailyTipIndicator();
+        };
 
         // Disable Add when title is empty
         TaskTitleBox.TextChanged += (_, _) =>
@@ -300,6 +305,16 @@ public sealed partial class QuickAddBubbleWindow : Window
 
         _tipFadeIn?.Begin();
 
+        // Check if this is a new daily tip
+        var today = DateTime.Today;
+        bool isNewDay = App.Settings.LastTipShowDate?.Date != today;
+        if (isNewDay)
+        {
+            App.Settings.LastTipShowDate = today;
+            _ = App.SettingsService.SaveAsync();
+            SignalMascotDailyTip();
+        }
+
         // High-priority tips (overdue, My Day empty): stay visible indefinitely
         // Low-priority tips (fallback): auto-dismiss after 5s (pausable on hover)
         bool isHighPriority = tip.Contains("overdue") || tip.Contains("empty");
@@ -308,6 +323,11 @@ public sealed partial class QuickAddBubbleWindow : Window
             _tipDismissRemainingMs = 5000;
             _ = ScheduleTipDismissAsync(_tipDismissCts.Token);
         }
+    }
+
+    private void SignalMascotDailyTip()
+    {
+        App.MascotWindowInstance?.ViewModel.SetDailyTipIndicatorVisible();
     }
 
     private async Task ScheduleTipDismissAsync(CancellationToken ct)
