@@ -50,9 +50,9 @@ public sealed class TipEngine
         if (overdueTasks >= 1)
             return $"You have {overdueTasks} overdue task{(overdueTasks > 1 ? "s" : "")}";
 
-        // 2. Check My Day empty before 11am
+        // 2. Check My Day empty (no time condition — prompt planning any time)
         var myDayTasks = tasks.Count(t => t.IsInMyDay && !t.IsCompleted);
-        if (myDayTasks == 0 && now.Hour < 11)
+        if (myDayTasks == 0)
             return "Your My Day list is empty—ready to plan?";
 
         // 3. Check ≥ 5 tasks completed (no time tracking, so this checks total completed)
