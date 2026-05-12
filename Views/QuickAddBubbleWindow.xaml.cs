@@ -314,7 +314,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         }
 
         _currentTip = _tipEngine.GetTip(mainVm.Tasks);
-        TipTextBlock.Text = _currentTip.Text;
+        TipTextBlock.Text = _currentTip.Message;
 
         // Show action button if available
         if (_currentTip.Action != null)
@@ -347,17 +347,15 @@ public sealed partial class QuickAddBubbleWindow : Window
             SignalMascotDailyTip();
         }
 
-        // High-priority tips (overdue, My Day empty): stay visible indefinitely
-        // Low-priority tips (fallback): auto-dismiss after 5s (pausable on hover)
-        bool isHighPriority = _currentTip.Text.Contains("overdue") || _currentTip.Text.Contains("empty");
-        if (!isHighPriority)
+        // Use Severity and DismissAfterMs to determine timeout
+        if (_currentTip.DismissAfterMs > 0)
         {
-            _tipDismissRemainingMs = 5000;
+            _tipDismissRemainingMs = _currentTip.DismissAfterMs;
             _ = ScheduleTipDismissAsync(_tipDismissCts.Token);
         }
-        else
+        else if (_currentTip.Severity == TipSeverity.Critical)
         {
-            // High-priority tips: if shown without manual dismissal, engagement
+            // Critical tips: if shown without manual dismissal, engagement
             _ = TrackEngagementOnCloseAsync();
         }
     }

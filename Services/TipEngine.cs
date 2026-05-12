@@ -50,8 +50,10 @@ public sealed class TipEngine
         if (overdueTasks >= 1)
             return new Tip
             {
-                Text = $"You have {overdueTasks} overdue task{(overdueTasks > 1 ? "s" : "")}",
-                Action = new TipAction { Label = "View overdue", Type = TipActionType.ViewOverdue }
+                Message = $"You have {overdueTasks} overdue task{(overdueTasks > 1 ? "s" : "")}",
+                Severity = TipSeverity.Critical,
+                Action = new TipAction { Label = "View overdue", Type = TipActionType.ViewOverdue },
+                DismissAfterMs = 0  // 0 = indefinite (user dismisses)
             };
 
         // 2. Check My Day empty (no time condition — prompt planning any time)
@@ -59,8 +61,10 @@ public sealed class TipEngine
         if (myDayTasks == 0)
             return new Tip
             {
-                Text = "Your My Day list is empty—ready to plan?",
-                Action = new TipAction { Label = "Plan My Day", Type = TipActionType.ViewMyDay }
+                Message = "Your My Day list is empty—ready to plan?",
+                Severity = TipSeverity.Critical,
+                Action = new TipAction { Label = "Plan My Day", Type = TipActionType.ViewMyDay },
+                DismissAfterMs = 0  // indefinite
             };
 
         // 3. Check ≥ 5 tasks completed (no time tracking, so this checks total completed)
@@ -69,8 +73,10 @@ public sealed class TipEngine
         if (completedCount >= 5)
             return new Tip
             {
-                Text = $"Great progress! {completedCount} tasks completed.",
-                Action = null
+                Message = $"Great progress! {completedCount} tasks completed.",
+                Severity = TipSeverity.Info,
+                Action = null,
+                DismissAfterMs = 3000  // 3s for celebratory tip
             };
 
         // 4. Check first open of day (any uncompleted task exists)
@@ -78,16 +84,20 @@ public sealed class TipEngine
         if (hasOpenTasks)
             return new Tip
             {
-                Text = GetTimeBasedGreeting(),
-                Action = null
+                Message = GetTimeBasedGreeting(),
+                Severity = TipSeverity.Warning,
+                Action = null,
+                DismissAfterMs = 5000  // 5s for greeting
             };
 
         // 5. No tasks exist
         if (tasks.Count == 0)
             return new Tip
             {
-                Text = "Your task list is empty. Add one to get started.",
-                Action = new TipAction { Label = "Add sample task", Type = TipActionType.AddSampleTask }
+                Message = "Your task list is empty. Add one to get started.",
+                Severity = TipSeverity.Warning,
+                Action = new TipAction { Label = "Add sample task", Type = TipActionType.AddSampleTask },
+                DismissAfterMs = 0  // indefinite with action
             };
 
         // 6. Rotating anytime greetings
@@ -95,8 +105,10 @@ public sealed class TipEngine
         _greetingIndex++;
         return new Tip
         {
-            Text = tipText,
-            Action = null
+            Message = tipText,
+            Severity = TipSeverity.Info,
+            Action = null,
+            DismissAfterMs = 3000  // 3s for fallback greeting
         };
     }
 
