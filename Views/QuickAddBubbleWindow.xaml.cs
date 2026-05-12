@@ -28,6 +28,7 @@ public sealed partial class QuickAddBubbleWindow : Window
     private bool _tipWasShown = false;
     private bool _tipAutoDissmissCompleted = false;
     private Tip? _currentTip;
+    private int _mascotX, _mascotY, _mascotWidth;
 
     public QuickAddBubbleWindow()
     {
@@ -52,8 +53,8 @@ public sealed partial class QuickAddBubbleWindow : Window
         AppWindow.SetPresenter(presenter);
         AppWindow.IsShownInSwitchers = false;
 
-        // Size — extra height to accommodate the CalendarDatePicker when shown
-        AppWindow.Resize(new Windows.Graphics.SizeInt32(340, 320));
+        // Resize dynamically to content after each layout pass
+        BubbleContent.SizeChanged += (_, _) => FitWindowToContent();
 
         // Initialize list selector
         var mainVm = GetMainViewModel();
@@ -159,47 +160,59 @@ public sealed partial class QuickAddBubbleWindow : Window
 
     public void PositionRelativeToMascot(int mascotX, int mascotY, int mascotWidth)
     {
-        // Logical (96 DPI) sizes — same values used in AppWindow.Resize
-        const int logicalWidth  = 340;
-        const int logicalHeight = 320;
-        const int gap           = 12;
+        _mascotX = mascotX;
+        _mascotY = mascotY;
+        _mascotWidth = mascotWidth;
+        UpdatePosition();
+    }
 
-        var pt       = new NativeMethods.POINT { X = mascotX + mascotWidth / 2, Y = mascotY + mascotWidth / 2 };
+    private void UpdatePosition()
+    {
+        const int gap = 12;
+
+        var pt       = new NativeMethods.POINT { X = _mascotX + _mascotWidth / 2, Y = _mascotY + _mascotWidth / 2 };
         var hMonitor = NativeMethods.MonitorFromPoint(pt, NativeMethods.MONITOR_DEFAULTTONEAREST);
         var mi       = new NativeMethods.MONITORINFO { cbSize = Marshal.SizeOf<NativeMethods.MONITORINFO>() };
         if (!NativeMethods.GetMonitorInfo(hMonitor, ref mi))
             return;
 
-        // Scale logical sizes to physical pixels for this monitor's DPI
         NativeMethods.GetDpiForMonitor(hMonitor, NativeMethods.MDT_EFFECTIVE_DPI, out uint dpiX, out _);
-        double scale      = dpiX / 96.0;
-        int bubbleWidth   = (int)Math.Round(logicalWidth  * scale);
-        int bubbleHeight  = (int)Math.Round(logicalHeight * scale);
-        int scaledGap     = (int)Math.Round(gap * scale);
+        double scale  = dpiX / 96.0;
+        int scaledGap = (int)Math.Round(gap * scale);
+
+        // Use the window's current physical size (already correct after FitWindowToContent)
+        int bubbleWidth  = AppWindow.Size.Width;
+        int bubbleHeight = AppWindow.Size.Height;
 
         var w = mi.rcWork;
 
-        // --- Horizontal axis ---
         // Prefer left of mascot; flip to right if it doesn't fit.
-        int bubbleX = mascotX - bubbleWidth - scaledGap;
+        int bubbleX = _mascotX - bubbleWidth - scaledGap;
         if (bubbleX < w.left)
-            bubbleX = mascotX + mascotWidth + scaledGap;
-
-        // Clamp to work area (handles ultrawide or very wide bubbles)
+            bubbleX = _mascotX + _mascotWidth + scaledGap;
         bubbleX = Math.Clamp(bubbleX, w.left, w.right - bubbleWidth);
 
-        // --- Vertical axis ---
-        // Default: vertically centre on the mascot
-        int mascotCenterY = mascotY + mascotWidth / 2;
+        // Vertically centre on the mascot, clamp to work area.
+        int mascotCenterY = _mascotY + _mascotWidth / 2;
         int bubbleY       = mascotCenterY - bubbleHeight / 2;
-
-        // If near bottom edge (system tray corner), shift upward before clamping
         if (bubbleY + bubbleHeight > w.bottom - scaledGap)
             bubbleY = w.bottom - bubbleHeight - scaledGap;
-
         bubbleY = Math.Clamp(bubbleY, w.top + scaledGap, w.bottom - bubbleHeight);
 
         AppWindow.Move(new PointInt32(bubbleX, bubbleY));
+    }
+
+    private void FitWindowToContent()
+    {
+        if (BubbleContent.Visibility != Visibility.Visible) return;
+        var scale = Content?.XamlRoot?.RasterizationScale ?? 1.0;
+        int physW = (int)Math.Round(340 * scale);
+        int contentH = (int)Math.Round(BubbleContent.ActualHeight * scale);
+        if (contentH <= 0) return;
+        // Add non-client border overhead (border frame not included in client/content area)
+        int ncOverhead = Math.Max(0, AppWindow.Size.Height - AppWindow.ClientSize.Height);
+        AppWindow.Resize(new SizeInt32(physW, contentH + ncOverhead));
+        UpdatePosition();
     }
 
     private MainViewModel? GetMainViewModel()
@@ -270,6 +283,12 @@ public sealed partial class QuickAddBubbleWindow : Window
         ConfirmationOverlay.Opacity = 0;
         BubbleContent.Visibility = Visibility.Collapsed;
         ConfirmationOverlay.Visibility = Visibility.Visible;
+
+        // Shrink to a compact confirmation size
+        var scale = Content?.XamlRoot?.RasterizationScale ?? 1.0;
+        int ncOverhead = Math.Max(0, AppWindow.Size.Height - AppWindow.ClientSize.Height);
+        AppWindow.Resize(new SizeInt32((int)Math.Round(340 * scale), (int)Math.Round(180 * scale) + ncOverhead));
+        UpdatePosition();
 
         _fadeIn?.Begin();
 
