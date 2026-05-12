@@ -20,6 +20,18 @@
                                  Storyboard.TargetProperty="Opacity"
                                  From="1" To="0" Duration="0:0:0.1"/>
             </Storyboard>
+
+            <Storyboard x:Key="TipFadeIn">
+                <DoubleAnimation Storyboard.TargetName="TipBubble"
+                                 Storyboard.TargetProperty="Opacity"
+                                 From="0" To="1" Duration="0:0:0.2"/>
+            </Storyboard>
+
+            <Storyboard x:Key="TipFadeOut">
+                <DoubleAnimation Storyboard.TargetName="TipBubble"
+                                 Storyboard.TargetProperty="Opacity"
+                                 From="1" To="0" Duration="0:0:0.15"/>
+            </Storyboard>
         </Grid.Resources>
 
         <!-- Confirmation overlay (initially hidden, driven by ShowConfirmationAsync) -->
@@ -55,11 +67,34 @@
 
         <!-- Form content (shown initially) -->
         <StackPanel x:Name="BubbleContent"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Top"
                     Spacing="12"
-                    Padding="16"
-                    Width="300">
+                    Padding="16">
+
+            <!-- Contextual tip bubble (shown conditionally) -->
+            <Border x:Name="TipBubble"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="12"
+                    Opacity="0"
+                    Visibility="Collapsed"
+                    PointerEntered="TipBubble_PointerEntered"
+                    PointerExited="TipBubble_PointerExited">
+                <StackPanel Spacing="8">
+                    <TextBlock x:Name="TipTextBlock"
+                               TextWrapping="Wrap"
+                               Style="{ThemeResource BodyTextBlockStyle}"/>
+                    <Button x:Name="TipActionButton"
+                            Visibility="Collapsed"
+                            HorizontalAlignment="Stretch"
+                            Padding="8,6"
+                            Click="TipActionButton_Click"
+                            Style="{ThemeResource AccentButtonStyle}"/>
+                </StackPanel>
+            </Border>
 
             <!-- First-run onboarding message (shown only on first run) -->
             <StackPanel x:Name="IntroMessage"
