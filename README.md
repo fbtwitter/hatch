@@ -77,6 +77,9 @@ Three rules, non-negotiable:
 
 ## What's Shipped
 
+### v0.2.6 — May 12, 2026
+"Start Hatch when Windows starts" toggle in Settings. Mascot launches silently on OS boot—no main window, no intro bubble. Startup detected via registry entry in `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\Hatch`. Responsive title bar: pane toggle button hides only when pane opens automatically (responsive display mode), stays visible for manual user clicks. DisplayModeChanged event handling ensures correct UI state across window resizes.
+
 ### v0.2.5 — May 12, 2026
 Memory and CPU optimization: fullscreen polling reduced from 1s to 5s (80% CPU reduction). Inactivity timer now stops when mascot is hidden, eliminating unnecessary wakeups. Hide-restore timer reduced from 10s to 30s. Explicit memory cleanup via `EmptyWorkingSet()` on minimize-to-tray. Idle memory now <50MB, CPU <2% when mascot hidden with window closed.
 

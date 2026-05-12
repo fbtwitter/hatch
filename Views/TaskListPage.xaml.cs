@@ -140,6 +140,7 @@ public sealed partial class TaskListPage : Page
             PlaceholderText     = Strings.EditTask_TitlePlaceholder,
             HorizontalAlignment = HorizontalAlignment.Stretch
         };
+        titleBox.Loaded += (_, _) => titleBox.SelectionStart = titleBox.Text.Length;
 
         // ── Section 2: Due date ──────────────────────────────────────────────────
         // Preset buttons act as the selection UI — accent style = selected.

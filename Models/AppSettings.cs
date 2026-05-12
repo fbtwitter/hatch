@@ -20,6 +20,7 @@ public sealed class AppSettings
     public long? HideUntilTicks { get; set; } = null; // DateTime.UtcNow.Ticks when hide expires
     public bool MascotAlwaysOnTop { get; set; } = true;
     public bool HideWhenFullscreen { get; set; } = true;
+    public bool RunAtStartup { get; set; } = false;
 
     // Global hotkey — default Ctrl+Shift+Space
     public uint HotkeyModifiers { get; set; } = 0x0002 | 0x0004; // MOD_CONTROL | MOD_SHIFT
