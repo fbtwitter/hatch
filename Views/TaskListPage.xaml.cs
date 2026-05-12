@@ -153,6 +153,11 @@ public sealed partial class TaskListPage : Page
     // Overflow button just opens its flyout — no extra logic needed here.
     private void OverflowButton_Click(object sender, RoutedEventArgs e) { }
 
+    private void UndoInfoBar_Closed(InfoBar sender, InfoBarClosedEventArgs args)
+    {
+        ViewModel.DismissUndoBar();
+    }
+
     private void NewTaskTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key == VirtualKey.Enter && ViewModel.AddTaskCommand.CanExecute(null))

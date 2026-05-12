@@ -263,9 +263,13 @@
 
         <!-- Content area -->
         <Grid Grid.Row="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
             <!-- Empty state — flat views (My Day, Important, All Tasks) -->
-                <StackPanel HorizontalAlignment="Center"
+                <StackPanel Grid.Row="0" HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Spacing="8"
                             MaxWidth="260"
@@ -288,7 +292,7 @@
                 </StackPanel>
 
                 <!-- Flat list with grouping — My Day, Important, All Tasks -->
-            <ItemsControl x:Name="FlatListView"
+            <ItemsControl Grid.Row="0" x:Name="FlatListView"
                           ItemsSource="{Binding FlatGroupedTasks}"
                           Padding="20,0,20,24"
                           Visibility="{Binding IsTaskListEmpty, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
@@ -316,7 +320,7 @@
             </ItemsControl>
 
             <!-- Grouped list — Planned view only -->
-            <ListView x:Name="GroupedListView"
+            <ListView Grid.Row="0" x:Name="GroupedListView"
                       ItemsSource="{x:Bind PlannedGroupsSource.View, Mode=OneWay}"
                       SelectionMode="None"
                       Padding="20,0,20,24"
@@ -340,6 +344,22 @@
                     </GroupStyle>
                 </ListView.GroupStyle>
             </ListView>
+
+            <!-- Undo snackbar — shown for 4s after a task is completed -->
+            <InfoBar Grid.Row="1"
+                     x:Name="UndoInfoBar"
+                     IsOpen="{Binding IsUndoBarVisible, Mode=OneWay}"
+                     IsClosable="True"
+                     Severity="Informational"
+                     Message="Task completed"
+                     Margin="20,8,20,12"
+                     Closed="UndoInfoBar_Closed">
+                <InfoBar.ActionButton>
+                    <Button Content="Undo"
+                            Command="{Binding UndoLastCompletionCommand}"
+                            Style="{ThemeResource AccentButtonStyle}"/>
+                </InfoBar.ActionButton>
+            </InfoBar>
         </Grid>
     </Grid>
 </Page>

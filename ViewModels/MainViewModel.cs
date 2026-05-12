@@ -20,6 +20,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private bool _isBulkLoading = false;
     private int _themeVersion = 0;
     private readonly Dictionary<string, bool> _completedGroupExpandedState = new();
+    private TodoItem? _lastCompletedTask;
+    private DispatcherQueueTimer? _undoDismissTimer;
+    private bool _isUndoBarVisible;
 
     public ObservableCollection<TodoItem> Tasks { get; } = [];
     public ObservableCollection<TodoItem> ActiveTasks { get; } = [];
@@ -38,6 +41,19 @@ public sealed class MainViewModel : INotifyPropertyChanged
     }
 
     public bool IsTaskListEmpty => ActiveTasks.Count == 0;
+
+    public bool IsUndoBarVisible
+    {
+        get => _isUndoBarVisible;
+        private set
+        {
+            if (_isUndoBarVisible == value) return;
+            _isUndoBarVisible = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public ICommand UndoLastCompletionCommand { get; private set; } = null!;
 
     public bool IsPlannedEmpty => !Tasks.Any(t => t.DueDate != null && !t.IsCompleted);
 
@@ -220,6 +236,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
             _ => AddTask(),
             _ => !string.IsNullOrWhiteSpace(NewTaskText));
 
+        UndoLastCompletionCommand = new RelayCommand(_ => UndoLastCompletion());
+
         Tasks.CollectionChanged += (_, e) =>
         {
             // Skip during bulk load — LoadAsync calls RefreshActiveTasks once at the end.
@@ -363,6 +381,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
             default:
                 // Delay the group move so the strikethrough/fade animation is visible
                 // before the task jumps to the Completed group.
+                if (task.IsCompleted)
+                    _lastCompletedTask = task;
+
                 var timer = _dispatcherQueue.CreateTimer();
                 timer.Interval = TimeSpan.FromMilliseconds(250);
                 timer.IsRepeating = false;
@@ -371,10 +392,47 @@ public sealed class MainViewModel : INotifyPropertyChanged
                     OnPropertyChanged(nameof(FlatGroupedTasks));
                     OnPropertyChanged(nameof(IsTaskListEmpty));
                     timer.Stop();
+
+                    if (task.IsCompleted)
+                        ShowUndoBar();
                 };
                 timer.Start();
                 break;
         }
+    }
+
+    private void ShowUndoBar()
+    {
+        // Cancel any in-flight dismiss timer (e.g. rapid successive completions).
+        _undoDismissTimer?.Stop();
+
+        IsUndoBarVisible = true;
+
+        _undoDismissTimer = _dispatcherQueue.CreateTimer();
+        _undoDismissTimer.Interval = TimeSpan.FromSeconds(4);
+        _undoDismissTimer.IsRepeating = false;
+        _undoDismissTimer.Tick += (_, _) => DismissUndoBar();
+        _undoDismissTimer.Start();
+    }
+
+    public void DismissUndoBar()
+    {
+        _undoDismissTimer?.Stop();
+        _undoDismissTimer = null;
+        _lastCompletedTask = null;
+        IsUndoBarVisible = false;
+    }
+
+    private void UndoLastCompletion()
+    {
+        if (_lastCompletedTask is not { IsCompleted: true } task)
+        {
+            DismissUndoBar();
+            return;
+        }
+
+        task.IsCompleted = false;
+        DismissUndoBar();
     }
 
     // Surgical update for DueDate — avoids full Clear()+rebuild.
