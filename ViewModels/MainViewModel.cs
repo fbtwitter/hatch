@@ -361,10 +361,18 @@ public sealed class MainViewModel : INotifyPropertyChanged
             case "important":
             case "alltasks":
             default:
-                // For flat views with grouping: task stays in ActiveTasks but moves between
-                // open/completed groups via FlatGroupedTasks computation.
-                OnPropertyChanged(nameof(FlatGroupedTasks));
-                OnPropertyChanged(nameof(IsTaskListEmpty));
+                // Delay the group move so the strikethrough/fade animation is visible
+                // before the task jumps to the Completed group.
+                var timer = _dispatcherQueue.CreateTimer();
+                timer.Interval = TimeSpan.FromMilliseconds(250);
+                timer.IsRepeating = false;
+                timer.Tick += (_, _) =>
+                {
+                    OnPropertyChanged(nameof(FlatGroupedTasks));
+                    OnPropertyChanged(nameof(IsTaskListEmpty));
+                    timer.Stop();
+                };
+                timer.Start();
                 break;
         }
     }
