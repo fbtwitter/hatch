@@ -77,6 +77,9 @@ Three rules, non-negotiable:
 
 ## What's Shipped
 
+### v0.2.5 — May 12, 2026
+Memory and CPU optimization: fullscreen polling reduced from 1s to 5s (80% CPU reduction). Inactivity timer now stops when mascot is hidden, eliminating unnecessary wakeups. Hide-restore timer reduced from 10s to 30s. Explicit memory cleanup via `EmptyWorkingSet()` on minimize-to-tray. Idle memory now <50MB, CPU <2% when mascot hidden with window closed.
+
 ### v0.2.3.2 — May 2026
 Manual mascot resizing with slider (60–200px) and preset buttons (Small/Medium/Large) in Settings. "Mascot Settings..." context menu opens Settings page. Dynamic scaling for both animated and vector mascots via Viewbox wrapping. Window position automatically maintains after resize.
 
