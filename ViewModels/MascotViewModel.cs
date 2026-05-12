@@ -387,7 +387,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     private void StartFullscreenPolling()
     {
         _cts = new CancellationTokenSource();
-        _pollTimer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+        _pollTimer = new PeriodicTimer(TimeSpan.FromSeconds(5));
         _ = PollFullscreenAsync(_cts.Token);
     }
 
@@ -554,7 +554,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     {
         StopHideRestoreTimer();
         _hideRestoreCts = new CancellationTokenSource();
-        _hideRestoreTimer = new PeriodicTimer(TimeSpan.FromSeconds(10));
+        _hideRestoreTimer = new PeriodicTimer(TimeSpan.FromSeconds(30));
         _ = PollHideExpirationAsync(_hideRestoreCts.Token);
     }
 
