@@ -25,4 +25,13 @@ public sealed class AppSettings
     // Global hotkey — default Ctrl+Shift+Space
     public uint HotkeyModifiers { get; set; } = 0x0002 | 0x0004; // MOD_CONTROL | MOD_SHIFT
     public uint HotkeyVirtualKey { get; set; } = 0x20;            // VK_SPACE
+
+    // Tip Engine — adaptive silence on repeated dismissals
+    public DateTime? LastTipShowDate { get; set; } = null;
+    public int ConsecutiveTipDismissals { get; set; } = 0;
+    public DateTime? TipAutoOpenCooldownUntil { get; set; } = null;
+
+    // Tip Engine — smart fallback suppression (avoid filler)
+    public DateTime? LastMeaningfulTipTime { get; set; } = null;      // overdue, My Day, progress
+    public DateTime? LastUserActivityTime { get; set; } = null;       // bubble open, app activation
 }

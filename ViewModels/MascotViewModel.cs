@@ -27,6 +27,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     private int _bubbleX;
     private int _bubbleY;
     private bool _isMascotHidden;
+    private bool _showDailyTipIndicator;
 
     public bool IsVisible
     {
@@ -161,6 +162,27 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
             _isMascotHidden = value;
             OnPropertyChanged();
         }
+    }
+
+    public bool ShowDailyTipIndicator
+    {
+        get => _showDailyTipIndicator;
+        private set
+        {
+            if (_showDailyTipIndicator == value) return;
+            _showDailyTipIndicator = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public void SetDailyTipIndicatorVisible()
+    {
+        _dispatcher.TryEnqueue(() => { ShowDailyTipIndicator = true; });
+    }
+
+    public void HideDailyTipIndicator()
+    {
+        _dispatcher.TryEnqueue(() => { ShowDailyTipIndicator = false; });
     }
 
     public MascotViewModel(DispatcherQueue dispatcher)

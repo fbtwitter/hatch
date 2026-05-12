@@ -155,6 +155,12 @@ public sealed partial class MascotWindow : Window
             {
                 ApplyWindowResize();
             }
+            else if (e.PropertyName == nameof(MascotViewModel.ShowDailyTipIndicator))
+            {
+                DailyTipIndicator.Visibility = ViewModel.ShowDailyTipIndicator
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+            }
         };
         Closed += (_, _) =>
         {
