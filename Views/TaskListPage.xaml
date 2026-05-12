@@ -329,7 +329,11 @@
                                 <!-- Tasks in this group -->
                                 <ItemsControl ItemsSource="{Binding Items}"
                                               ItemTemplate="{StaticResource TaskItemTemplate}"
-                                              IsTabStop="False"/>
+                                              IsTabStop="False">
+                                    <ItemsControl.ItemContainerTransitions>
+                                        <TransitionCollection/>
+                                    </ItemsControl.ItemContainerTransitions>
+                                </ItemsControl>
                             </Expander>
                         </StackPanel>
                     </DataTemplate>

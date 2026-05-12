@@ -18,6 +18,7 @@ public sealed partial class TaskListPage : Page
 {
     private MainViewModel? _vm;
     private MainViewModel ViewModel => (MainViewModel)DataContext;
+    private UIElement? _savedFocusElement;
 
     public TaskListPage()
     {
@@ -47,19 +48,29 @@ public sealed partial class TaskListPage : Page
         if (e.Parameter is not MainViewModel vm) return;
 
         if (_vm != null)
+        {
             _vm.PropertyChanged -= OnViewModelPropertyChanged;
+            _vm.FlatGroupMoveStarting -= OnFlatGroupMoveStarting;
+            _vm.FlatGroupMoveCompleted -= OnFlatGroupMoveCompleted;
+        }
 
         _vm = vm;
         DataContext = vm;
         UpdateView(vm.ActiveNavItem);
         vm.PropertyChanged += OnViewModelPropertyChanged;
+        vm.FlatGroupMoveStarting += OnFlatGroupMoveStarting;
+        vm.FlatGroupMoveCompleted += OnFlatGroupMoveCompleted;
     }
 
     protected override void OnNavigatedFrom(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
     {
         base.OnNavigatedFrom(e);
         if (_vm != null)
+        {
             _vm.PropertyChanged -= OnViewModelPropertyChanged;
+            _vm.FlatGroupMoveStarting -= OnFlatGroupMoveStarting;
+            _vm.FlatGroupMoveCompleted -= OnFlatGroupMoveCompleted;
+        }
     }
 
     private void OnViewModelPropertyChanged(object? s, System.ComponentModel.PropertyChangedEventArgs args)
@@ -148,6 +159,18 @@ public sealed partial class TaskListPage : Page
         if (_vm == null) return;
         var cvs = (CollectionViewSource)Resources["PlannedGroupsSource"];
         cvs.Source = _vm.PlannedGroups;
+    }
+
+    private void OnFlatGroupMoveStarting()
+    {
+        _savedFocusElement = FocusManager.GetFocusedElement(XamlRoot) as UIElement;
+    }
+
+    private void OnFlatGroupMoveCompleted()
+    {
+        if (_savedFocusElement == null) return;
+        _savedFocusElement.Focus(FocusState.Programmatic);
+        _savedFocusElement = null;
     }
 
     // Overflow button just opens its flyout — no extra logic needed here.

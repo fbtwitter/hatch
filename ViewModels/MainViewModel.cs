@@ -395,7 +395,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 timer.Tick += (_, _) =>
                 {
                     timer.Stop();
+                    FlatGroupMoveStarting?.Invoke();
                     MoveBetweenFlatGroups(task);
+                    FlatGroupMoveCompleted?.Invoke();
                     OnPropertyChanged(nameof(IsTaskListEmpty));
 
                     if (task.IsCompleted)
@@ -405,6 +407,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 break;
         }
     }
+
+    public event Action? FlatGroupMoveStarting;
+    public event Action? FlatGroupMoveCompleted;
 
     private void ShowUndoBar()
     {
