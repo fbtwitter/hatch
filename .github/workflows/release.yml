@@ -138,25 +138,6 @@ jobs:
           "BUNDLE_NAME=$bundleName" | Out-File $env:GITHUB_ENV -Append
           Write-Host "Bundle created: $bundlePath"
 
-      - name: Check if runtime asset exists in release
-        id: check_runtime_asset
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          $tag = "${{ github.ref_name }}"
-          $assetName = "Microsoft.WindowsAppRuntime.2.msix"
-          try {
-            $release = gh release view $tag --json assets -q ".assets[].name" 2>$null
-            if ($release -contains $assetName) {
-              echo "RUNTIME_ASSET_EXISTS=true" | Out-File $env:GITHUB_ENV -Append
-            } else {
-              echo "RUNTIME_ASSET_EXISTS=false" | Out-File $env:GITHUB_ENV -Append
-            }
-          } catch {
-            echo "RUNTIME_ASSET_EXISTS=false" | Out-File $env:GITHUB_ENV -Append
-          }
-
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
@@ -182,4 +163,3 @@ jobs:
             install-cert.cer
             ${{ env.BUNDLE_PATH }}
             AppxPackages/*/todo-winui3*.msix
-            ${{ env.RUNTIME_ASSET_EXISTS == 'false' && 'AppxPackages/Microsoft.WindowsAppRuntime.2.msix' || '' }}
