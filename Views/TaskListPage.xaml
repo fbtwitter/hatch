@@ -299,6 +299,14 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="models:CompletedTaskGroup">
                         <StackPanel Spacing="4">
+                            <!-- Shown when the open group is empty and all tasks are done -->
+                            <TextBlock Text="{Binding EmptyMessage}"
+                                       Visibility="{Binding ShowEmptyState, Converter={StaticResource BoolToVisibility}}"
+                                       HorizontalAlignment="Center"
+                                       Padding="0,24,0,8"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Style="{ThemeResource BodyTextBlockStyle}"/>
+
                             <!-- Expander stays mounted permanently; hidden when group has no items -->
                             <Expander x:Name="GroupExpander"
                                       HorizontalContentAlignment="Stretch"

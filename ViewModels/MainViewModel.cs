@@ -24,7 +24,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private DispatcherQueueTimer? _undoDismissTimer;
     private bool _isUndoBarVisible;
 
-    private readonly CompletedTaskGroup _openGroup = new() { Name = "Open" };
+    private readonly CompletedTaskGroup _openGroup = new() { Name = "Open", EmptyMessage = "All done! 🎉" };
     private readonly CompletedTaskGroup _completedGroup = new() { Name = "Completed (0)" };
     private readonly IList<CompletedTaskGroup> _flatGroupedTasks;
 

@@ -9,6 +9,7 @@ public sealed class CompletedTaskGroup : INotifyPropertyChanged
 {
     private string _name = string.Empty;
     private bool _hasItems;
+    private bool _showEmptyState;
 
     public string Name
     {
@@ -29,8 +30,23 @@ public sealed class CompletedTaskGroup : INotifyPropertyChanged
             if (_hasItems == value) return;
             _hasItems = value;
             OnPropertyChanged();
+            ShowEmptyState = !value && EmptyMessage != null;
         }
     }
+
+    public bool ShowEmptyState
+    {
+        get => _showEmptyState;
+        private set
+        {
+            if (_showEmptyState == value) return;
+            _showEmptyState = value;
+            OnPropertyChanged();
+        }
+    }
+
+    // Set on the Open group only; null on Completed group so it never shows a congrats message.
+    public string? EmptyMessage { get; init; }
 
     public ObservableCollection<TodoItem> Items { get; } = [];
 
