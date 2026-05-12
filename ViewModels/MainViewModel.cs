@@ -19,6 +19,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private CancellationTokenSource? _saveCancelToken;
     private bool _isBulkLoading = false;
     private int _themeVersion = 0;
+    private readonly Dictionary<string, bool> _completedGroupExpandedState = new();
 
     public ObservableCollection<TodoItem> Tasks { get; } = [];
     public ObservableCollection<TodoItem> ActiveTasks { get; } = [];
@@ -117,17 +118,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
         var today = DateTimeOffset.Now.Date;
         var filtered = _activeNavItem switch
         {
-            // Priority order: overdue/due today → starred → rest; completed always last
+            // For My Day, Important, All Tasks: maintain insertion order, let grouping handle open/completed separation
             "myday" => Tasks
                 .Where(t => t.IsInMyDay)
-                .OrderBy(t => t.IsCompleted)
-                .ThenBy(t =>
-                {
-                    if (t.DueDate.HasValue && t.DueDate.Value.ToLocalTime().Date <= today) return 0;
-                    if (t.IsStarred) return 1;
-                    return 2;
-                })
-                .ThenBy(t => t.DueDate ?? DateTimeOffset.MaxValue),
+                .OrderByDescending(t => t.CreatedAt)
+                .ThenBy(t => t.IsCompleted),
             "important" => Tasks.Where(t => t.IsStarred).OrderByDescending(t => t.CreatedAt),
             "planned"   => Tasks.Where(t => t.DueDate != null && !t.IsCompleted).OrderBy(t => t.DueDate),
             _           => Tasks.OrderByDescending(t => t.CreatedAt)
@@ -137,6 +132,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             ActiveTasks.Add(task);
 
         OnPropertyChanged(nameof(IsTaskListEmpty));
+        OnPropertyChanged(nameof(FlatGroupedTasks));
     }
 
     public IList<PlannedGroup> PlannedGroups
@@ -174,6 +170,38 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 {
                     Name = group.Key,
                     Items = new ObservableCollection<TodoItem>(group.OrderBy(t => t.DueDate))
+                });
+            }
+
+            return groups;
+        }
+    }
+
+    public IList<CompletedTaskGroup> FlatGroupedTasks
+    {
+        get
+        {
+            var groups = new List<CompletedTaskGroup>();
+
+            var openTasks = new ObservableCollection<TodoItem>(
+                ActiveTasks.Where(t => !t.IsCompleted)
+            );
+            groups.Add(new CompletedTaskGroup
+            {
+                Name = "Open",
+                Items = openTasks
+            });
+
+            var completedTasks = new ObservableCollection<TodoItem>(
+                ActiveTasks.Where(t => t.IsCompleted)
+            );
+
+            if (completedTasks.Count > 0)
+            {
+                groups.Add(new CompletedTaskGroup
+                {
+                    Name = $"Completed ({completedTasks.Count})",
+                    Items = completedTasks
                 });
             }
 
@@ -330,21 +358,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 break;
 
             case "myday":
-                // Completed tasks sort to the bottom in My Day.
-                // Move rather than recreate so the container stays alive.
-                if (ActiveTasks.Contains(task))
-                {
-                    int target = task.IsCompleted ? ActiveTasks.Count - 1 : 0;
-                    int current = ActiveTasks.IndexOf(task);
-                    if (current != target)
-                        ActiveTasks.Move(current, target);
-                }
-                OnPropertyChanged(nameof(IsTaskListEmpty));
-                break;
-
+            case "important":
+            case "alltasks":
             default:
-                // alltasks / important: IsCompleted doesn't change membership or order.
-                // x:Bind handles strikethrough + opacity — no collection change needed.
+                // For flat views with grouping: task stays in ActiveTasks but moves between
+                // open/completed groups via FlatGroupedTasks computation.
+                OnPropertyChanged(nameof(FlatGroupedTasks));
+                OnPropertyChanged(nameof(IsTaskListEmpty));
                 break;
         }
     }
@@ -451,6 +471,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public void UpdateTaskDueDate(TodoItem task, DateTimeOffset? newDueDate)
     {
         task.DueDate = newDueDate;
+    }
+
+    public bool IsCompletedGroupExpanded(string navItem)
+    {
+        return _completedGroupExpandedState.TryGetValue(navItem, out var expanded) && expanded;
+    }
+
+    public void SetCompletedGroupExpanded(string navItem, bool expanded)
+    {
+        _completedGroupExpandedState[navItem] = expanded;
     }
 
     public void SaveAsync()

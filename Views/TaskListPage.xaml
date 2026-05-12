@@ -67,6 +67,26 @@
                               IsSourceGrouped="True"
                               ItemsPath="Items"/>
 
+        <!-- Template for grouped open/completed tasks (flat views) -->
+        <DataTemplate x:Key="FlatGroupedTemplate" x:DataType="models:CompletedTaskGroup">
+            <StackPanel Spacing="0">
+                <Expander x:Name="GroupExpander"
+                          IsExpanded="{Binding IsExpanded, Mode=TwoWay, RelativeSource={RelativeSource Mode=Self}}"
+                          HorizontalContentAlignment="Stretch">
+                    <Expander.Header>
+                        <TextBlock Text="{Binding Name}"
+                                   Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                   Margin="0,8,0,8"
+                                   Opacity="0.85"/>
+                    </Expander.Header>
+                    <ItemsControl ItemsSource="{Binding Items}"
+                                  ItemTemplate="{StaticResource TaskItemTemplate}"
+                                  IsTabStop="False"/>
+                </Expander>
+            </StackPanel>
+        </DataTemplate>
+
         <!-- Shared item template used by both flat and grouped lists -->
         <DataTemplate x:Key="TaskItemTemplate" x:DataType="models:TodoItem">
             <Grid Margin="0,3"
@@ -267,21 +287,33 @@
                                Style="{ThemeResource CaptionTextBlockStyle}"/>
                 </StackPanel>
 
-                <!-- Flat list — My Day, Important, All Tasks -->
-            <ListView x:Name="FlatListView"
-                      ItemsSource="{Binding ActiveTasks}"
-                      SelectionMode="None"
-                      Padding="20,0,20,24"
-                      ItemTemplate="{StaticResource TaskItemTemplate}"
-                      ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
-                      Visibility="{Binding IsTaskListEmpty, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
-                <ListView.ItemContainerTransitions>
-                    <TransitionCollection/>
-                </ListView.ItemContainerTransitions>
-                <ListView.Transitions>
-                    <TransitionCollection/>
-                </ListView.Transitions>
-            </ListView>
+                <!-- Flat list with grouping — My Day, Important, All Tasks -->
+            <ItemsControl x:Name="FlatListView"
+                          ItemsSource="{Binding FlatGroupedTasks}"
+                          Padding="20,0,20,24"
+                          Visibility="{Binding IsTaskListEmpty, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:CompletedTaskGroup">
+                        <StackPanel Spacing="4">
+                            <!-- Expander for each group (Open / Completed) -->
+                            <Expander x:Name="GroupExpander"
+                                      HorizontalContentAlignment="Stretch">
+                                <Expander.Header>
+                                    <TextBlock Text="{Binding Name}"
+                                               Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                               Opacity="0.85"/>
+                                </Expander.Header>
+
+                                <!-- Tasks in this group -->
+                                <ItemsControl ItemsSource="{Binding Items}"
+                                              ItemTemplate="{StaticResource TaskItemTemplate}"
+                                              IsTabStop="False"/>
+                            </Expander>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
 
             <!-- Grouped list — Planned view only -->
             <ListView x:Name="GroupedListView"
