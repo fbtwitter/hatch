@@ -71,7 +71,12 @@
 
   <!-- ── New task input (x:Uid mapped) ────────────────────────── -->
   <data name="NewTask_TextBox.PlaceholderText" xml:space="preserve"><value>What needs to be done?</value></data>
+  <data name="NewTask_AddButton.Content" xml:space="preserve"><value>Add</value></data>
   <data name="NewTask_AddButton.ToolTipService.ToolTip" xml:space="preserve"><value>Add task (Enter)</value></data>
+
+  <!-- ── Undo snackbar (x:Uid mapped) ─────────────────────────── -->
+  <data name="UndoInfoBar.Message" xml:space="preserve"><value>Task completed</value></data>
+  <data name="UndoButton.Content" xml:space="preserve"><value>Undo</value></data>
 
   <!-- ── Task row x:Uid mapped ──────────────────────────────── -->
   <data name="Task_CheckBox.ToolTipService.ToolTip" xml:space="preserve"><value>Mark as complete</value></data>

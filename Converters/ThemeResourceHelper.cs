@@ -45,9 +45,11 @@ internal static class ThemeResourceHelper
         return new Style();
     }
 
+    public static bool IsDarkTheme() => ResolveThemeKey() == "Dark";
+
     public static Brush GetThemedBrush(Windows.UI.Color lightColor, Windows.UI.Color darkColor)
     {
-        var color = ResolveThemeKey() == "Dark" ? darkColor : lightColor;
+        var color = IsDarkTheme() ? darkColor : lightColor;
         return new SolidColorBrush(color);
     }
 

@@ -9,6 +9,7 @@ namespace Hatch.Views;
 public sealed partial class SettingsPage : Page
 {
     private readonly SettingsViewModel _viewModel;
+    public SettingsViewModel ViewModel => _viewModel;
 
     public SettingsPage()
     {
