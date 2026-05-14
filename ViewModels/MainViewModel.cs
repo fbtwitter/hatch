@@ -92,6 +92,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(EmptyStateGlyph));
             OnPropertyChanged(nameof(EmptyStateHeadline));
             OnPropertyChanged(nameof(EmptyStateSubtext));
+            _completedGroup.IsExpanded = IsCompletedGroupExpanded(value);
             App.Settings.ActiveNavItem = value;
             _ = App.SettingsService.SaveAsync();
             // Defer one frame so the page shell renders before the list rebuilds,
@@ -242,6 +243,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
         UndoLastCompletionCommand = new RelayCommand(_ => UndoLastCompletion());
 
         _flatGroupedTasks = [_openGroup, _completedGroup];
+
+        // Open group is always expanded; never persisted.
+        _openGroup.IsExpanded = true;
+
+        // Persist Completed group expand/collapse state per nav tab.
+        _completedGroup.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(CompletedTaskGroup.IsExpanded))
+                _completedGroupExpandedState[_activeNavItem] = _completedGroup.IsExpanded;
+        };
 
         Tasks.CollectionChanged += (_, e) =>
         {

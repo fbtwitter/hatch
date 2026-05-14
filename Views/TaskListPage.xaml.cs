@@ -4,7 +4,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Dispatching;
 using Hatch.Converters;
 using Hatch.Helpers;
@@ -17,7 +16,7 @@ namespace Hatch.Views;
 public sealed partial class TaskListPage : Page
 {
     private MainViewModel? _vm;
-    private MainViewModel ViewModel => (MainViewModel)DataContext;
+    internal MainViewModel ViewModel => (MainViewModel)DataContext;
     private UIElement? _savedFocusElement;
 
     public TaskListPage()
@@ -102,56 +101,6 @@ public sealed partial class TaskListPage : Page
 
         if (isPlanned)
             RefreshPlannedGroups();
-        else
-            RestoreExpanderState(navItem);
-    }
-
-    private void RestoreExpanderState(string navItem)
-    {
-        if (FlatListView.ItemsSource is not IEnumerable<CompletedTaskGroup> groups) return;
-
-        foreach (var group in groups)
-        {
-            var container = FlatListView.ContainerFromItem(group);
-            if (container == null) continue;
-
-            var expander = FindVisualChild<Expander>(container);
-            if (expander != null)
-            {
-                // Open (first) group is always expanded; Completed group respects saved state
-                if (group.Name == "Open")
-                {
-                    expander.IsExpanded = true;
-                }
-                else if (group.Name.StartsWith("Completed"))
-                {
-                    bool savedState = _vm?.IsCompletedGroupExpanded(navItem) ?? false;
-                    expander.IsExpanded = savedState;
-
-                    // Monitor IsExpanded property changes to persist state
-                    expander.RegisterPropertyChangedCallback(Expander.IsExpandedProperty, (d, p) =>
-                    {
-                        if (d is Expander exp && _vm != null)
-                            _vm.SetCompletedGroupExpanded(navItem, exp.IsExpanded);
-                    });
-                }
-            }
-        }
-    }
-
-    private T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
-    {
-        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
-        {
-            var child = VisualTreeHelper.GetChild(parent, i);
-            if (child is T match)
-                return match;
-
-            var childOfChild = FindVisualChild<T>(child);
-            if (childOfChild != null)
-                return childOfChild;
-        }
-        return null;
     }
 
     private void RefreshPlannedGroups()

@@ -11,6 +11,7 @@ public sealed class CompletedTaskGroup : INotifyPropertyChanged
     private bool _hasItems;
     private bool _showEmptyState;
     private string? _countLabel;
+    private bool _isExpanded = true;
 
     public string Name
     {
@@ -42,6 +43,17 @@ public sealed class CompletedTaskGroup : INotifyPropertyChanged
         {
             if (_showEmptyState == value) return;
             _showEmptyState = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsExpanded
+    {
+        get => _isExpanded;
+        set
+        {
+            if (_isExpanded == value) return;
+            _isExpanded = value;
             OnPropertyChanged();
         }
     }
@@ -79,7 +91,7 @@ public sealed class CompletedTaskGroup : INotifyPropertyChanged
     {
         HasItems = Items.Count > 0;
         if (TrackCount)
-            CountLabel = Items.Count.ToString();
+            CountLabel = $"{Items.Count} completed";
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
