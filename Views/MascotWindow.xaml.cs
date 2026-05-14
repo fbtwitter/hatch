@@ -129,22 +129,25 @@ public sealed partial class MascotWindow : Window
                 if (ViewModel.IsBubbleOpen)
                 {
                     _wigglePlayed = false;
-                    _bubbleWindow = new QuickAddBubbleWindow();
-                    App.BubbleWindowInstance = _bubbleWindow;
-                    _bubbleWindow.PositionRelativeToMascot(ViewModel.X, ViewModel.Y, ViewModel.WindowSize);
-                    _bubbleWindow.Closed += (_, _) =>
+                    if (_bubbleWindow == null)
                     {
-                        _bubbleWindow = null;
-                        App.BubbleWindowInstance = null;
-                        ViewModel.CloseBubble();
-                    };
-                    _bubbleWindow.Activate();
+                        // First open: create the window once and keep it alive.
+                        // Subsequent opens reuse the same window (hide/show) to avoid
+                        // paying the XAML island + Mica + DComp initialization cost.
+                        _bubbleWindow = new QuickAddBubbleWindow();
+                        App.BubbleWindowInstance = _bubbleWindow;
+                        _bubbleWindow.Dismissed += () => ViewModel.CloseBubble();
+                        _bubbleWindow.PositionRelativeToMascot(ViewModel.X, ViewModel.Y, ViewModel.WindowSize);
+                        _bubbleWindow.Activate();
+                    }
+                    else
+                    {
+                        _bubbleWindow.ShowAndReset(ViewModel.X, ViewModel.Y, ViewModel.WindowSize);
+                    }
                 }
-                else if (_bubbleWindow != null)
+                else
                 {
-                    var closing = _bubbleWindow;
-                    _bubbleWindow = null;
-                    try { closing.Close(); } catch { /* window may already be closing */ }
+                    _bubbleWindow?.HideWindow();
                 }
             }
             else if (e.PropertyName == nameof(MascotViewModel.IsMascotHidden))

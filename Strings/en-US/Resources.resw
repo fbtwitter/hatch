@@ -116,18 +116,24 @@
   <data name="DatePreset_Weekend" xml:space="preserve"><value>Weekend</value></data>
   <data name="DatePreset_NextWeek" xml:space="preserve"><value>Next week</value></data>
 
-  <!-- ── Quick Add bubble window ────────────────────────────── -->
-  <data name="QuickAdd_Tooltip_OpenMain" xml:space="preserve"><value>Open main window</value></data>
-  <data name="QuickAdd_Placeholder" xml:space="preserve"><value>What needs to be done?</value></data>
-  <data name="QuickAdd_Label_AddTo" xml:space="preserve"><value>Add to:</value></data>
-  <data name="QuickAdd_Placeholder_NoLists" xml:space="preserve"><value>No lists yet</value></data>
-  <data name="QuickAdd_Label_DueDate" xml:space="preserve"><value>Due date:</value></data>
-  <data name="QuickAdd_Date_NoDate" xml:space="preserve"><value>No date</value></data>
-  <data name="QuickAdd_Date_Today" xml:space="preserve"><value>Today</value></data>
-  <data name="QuickAdd_Date_Tomorrow" xml:space="preserve"><value>Tomorrow</value></data>
-  <data name="QuickAdd_Date_Weekend" xml:space="preserve"><value>This weekend</value></data>
-  <data name="QuickAdd_Date_NextWeek" xml:space="preserve"><value>Next week</value></data>
-  <data name="QuickAdd_Button_Add" xml:space="preserve"><value>Add Task</value></data>
+  <!-- ── Quick Add bubble window (x:Uid mapped) ──────────────── -->
+  <data name="QuickAdd_Header.Text" xml:space="preserve"><value>Add Task</value></data>
+  <data name="QuickAdd_ConfirmHeadline.Text" xml:space="preserve"><value>Task added!</value></data>
+  <data name="QuickAdd_ConfirmAddedTo" xml:space="preserve"><value>Added to &quot;{0}&quot;</value><comment>{0} = list name</comment></data>
+  <data name="QuickAdd_IntroTitle.Text" xml:space="preserve"><value>Welcome to Hatch</value></data>
+  <data name="QuickAdd_IntroBody.Text" xml:space="preserve"><value>Capture tasks from anywhere in seconds. Click the egg mascot anytime to add a quick task.</value></data>
+  <data name="QuickAdd_GotItButton.Content" xml:space="preserve"><value>Got it!</value></data>
+  <data name="QuickAdd_AddToLabel.Text" xml:space="preserve"><value>Add to:</value></data>
+  <data name="QuickAdd_DueDateLabel.Text" xml:space="preserve"><value>Due date:</value></data>
+  <data name="QuickAdd_TaskTitleBox.PlaceholderText" xml:space="preserve"><value>What needs to be done?</value></data>
+  <data name="QuickAdd_ListSelector.PlaceholderText" xml:space="preserve"><value>No lists yet</value></data>
+  <data name="QuickAdd_NoDateItem.Content" xml:space="preserve"><value>No date</value></data>
+  <data name="QuickAdd_TodayItem.Content" xml:space="preserve"><value>Today</value></data>
+  <data name="QuickAdd_TomorrowItem.Content" xml:space="preserve"><value>Tomorrow</value></data>
+  <data name="QuickAdd_WeekendItem.Content" xml:space="preserve"><value>This weekend</value></data>
+  <data name="QuickAdd_NextWeekItem.Content" xml:space="preserve"><value>Next week</value></data>
+  <data name="QuickAdd_AddButton.Content" xml:space="preserve"><value>Add Task</value></data>
+  <data name="QuickAdd_OpenMainButton.ToolTipService.ToolTip" xml:space="preserve"><value>Open main window</value></data>
 
   <!-- ── Default list name ─────────────────────────────────── -->
   <data name="List_AllTasks_Name" xml:space="preserve"><value>All Tasks</value></data>
