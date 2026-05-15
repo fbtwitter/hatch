@@ -267,11 +267,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 foreach (TodoItem task in e.NewItems)
                     if (MatchesFilter(task))
                         ActiveTasks.Insert(0, task);
+                RebuildFlatGroups();
             }
             else if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems != null)
             {
                 foreach (TodoItem task in e.OldItems)
                     ActiveTasks.Remove(task);
+                RebuildFlatGroups();
             }
             else
             {
