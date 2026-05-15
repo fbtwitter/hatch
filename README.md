@@ -7,7 +7,7 @@
 Fast. Private. Local-first.
 
 ![Windows 11](https://img.shields.io/badge/Windows-11-0078D4?style=flat-square&logo=windows11)
-![.NET 9](https://img.shields.io/badge/.NET-9-512BD4?style=flat-square&logo=.net)
+![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=.net)
 ![WinUI 3](https://img.shields.io/badge/WinUI-3-0078D4?style=flat-square)
 ![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 ![v0.3.1](https://img.shields.io/badge/Version-v0.3.1-blue?style=flat-square)
@@ -66,7 +66,7 @@ Subsequent releases don't need the cert step.
 
 ### Building from Source
 
-**Requirements:** Windows 11, Visual Studio 2022 with Windows App SDK workload (or .NET 9 SDK + Windows App SDK)
+**Requirements:** Windows 11, Visual Studio 2022 with Windows App SDK workload (or .NET 10 SDK + Windows App SDK)
 
 ```powershell
 git clone https://github.com/fbtwitter/todo-winui3.git
