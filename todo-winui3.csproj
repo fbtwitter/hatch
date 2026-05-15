@@ -33,8 +33,12 @@
     <EnableMsixTooling>true</EnableMsixTooling>
     <GenerateAppxPackageOnBuild>true</GenerateAppxPackageOnBuild>
     <WindowsAppSDKDeploymentManagerInitialize>false</WindowsAppSDKDeploymentManagerInitialize>
-    <!-- MSIX uses its own launcher; apphost.exe is not needed and isn't available for x86 on CI -->
+  </PropertyGroup>
+
+  <!-- x86 apphost is not available in the CI .NET 10 SDK; MSIX packaging is skipped for x86 -->
+  <PropertyGroup Condition="'$(Configuration)'=='Release' And '$(Platform)'=='x86'">
     <UseAppHost>false</UseAppHost>
+    <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>
   </PropertyGroup>
 
   <!-- Exclude the AssetGen build-time helper from the main project's compile glob -->

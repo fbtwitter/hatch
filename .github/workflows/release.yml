@@ -71,6 +71,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Build x86 MSIX
+        continue-on-error: true
         shell: pwsh
         run: |
           msbuild todo-winui3.csproj `
