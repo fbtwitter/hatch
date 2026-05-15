@@ -14,6 +14,9 @@
     <!-- Signing and package generation are handled by CI; disabled locally -->
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
     <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>
+    <!-- MSIX supplies its own launcher; apphost.exe is unused and its x86 pack
+         is absent from CI runners' .NET 10 SDK install (MSB3030 on x86 builds) -->
+    <UseAppHost>false</UseAppHost>
   </PropertyGroup>
 
   <!-- Debug: unpackaged so XAML Hot Reload works without deploying MSIX.
