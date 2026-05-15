@@ -99,6 +99,9 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
     public void SetLottieFilePath(string? path)
     {
+        if (path != null && !string.Equals(Path.GetExtension(path), ".json", StringComparison.OrdinalIgnoreCase))
+            return;
+
         LottieFilePath = path;
         App.MascotWindowInstance?.ViewModel.RaiseLottieFileChanged();
     }

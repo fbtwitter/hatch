@@ -49,12 +49,11 @@
                     HorizontalAlignment="Center">
                 <FontIcon Glyph="&#xE73E;"
                           FontSize="26"
-                          FontFamily="Segoe Fluent Icons"
                           Foreground="{ThemeResource SystemFillColorSuccessBrush}"/>
             </Border>
 
             <!-- "Task added!" headline -->
-            <TextBlock Text="Task added!"
+            <TextBlock x:Uid="QuickAdd_ConfirmHeadline"
                        TextAlignment="Center"
                        Style="{ThemeResource BodyStrongTextBlockStyle}"/>
 
@@ -88,6 +87,7 @@
                                TextWrapping="Wrap"
                                Style="{ThemeResource BodyTextBlockStyle}"/>
                     <Button x:Name="TipActionButton"
+                            AutomationProperties.AutomationId="Bubble_TipAction"
                             Visibility="Collapsed"
                             HorizontalAlignment="Stretch"
                             Padding="8,6"
@@ -100,13 +100,15 @@
             <StackPanel x:Name="IntroMessage"
                         Spacing="12"
                         Visibility="Collapsed">
-                <TextBlock Text="Welcome to Hatch"
+                <TextBlock x:Uid="QuickAdd_IntroTitle"
                            Style="{ThemeResource BodyStrongTextBlockStyle}"/>
-                <TextBlock Text="Capture tasks from anywhere in seconds. Click the egg mascot anytime to add a quick task."
+                <TextBlock x:Uid="QuickAdd_IntroBody"
                            Style="{ThemeResource CaptionTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            TextWrapping="Wrap"/>
-                <Button Content="Got it!"
+                <Button x:Name="GotItButton"
+                        x:Uid="QuickAdd_GotItButton"
+                        AutomationProperties.AutomationId="Bubble_GotItButton"
                         HorizontalAlignment="Stretch"
                         Padding="8,10"
                         Style="{ThemeResource AccentButtonStyle}"/>
@@ -115,13 +117,16 @@
 
             <!-- Header with close button -->
             <Grid>
-                <TextBlock Text="Add Task" Style="{ThemeResource BodyStrongTextBlockStyle}"
+                <TextBlock x:Uid="QuickAdd_Header"
+                           Style="{ThemeResource BodyStrongTextBlockStyle}"
                            VerticalAlignment="Center"/>
                 <StackPanel Orientation="Horizontal"
                             HorizontalAlignment="Right"
                             Spacing="2">
                     <Button x:Name="OpenMainWindowButton"
-                            ToolTipService.ToolTip="Open main window"
+                            x:Uid="QuickAdd_OpenMainButton"
+                            AutomationProperties.AutomationId="Bubble_OpenMainWindow"
+                            AutomationProperties.Name="Open main window"
                             Style="{ThemeResource SubtleButtonStyle}"
                             Padding="8"
                             MinWidth="0">
@@ -129,6 +134,8 @@
                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                     </Button>
                     <Button x:Name="CloseButton"
+                            AutomationProperties.AutomationId="Bubble_Close"
+                            AutomationProperties.Name="Close"
                             Style="{ThemeResource SubtleButtonStyle}"
                             Padding="8"
                             MinWidth="0">
@@ -140,40 +147,46 @@
 
             <!-- Task title input -->
             <TextBox x:Name="TaskTitleBox"
-                     PlaceholderText="What needs to be done?"
+                     x:Uid="QuickAdd_TaskTitleBox"
+                     AutomationProperties.AutomationId="Bubble_TaskTitleBox"
+                     AutomationProperties.Name="Task title"
                      AcceptsReturn="False"/>
 
             <!-- List selector -->
             <StackPanel>
-                <TextBlock Text="Add to:"
+                <TextBlock x:Uid="QuickAdd_AddToLabel"
                            Style="{ThemeResource CaptionTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            Margin="0,0,0,4"/>
                 <ComboBox x:Name="ListSelector"
-                          HorizontalAlignment="Stretch"
-                          PlaceholderText="No lists yet"/>
+                          x:Uid="QuickAdd_ListSelector"
+                          AutomationProperties.AutomationId="Bubble_ListSelector"
+                          AutomationProperties.Name="Add to list"
+                          HorizontalAlignment="Stretch"/>
             </StackPanel>
 
             <!-- Due date selector -->
             <StackPanel>
-                <TextBlock Text="Due date:"
+                <TextBlock x:Uid="QuickAdd_DueDateLabel"
                            Style="{ThemeResource CaptionTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            Margin="0,0,0,4"/>
                 <ComboBox x:Name="DatePresetSelector"
-                          HorizontalAlignment="Stretch"
-                          SelectionChanged="DatePresetSelector_SelectionChanged">
-                    <ComboBoxItem x:Name="NoDateItem" Content="No date" IsSelected="True"/>
-                    <ComboBoxItem Content="Today"/>
-                    <ComboBoxItem Content="Tomorrow"/>
-                    <ComboBoxItem Content="This weekend"/>
-                    <ComboBoxItem Content="Next week"/>
+                          AutomationProperties.AutomationId="Bubble_DatePresetSelector"
+                          AutomationProperties.Name="Due date"
+                          HorizontalAlignment="Stretch">
+                    <ComboBoxItem x:Name="NoDateItem" x:Uid="QuickAdd_NoDateItem" IsSelected="True"/>
+                    <ComboBoxItem x:Uid="QuickAdd_TodayItem"/>
+                    <ComboBoxItem x:Uid="QuickAdd_TomorrowItem"/>
+                    <ComboBoxItem x:Uid="QuickAdd_WeekendItem"/>
+                    <ComboBoxItem x:Uid="QuickAdd_NextWeekItem"/>
                 </ComboBox>
                 </StackPanel>
 
             <!-- Add button -->
             <Button x:Name="AddButton"
-                    Content="Add Task"
+                    x:Uid="QuickAdd_AddButton"
+                    AutomationProperties.AutomationId="Bubble_AddButton"
                     HorizontalAlignment="Stretch"
                     Padding="8,10"
                     Style="{ThemeResource AccentButtonStyle}"/>

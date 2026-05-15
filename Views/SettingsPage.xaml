@@ -45,7 +45,7 @@
                    VerticalAlignment="Center"/>
 
         <!-- Settings list -->
-        <ScrollViewer Grid.Row="1" Padding="16,0,16,24" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Grid.Row="1" Padding="24,0,24,24" VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
                 <!-- ── Appearance & behavior ────────────────────────── -->
@@ -72,7 +72,9 @@
                                        Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="2"
-                                      IsOn="{Binding MinimizeToTray, Mode=TwoWay}"
+                                      AutomationProperties.AutomationId="Settings_MinimizeToTray"
+                                      AutomationProperties.Name="Minimize to System Tray"
+                                      IsOn="{x:Bind ViewModel.MinimizeToTray, Mode=TwoWay}"
                                       OnContent="On" OffContent="Off" MinWidth="80"
                                       VerticalAlignment="Center"/>
                     </Grid>
@@ -98,7 +100,9 @@
                                        Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="2"
-                                      IsOn="{Binding RunAtStartup, Mode=TwoWay}"
+                                      AutomationProperties.AutomationId="Settings_RunAtStartup"
+                                      AutomationProperties.Name="Run at startup"
+                                      IsOn="{x:Bind ViewModel.RunAtStartup, Mode=TwoWay}"
                                       OnContent="On" OffContent="Off" MinWidth="80"
                                       VerticalAlignment="Center"/>
                     </Grid>
@@ -111,7 +115,9 @@
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE790;"/>
                     </toolkit:SettingsCard.HeaderIcon>
-                    <ComboBox SelectedIndex="{Binding ThemeIndex, Mode=TwoWay}" MinWidth="155">
+                    <ComboBox AutomationProperties.AutomationId="Settings_ThemeComboBox"
+                              AutomationProperties.Name="App Theme"
+                              SelectedIndex="{x:Bind ViewModel.ThemeIndex, Mode=TwoWay}" MinWidth="155">
                         <ComboBoxItem Content="System Default"/>
                         <ComboBoxItem Content="Light"/>
                         <ComboBoxItem Content="Dark"/>
@@ -125,7 +131,9 @@
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE771;"/>
                     </toolkit:SettingsCard.HeaderIcon>
-                    <ComboBox SelectedIndex="{Binding BackdropIndex, Mode=TwoWay}" MinWidth="165">
+                    <ComboBox AutomationProperties.AutomationId="Settings_BackdropComboBox"
+                              AutomationProperties.Name="Window Backdrop"
+                              SelectedIndex="{x:Bind ViewModel.BackdropIndex, Mode=TwoWay}" MinWidth="165">
                         <ComboBoxItem Content="None"/>
                         <ComboBoxItem Content="Mica"/>
                         <ComboBoxItem Content="Mica Alt"/>
@@ -157,7 +165,9 @@
                                        Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="2"
-                                      IsOn="{Binding LockMascotPosition, Mode=TwoWay}"
+                                      AutomationProperties.AutomationId="Settings_LockPosition"
+                                      AutomationProperties.Name="Lock mascot position"
+                                      IsOn="{x:Bind ViewModel.LockMascotPosition, Mode=TwoWay}"
                                       OnContent="On" OffContent="Off" MinWidth="80"
                                       VerticalAlignment="Center"/>
                     </Grid>
@@ -183,7 +193,9 @@
                                        Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="2"
-                                      IsOn="{Binding MuteAnimation, Mode=TwoWay}"
+                                      AutomationProperties.AutomationId="Settings_MuteAnimation"
+                                      AutomationProperties.Name="Mute mascot animation"
+                                      IsOn="{x:Bind ViewModel.MuteAnimation, Mode=TwoWay}"
                                       OnContent="On" OffContent="Off" MinWidth="80"
                                       VerticalAlignment="Center"/>
                     </Grid>
@@ -209,7 +221,9 @@
                                        Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="2"
-                                      IsOn="{Binding MascotAlwaysOnTop, Mode=TwoWay}"
+                                      AutomationProperties.AutomationId="Settings_AlwaysOnTop"
+                                      AutomationProperties.Name="Mascot always on top"
+                                      IsOn="{x:Bind ViewModel.MascotAlwaysOnTop, Mode=TwoWay}"
                                       OnContent="On" OffContent="Off" MinWidth="80"
                                       VerticalAlignment="Center"/>
                     </Grid>
@@ -235,7 +249,9 @@
                                        Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
                         </StackPanel>
                         <ToggleSwitch Grid.Column="2"
-                                      IsOn="{Binding HideWhenFullscreen, Mode=TwoWay}"
+                                      AutomationProperties.AutomationId="Settings_HideFullscreen"
+                                      AutomationProperties.Name="Hide during fullscreen"
+                                      IsOn="{x:Bind ViewModel.HideWhenFullscreen, Mode=TwoWay}"
                                       OnContent="On" OffContent="Off" MinWidth="80"
                                       VerticalAlignment="Center"/>
                     </Grid>
@@ -244,15 +260,18 @@
                 <!-- Lottie Animation File -->
                 <toolkit:SettingsCard
                     Header="Lottie Animation File"
-                    Description="{Binding LottieFileDisplay}">
+                    Description="{x:Bind ViewModel.LottieFileDisplay, Mode=OneWay}">
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE8A5;"/>
                     </toolkit:SettingsCard.HeaderIcon>
                     <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button Content="Browse" Click="BrowseLottieButton_Click"/>
+                        <Button Content="Browse"
+                                AutomationProperties.AutomationId="Settings_BrowseLottie"
+                                Click="BrowseLottieButton_Click"/>
                         <Button Content="Clear"
+                                AutomationProperties.AutomationId="Settings_ClearLottie"
                                 Click="ClearLottieButton_Click"
-                                IsEnabled="{Binding HasLottieFile}"/>
+                                IsEnabled="{x:Bind ViewModel.HasLottieFile, Mode=OneWay}"/>
                     </StackPanel>
                 </toolkit:SettingsCard>
 
@@ -268,13 +287,15 @@
                     <toolkit:SettingsExpander.Items>
                         <toolkit:SettingsCard Header="Presets">
                             <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button Content="Small"  Tag="80"  Click="MascotSizePreset_Click" MinWidth="72"/>
-                                <Button Content="Medium" Tag="120" Click="MascotSizePreset_Click" MinWidth="72"/>
-                                <Button Content="Large"  Tag="160" Click="MascotSizePreset_Click" MinWidth="72"/>
+                                <Button Content="Small"  AutomationProperties.AutomationId="Settings_SizeSmall"  Tag="80"  Click="MascotSizePreset_Click" MinWidth="72"/>
+                                <Button Content="Medium" AutomationProperties.AutomationId="Settings_SizeMedium" Tag="120" Click="MascotSizePreset_Click" MinWidth="72"/>
+                                <Button Content="Large"  AutomationProperties.AutomationId="Settings_SizeLarge"  Tag="160" Click="MascotSizePreset_Click" MinWidth="72"/>
                             </StackPanel>
                         </toolkit:SettingsCard>
                         <toolkit:SettingsCard Header="Custom">
                             <Slider x:Name="MascotSizeSlider"
+                                    AutomationProperties.AutomationId="Settings_SizeSlider"
+                                    AutomationProperties.Name="Mascot size"
                                     Minimum="60" Maximum="200"
                                     StepFrequency="1" TickFrequency="20"
                                     TickPlacement="Outside"
@@ -286,11 +307,11 @@
 
                 <!-- Quick-add global hotkey -->
                 <toolkit:SettingsExpander Header="Quick-Add Hotkey"
-                                          Description="{Binding HotkeyDescription}">
+                                          Description="{x:Bind ViewModel.HotkeyDescription, Mode=OneWay}">
                     <toolkit:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE92E;"/>
                     </toolkit:SettingsExpander.HeaderIcon>
-                    <TextBlock Text="{Binding HotkeyDescription}"
+                    <TextBlock Text="{x:Bind ViewModel.HotkeyDescription, Mode=OneWay}"
                                VerticalAlignment="Center"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                     <toolkit:SettingsExpander.Items>
@@ -298,16 +319,21 @@
                         <toolkit:SettingsCard Header="Modifiers">
                             <StackPanel Orientation="Horizontal" Spacing="16">
                                 <CheckBox Content="Ctrl"
-                                          IsChecked="{Binding HotkeyCtrl, Mode=TwoWay}"/>
+                                          AutomationProperties.AutomationId="Settings_HotkeyCtrl"
+                                          IsChecked="{x:Bind ViewModel.HotkeyCtrl, Mode=TwoWay}"/>
                                 <CheckBox Content="Shift"
-                                          IsChecked="{Binding HotkeyShift, Mode=TwoWay}"/>
+                                          AutomationProperties.AutomationId="Settings_HotkeyShift"
+                                          IsChecked="{x:Bind ViewModel.HotkeyShift, Mode=TwoWay}"/>
                                 <CheckBox Content="Alt"
-                                          IsChecked="{Binding HotkeyAlt, Mode=TwoWay}"/>
+                                          AutomationProperties.AutomationId="Settings_HotkeyAlt"
+                                          IsChecked="{x:Bind ViewModel.HotkeyAlt, Mode=TwoWay}"/>
                             </StackPanel>
                         </toolkit:SettingsCard>
                         <!-- Key -->
                         <toolkit:SettingsCard Header="Key">
                             <ComboBox x:Name="HotkeyKeySelector"
+                                      AutomationProperties.AutomationId="Settings_HotkeyKeyComboBox"
+                                      AutomationProperties.Name="Hotkey key"
                                       MinWidth="120"
                                       SelectionChanged="HotkeyKeySelector_SelectionChanged">
                                 <ComboBoxItem Content="Space" Tag="32"/>

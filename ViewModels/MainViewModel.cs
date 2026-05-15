@@ -19,6 +19,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private CancellationTokenSource? _saveCancelToken;
     private bool _isBulkLoading = false;
     private int _themeVersion = 0;
+    private readonly Dictionary<string, bool> _completedGroupExpandedState = new();
+    private TodoItem? _lastCompletedTask;
+    private DispatcherQueueTimer? _undoDismissTimer;
+    private bool _isUndoBarVisible;
+
+    private readonly CompletedTaskGroup _openGroup = new() { Name = "Open", EmptyMessage = "All done! 🎉" };
+    private readonly CompletedTaskGroup _completedGroup = new() { Name = "Completed", TrackCount = true };
+    private readonly IList<CompletedTaskGroup> _flatGroupedTasks;
 
     public ObservableCollection<TodoItem> Tasks { get; } = [];
     public ObservableCollection<TodoItem> ActiveTasks { get; } = [];
@@ -37,6 +45,19 @@ public sealed class MainViewModel : INotifyPropertyChanged
     }
 
     public bool IsTaskListEmpty => ActiveTasks.Count == 0;
+
+    public bool IsUndoBarVisible
+    {
+        get => _isUndoBarVisible;
+        private set
+        {
+            if (_isUndoBarVisible == value) return;
+            _isUndoBarVisible = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public ICommand UndoLastCompletionCommand { get; private set; } = null!;
 
     public bool IsPlannedEmpty => !Tasks.Any(t => t.DueDate != null && !t.IsCompleted);
 
@@ -71,6 +92,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(EmptyStateGlyph));
             OnPropertyChanged(nameof(EmptyStateHeadline));
             OnPropertyChanged(nameof(EmptyStateSubtext));
+            _completedGroup.IsExpanded = IsCompletedGroupExpanded(value);
             App.Settings.ActiveNavItem = value;
             _ = App.SettingsService.SaveAsync();
             // Defer one frame so the page shell renders before the list rebuilds,
@@ -117,17 +139,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
         var today = DateTimeOffset.Now.Date;
         var filtered = _activeNavItem switch
         {
-            // Priority order: overdue/due today → starred → rest; completed always last
+            // For My Day, Important, All Tasks: maintain insertion order, let grouping handle open/completed separation
             "myday" => Tasks
                 .Where(t => t.IsInMyDay)
-                .OrderBy(t => t.IsCompleted)
-                .ThenBy(t =>
-                {
-                    if (t.DueDate.HasValue && t.DueDate.Value.ToLocalTime().Date <= today) return 0;
-                    if (t.IsStarred) return 1;
-                    return 2;
-                })
-                .ThenBy(t => t.DueDate ?? DateTimeOffset.MaxValue),
+                .OrderByDescending(t => t.CreatedAt)
+                .ThenBy(t => t.IsCompleted),
             "important" => Tasks.Where(t => t.IsStarred).OrderByDescending(t => t.CreatedAt),
             "planned"   => Tasks.Where(t => t.DueDate != null && !t.IsCompleted).OrderBy(t => t.DueDate),
             _           => Tasks.OrderByDescending(t => t.CreatedAt)
@@ -136,7 +152,37 @@ public sealed class MainViewModel : INotifyPropertyChanged
         foreach (var task in filtered)
             ActiveTasks.Add(task);
 
+        RebuildFlatGroups();
         OnPropertyChanged(nameof(IsTaskListEmpty));
+    }
+
+    private void RebuildFlatGroups()
+    {
+        _openGroup.Items.Clear();
+        _completedGroup.Items.Clear();
+
+        foreach (var task in ActiveTasks.Where(t => !t.IsCompleted))
+            _openGroup.Items.Add(task);
+
+        foreach (var task in ActiveTasks.Where(t => t.IsCompleted))
+            _completedGroup.Items.Add(task);
+
+    }
+
+    private void MoveBetweenFlatGroups(TodoItem task)
+    {
+        if (task.IsCompleted)
+        {
+            _openGroup.Items.Remove(task);
+            if (!_completedGroup.Items.Contains(task))
+                _completedGroup.Items.Add(task);
+        }
+        else
+        {
+            _completedGroup.Items.Remove(task);
+            if (!_openGroup.Items.Contains(task))
+                _openGroup.Items.Insert(0, task);
+        }
     }
 
     public IList<PlannedGroup> PlannedGroups
@@ -181,6 +227,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
+    public IList<CompletedTaskGroup> FlatGroupedTasks => _flatGroupedTasks;
+
     public ICommand AddTaskCommand { get; }
 
     public MainViewModel()
@@ -191,6 +239,20 @@ public sealed class MainViewModel : INotifyPropertyChanged
         AddTaskCommand = new RelayCommand(
             _ => AddTask(),
             _ => !string.IsNullOrWhiteSpace(NewTaskText));
+
+        UndoLastCompletionCommand = new RelayCommand(_ => UndoLastCompletion());
+
+        _flatGroupedTasks = [_openGroup, _completedGroup];
+
+        // Open group is always expanded; never persisted.
+        _openGroup.IsExpanded = true;
+
+        // Persist Completed group expand/collapse state per nav tab.
+        _completedGroup.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(CompletedTaskGroup.IsExpanded))
+                _completedGroupExpandedState[_activeNavItem] = _completedGroup.IsExpanded;
+        };
 
         Tasks.CollectionChanged += (_, e) =>
         {
@@ -330,23 +392,68 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 break;
 
             case "myday":
-                // Completed tasks sort to the bottom in My Day.
-                // Move rather than recreate so the container stays alive.
-                if (ActiveTasks.Contains(task))
-                {
-                    int target = task.IsCompleted ? ActiveTasks.Count - 1 : 0;
-                    int current = ActiveTasks.IndexOf(task);
-                    if (current != target)
-                        ActiveTasks.Move(current, target);
-                }
-                OnPropertyChanged(nameof(IsTaskListEmpty));
-                break;
-
+            case "important":
+            case "alltasks":
             default:
-                // alltasks / important: IsCompleted doesn't change membership or order.
-                // x:Bind handles strikethrough + opacity — no collection change needed.
+                // Delay the group move so the strikethrough/fade animation is visible
+                // before the task moves between groups.
+                if (task.IsCompleted)
+                    _lastCompletedTask = task;
+
+                var timer = _dispatcherQueue.CreateTimer();
+                timer.Interval = TimeSpan.FromMilliseconds(250);
+                timer.IsRepeating = false;
+                timer.Tick += (_, _) =>
+                {
+                    timer.Stop();
+                    FlatGroupMoveStarting?.Invoke();
+                    MoveBetweenFlatGroups(task);
+                    FlatGroupMoveCompleted?.Invoke();
+                    OnPropertyChanged(nameof(IsTaskListEmpty));
+
+                    if (task.IsCompleted)
+                        ShowUndoBar();
+                };
+                timer.Start();
                 break;
         }
+    }
+
+    public event Action? FlatGroupMoveStarting;
+    public event Action? FlatGroupMoveCompleted;
+
+    private void ShowUndoBar()
+    {
+        // Cancel any in-flight dismiss timer (e.g. rapid successive completions).
+        _undoDismissTimer?.Stop();
+
+        IsUndoBarVisible = true;
+
+        _undoDismissTimer = _dispatcherQueue.CreateTimer();
+        _undoDismissTimer.Interval = TimeSpan.FromSeconds(4);
+        _undoDismissTimer.IsRepeating = false;
+        _undoDismissTimer.Tick += (_, _) => DismissUndoBar();
+        _undoDismissTimer.Start();
+    }
+
+    public void DismissUndoBar()
+    {
+        _undoDismissTimer?.Stop();
+        _undoDismissTimer = null;
+        _lastCompletedTask = null;
+        IsUndoBarVisible = false;
+    }
+
+    private void UndoLastCompletion()
+    {
+        if (_lastCompletedTask is not { IsCompleted: true } task)
+        {
+            DismissUndoBar();
+            return;
+        }
+
+        task.IsCompleted = false;
+        DismissUndoBar();
     }
 
     // Surgical update for DueDate — avoids full Clear()+rebuild.
@@ -451,6 +558,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public void UpdateTaskDueDate(TodoItem task, DateTimeOffset? newDueDate)
     {
         task.DueDate = newDueDate;
+    }
+
+    public bool IsCompletedGroupExpanded(string navItem)
+    {
+        return _completedGroupExpandedState.TryGetValue(navItem, out var expanded) && expanded;
+    }
+
+    public void SetCompletedGroupExpanded(string navItem, bool expanded)
+    {
+        _completedGroupExpandedState[navItem] = expanded;
     }
 
     public void SaveAsync()
