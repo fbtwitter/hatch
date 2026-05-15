@@ -17,7 +17,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: "9.0.x"
+          dotnet-version: "10.0.x"
 
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
@@ -56,7 +56,7 @@ jobs:
 
       - name: Restore dependencies
         shell: pwsh
-        run: msbuild todo-winui3.csproj /t:Restore /p:Configuration=Release
+        run: msbuild todo-winui3.csproj /t:Restore /p:Configuration=Release /nowarn:NETSDK1233
 
       - name: Build x64 MSIX
         shell: pwsh
@@ -66,14 +66,9 @@ jobs:
             /p:Platform=x64 `
             /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
             /p:AppxPackageSigningEnabled=true `
-            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}"
+            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}" `
+            /nowarn:NETSDK1233
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-      - name: Install .NET 10 x86 SDK packs (apphost for x86 MSIX)
-        shell: pwsh
-        run: |
-          Invoke-WebRequest -Uri "https://dot.net/v1/dotnet-install.ps1" -OutFile dotnet-install.ps1
-          .\dotnet-install.ps1 -Architecture x86 -Channel 10.0 -InstallDir "C:\Program Files (x86)\dotnet"
 
       - name: Build x86 MSIX
         shell: pwsh
@@ -83,7 +78,8 @@ jobs:
             /p:Platform=x86 `
             /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
             /p:AppxPackageSigningEnabled=true `
-            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}"
+            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}" `
+            /nowarn:NETSDK1233
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Build arm64 MSIX
@@ -94,7 +90,8 @@ jobs:
             /p:Platform=arm64 `
             /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
             /p:AppxPackageSigningEnabled=true `
-            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}"
+            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}" `
+            /nowarn:NETSDK1233
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Collect MSIX files and create bundle
