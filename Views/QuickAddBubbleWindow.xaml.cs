@@ -22,11 +22,17 @@ public sealed partial class QuickAddBubbleWindow : Window
     private Storyboard? _tipFadeIn;
     private Storyboard? _tipFadeOut;
     private bool _isClosed = false;
+    private bool _initialLayoutDone = false;
+    private const int SW_HIDE = 0;
+    private const int SW_SHOWNOACTIVATE = 4;
+
+    // Fired when the user dismisses the bubble (close/Esc/action) — not on app shutdown.
+    public event Action? Dismissed;
     private CancellationTokenSource? _tipDismissCts;
     private bool _tipDismissPaused = false;
     private int _tipDismissRemainingMs = 0;
     private bool _tipWasShown = false;
-    private bool _tipAutoDissmissCompleted = false;
+    private bool _tipAutoDismissCompleted = false;
     private Tip? _currentTip;
     private int _mascotX, _mascotY, _mascotWidth;
 
@@ -53,6 +59,10 @@ public sealed partial class QuickAddBubbleWindow : Window
         AppWindow.SetPresenter(presenter);
         AppWindow.IsShownInSwitchers = false;
 
+        // Keep off-screen until the first layout pass so the window never appears
+        // at the WinUI 3 default size before FitWindowToContent corrects it.
+        AppWindow.Move(new PointInt32(-32000, -32000));
+
         // Resize dynamically to content after each layout pass
         BubbleContent.SizeChanged += (_, _) => FitWindowToContent();
 
@@ -74,17 +84,13 @@ public sealed partial class QuickAddBubbleWindow : Window
         if (!App.Settings.FirstRunComplete)
         {
             IntroMessage.Visibility = Visibility.Visible;
-            var gotItButton = IntroMessage.Children[2] as Button;
-            if (gotItButton != null)
+            GotItButton.Click += async (_, _) =>
             {
-                gotItButton.Click += async (_, _) =>
-                {
-                    IntroMessage.Visibility = Visibility.Collapsed;
-                    App.Settings.FirstRunComplete = true;
-                    await App.SettingsService.SaveAsync();
-                    TaskTitleBox.Focus(FocusState.Programmatic);
-                };
-            }
+                IntroMessage.Visibility = Visibility.Collapsed;
+                App.Settings.FirstRunComplete = true;
+                await App.SettingsService.SaveAsync();
+                TaskTitleBox.Focus(FocusState.Programmatic);
+            };
         }
 
         // Show contextual tip when bubble opens
@@ -93,16 +99,10 @@ public sealed partial class QuickAddBubbleWindow : Window
         AddButton.Click += AddButton_Click;
         OpenMainWindowButton.Click += (_, _) =>
         {
-            Close();
+            HideWindow();
             App.MascotWindowInstance?.ViewModel.ToggleMainWindowCommand.Execute(null);
         };
-        CloseButton.Click += (_, _) => Close();
-        Closed += (_, _) =>
-        {
-            _isClosed = true;
-            OnWindowClosed();
-            App.MascotWindowInstance?.ViewModel.HideDailyTipIndicator();
-        };
+        CloseButton.Click += (_, _) => HideWindow();
 
         // Disable Add when title is empty
         TaskTitleBox.TextChanged += (_, _) =>
@@ -114,7 +114,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         {
             if (e.Key == Windows.System.VirtualKey.Escape)
             {
-                Close();
+                HideWindow();
                 e.Handled = true;
             }
             else if (e.Key == Windows.System.VirtualKey.Enter)
@@ -154,16 +154,76 @@ public sealed partial class QuickAddBubbleWindow : Window
         };
     }
 
-    private void DatePresetSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-    }
-
     public void PositionRelativeToMascot(int mascotX, int mascotY, int mascotWidth)
     {
         _mascotX = mascotX;
         _mascotY = mascotY;
         _mascotWidth = mascotWidth;
+        // Don't move yet — FitWindowToContent will call UpdatePosition after the first
+        // layout pass when the window size is known. Moving here would use the WinUI 3
+        // default window width and place the bubble at the wrong X position.
+        if (_initialLayoutDone)
+            UpdatePosition();
+    }
+
+    public void HideWindow()
+    {
+        _isClosed = true;
+        _tipDismissCts?.Cancel();
+        OnWindowClosed();
+        App.MascotWindowInstance?.ViewModel.HideDailyTipIndicator();
+        NativeMethods.ShowWindow(_hwnd, SW_HIDE);
+        Dismissed?.Invoke();
+    }
+
+    public void ShowAndReset(int mascotX, int mascotY, int mascotWidth)
+    {
+        // Reset session flags
+        _isClosed = false;
+        _tipWasShown = false;
+        _tipAutoDismissCompleted = false;
+        _tipDismissCts?.Cancel();
+        _tipDismissCts = null;
+
+        // Reset form to initial state
+        TaskTitleBox.Text = string.Empty;
+        AddButton.IsEnabled = false;
+        DatePresetSelector.SelectedIndex = 0;
+        BubbleContent.Visibility = Visibility.Visible;
+        ConfirmationOverlay.Visibility = Visibility.Collapsed;
+        ConfirmationOverlay.Opacity = 0;
+        TipBubble.Visibility = Visibility.Collapsed;
+        TipBubble.Opacity = 0;
+
+        // Re-sync list selector to last-used list
+        var mainVm = GetMainViewModel();
+        if (mainVm != null)
+        {
+            var lastUsedIndex = mainVm.Lists.IndexOf(
+                mainVm.Lists.FirstOrDefault(l => l.Id == App.Settings.LastUsedListId)!);
+            ListSelector.SelectedIndex = lastUsedIndex >= 0 ? lastUsedIndex
+                                       : mainVm.Lists.Count > 0 ? 0 : -1;
+        }
+
+        // Reposition relative to (possibly moved) mascot
+        _mascotX = mascotX;
+        _mascotY = mascotY;
+        _mascotWidth = mascotWidth;
         UpdatePosition();
+
+        // Show without stealing focus first, then bring to front
+        NativeMethods.ShowWindow(_hwnd, SW_SHOWNOACTIVATE);
+        NativeMethods.SetForegroundWindow(_hwnd);
+
+        // Re-fit after layout pass so the window is never stuck at confirmation height.
+        // SizeChanged alone is unreliable here because SW_HIDE can suspend layout updates.
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal,
+            () => { FitWindowToContent(); UpdatePosition(); });
+
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
+            () => TaskTitleBox.Focus(FocusState.Programmatic));
+
+        ShowContextualTip();
     }
 
     private void UpdatePosition()
@@ -213,6 +273,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         int ncOverhead = Math.Max(0, AppWindow.Size.Height - AppWindow.ClientSize.Height);
         AppWindow.Resize(new SizeInt32(physW, contentH + ncOverhead));
         UpdatePosition();
+        _initialLayoutDone = true;
     }
 
     private MainViewModel? GetMainViewModel()
@@ -278,7 +339,9 @@ public sealed partial class QuickAddBubbleWindow : Window
     private async Task ShowConfirmationAsync()
     {
         var selectedList = ListSelector.SelectedItem as TaskList;
-        ConfirmationText.Text = selectedList != null ? $"Added to \"{selectedList.Name}\"" : string.Empty;
+        ConfirmationText.Text = selectedList != null
+            ? string.Format(Strings.Get("QuickAdd_ConfirmAddedTo"), selectedList.Name)
+            : string.Empty;
 
         ConfirmationOverlay.Opacity = 0;
         BubbleContent.Visibility = Visibility.Collapsed;
@@ -296,15 +359,16 @@ public sealed partial class QuickAddBubbleWindow : Window
 
         if (_isClosed) return;
 
+        if (_fadeOut == null) { HideWindow(); return; }
         var tcs = new TaskCompletionSource<bool>();
         void OnCompleted(object? _, object __) => tcs.TrySetResult(true);
-        _fadeOut!.Completed += OnCompleted;
+        _fadeOut.Completed += OnCompleted;
         _fadeOut.Begin();
         await tcs.Task;
         _fadeOut.Completed -= OnCompleted;
 
         if (!_isClosed)
-            Close();
+            HideWindow();
     }
 
     private void OnWindowClosed()
@@ -312,7 +376,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         _tipDismissCts?.Cancel();
 
         // If tip was shown but auto-dismiss didn't complete, user closed early = dismissal
-        if (_tipWasShown && !_tipAutoDissmissCompleted)
+        if (_tipWasShown && !_tipAutoDismissCompleted)
         {
             RecordTipDismissal();
         }
@@ -363,7 +427,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         TipBubble.Opacity = 0;
         _tipDismissPaused = false;
         _tipWasShown = true;
-        _tipAutoDissmissCompleted = false;
+        _tipAutoDismissCompleted = false;
 
         _tipDismissCts?.Cancel();
         _tipDismissCts = new CancellationTokenSource();
@@ -431,7 +495,7 @@ public sealed partial class QuickAddBubbleWindow : Window
             if (ct.IsCancellationRequested) return;
 
             // Auto-dismiss completed — user didn't manually close = engagement
-            _tipAutoDissmissCompleted = true;
+            _tipAutoDismissCompleted = true;
             ResetTipDismissalCounter();
 
             _tipFadeOut?.Begin();
@@ -447,7 +511,7 @@ public sealed partial class QuickAddBubbleWindow : Window
     {
         // High-priority tips: wait for bubble close to track engagement
         await Task.Delay(10); // Minimal delay to avoid race with close event
-        if (!_isClosed && _tipWasShown && !_tipAutoDissmissCompleted)
+        if (!_isClosed && _tipWasShown && !_tipAutoDismissCompleted)
         {
             // Bubble is still open and tip wasn't auto-dismissed = engagement
             ResetTipDismissalCounter();
@@ -489,7 +553,7 @@ public sealed partial class QuickAddBubbleWindow : Window
     {
         if (_currentTip?.Action == null) return;
 
-        Close();
+        HideWindow();
         ExecuteTipAction(_currentTip.Action.Type);
     }
 
@@ -502,12 +566,12 @@ public sealed partial class QuickAddBubbleWindow : Window
         switch (actionType)
         {
             case TipActionType.ViewOverdue:
-                mainVm.ActiveNavItem = "planned";
+                mainWindow.NavigateTo("planned");
                 mainWindow.Activate();
                 break;
 
             case TipActionType.ViewMyDay:
-                mainVm.ActiveNavItem = "myday";
+                mainWindow.NavigateTo("myday");
                 mainWindow.Activate();
                 break;
 

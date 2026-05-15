@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Dispatching;
 using Hatch.Converters;
 using Hatch.Helpers;
 using Hatch.Models;
@@ -15,7 +16,8 @@ namespace Hatch.Views;
 public sealed partial class TaskListPage : Page
 {
     private MainViewModel? _vm;
-    private MainViewModel ViewModel => (MainViewModel)DataContext;
+    internal MainViewModel ViewModel => (MainViewModel)DataContext;
+    private UIElement? _savedFocusElement;
 
     public TaskListPage()
     {
@@ -45,19 +47,29 @@ public sealed partial class TaskListPage : Page
         if (e.Parameter is not MainViewModel vm) return;
 
         if (_vm != null)
+        {
             _vm.PropertyChanged -= OnViewModelPropertyChanged;
+            _vm.FlatGroupMoveStarting -= OnFlatGroupMoveStarting;
+            _vm.FlatGroupMoveCompleted -= OnFlatGroupMoveCompleted;
+        }
 
         _vm = vm;
         DataContext = vm;
         UpdateView(vm.ActiveNavItem);
         vm.PropertyChanged += OnViewModelPropertyChanged;
+        vm.FlatGroupMoveStarting += OnFlatGroupMoveStarting;
+        vm.FlatGroupMoveCompleted += OnFlatGroupMoveCompleted;
     }
 
     protected override void OnNavigatedFrom(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
     {
         base.OnNavigatedFrom(e);
         if (_vm != null)
+        {
             _vm.PropertyChanged -= OnViewModelPropertyChanged;
+            _vm.FlatGroupMoveStarting -= OnFlatGroupMoveStarting;
+            _vm.FlatGroupMoveCompleted -= OnFlatGroupMoveCompleted;
+        }
     }
 
     private void OnViewModelPropertyChanged(object? s, System.ComponentModel.PropertyChangedEventArgs args)
@@ -98,8 +110,37 @@ public sealed partial class TaskListPage : Page
         cvs.Source = _vm.PlannedGroups;
     }
 
+    private void OnFlatGroupMoveStarting()
+    {
+        _savedFocusElement = FocusManager.GetFocusedElement(XamlRoot) as UIElement;
+    }
+
+    private void OnFlatGroupMoveCompleted()
+    {
+        if (_savedFocusElement == null) return;
+        _savedFocusElement.Focus(FocusState.Programmatic);
+        _savedFocusElement = null;
+    }
+
+    private void TaskCard_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is Grid card)
+            card.Background = ThemeResourceHelper.GetBrush("ControlFillColorSecondaryBrush");
+    }
+
+    private void TaskCard_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is Grid card)
+            card.Background = ThemeResourceHelper.GetBrush("CardBackgroundFillColorDefaultBrush");
+    }
+
     // Overflow button just opens its flyout — no extra logic needed here.
     private void OverflowButton_Click(object sender, RoutedEventArgs e) { }
+
+    private void UndoInfoBar_Closed(InfoBar sender, InfoBarClosedEventArgs args)
+    {
+        ViewModel.DismissUndoBar();
+    }
 
     private void NewTaskTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
     {

@@ -68,6 +68,15 @@ public sealed partial class MainPage : Page
         MainTitleBar.IsBackButtonVisible = false;
     }
 
+    public void NavigateTo(string tag)
+    {
+        _viewModel.ActiveNavItem = tag;
+        _suppressNavigation = true;
+        SelectNavItem(tag);
+        _suppressNavigation = false;
+        NavigateToTaskList();
+    }
+
     public void NavigateToSettingsPage()
     {
         ContentFrame.Navigate(typeof(SettingsPage), null, new DrillInNavigationTransitionInfo());

@@ -169,6 +169,12 @@ public sealed partial class MainWindow : Window
             mainPage.NavigateToSettingsPage();
     }
 
+    public void NavigateTo(string tag)
+    {
+        if (RootFrame.Content is MainPage mainPage)
+            mainPage.NavigateTo(tag);
+    }
+
     public SystemTrayService? GetTrayService() => _trayService;
 
     private void RestoreWindow()

@@ -28,14 +28,14 @@
             IsBackButtonVisible="Collapsed"
             IsPaneToggleButtonVisible="False">
         <NavigationView.MenuItems>
-            <NavigationViewItem x:Name="MyDayItem" x:Uid="Nav_MyDay" Tag="myday" Icon="Calendar"/>
-            <NavigationViewItem x:Name="ImportantItem" x:Uid="Nav_Important" Tag="important" Icon="Favorite"/>
-            <NavigationViewItem x:Name="PlannedItem" x:Uid="Nav_Planned" Tag="planned">
+            <NavigationViewItem x:Name="MyDayItem" AutomationProperties.AutomationId="Nav_MyDay" x:Uid="Nav_MyDay" Tag="myday" Icon="Calendar"/>
+            <NavigationViewItem x:Name="ImportantItem" AutomationProperties.AutomationId="Nav_Important" x:Uid="Nav_Important" Tag="important" Icon="Favorite"/>
+            <NavigationViewItem x:Name="PlannedItem" AutomationProperties.AutomationId="Nav_Planned" x:Uid="Nav_Planned" Tag="planned">
                 <NavigationViewItem.Icon>
                     <FontIcon Glyph="&#xED28;"/>
                 </NavigationViewItem.Icon>
             </NavigationViewItem>
-            <NavigationViewItem x:Name="AllTasksItem" x:Uid="Nav_AllTasks" Tag="alltasks" Icon="List"/>
+            <NavigationViewItem x:Name="AllTasksItem" AutomationProperties.AutomationId="Nav_AllTasks" x:Uid="Nav_AllTasks" Tag="alltasks" Icon="List"/>
             <NavigationViewItemSeparator/>
         </NavigationView.MenuItems>
 
