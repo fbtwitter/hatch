@@ -45,7 +45,7 @@
                    VerticalAlignment="Center"/>
 
         <!-- Settings list -->
-        <ScrollViewer Grid.Row="1" Padding="16,0,16,24" VerticalScrollBarVisibility="Auto">
+        <ScrollViewer Grid.Row="1" Padding="24,0,24,24" VerticalScrollBarVisibility="Auto">
             <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
                 <!-- ── Appearance & behavior ────────────────────────── -->
