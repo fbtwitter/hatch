@@ -69,6 +69,12 @@ jobs:
             /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Install .NET 10 x86 SDK packs (apphost for x86 MSIX)
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://dot.net/v1/dotnet-install.ps1" -OutFile dotnet-install.ps1
+          .\dotnet-install.ps1 -Architecture x86 -Channel 10.0 -InstallDir "C:\Program Files (x86)\dotnet"
+
       - name: Build x86 MSIX
         shell: pwsh
         run: |
