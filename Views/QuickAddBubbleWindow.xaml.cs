@@ -566,12 +566,12 @@ public sealed partial class QuickAddBubbleWindow : Window
         switch (actionType)
         {
             case TipActionType.ViewOverdue:
-                mainVm.ActiveNavItem = "planned";
+                mainWindow.NavigateTo("planned");
                 mainWindow.Activate();
                 break;
 
             case TipActionType.ViewMyDay:
-                mainVm.ActiveNavItem = "myday";
+                mainWindow.NavigateTo("myday");
                 mainWindow.Activate();
                 break;
 
