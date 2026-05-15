@@ -56,7 +56,9 @@ jobs:
 
       - name: Restore dependencies
         shell: pwsh
-        run: msbuild todo-winui3.csproj /t:Restore /p:Configuration=Release /nowarn:NETSDK1233
+        run: |
+          msbuild todo-winui3.csproj /t:Restore /p:Configuration=Release /p:Platform=x64 /nowarn:NETSDK1233
+          msbuild todo-winui3.csproj /t:Restore /p:Configuration=Release /p:Platform=arm64 /nowarn:NETSDK1233
 
       - name: Build x64 MSIX
         shell: pwsh
