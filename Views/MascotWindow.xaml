@@ -4,10 +4,6 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:lottie="using:CommunityToolkit.WinUI.Lottie">
 
-    <!--
-        Background must be Transparent so areas outside the mascot show the desktop.
-        SetWindowRgn (applied in code-behind) routes mouse events to the egg only.
-    -->
     <Grid x:Name="MascotGrid"
       Background="Transparent"
       PointerEntered="OnPointerEntered"

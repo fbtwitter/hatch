@@ -97,12 +97,28 @@ internal static class NativeMethods
     internal static extern IntPtr DefSubclassProc(
         IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam);
 
+    internal const int  GWL_EXSTYLE               = -20;
+    internal const uint WS_EX_NOREDIRECTIONBITMAP = 0x00200000;
+    internal const uint SWP_FRAMECHANGED          = 0x0020;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern uint GetWindowLong(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern uint SetWindowLong(IntPtr hWnd, int nIndex, uint dwNewLong);
+
     [DllImport("dwmapi.dll")]
     internal static extern int DwmSetWindowAttribute(
         IntPtr hwnd, uint dwAttribute, ref uint pvAttribute, uint cbAttribute);
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MARGINS { public int Left, Right, Top, Bottom; }
+
+    [DllImport("dwmapi.dll")]
+    internal static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref MARGINS pMarInset);
+
     internal const uint DWMWA_NCRENDERING_POLICY      = 2;
-    internal const uint DWMNCRP_DISABLED              = 1;   // kills drop shadow + frame
+    internal const uint DWMNCRP_DISABLED              = 1;
     internal const uint DWMWA_WINDOW_CORNER_PREFERENCE = 33;
     internal const uint DWMWCP_DONOTROUND             = 1;   // opt out of Win11 rounded corners
     internal const uint DWMWA_BORDER_COLOR            = 34;

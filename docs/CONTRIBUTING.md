@@ -8,7 +8,7 @@ Thank you for considering contributing to Hatch! This guide explains how to set 
 
 - **Windows 11** (build 22000+)
 - **Visual Studio 2022** with Windows App SDK workload, OR
-- **.NET 9 SDK** + **Windows App SDK** installed separately
+- **.NET 10 SDK** + **Windows App SDK** installed separately
 - **Git**
 
 ### Install Windows App SDK

@@ -8,7 +8,7 @@ Ground truth for implementation decisions. Do not infer beyond what is specified
 
 | Layer         | Technology                                             |
 |--------------|--------------------------------------------------------|
-| Framework     | Windows App SDK 2.0+, WinUI 3, .NET 9, C# 12           |
+| Framework     | Windows App SDK 2.0+, WinUI 3, .NET 10, C# 13          |
 | UI            | XAML only — `Microsoft.UI.Xaml.*` exclusively          |
 | Packaging     | MSIX, single-project                                   |
 | Persistence   | `System.Text.Json` → `%LocalAppData%\Hatch\`      |
@@ -192,7 +192,7 @@ All apply by default (see [Performance](PERFORMANCE.md) for budgets):
 
 ## Language & Naming
 
-- **C# 12, .NET 9**
+- **C# 13, .NET 10**
 - **Nullable reference types enabled** — annotate all types
 - **Implicit usings enabled** — don't repeat BCL usings
 - **File-scoped namespaces** on all new files

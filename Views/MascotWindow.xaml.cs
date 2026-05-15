@@ -76,12 +76,6 @@ public sealed partial class MascotWindow : Window
         // Defer idle animation until after the window is shown to avoid startup lag
         Activated += OnFirstActivated;
 
-        // True desktop transparency — deferred to first Activated so the compositor
-        // is fully initialised before TransparentTintBackdrop acquires DComp interfaces.
-        // Setting SystemBackdrop in the constructor races against DWM/WarpPal setup and
-        // causes a null vtable dereference inside Microsoft.UI.Xaml.dll on startup.
-        Activated += OnFirstActivatedSetBackdrop;
-
         // Borderless, non-resizable, no title bar chrome
         var presenter = OverlappedPresenter.Create();
         presenter.IsMaximizable = false;
@@ -90,6 +84,12 @@ public sealed partial class MascotWindow : Window
         presenter.SetBorderAndTitleBar(false, false);
         AppWindow.SetPresenter(presenter);
 
+        // Required for TransparentTintBackdrop to cover the full window surface.
+        // Without this, WinUI 3 does not extend the XAML content root to fill the
+        // entire HWND, leaving the underlying GDI window background (white) exposed
+        // behind the XAML island — visible as a white rectangle around the mascot.
+        ExtendsContentIntoTitleBar = true;
+
         // Suppress Alt+Tab / taskbar entry — mascot is ambient UI
         AppWindow.IsShownInSwitchers = false;
 
@@ -97,20 +97,39 @@ public sealed partial class MascotWindow : Window
 
         _hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
 
+        // SetBorderAndTitleBar(false,false) + IsResizable=false already remove
+        // WS_BORDER, WS_CAPTION, and WS_THICKFRAME via the presenter API.
+        // SWP_FRAMECHANGED tells DWM to immediately re-evaluate the non-client area
+        // so those style changes take visual effect without a repaint delay.
+        NativeMethods.SetWindowPos(_hwnd, IntPtr.Zero, 0, 0, 0, 0,
+            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_FRAMECHANGED);
+
+        // Remove the GDI redirection bitmap so DWM composites this window directly
+        // from the visual tree with no opaque GDI backing surface. Without this flag
+        // the redirection bitmap is always white and bleeds through on SDR displays —
+        // as a thin ring on the egg (clipped by SetWindowRgn) and a full white square
+        // when Lottie is active (region cleared to IntPtr.Zero).
+        var exStyle = NativeMethods.GetWindowLong(_hwnd, NativeMethods.GWL_EXSTYLE);
+        NativeMethods.SetWindowLong(_hwnd, NativeMethods.GWL_EXSTYLE,
+            exStyle | NativeMethods.WS_EX_NOREDIRECTIONBITMAP);
+
         // Suppress the 1 px accent-coloured frame Windows 11 draws on every window.
         var noBorder = NativeMethods.DWMWA_COLOR_NONE;
         NativeMethods.DwmSetWindowAttribute(
             _hwnd, NativeMethods.DWMWA_BORDER_COLOR, ref noBorder, sizeof(uint));
 
-        // Kill the DWM drop shadow — it trails the window rectangle, not the region clip.
-        var noShadow = NativeMethods.DWMNCRP_DISABLED;
-        NativeMethods.DwmSetWindowAttribute(
-            _hwnd, NativeMethods.DWMWA_NCRENDERING_POLICY, ref noShadow, sizeof(uint));
-
         // Opt out of Windows 11 automatic rounded corners so the circle clip stays crisp.
         var noRound = NativeMethods.DWMWCP_DONOTROUND;
         NativeMethods.DwmSetWindowAttribute(
             _hwnd, NativeMethods.DWMWA_WINDOW_CORNER_PREFERENCE, ref noRound, sizeof(uint));
+
+        // Extend DWM frame across the entire client area (sheet-of-glass technique).
+        // This enables per-pixel alpha compositing on SDR displays, which prevents
+        // the white border artifact at the SetWindowRgn ellipse boundary. On HDR
+        // the compositing pipeline handled this automatically; on SDR it requires this.
+        // SetWindowRgn already suppresses the drop shadow so DWMNCRP_DISABLED is not needed.
+        var glassMargins = new NativeMethods.MARGINS { Left = -1, Right = -1, Top = -1, Bottom = -1 };
+        NativeMethods.DwmExtendFrameIntoClientArea(_hwnd, ref glassMargins);
 
         // Always-on-top via P/Invoke — respects the persisted setting
         ApplyAlwaysOnTop(App.Settings.MascotAlwaysOnTop);
@@ -420,15 +439,15 @@ public sealed partial class MascotWindow : Window
         return NativeMethods.DefSubclassProc(hWnd, uMsg, wParam, lParam);
     }
 
-    private void OnFirstActivatedSetBackdrop(object sender, WindowActivatedEventArgs e)
-    {
-        Activated -= OnFirstActivatedSetBackdrop;
-        SystemBackdrop = new TransparentTintBackdrop();
-    }
-
     private void OnFirstActivated(object sender, WindowActivatedEventArgs e)
     {
         Activated -= OnFirstActivated;
+
+        // Set transparent backdrop after the compositor is ready. Deferred here for
+        // the same reason as before: setting SystemBackdrop in the constructor races
+        // against DWM/WarpPal initialisation and causes a null vtable crash (0xC0000005).
+        SystemBackdrop = new TransparentTintBackdrop();
+
         // ApplyLottieSource is called here (deferred from the constructor) so the
         // DComp/WarpPal compositor is fully initialised before any Storyboard or
         // AnimatedVisualPlayer touches it. Calling it in the constructor races
@@ -496,3 +515,4 @@ public sealed partial class MascotWindow : Window
         win.NavigateToSettings();
     }
 }
+
