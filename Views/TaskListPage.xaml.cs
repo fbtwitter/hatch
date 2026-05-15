@@ -122,6 +122,18 @@ public sealed partial class TaskListPage : Page
         _savedFocusElement = null;
     }
 
+    private void TaskCard_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is Grid card)
+            card.Background = ThemeResourceHelper.GetBrush("ControlFillColorSecondaryBrush");
+    }
+
+    private void TaskCard_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is Grid card)
+            card.Background = ThemeResourceHelper.GetBrush("CardBackgroundFillColorDefaultBrush");
+    }
+
     // Overflow button just opens its flyout — no extra logic needed here.
     private void OverflowButton_Click(object sender, RoutedEventArgs e) { }
 
