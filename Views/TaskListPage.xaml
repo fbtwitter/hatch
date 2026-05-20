@@ -7,6 +7,10 @@
     xmlns:vm="using:Hatch.ViewModels"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
+    <Page.KeyboardAccelerators>
+        <KeyboardAccelerator Key="Escape" Invoked="EscAccelerator_Invoked" />
+    </Page.KeyboardAccelerators>
+
     <Page.Resources>
         <converters:BoolToStrikethroughConverter x:Key="BoolToStrikethrough" />
         <converters:BoolToOpacityConverter x:Key="BoolToOpacity" />
@@ -70,13 +74,15 @@
 
         <!-- Shared item template used by both flat and grouped lists -->
         <DataTemplate x:Key="TaskItemTemplate" x:DataType="models:TodoItem">
-            <Grid Margin="0,0"
+            <Grid Tag="{x:Bind}"
+                  Margin="0,0"
                   Padding="16,10"
                   ColumnSpacing="4"
                   CornerRadius="0"
                   Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                   PointerEntered="TaskCard_PointerEntered"
-                  PointerExited="TaskCard_PointerExited">
+                  PointerExited="TaskCard_PointerExited"
+                  Tapped="TaskCard_Tapped">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="32" />
                     <ColumnDefinition Width="*" />
@@ -117,9 +123,7 @@
                         </StackPanel>
                     </Button>
 
-                    <!-- No-date placeholder:
-                         outer Border collapses when IsCompleted=true  (done tasks don't need a date prompt)
-                         inner Button collapses when DueDate is already set (don't show "Add date" alongside the real chip) -->
+                    <!-- No-date placeholder -->
                     <Border
                         Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
                         <Button Tag="{x:Bind}"
@@ -146,8 +150,7 @@
                 <!--
                     Always-visible action strip.
                     ☆  star/unstar
-                    ✏  edit
-                    ⋯  overflow menu — Delete lives here, keeping the trash icon off the main row
+                    ⋯  overflow menu — Delete lives here
                 -->
                 <StackPanel Grid.Column="2"
                             Orientation="Horizontal"
@@ -163,18 +166,6 @@
                             Padding="8,6" MinWidth="0">
                         <FontIcon Glyph="{x:Bind IsStarred, Converter={StaticResource BoolToStarGlyph}, Mode=OneWay}"
                                   FontSize="14"
-                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    </Button>
-
-                    <Button Tag="{x:Bind}"
-                            AutomationProperties.AutomationId="Task_EditButton"
-                            AutomationProperties.Name="Edit task"
-                            Click="EditButton_Click"
-                            x:Uid="Task_EditButton"
-                            Style="{ThemeResource SubtleButtonStyle}"
-                            IsTabStop="False"
-                            Padding="8,6" MinWidth="0">
-                        <FontIcon Glyph="&#xE70F;" FontSize="14"
                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                     </Button>
 
@@ -222,179 +213,273 @@
         </Style>
     </Page.Resources>
 
+    <!-- Root: two columns — task list | details pane -->
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
 
-        <!-- Header -->
-        <TextBlock Grid.Row="0" Padding="24,28,16,8" x:Name="HeaderText" Text="My Tasks"
-                   Style="{ThemeResource TitleLargeTextBlockStyle}"
-                   VerticalAlignment="Center" />
-
-        <!-- Add task row -->
-        <Grid Grid.Row="1" Padding="24,8,24,16" ColumnSpacing="8">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBox x:Name="NewTaskTextBox"
-                     AutomationProperties.AutomationId="NewTask_TextBox"
-                     Grid.Column="0"
-                     x:Uid="NewTask_TextBox"
-                     Text="{x:Bind ViewModel.NewTaskText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                     KeyDown="NewTaskTextBox_KeyDown" />
-            <Button Grid.Column="1"
-                    AutomationProperties.AutomationId="NewTask_AddButton"
-                    Command="{x:Bind ViewModel.AddTaskCommand}"
-                    Style="{ThemeResource AccentButtonStyle}"
-                    MinWidth="80"
-                    x:Uid="NewTask_AddButton" />
-        </Grid>
-
-        <!-- Content area -->
-        <Grid Grid.Row="2">
+        <!-- Left column: header + add row + task list -->
+        <Grid Grid.Column="0">
             <Grid.RowDefinitions>
-                <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <!-- Empty state — flat views (My Day, Important, All Tasks) -->
-            <StackPanel Grid.Row="0" HorizontalAlignment="Center"
-                        VerticalAlignment="Center"
-                        Spacing="8"
-                        MaxWidth="260"
-                        Visibility="{x:Bind ViewModel.IsTaskListEmpty, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                <FontIcon Glyph="{x:Bind ViewModel.EmptyStateGlyph, Mode=OneWay, FallbackValue=&#xE762;}"
-                          FontSize="48"
-                          Foreground="{ThemeResource TextFillColorDisabledBrush}"
-                          HorizontalAlignment="Center" />
-                <TextBlock Text="{x:Bind ViewModel.EmptyStateHeadline, Mode=OneWay}"
-                           HorizontalAlignment="Center"
-                           TextAlignment="Center"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                <TextBlock Text="{x:Bind ViewModel.EmptyStateSubtext, Mode=OneWay}"
-                           HorizontalAlignment="Center"
-                           TextAlignment="Center"
-                           TextWrapping="WrapWholeWords"
-                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                           Style="{ThemeResource CaptionTextBlockStyle}" />
-            </StackPanel>
+            <!-- Header -->
+            <TextBlock Grid.Row="0" Padding="24,28,16,8" x:Name="HeaderText" Text="My Tasks"
+                       Style="{ThemeResource TitleLargeTextBlockStyle}"
+                       VerticalAlignment="Center" />
 
-            <!-- Flat list with grouping — My Day, Important, All Tasks -->
-            <!-- HorizontalScrollBarVisibility=Disabled prevents ScrollViewer from passing infinite
-                 width to children — without it, Expanders cannot measure against the viewport width. -->
-            <ScrollViewer Grid.Row="0" x:Name="FlatListView"
-                          HorizontalScrollBarVisibility="Disabled">
-                <ItemsControl ItemsSource="{x:Bind ViewModel.FlatGroupedTasks, Mode=OneWay}"
-                              HorizontalAlignment="Stretch"
-                              Padding="24,0,24,24">
-                    <!-- Force each ContentPresenter item container to stretch; default is Left. -->
-                    <ItemsControl.ItemContainerStyle>
-                        <Style TargetType="ContentPresenter">
-                            <Setter Property="HorizontalAlignment" Value="Stretch" />
-                        </Style>
-                    </ItemsControl.ItemContainerStyle>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="models:CompletedTaskGroup">
-                            <StackPanel Spacing="4" HorizontalAlignment="Stretch">
-                                <!-- Shown when the open group is empty and all tasks are done -->
-                                <TextBlock Text="{x:Bind EmptyMessage, Mode=OneWay}"
-                                           Visibility="{x:Bind ShowEmptyState, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                           HorizontalAlignment="Center"
-                                           Padding="0,24,0,8"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <!-- Add task row -->
+            <Grid Grid.Row="1" Padding="24,8,24,16" ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="NewTaskTextBox"
+                         AutomationProperties.AutomationId="NewTask_TextBox"
+                         Grid.Column="0"
+                         x:Uid="NewTask_TextBox"
+                         Text="{x:Bind ViewModel.NewTaskText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         KeyDown="NewTaskTextBox_KeyDown" />
+                <Button Grid.Column="1"
+                        AutomationProperties.AutomationId="NewTask_AddButton"
+                        Command="{x:Bind ViewModel.AddTaskCommand}"
+                        Style="{ThemeResource AccentButtonStyle}"
+                        MinWidth="80"
+                        x:Uid="NewTask_AddButton" />
+            </Grid>
 
-                                <!-- Expander stays mounted permanently; hidden when group has no items -->
-                                <Expander IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
-                                          HorizontalAlignment="Stretch"
-                                          HorizontalContentAlignment="Stretch"
-                                          Padding="0"
-                                          Margin="24,4"
-                                          CornerRadius="{ThemeResource ControlCornerRadius}"
-                                          Visibility="{x:Bind HasItems, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                                    <Expander.Resources>
-                                        <StaticResource x:Key="ExpanderHeaderBackground"
-                                                        ResourceKey="SubtleFillColorSecondaryBrush" />
-                                        <StaticResource x:Key="ExpanderHeaderBackgroundPointerOver"
-                                                        ResourceKey="SubtleFillColorTertiaryBrush" />
-                                    </Expander.Resources>
-                                    <Expander.Header>
-                                        <StackPanel Orientation="Horizontal" Spacing="8"
-                                                    Padding="0,16" VerticalAlignment="Center" >
-                                            <TextBlock Text="{x:Bind Name, Mode=OneWay}"
-                                                       FontWeight="SemiBold"
-                                                       Visibility="{x:Bind HasCountLabel, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}"
-                                                       VerticalAlignment="Center" />
-                                            <TextBlock Text="{x:Bind CountLabel, Mode=OneWay}"
-                                                       Visibility="{x:Bind HasCountLabel, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                                       FontWeight="SemiBold"
-                                                       VerticalAlignment="Center" />
-                                        </StackPanel>
-                                    </Expander.Header>
+            <!-- Content area -->
+            <Grid Grid.Row="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
-                                    <!-- Tasks in this group -->
-                                    <ListView ItemsSource="{x:Bind Items, Mode=OneWay}"
-                                              ItemTemplate="{StaticResource TaskItemTemplate}"
-                                              ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
-                                              SelectionMode="None"
-                                              IsTabStop="False">
-                                        <ListView.ItemContainerTransitions>
-                                            <TransitionCollection />
-                                        </ListView.ItemContainerTransitions>
-                                    </ListView>
-                                </Expander>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+                <!-- Empty state — flat views -->
+                <StackPanel Grid.Row="0" HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="8"
+                            MaxWidth="260"
+                            Visibility="{x:Bind ViewModel.IsTaskListEmpty, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <FontIcon Glyph="{x:Bind ViewModel.EmptyStateGlyph, Mode=OneWay, FallbackValue=&#xE762;}"
+                              FontSize="48"
+                              Foreground="{ThemeResource TextFillColorDisabledBrush}"
+                              HorizontalAlignment="Center" />
+                    <TextBlock Text="{x:Bind ViewModel.EmptyStateHeadline, Mode=OneWay}"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                    <TextBlock Text="{x:Bind ViewModel.EmptyStateSubtext, Mode=OneWay}"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               TextWrapping="WrapWholeWords"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               Style="{ThemeResource CaptionTextBlockStyle}" />
+                </StackPanel>
 
-            <!-- Grouped list — Planned view only -->
-            <ListView Grid.Row="0" x:Name="GroupedListView"
-                      ItemsSource="{x:Bind PlannedGroupsSource.View, Mode=OneWay}"
-                      SelectionMode="None"
-                      Padding="24,0,24,24"
-                      ItemTemplate="{StaticResource TaskItemTemplate}"
-                      ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
-                      Visibility="Collapsed">
-                <ListView.ItemContainerTransitions>
-                    <TransitionCollection />
-                </ListView.ItemContainerTransitions>
-                <ListView.GroupStyle>
-                    <GroupStyle>
-                        <GroupStyle.HeaderTemplate>
-                            <DataTemplate x:DataType="vm:PlannedGroup">
-                                <TextBlock Text="{x:Bind Name, Mode=OneTime}"
-                                           Style="{ThemeResource BodyStrongTextBlockStyle}"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           Margin="0,12,0,6" />
+                <!-- Flat list with grouping — My Day, Important, All Tasks -->
+                <ScrollViewer Grid.Row="0" x:Name="FlatListView"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.FlatGroupedTasks, Mode=OneWay}"
+                                  HorizontalAlignment="Stretch"
+                                  Padding="24,0,24,24">
+                        <ItemsControl.ItemContainerStyle>
+                            <Style TargetType="ContentPresenter">
+                                <Setter Property="HorizontalAlignment" Value="Stretch" />
+                            </Style>
+                        </ItemsControl.ItemContainerStyle>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:CompletedTaskGroup">
+                                <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                                    <TextBlock Text="{x:Bind EmptyMessage, Mode=OneWay}"
+                                               Visibility="{x:Bind ShowEmptyState, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                               HorizontalAlignment="Center"
+                                               Padding="0,24,0,8"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+
+                                    <Expander IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
+                                              HorizontalAlignment="Stretch"
+                                              HorizontalContentAlignment="Stretch"
+                                              Padding="0"
+                                              Margin="24,4"
+                                              CornerRadius="{ThemeResource ControlCornerRadius}"
+                                              Visibility="{x:Bind HasItems, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                                        <Expander.Resources>
+                                            <StaticResource x:Key="ExpanderHeaderBackground"
+                                                            ResourceKey="SubtleFillColorSecondaryBrush" />
+                                            <StaticResource x:Key="ExpanderHeaderBackgroundPointerOver"
+                                                            ResourceKey="SubtleFillColorTertiaryBrush" />
+                                        </Expander.Resources>
+                                        <Expander.Header>
+                                            <StackPanel Orientation="Horizontal" Spacing="8"
+                                                        Padding="0,16" VerticalAlignment="Center">
+                                                <TextBlock Text="{x:Bind Name, Mode=OneWay}"
+                                                           FontWeight="SemiBold"
+                                                           Visibility="{x:Bind HasCountLabel, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}"
+                                                           VerticalAlignment="Center" />
+                                                <TextBlock Text="{x:Bind CountLabel, Mode=OneWay}"
+                                                           Visibility="{x:Bind HasCountLabel, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                                           FontWeight="SemiBold"
+                                                           VerticalAlignment="Center" />
+                                            </StackPanel>
+                                        </Expander.Header>
+
+                                        <ListView ItemsSource="{x:Bind Items, Mode=OneWay}"
+                                                  ItemTemplate="{StaticResource TaskItemTemplate}"
+                                                  ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
+                                                  SelectionMode="None"
+                                                  IsTabStop="False">
+                                            <ListView.ItemContainerTransitions>
+                                                <TransitionCollection />
+                                            </ListView.ItemContainerTransitions>
+                                        </ListView>
+                                    </Expander>
+                                </StackPanel>
                             </DataTemplate>
-                        </GroupStyle.HeaderTemplate>
-                    </GroupStyle>
-                </ListView.GroupStyle>
-            </ListView>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
 
-            <!-- Undo snackbar — shown for 4s after a task is completed -->
-            <InfoBar Grid.Row="1"
-                     x:Name="UndoInfoBar"
-                     x:Uid="UndoInfoBar"
-                     AutomationProperties.AutomationId="UndoInfoBar"
-                     IsOpen="{x:Bind ViewModel.IsUndoBarVisible, Mode=OneWay}"
-                     IsClosable="True"
-                     Severity="Informational"
-                     Margin="20,8,20,12"
-                     Closed="UndoInfoBar_Closed">
-                <InfoBar.ActionButton>
-                    <Button x:Uid="UndoButton"
-                            AutomationProperties.AutomationId="UndoButton"
-                            Command="{x:Bind ViewModel.UndoLastCompletionCommand}"
-                            Style="{ThemeResource AccentButtonStyle}" />
-                </InfoBar.ActionButton>
-            </InfoBar>
+                <!-- Grouped list — Planned view only -->
+                <ListView Grid.Row="0" x:Name="GroupedListView"
+                          ItemsSource="{x:Bind PlannedGroupsSource.View, Mode=OneWay}"
+                          SelectionMode="None"
+                          Padding="24,0,24,24"
+                          ItemTemplate="{StaticResource TaskItemTemplate}"
+                          ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
+                          Visibility="Collapsed">
+                    <ListView.ItemContainerTransitions>
+                        <TransitionCollection />
+                    </ListView.ItemContainerTransitions>
+                    <ListView.GroupStyle>
+                        <GroupStyle>
+                            <GroupStyle.HeaderTemplate>
+                                <DataTemplate x:DataType="vm:PlannedGroup">
+                                    <TextBlock Text="{x:Bind Name, Mode=OneTime}"
+                                               Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               Margin="0,12,0,6" />
+                                </DataTemplate>
+                            </GroupStyle.HeaderTemplate>
+                        </GroupStyle>
+                    </ListView.GroupStyle>
+                </ListView>
+
+                <!-- Undo snackbar -->
+                <InfoBar Grid.Row="1"
+                         x:Name="UndoInfoBar"
+                         x:Uid="UndoInfoBar"
+                         AutomationProperties.AutomationId="UndoInfoBar"
+                         IsOpen="{x:Bind ViewModel.IsUndoBarVisible, Mode=OneWay}"
+                         IsClosable="True"
+                         Severity="Informational"
+                         Margin="20,8,20,12"
+                         Closed="UndoInfoBar_Closed">
+                    <InfoBar.ActionButton>
+                        <Button x:Uid="UndoButton"
+                                AutomationProperties.AutomationId="UndoButton"
+                                Command="{x:Bind ViewModel.UndoLastCompletionCommand}"
+                                Style="{ThemeResource AccentButtonStyle}" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
+            </Grid>
         </Grid>
+
+        <!-- Right column: details pane — slides in from the right -->
+        <Border x:Name="DetailsPaneRoot"
+                Grid.Column="1"
+                Width="280"
+                Visibility="Collapsed"
+                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                BorderThickness="1,0,0,0"
+                Background="{ThemeResource LayerFillColorDefaultBrush}">
+            <Border.RenderTransform>
+                <TranslateTransform x:Name="DetailsPaneTranslate" X="280" />
+            </Border.RenderTransform>
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <!-- Pane header -->
+                <Grid Grid.Row="0" Padding="20,20,8,8">
+                    <TextBlock Text="Details"
+                               Style="{ThemeResource BodyStrongTextBlockStyle}"
+                               VerticalAlignment="Center" />
+                    <Button x:Name="PaneCloseButton"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Style="{ThemeResource SubtleButtonStyle}"
+                            Click="PaneCloseButton_Click"
+                            ToolTipService.ToolTip="Close (Esc)"
+                            Padding="8" MinWidth="0">
+                        <FontIcon Glyph="&#xE8BB;" FontSize="12" />
+                    </Button>
+                </Grid>
+
+                <!-- Pane fields -->
+                <ScrollViewer Grid.Row="1"
+                              HorizontalScrollBarVisibility="Disabled"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel Padding="20,4,20,28" Spacing="16">
+
+                        <!-- Title -->
+                        <TextBox x:Name="PaneTitleBox"
+                                 Header="Title"
+                                 PlaceholderText="Task title"
+                                 TextWrapping="Wrap"
+                                 AcceptsReturn="False"
+                                 HorizontalAlignment="Stretch"
+                                 TextChanged="PaneTitleBox_TextChanged" />
+
+                        <!-- Notes -->
+                        <TextBox x:Name="PaneNotesBox"
+                                 Header="Notes"
+                                 PlaceholderText="Add a note…"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 MinHeight="100"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                 HorizontalAlignment="Stretch"
+                                 TextChanged="PaneNotesBox_TextChanged" />
+
+                        <!-- My Day toggle -->
+                        <ToggleSwitch x:Name="PaneMyDayToggle"
+                                      Header="My Day"
+                                      OffContent=""
+                                      OnContent=""
+                                      Toggled="PaneMyDayToggle_Toggled"
+                                      Margin="0,-4,0,-4" />
+
+                        <!-- Due date -->
+                        <CalendarDatePicker x:Name="PaneDueDatePicker"
+                                            Header="Due date"
+                                            PlaceholderText="No due date"
+                                            HorizontalAlignment="Stretch"
+                                            DateChanged="PaneDueDatePicker_DateChanged" />
+
+                        <!-- Created at -->
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Created"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                            <TextBlock x:Name="PaneCreatedAtText"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                        </StackPanel>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
     </Grid>
 </Page>
