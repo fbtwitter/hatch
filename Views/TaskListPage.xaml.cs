@@ -25,11 +25,18 @@ public sealed partial class TaskListPage : Page
     private bool _updatingPane;
     private Storyboard? _paneStoryboard;
 
+    private enum PaneLayoutMode { SideBySide, Overlay }
+    private PaneLayoutMode _paneMode = PaneLayoutMode.SideBySide;
+
+    private const double BreakpointWidth = 700;
+
     public TaskListPage()
     {
         this.InitializeComponent();
         NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
         ActualThemeChanged += OnActualThemeChanged;
+        SizeChanged += OnPageSizeChanged;
+        Loaded += (_, _) => ApplyPaneLayout(ActualWidth);
 
         // Fires for every pointer press on the page, even those handled by child controls,
         // so we can detect clicks outside the details pane.
@@ -45,6 +52,37 @@ public sealed partial class TaskListPage : Page
             item.RefreshDueDateBinding();
         if (_vm.ActiveNavItem == "planned")
             RefreshPlannedGroups();
+    }
+
+    private void OnPageSizeChanged(object sender, SizeChangedEventArgs e)
+        => ApplyPaneLayout(e.NewSize.Width);
+
+    private void ApplyPaneLayout(double pageWidth)
+    {
+        var newMode = pageWidth < BreakpointWidth ? PaneLayoutMode.Overlay : PaneLayoutMode.SideBySide;
+
+        double paneWidth = newMode == PaneLayoutMode.SideBySide
+            ? Math.Clamp(pageWidth * 0.30, 280, 360)   // scales 280→360 between ~934px and ~1200px
+            : Math.Clamp(pageWidth - 48, 280, 360);     // leaves 48px of list visible behind scrim
+
+        DetailsPaneRoot.Width = paneWidth;
+
+        if (newMode == PaneLayoutMode.SideBySide)
+        {
+            Grid.SetColumn(DetailsPaneRoot, 1);
+            DetailsPaneRoot.HorizontalAlignment = HorizontalAlignment.Stretch;
+            PaneScrim.Visibility = Visibility.Collapsed;
+        }
+        else
+        {
+            Grid.SetColumn(DetailsPaneRoot, 0);
+            DetailsPaneRoot.HorizontalAlignment = HorizontalAlignment.Right;
+            PaneScrim.Visibility = DetailsPaneRoot.Visibility == Visibility.Visible
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+
+        _paneMode = newMode;
     }
 
     protected override void OnNavigatedTo(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
@@ -124,7 +162,9 @@ public sealed partial class TaskListPage : Page
         if (!wasVisible)
         {
             DetailsPaneRoot.Visibility = Visibility.Visible;
-            AnimatePane(from: 280, to: 0, durationMs: 250, easeOut: true);
+            if (_paneMode == PaneLayoutMode.Overlay)
+                PaneScrim.Visibility = Visibility.Visible;
+            AnimatePane(from: DetailsPaneRoot.Width, to: 0, durationMs: 250, easeOut: true);
         }
         // If pane already visible (switching tasks) just update fields, no animation
     }
@@ -133,12 +173,16 @@ public sealed partial class TaskListPage : Page
     {
         if (DetailsPaneRoot.Visibility != Visibility.Visible) return;
 
-        AnimatePane(from: 0, to: 280, durationMs: 200, easeOut: false, onComplete: () =>
+        AnimatePane(from: 0, to: DetailsPaneRoot.Width, durationMs: 200, easeOut: false, onComplete: () =>
         {
             DetailsPaneRoot.Visibility = Visibility.Collapsed;
+            PaneScrim.Visibility = Visibility.Collapsed;
             _paneTask = null;
         });
     }
+
+    private void PaneScrim_Tapped(object sender, TappedRoutedEventArgs e)
+        => ViewModel.SelectedTask = null;
 
     private void AnimatePane(double from, double to, int durationMs, bool easeOut, Action? onComplete = null)
     {
