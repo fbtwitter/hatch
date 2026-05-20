@@ -21,6 +21,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private int _themeVersion = 0;
     private readonly Dictionary<string, bool> _completedGroupExpandedState = new();
     private TodoItem? _lastCompletedTask;
+    private TodoItem? _selectedTask;
     private DispatcherQueueTimer? _undoDismissTimer;
     private bool _isUndoBarVisible;
 
@@ -41,6 +42,17 @@ public sealed class MainViewModel : INotifyPropertyChanged
             _newTaskText = value;
             OnPropertyChanged();
             ((RelayCommand)AddTaskCommand).RaiseCanExecuteChanged();
+        }
+    }
+
+    public TodoItem? SelectedTask
+    {
+        get => _selectedTask;
+        set
+        {
+            if (_selectedTask == value) return;
+            _selectedTask = value;
+            OnPropertyChanged();
         }
     }
 
