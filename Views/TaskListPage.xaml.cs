@@ -132,8 +132,11 @@ public sealed partial class TaskListPage : Page
         switch (args.PropertyName)
         {
             case nameof(MainViewModel.ActiveNavItem):
-                // Close pane when switching lists — selected task may leave the view
+                // Close pane when switching lists — selected task may leave the view.
+                // Always sync ListViews explicitly: if SelectedTask was already null the
+                // setter is a no-op and SyncListViewSelection would never be called.
                 _vm.SelectedTask = null;
+                SyncListViewSelection(null);
                 UpdateView(_vm.ActiveNavItem);
                 break;
 
@@ -382,7 +385,17 @@ public sealed partial class TaskListPage : Page
     {
         if (_vm == null) return;
         var cvs = (CollectionViewSource)Resources["PlannedGroupsSource"];
+        _suppressSelectionChanged = true;
         cvs.Source = _vm.PlannedGroups;
+        // ICollectionView.CurrentItem auto-positions to the first item and WinUI fires
+        // SelectionChanged on a deferred frame — keep suppression active until after
+        // that frame, then clear any phantom selection.
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, () =>
+        {
+            if (ViewModel.SelectedTask == null)
+                GroupedListView.SelectedItem = null;
+            _suppressSelectionChanged = false;
+        });
     }
 
     private void OnFlatGroupMoveStarting()
