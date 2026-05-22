@@ -7,10 +7,6 @@
     xmlns:vm="using:Hatch.ViewModels"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
-    <Page.KeyboardAccelerators>
-        <KeyboardAccelerator Key="Escape" Invoked="EscAccelerator_Invoked" />
-    </Page.KeyboardAccelerators>
-
     <Page.Resources>
         <converters:BoolToStrikethroughConverter x:Key="BoolToStrikethrough" />
         <converters:BoolToOpacityConverter x:Key="BoolToOpacity" />
@@ -479,7 +475,9 @@
                 Visibility="Collapsed"
                 BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
                 BorderThickness="1,0,0,0"
-                Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+                Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+                TabFocusNavigation="Cycle"
+                KeyDown="DetailsPaneRoot_KeyDown">
             <Border.RenderTransform>
                 <TranslateTransform x:Name="DetailsPaneTranslate" X="280" />
             </Border.RenderTransform>
@@ -491,7 +489,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- Pane header -->
-                <Grid Grid.Row="0" Padding="20,20,8,8">
+                <Grid Grid.Row="0" Padding="20,20,12,8">
                     <TextBlock Text="Details"
                                Style="{ThemeResource BodyStrongTextBlockStyle}"
                                VerticalAlignment="Center" />

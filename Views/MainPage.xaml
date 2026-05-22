@@ -21,6 +21,8 @@
             x:Name="NavView"
             Grid.Row="1"
             PaneDisplayMode="Auto"
+            CompactModeThresholdWidth="0"
+            ExpandedModeThresholdWidth="720"
             CompactPaneLength="48"
             OpenPaneLength="192"
             SelectionChanged="NavView_SelectionChanged"

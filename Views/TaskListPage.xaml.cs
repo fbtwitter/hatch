@@ -170,7 +170,7 @@ public sealed partial class TaskListPage : Page
             DetailsPaneRoot.Visibility = Visibility.Visible;
             if (_paneMode == PaneLayoutMode.Overlay)
                 PaneScrim.Visibility = Visibility.Visible;
-            AnimatePane(from: DetailsPaneRoot.Width, to: 0, durationMs: 250, easeOut: true);
+            AnimatePane(from: DetailsPaneRoot.Width, to: 0, durationMs: 200, easeOut: true);
         }
         else
         {
@@ -179,6 +179,8 @@ public sealed partial class TaskListPage : Page
             _paneStoryboard?.Stop();
             DetailsPaneTranslate.X = 0;
         }
+
+        PaneTitleBox.Focus(FocusState.Programmatic);
     }
 
     private void ClosePane()
@@ -263,11 +265,13 @@ public sealed partial class TaskListPage : Page
 
     // ── Keyboard / pointer close triggers ───────────────────────────────────
 
-    private void EscAccelerator_Invoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    private void DetailsPaneRoot_KeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (ViewModel.SelectedTask == null) return;
-        ViewModel.SelectedTask = null;
-        args.Handled = true;
+        if (e.Key == Windows.System.VirtualKey.Escape)
+        {
+            ViewModel.SelectedTask = null;
+            e.Handled = true;
+        }
     }
 
     private void OnPagePointerPressed(object sender, PointerRoutedEventArgs e)
