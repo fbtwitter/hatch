@@ -166,7 +166,13 @@ public sealed partial class TaskListPage : Page
                 PaneScrim.Visibility = Visibility.Visible;
             AnimatePane(from: DetailsPaneRoot.Width, to: 0, durationMs: 250, easeOut: true);
         }
-        // If pane already visible (switching tasks) just update fields, no animation
+        else
+        {
+            // Cancel any in-flight close animation (e.g. triggered by OnPagePointerPressed
+            // before TaskCard_Tapped fires) and keep the pane open at full position.
+            _paneStoryboard?.Stop();
+            DetailsPaneTranslate.X = 0;
+        }
     }
 
     private void ClosePane()
@@ -262,6 +268,9 @@ public sealed partial class TaskListPage : Page
     {
         if (ViewModel.SelectedTask == null) return;
         if (DetailsPaneRoot.Visibility != Visibility.Visible) return;
+        // In side-by-side mode task card taps switch pane content via TaskCard_Tapped —
+        // don't close here. Overlay mode uses the scrim (PaneScrim_Tapped) instead.
+        if (_paneMode == PaneLayoutMode.SideBySide) return;
 
         var pt = e.GetCurrentPoint(DetailsPaneRoot).Position;
         bool insidePane = pt.X >= 0 && pt.Y >= 0
