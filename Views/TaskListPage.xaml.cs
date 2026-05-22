@@ -24,6 +24,8 @@ public sealed partial class TaskListPage : Page
     private TodoItem? _paneTask;
     private bool _updatingPane;
     private Storyboard? _paneStoryboard;
+    private bool _suppressSelectionChanged;
+    private TodoItem? _preTapSelectedTask;
 
     private enum PaneLayoutMode { SideBySide, Overlay }
     private PaneLayoutMode _paneMode = PaneLayoutMode.SideBySide;
@@ -142,6 +144,7 @@ public sealed partial class TaskListPage : Page
                 break;
 
             case nameof(MainViewModel.SelectedTask):
+                SyncListViewSelection(_vm.SelectedTask);
                 if (_vm.SelectedTask != null)
                     OpenPane(_vm.SelectedTask);
                 else
@@ -283,9 +286,16 @@ public sealed partial class TaskListPage : Page
 
     // ── Task card interaction ────────────────────────────────────────────────
 
+    private void TaskCard_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        // Capture which task was selected before this press so TaskCard_Tapped
+        // can detect a toggle-close (tapping the already-selected task).
+        _preTapSelectedTask = ViewModel.SelectedTask;
+    }
+
     private void TaskCard_Tapped(object sender, TappedRoutedEventArgs e)
     {
-        // Don't select if the tap originated from an interactive control
+        // Don't intercept taps that originate from interactive child controls.
         var source = e.OriginalSource as DependencyObject;
         while (source != null && !ReferenceEquals(source, sender))
         {
@@ -294,9 +304,58 @@ public sealed partial class TaskListPage : Page
         }
 
         var task = (TodoItem)((FrameworkElement)sender).Tag;
-        // Toggle: tapping the already-selected task closes the pane
-        ViewModel.SelectedTask = ViewModel.SelectedTask == task ? null : task;
-        e.Handled = true;
+        if (_preTapSelectedTask == task)
+        {
+            // Tapping the already-selected task: deselect and close pane.
+            // SelectionChanged won't fire here because ListView SelectedItem didn't change.
+            ViewModel.SelectedTask = null;
+            e.Handled = true;
+        }
+        // For a newly selected task, ListView.SelectionChanged already fired and
+        // updated ViewModel.SelectedTask — nothing to do here.
+    }
+
+    private void TaskListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_suppressSelectionChanged) return;
+        if (e.AddedItems.Count > 0 && e.AddedItems[0] is TodoItem task)
+        {
+            // Deselect all other task ListViews so only one row highlights at a time.
+            _suppressSelectionChanged = true;
+            foreach (var lv in FindTaskListViews())
+            {
+                if (!ReferenceEquals(lv, sender))
+                    lv.SelectedItem = null;
+            }
+            _suppressSelectionChanged = false;
+            ViewModel.SelectedTask = task;
+        }
+    }
+
+    private void SyncListViewSelection(TodoItem? task)
+    {
+        _suppressSelectionChanged = true;
+        foreach (var lv in FindTaskListViews())
+            lv.SelectedItem = task != null && lv.Items.Contains(task) ? task : null;
+        _suppressSelectionChanged = false;
+    }
+
+    private IEnumerable<ListView> FindTaskListViews()
+    {
+        var template = (DataTemplate)Resources["TaskItemTemplate"];
+        return FindDescendants<ListView>(this).Where(lv => lv.ItemTemplate == template);
+    }
+
+    private static IEnumerable<T> FindDescendants<T>(DependencyObject parent) where T : DependencyObject
+    {
+        int count = VisualTreeHelper.GetChildrenCount(parent);
+        for (int i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is T match) yield return match;
+            foreach (var desc in FindDescendants<T>(child))
+                yield return desc;
+        }
     }
 
     // ── Existing handlers ────────────────────────────────────────────────────
@@ -336,18 +395,6 @@ public sealed partial class TaskListPage : Page
         if (_savedFocusElement == null) return;
         _savedFocusElement.Focus(FocusState.Programmatic);
         _savedFocusElement = null;
-    }
-
-    private void TaskCard_PointerEntered(object sender, PointerRoutedEventArgs e)
-    {
-        if (sender is Grid card)
-            card.Background = ThemeResourceHelper.GetBrush("ControlFillColorSecondaryBrush");
-    }
-
-    private void TaskCard_PointerExited(object sender, PointerRoutedEventArgs e)
-    {
-        if (sender is Grid card)
-            card.Background = ThemeResourceHelper.GetBrush("CardBackgroundFillColorDefaultBrush");
     }
 
     private void OverflowButton_Click(object sender, RoutedEventArgs e) { }
