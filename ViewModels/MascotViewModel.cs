@@ -322,7 +322,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
     internal static void PositionMainWindowNearMascot(MainWindow win)
     {
-        const int logicalWidth  = 520;
+        const int logicalWidth  = 620;
         const int logicalHeight = 640;
         const int gap           = 12;
 

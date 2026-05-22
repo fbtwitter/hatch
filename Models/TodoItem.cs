@@ -48,6 +48,13 @@ public sealed class TodoItem : INotifyPropertyChanged
 
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
+    private string? _notes;
+    public string? Notes
+    {
+        get => _notes;
+        set { _notes = value; OnPropertyChanged(); }
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private void OnPropertyChanged([CallerMemberName] string? name = null)

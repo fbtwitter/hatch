@@ -39,7 +39,9 @@ public partial class App : Application
             }
 
             MainWindowInstance = new MainWindow();
-            if (!IsStartupLaunch)
+            // HATCH_UI_TEST=1 forces main window visible even during startup-launch suppression
+            var uiTest = Environment.GetEnvironmentVariable("HATCH_UI_TEST") == "1";
+            if (!IsStartupLaunch || uiTest)
                 MainWindowInstance.Activate();
 
             MascotWindowInstance = new MascotWindow();

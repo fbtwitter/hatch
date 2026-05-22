@@ -35,7 +35,7 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         Title = "Hatch";
-        AppWindow.Resize(new SizeInt32(520, 640));
+        AppWindow.Resize(new SizeInt32(620, 640));
         ExtendsContentIntoTitleBar = true;
         AppWindow.TitleBar.PreferredTheme = TitleBarTheme.UseDefaultAppMode;
 
@@ -106,8 +106,8 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    // 400×490 ≈ 77% of 520×640, maintaining the window's aspect ratio.
-    private const int MinW = 400;
+    // 480×490 keeps the 48px compact nav rail plus a usable content area.
+    private const int MinW = 480;
     private const int MinH = 490;
 
     private IntPtr MinSizeSubclassProc(
