@@ -422,6 +422,7 @@
                                Style="{ThemeResource BodyStrongTextBlockStyle}"
                                VerticalAlignment="Center" />
                     <Button x:Name="PaneCloseButton"
+                            AutomationProperties.AutomationId="PaneCloseButton"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Center"
                             Style="{ThemeResource SubtleButtonStyle}"
@@ -449,11 +450,13 @@
 
                         <!-- Notes -->
                         <TextBox x:Name="PaneNotesBox"
+                                 AutomationProperties.AutomationId="PaneNotesBox"
                                  Header="Notes"
                                  PlaceholderText="Add a note…"
                                  AcceptsReturn="True"
                                  TextWrapping="Wrap"
                                  MinHeight="100"
+                                 MaxHeight="220"
                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                                  HorizontalAlignment="Stretch"
                                  TextChanged="PaneNotesBox_TextChanged" />
