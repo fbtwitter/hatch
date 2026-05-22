@@ -41,10 +41,12 @@
     <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>
   </PropertyGroup>
 
-  <!-- Exclude the AssetGen build-time helper from the main project's compile glob -->
+  <!-- Exclude sub-projects from the main project's compile glob -->
   <ItemGroup>
     <Compile Remove="scripts\AssetGen\**" />
     <None Remove="scripts\AssetGen\**" />
+    <Compile Remove="Hatch.Tests\**" />
+    <None Remove="Hatch.Tests\**" />
   </ItemGroup>
 
   <ItemGroup>
