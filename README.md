@@ -132,10 +132,11 @@ Hatch lives on your desktop permanently. Memory is a first-class constraint.
 
 ## 🛣️ What's Shipped
 
-Latest releases have been moving fast. Latest production version is **v0.4.1** (June 3, 2026).
+Latest releases have been moving fast. Latest production version is **v0.5.0** (June 3, 2026).
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.5.0** | Jun 3  | Keyboard shortcuts: Delete task, Ctrl+D due date, Ctrl+M My Day, ↑/↓ navigation, Ctrl+Enter exit notes |
 | **v0.4.1** | Jun 3  | List reordering via Move up / Move down context menu; SymbolIcon on all list menu items |
 | **v0.4.0** | May 22 | Details pane with inline title edit, notes, My Day toggle, due date; native ListView selection with accent highlight |
 | **v0.3.1** | May 15 | Completed task grouping with collapsible Expander, 250ms animated move, undo snackbar |
@@ -165,9 +166,8 @@ Core features: contextual tips, details pane, due-date picker, custom lists, pri
 - ~~List CRUD — create / rename / pin / custom icon / delete custom lists~~ ✅
 - ~~List reordering — Move up / Move down via context menu~~ ✅
 
-**v0.5.0 — Keyboard-First Interactions (up next):**
-- `Delete` to delete focused task, `Ctrl+Enter` to commit notes, `Ctrl+D` due date, `Ctrl+M` My Day
-- `↑` / `↓` to move selection with live details pane
+**v0.5.0 — shipped:**
+- ~~Keyboard shortcuts: Delete, Ctrl+D, Ctrl+M, ↑/↓, Ctrl+Enter~~ ✅
 
 **Planned:**
 - Privacy first-run onboarding screen
