@@ -531,7 +531,8 @@
                                  MaxHeight="220"
                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                                  HorizontalAlignment="Stretch"
-                                 TextChanged="PaneNotesBox_TextChanged" />
+                                 TextChanged="PaneNotesBox_TextChanged"
+                                 KeyDown="PaneNotesBox_KeyDown" />
 
                         <!-- My Day toggle -->
                         <ToggleSwitch x:Name="PaneMyDayToggle"

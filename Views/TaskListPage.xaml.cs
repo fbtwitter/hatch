@@ -1,4 +1,5 @@
 using System.Linq;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -7,6 +8,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Dispatching;
+using Windows.UI.Core;
 using Hatch.Converters;
 using Hatch.Helpers;
 using Hatch.Models;
@@ -26,6 +28,7 @@ public sealed partial class TaskListPage : Page
     private Storyboard? _paneStoryboard;
     private bool _suppressSelectionChanged;
     private TodoItem? _preTapSelectedTask;
+    private bool _suppressPaneFocusOnOpen;
 
     private enum PaneLayoutMode { SideBySide, Overlay }
     private PaneLayoutMode _paneMode = PaneLayoutMode.SideBySide;
@@ -45,6 +48,12 @@ public sealed partial class TaskListPage : Page
         this.AddHandler(UIElement.PointerPressedEvent,
             new PointerEventHandler(OnPagePointerPressed),
             handledEventsToo: true);
+
+        // IsTabStop = true lets the page accept programmatic focus, which is used to
+        // keep keyboard focus on the page during ↑/↓ task navigation so the details
+        // pane updates live without stealing focus into PaneTitleBox.
+        IsTabStop = true;
+        this.KeyDown += OnPageKeyDown;
     }
 
     private void OnActualThemeChanged(FrameworkElement sender, object args)
@@ -180,7 +189,8 @@ public sealed partial class TaskListPage : Page
             DetailsPaneTranslate.X = 0;
         }
 
-        PaneTitleBox.Focus(FocusState.Programmatic);
+        if (!_suppressPaneFocusOnOpen)
+            PaneTitleBox.Focus(FocusState.Programmatic);
     }
 
     private void ClosePane()
@@ -267,10 +277,13 @@ public sealed partial class TaskListPage : Page
 
     private void DetailsPaneRoot_KeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Key == Windows.System.VirtualKey.Escape)
+        if (e.Key == VirtualKey.Escape)
         {
             ViewModel.SelectedTask = null;
             e.Handled = true;
+            // Return focus to the page so ↑/↓ can continue task navigation immediately.
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal,
+                () => this.Focus(FocusState.Programmatic));
         }
     }
 
@@ -414,6 +427,106 @@ public sealed partial class TaskListPage : Page
         if (_savedFocusElement == null) return;
         _savedFocusElement.Focus(FocusState.Programmatic);
         _savedFocusElement = null;
+    }
+
+    // ── Keyboard shortcuts ───────────────────────────────────────────────────
+
+    private void OnPageKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        bool isCtrl = (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control)
+                       & CoreVirtualKeyStates.Down) != 0;
+
+        switch (e.Key)
+        {
+            case VirtualKey.Delete when !isCtrl && !IsTextInputFocused():
+                if (ViewModel.SelectedTask is { } delTask)
+                {
+                    ViewModel.SelectedTask = null;
+                    ViewModel.DeleteTask(delTask);
+                    e.Handled = true;
+                }
+                break;
+
+            case VirtualKey.D when isCtrl && !IsTextInputFocused():
+                if (ViewModel.SelectedTask != null
+                    && DetailsPaneRoot.Visibility == Visibility.Visible)
+                {
+                    DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal,
+                        () => PaneDueDatePicker.IsCalendarOpen = true);
+                    e.Handled = true;
+                }
+                break;
+
+            case VirtualKey.M when isCtrl && !IsTextInputFocused():
+                if (ViewModel.SelectedTask is { } mTask)
+                {
+                    mTask.IsInMyDay = !mTask.IsInMyDay;
+                    if (_paneTask == mTask)
+                    {
+                        _updatingPane = true;
+                        PaneMyDayToggle.IsOn = mTask.IsInMyDay;
+                        _updatingPane = false;
+                    }
+                    e.Handled = true;
+                }
+                break;
+
+            case VirtualKey.Up when !isCtrl && !IsTextInputFocused():
+                _suppressPaneFocusOnOpen = true;
+                MoveSelection(-1);
+                _suppressPaneFocusOnOpen = false;
+                this.Focus(FocusState.Programmatic);
+                e.Handled = true;
+                break;
+
+            case VirtualKey.Down when !isCtrl && !IsTextInputFocused():
+                _suppressPaneFocusOnOpen = true;
+                MoveSelection(1);
+                _suppressPaneFocusOnOpen = false;
+                this.Focus(FocusState.Programmatic);
+                e.Handled = true;
+                break;
+        }
+    }
+
+    private void PaneNotesBox_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        bool isCtrl = (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control)
+                       & CoreVirtualKeyStates.Down) != 0;
+        if (e.Key == VirtualKey.Enter && isCtrl)
+        {
+            PaneTitleBox.Focus(FocusState.Programmatic);
+            e.Handled = true;
+        }
+    }
+
+    private bool IsTextInputFocused()
+    {
+        var focused = FocusManager.GetFocusedElement(XamlRoot);
+        return focused is TextBox or PasswordBox or RichEditBox;
+    }
+
+    private void MoveSelection(int delta)
+    {
+        var current = ViewModel.SelectedTask;
+        if (current == null) return;
+        var tasks = GetVisibleTasksInOrder();
+        int idx = tasks.IndexOf(current);
+        if (idx < 0) return;
+        int newIdx = idx + delta;
+        if (newIdx < 0 || newIdx >= tasks.Count) return;
+        ViewModel.SelectedTask = tasks[newIdx];
+    }
+
+    private List<TodoItem> GetVisibleTasksInOrder()
+    {
+        if (_vm?.ActiveNavItem == "planned")
+            return ViewModel.PlannedGroups.SelectMany(g => g.Items).ToList();
+        var groups = ViewModel.FlatGroupedTasks;
+        var result = new List<TodoItem>(groups[0].Items);
+        if (groups.Count > 1 && groups[1].IsExpanded)
+            result.AddRange(groups[1].Items);
+        return result;
     }
 
     private void OverflowButton_Click(object sender, RoutedEventArgs e) { }
