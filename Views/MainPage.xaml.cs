@@ -16,6 +16,7 @@ public sealed partial class MainPage : Page
 
     private readonly Dictionary<Guid, NavigationViewItem> _customNavItems = new();
     private readonly Dictionary<Guid, TextBlock> _customNavItemNameBlocks = new();
+    private readonly Dictionary<Guid, StackPanel> _innerContentPanels = new();
 
     // Static menu item count (My Day, Important, Planned, All Tasks, Separator)
     private const int StaticMenuItemCount = 5;
@@ -68,6 +69,7 @@ public sealed partial class MainPage : Page
 
         _customNavItems.Clear();
         _customNavItemNameBlocks.Clear();
+        _innerContentPanels.Clear();
 
         var pinned   = _viewModel.CustomLists.Where(l =>  l.IsPinned).ToList();
         var unpinned = _viewModel.CustomLists.Where(l => !l.IsPinned).ToList();
@@ -103,6 +105,7 @@ public sealed partial class MainPage : Page
             VerticalAlignment = VerticalAlignment.Center
         };
         contentPanel.Children.Add(nameBlock);
+        _innerContentPanels[list.Id] = contentPanel;
 
         var item = new NavigationViewItem
         {
@@ -137,18 +140,44 @@ public sealed partial class MainPage : Page
 
     private void ShowListContextMenu(TaskList list, NavigationViewItem anchor)
     {
+        var section = _viewModel.CustomLists
+            .Where(l => l.IsPinned == list.IsPinned)
+            .OrderBy(l => l.SortOrder)
+            .ToList();
+        int sectionIdx = section.IndexOf(list);
+
         var menu = new MenuFlyout();
 
-        var pin = new MenuFlyoutItem { Text = list.IsPinned ? "Unpin" : "Pin" };
+        var pin = new MenuFlyoutItem
+        {
+            Text = list.IsPinned ? "Unpin" : "Pin",
+            Icon = new SymbolIcon(list.IsPinned ? Symbol.UnPin : Symbol.Pin)
+        };
         pin.Click += (s, e) => _viewModel.TogglePinList(list);
 
-        var rename = new MenuFlyoutItem { Text = "Rename" };
+        var moveUp = new MenuFlyoutItem
+        {
+            Text = "Move up",
+            Icon = new SymbolIcon(Symbol.Upload),
+            IsEnabled = sectionIdx > 0
+        };
+        moveUp.Click += (s, e) => _viewModel.MoveListUp(list);
+
+        var moveDown = new MenuFlyoutItem
+        {
+            Text = "Move down",
+            Icon = new SymbolIcon(Symbol.Download),
+            IsEnabled = sectionIdx >= 0 && sectionIdx < section.Count - 1
+        };
+        moveDown.Click += (s, e) => _viewModel.MoveListDown(list);
+
+        var rename = new MenuFlyoutItem { Text = "Rename", Icon = new SymbolIcon(Symbol.Rename) };
         rename.Click += (s, e) => BeginInlineRename(list);
 
-        var changeIcon = new MenuFlyoutItem { Text = "Change icon" };
+        var changeIcon = new MenuFlyoutItem { Text = "Change icon", Icon = new SymbolIcon(Symbol.Emoji) };
         changeIcon.Click += (s, e) => ShowIconPickerFlyout(list, anchor);
 
-        var delete = new MenuFlyoutItem { Text = "Delete" };
+        var delete = new MenuFlyoutItem { Text = "Delete", Icon = new SymbolIcon(Symbol.Delete) };
         delete.Click += async (s, e) =>
         {
             var taskCount = _viewModel.GetTaskCountForList(list);
@@ -171,6 +200,10 @@ public sealed partial class MainPage : Page
         };
 
         menu.Items.Add(pin);
+        menu.Items.Add(new MenuFlyoutSeparator());
+        menu.Items.Add(moveUp);
+        menu.Items.Add(moveDown);
+        menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(rename);
         menu.Items.Add(changeIcon);
         menu.Items.Add(new MenuFlyoutSeparator());
@@ -214,8 +247,7 @@ public sealed partial class MainPage : Page
     private void BeginInlineRename(TaskList list)
     {
         if (!_customNavItemNameBlocks.TryGetValue(list.Id, out var nameBlock)) return;
-        if (!_customNavItems.TryGetValue(list.Id, out var navItem)) return;
-        if (navItem.Content is not StackPanel panel) return;
+        if (!_innerContentPanels.TryGetValue(list.Id, out var panel)) return;
 
         var idx = panel.Children.IndexOf(nameBlock);
         if (idx < 0) return;
@@ -433,6 +465,9 @@ public sealed partial class MainPage : Page
 
     private void TitleBar_PaneToggleRequested(TitleBar sender, object args)
     {
-        NavView.IsPaneOpen = !NavView.IsPaneOpen;
+        // NavigationView.IsPaneOpen throws E_FAIL (0x80004005) intermittently in Auto mode
+        // when toggled near the Expanded/Compact display-mode threshold — WinUI 3 bug.
+        try { NavView.IsPaneOpen = !NavView.IsPaneOpen; }
+        catch (System.Runtime.InteropServices.COMException) { }
     }
 }
