@@ -173,4 +173,43 @@ internal static class NativeMethods
 
     [DllImport("kernel32.dll", SetLastError = true)]
     internal static extern bool EmptyWorkingSet(IntPtr proc);
+
+    // SendInput — used to open the Windows emoji picker (Win+.)
+    internal const uint   INPUT_KEYBOARD  = 1;
+    internal const uint   KEYEVENTF_KEYUP = 0x0002;
+    internal const ushort VK_LWIN         = 0x5B;
+    internal const ushort VK_OEM_PERIOD   = 0xBE;
+
+    // Matches the 40-byte layout of tagINPUT on x64 Windows.
+    [StructLayout(LayoutKind.Explicit, Size = 40)]
+    internal struct INPUT
+    {
+        [FieldOffset(0)] public uint       type;
+        [FieldOffset(8)] public KEYBDINPUT ki;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct KEYBDINPUT
+    {
+        public ushort wVk;
+        public ushort wScan;
+        public uint   dwFlags;
+        public uint   time;
+        public IntPtr dwExtraInfo;
+    }
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+
+    internal static void OpenEmojiPanel()
+    {
+        INPUT[] inputs =
+        [
+            new() { type = INPUT_KEYBOARD, ki = new KEYBDINPUT { wVk = VK_LWIN } },
+            new() { type = INPUT_KEYBOARD, ki = new KEYBDINPUT { wVk = VK_OEM_PERIOD } },
+            new() { type = INPUT_KEYBOARD, ki = new KEYBDINPUT { wVk = VK_OEM_PERIOD, dwFlags = KEYEVENTF_KEYUP } },
+            new() { type = INPUT_KEYBOARD, ki = new KEYBDINPUT { wVk = VK_LWIN,        dwFlags = KEYEVENTF_KEYUP } },
+        ];
+        SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+    }
 }

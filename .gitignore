@@ -3,6 +3,8 @@ bin/
 obj/
 AppxPackages/
 AppPackages/
+/*.txt
+/*.ps1
 
 # Auto-generated MSIX assets (recreated by scripts/create-assets.ps1 on first build)
 Assets/

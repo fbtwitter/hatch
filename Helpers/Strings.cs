@@ -32,6 +32,8 @@ internal static class Strings
     public static string EmptyState_Planned_Subtext      => Get("EmptyState_Planned_Subtext");
     public static string EmptyState_AllTasks_Headline    => Get("EmptyState_AllTasks_Headline");
     public static string EmptyState_AllTasks_Subtext     => Get("EmptyState_AllTasks_Subtext");
+    public static string EmptyState_CustomList_Headline  => Get("EmptyState_CustomList_Headline");
+    public static string EmptyState_CustomList_Subtext   => Get("EmptyState_CustomList_Subtext");
 
     // ── Task row ─────────────────────────────────────────────
     public static string Task_Tooltip_MarkComplete  => Get("Task_Tooltip_MarkComplete");
