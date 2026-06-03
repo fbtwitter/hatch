@@ -394,6 +394,58 @@ public sealed class MainViewModel : INotifyPropertyChanged
         SaveAsync();
     }
 
+    public void ReorderList(Guid id, int newSectionIndex, bool newIsPinned)
+    {
+        var list = CustomLists.FirstOrDefault(l => l.Id == id);
+        if (list == null) return;
+
+        bool oldIsPinned = list.IsPinned;
+        list.IsPinned = newIsPinned;
+
+        var targetSection = CustomLists
+            .Where(l => l.IsPinned == newIsPinned && l.Id != id)
+            .OrderBy(l => l.SortOrder)
+            .ToList();
+        targetSection.Insert(Math.Clamp(newSectionIndex, 0, targetSection.Count), list);
+        for (int i = 0; i < targetSection.Count; i++)
+            targetSection[i].SortOrder = i;
+
+        if (oldIsPinned != newIsPinned)
+        {
+            var oldSection = CustomLists
+                .Where(l => l.IsPinned == oldIsPinned)
+                .OrderBy(l => l.SortOrder)
+                .ToList();
+            for (int i = 0; i < oldSection.Count; i++)
+                oldSection[i].SortOrder = i;
+        }
+
+        var sorted = CustomLists.OrderByDescending(l => l.IsPinned).ThenBy(l => l.SortOrder).ToList();
+        for (int i = 0; i < sorted.Count; i++)
+        {
+            int current = CustomLists.IndexOf(sorted[i]);
+            if (current != i) CustomLists.Move(current, i);
+        }
+
+        SaveAsync();
+    }
+
+    public void MoveListUp(TaskList list)
+    {
+        var section = CustomLists.Where(l => l.IsPinned == list.IsPinned).OrderBy(l => l.SortOrder).ToList();
+        int idx = section.IndexOf(list);
+        if (idx <= 0) return;
+        ReorderList(list.Id, idx - 1, list.IsPinned);
+    }
+
+    public void MoveListDown(TaskList list)
+    {
+        var section = CustomLists.Where(l => l.IsPinned == list.IsPinned).OrderBy(l => l.SortOrder).ToList();
+        int idx = section.IndexOf(list);
+        if (idx < 0 || idx >= section.Count - 1) return;
+        ReorderList(list.Id, idx + 1, list.IsPinned);
+    }
+
     public int GetTaskCountForList(TaskList list) => Tasks.Count(t => t.ListId == list.Id);
 
     public void DeleteList(TaskList list)
