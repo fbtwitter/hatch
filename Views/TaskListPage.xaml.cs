@@ -374,7 +374,9 @@ public sealed partial class TaskListPage : Page
             "myday"     => Strings.Header_MyDay,
             "important" => Strings.Header_Important,
             "planned"   => Strings.Header_Planned,
-            _           => Strings.Header_AllTasks
+            _           => Guid.TryParse(navItem, out var listId)
+                            ? (_vm?.CustomLists.FirstOrDefault(l => l.Id == listId)?.Name ?? Strings.Header_AllTasks)
+                            : Strings.Header_AllTasks
         };
 
         var isPlanned = navItem == "planned";
