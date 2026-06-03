@@ -73,6 +73,7 @@
     <Content Include="Assets\HatchHidden.ico" Condition="Exists('Assets\HatchHidden.ico')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Remove="bug.png" />
   </ItemGroup>
 
 </Project>

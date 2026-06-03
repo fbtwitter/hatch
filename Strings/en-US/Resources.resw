@@ -57,6 +57,8 @@
   <data name="EmptyState_Planned_Subtext" xml:space="preserve"><value>Set a due date on a task to see it here</value></data>
   <data name="EmptyState_AllTasks_Headline" xml:space="preserve"><value>No tasks yet</value></data>
   <data name="EmptyState_AllTasks_Subtext" xml:space="preserve"><value>Add a task above to get started</value></data>
+  <data name="EmptyState_CustomList_Headline" xml:space="preserve"><value>This list is empty</value></data>
+  <data name="EmptyState_CustomList_Subtext" xml:space="preserve"><value>Add a task above to get started</value></data>
 
   <!-- ── Task list row ──────────────────────────────────────── -->
   <data name="Task_Tooltip_MarkComplete" xml:space="preserve"><value>Mark as complete</value></data>
