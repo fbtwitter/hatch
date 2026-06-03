@@ -132,10 +132,11 @@ Hatch lives on your desktop permanently. Memory is a first-class constraint.
 
 ## 🛣️ What's Shipped
 
-Latest releases have been moving fast. Latest production version is **v0.4.0** (May 22, 2026).
+Latest releases have been moving fast. Latest production version is **v0.4.1** (June 3, 2026).
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.4.1** | Jun 3  | List reordering via Move up / Move down context menu; SymbolIcon on all list menu items |
 | **v0.4.0** | May 22 | Details pane with inline title edit, notes, My Day toggle, due date; native ListView selection with accent highlight |
 | **v0.3.1** | May 15 | Completed task grouping with collapsible Expander, 250ms animated move, undo snackbar |
 | **v0.3.0** | May 12 | Contextual tip engine, adaptive silence, actionable tips, dynamic bubble sizing |
@@ -159,12 +160,16 @@ Latest releases have been moving fast. Latest production version is **v0.4.0** (
 
 Core features: contextual tips, details pane, due-date picker, custom lists, privacy onboarding, appreciation cosmetics.
 
-**v0.4.0 — Task Details + List Management (in progress):**
-- ~~Details pane — slide-in panel with notes, My Day toggle, due date, created-at~~ ✅ shipped
-- List CRUD — create / rename / recolor / delete custom lists from nav rail
-- Accent hue picker — 6 color swatches in Settings
+**v0.4.x — shipped:**
+- ~~Details pane — slide-in panel with notes, My Day toggle, due date, created-at~~ ✅
+- ~~List CRUD — create / rename / pin / custom icon / delete custom lists~~ ✅
+- ~~List reordering — Move up / Move down via context menu~~ ✅
 
-**Planned (post v0.4.0):**
+**v0.5.0 — Keyboard-First Interactions (up next):**
+- `Delete` to delete focused task, `Ctrl+Enter` to commit notes, `Ctrl+D` due date, `Ctrl+M` My Day
+- `↑` / `↓` to move selection with live details pane
+
+**Planned:**
 - Privacy first-run onboarding screen
 - Appreciation purchase ($5, cosmetics only)
 
