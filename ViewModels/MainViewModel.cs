@@ -25,13 +25,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private DispatcherQueueTimer? _undoDismissTimer;
     private bool _isUndoBarVisible;
 
-    private readonly CompletedTaskGroup _openGroup = new() { Name = "Open", EmptyMessage = "All done! 🎉" };
+    private readonly CompletedTaskGroup _openGroup = new() { Name = "Open", EmptyMessage = "All done!" };
     private readonly CompletedTaskGroup _completedGroup = new() { Name = "Completed", TrackCount = true };
     private readonly IList<CompletedTaskGroup> _flatGroupedTasks;
 
     public ObservableCollection<TodoItem> Tasks { get; } = [];
     public ObservableCollection<TodoItem> ActiveTasks { get; } = [];
     public ObservableCollection<TaskList> Lists { get; } = [];
+    public ObservableCollection<TaskList> CustomLists { get; } = [];
 
     public string NewTaskText
     {
@@ -120,13 +121,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
         "planned"   => "\uED28", // Calendar
         _           => "\uE762"  // Document
     };
-
     public string EmptyStateHeadline => _activeNavItem switch
     {
         "myday"     => Strings.EmptyState_MyDay_Headline,
         "important" => Strings.EmptyState_Important_Headline,
         "planned"   => Strings.EmptyState_Planned_Headline,
-        _           => Strings.EmptyState_AllTasks_Headline
+        _           => Guid.TryParse(_activeNavItem, out _)
+                        ? Strings.EmptyState_CustomList_Headline
+                        : Strings.EmptyState_AllTasks_Headline
     };
 
     public string EmptyStateSubtext => _activeNavItem switch
@@ -134,7 +136,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
         "myday"     => Strings.EmptyState_MyDay_Subtext,
         "important" => Strings.EmptyState_Important_Subtext,
         "planned"   => Strings.EmptyState_Planned_Subtext,
-        _           => Strings.EmptyState_AllTasks_Subtext
+        _           => Guid.TryParse(_activeNavItem, out _)
+                        ? Strings.EmptyState_CustomList_Subtext
+                        : Strings.EmptyState_AllTasks_Subtext
     };
 
     private bool MatchesFilter(TodoItem task) => _activeNavItem switch
@@ -142,7 +146,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         "myday"     => task.IsInMyDay,
         "important" => task.IsStarred,
         "planned"   => task.DueDate != null && !task.IsCompleted,
-        _           => true
+        _           => !Guid.TryParse(_activeNavItem, out var listId) || task.ListId == listId
     };
 
     private void RefreshActiveTasks()
@@ -151,14 +155,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
         var today = DateTimeOffset.Now.Date;
         var filtered = _activeNavItem switch
         {
-            // For My Day, Important, All Tasks: maintain insertion order, let grouping handle open/completed separation
             "myday" => Tasks
                 .Where(t => t.IsInMyDay)
                 .OrderByDescending(t => t.CreatedAt)
                 .ThenBy(t => t.IsCompleted),
             "important" => Tasks.Where(t => t.IsStarred).OrderByDescending(t => t.CreatedAt),
             "planned"   => Tasks.Where(t => t.DueDate != null && !t.IsCompleted).OrderBy(t => t.DueDate),
-            _           => Tasks.OrderByDescending(t => t.CreatedAt)
+            _           => Tasks.Where(MatchesFilter).OrderByDescending(t => t.CreatedAt)
         };
 
         foreach (var task in filtered)
@@ -178,7 +181,6 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         foreach (var task in ActiveTasks.Where(t => t.IsCompleted))
             _completedGroup.Items.Add(task);
-
     }
 
     private void MoveBetweenFlatGroups(TodoItem task)
@@ -299,9 +301,6 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(ActiveNavItem));
         };
 
-        // Initialize default list
-        Lists.Add(new TaskList { Name = Strings.List_AllTasks_Name, Id = Guid.Empty });
-
         _ = LoadAsync();
     }
 
@@ -309,14 +308,19 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         try
         {
-            var tasks = await _storage.LoadTasksAsync();
+            var data = await _storage.LoadAsync();
             _isBulkLoading = true;
-            foreach (var task in tasks.OrderByDescending(t => t.CreatedAt))
+            foreach (var task in data.Tasks.OrderByDescending(t => t.CreatedAt))
             {
                 AttachTaskPropertyChangedHandler(task);
                 Tasks.Add(task);
             }
             _isBulkLoading = false;
+
+            // Load lists sorted: pinned first, then ascending SortOrder
+            foreach (var list in data.Lists.OrderByDescending(l => l.IsPinned).ThenBy(l => l.SortOrder))
+                CustomLists.Add(list);
+
             RefreshActiveTasks();
             OnPropertyChanged(nameof(IsTaskListEmpty));
             OnPropertyChanged(nameof(PlannedGroups));
@@ -329,7 +333,6 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         var task = new TodoItem { Title = NewTaskText.Trim() };
 
-        // Set appropriate properties based on which page user is adding from
         switch (_activeNavItem)
         {
             case "myday":
@@ -341,6 +344,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
             case "planned":
                 task.DueDate = new DateTimeOffset(DateTime.Today);
                 break;
+            default:
+                if (Guid.TryParse(_activeNavItem, out var listId))
+                    task.ListId = listId;
+                break;
         }
 
         AttachTaskPropertyChangedHandler(task);
@@ -348,6 +355,65 @@ public sealed class MainViewModel : INotifyPropertyChanged
         NewTaskText = string.Empty;
         SaveAsync();
     }
+
+    // ── List CRUD ────────────────────────────────────────────────────────────
+
+    public void AddList(string name)
+    {
+        var list = new TaskList
+        {
+            Name = name.Trim(),
+            AccentColor = "#0078D4",
+            SortOrder = CustomLists.Count
+        };
+        CustomLists.Add(list);
+        SaveAsync();
+    }
+
+    public void RenameList(TaskList list, string newName)
+    {
+        list.Name = newName.Trim();
+        SaveAsync();
+    }
+
+    public void SetListIcon(TaskList list, string? icon)
+    {
+        list.CustomIcon = string.IsNullOrWhiteSpace(icon) ? null : icon.Trim();
+        SaveAsync();
+    }
+
+    public void TogglePinList(TaskList list)
+    {
+        list.IsPinned = !list.IsPinned;
+        var sorted = CustomLists.OrderByDescending(l => l.IsPinned).ThenBy(l => l.SortOrder).ToList();
+        for (int i = 0; i < sorted.Count; i++)
+        {
+            int current = CustomLists.IndexOf(sorted[i]);
+            if (current != i) CustomLists.Move(current, i);
+        }
+        SaveAsync();
+    }
+
+    public int GetTaskCountForList(TaskList list) => Tasks.Count(t => t.ListId == list.Id);
+
+    public void DeleteList(TaskList list)
+    {
+        // Navigate away before removing tasks so the list view doesn't flicker.
+        if (_activeNavItem == list.Id.ToString())
+            ActiveNavItem = "alltasks";
+
+        var tasksToRemove = Tasks.Where(t => t.ListId == list.Id).ToList();
+        foreach (var task in tasksToRemove)
+        {
+            task.PropertyChanged -= TaskPropertyChanged;
+            Tasks.Remove(task);
+        }
+
+        CustomLists.Remove(list);
+        SaveAsync();
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
 
     public void AttachTaskPropertyChangedHandler(TodoItem task)
     {
@@ -530,7 +596,6 @@ public sealed class MainViewModel : INotifyPropertyChanged
         SaveAsync();
     }
 
-
     public void UpdateTask(TodoItem task, string newTitle, DateTimeOffset? newDueDate, bool newStarred)
     {
         // Unsubscribe while applying all changes to avoid multiple intermediate
@@ -596,7 +661,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
         try
         {
             await Task.Delay(500, ct);
-            await _storage.SaveTasksAsync(Tasks);
+            var data = new TasksFile { Tasks = [.. Tasks], Lists = [.. CustomLists] };
+            await _storage.SaveAsync(data);
         }
         catch (OperationCanceledException) { }
         catch { }

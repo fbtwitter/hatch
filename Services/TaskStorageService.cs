@@ -17,25 +17,31 @@ public sealed class TaskStorageService
         _filePath = Path.Combine(folder, "tasks.json");
     }
 
-    public async Task<List<TodoItem>> LoadTasksAsync()
+    public async Task<TasksFile> LoadAsync()
     {
         if (!File.Exists(_filePath))
-            return [];
+            return new TasksFile();
 
         try
         {
             var json = await File.ReadAllTextAsync(_filePath);
-            return JsonSerializer.Deserialize<List<TodoItem>>(json) ?? [];
+            // Migration: old format was a plain array of TodoItem
+            if (json.TrimStart().StartsWith('['))
+            {
+                var tasks = JsonSerializer.Deserialize<List<TodoItem>>(json) ?? [];
+                return new TasksFile { Tasks = tasks };
+            }
+            return JsonSerializer.Deserialize<TasksFile>(json) ?? new TasksFile();
         }
         catch
         {
-            return [];
+            return new TasksFile();
         }
     }
 
-    public async Task SaveTasksAsync(IEnumerable<TodoItem> tasks)
+    public async Task SaveAsync(TasksFile data)
     {
-        var json = JsonSerializer.Serialize(tasks, _options);
+        var json = JsonSerializer.Serialize(data, _options);
         await File.WriteAllTextAsync(_filePath, json);
     }
 
