@@ -113,15 +113,19 @@ public sealed partial class MascotWindow : Window
         NativeMethods.SetWindowLong(_hwnd, NativeMethods.GWL_EXSTYLE,
             exStyle | NativeMethods.WS_EX_NOREDIRECTIONBITMAP);
 
-        // Suppress the 1 px accent-coloured frame Windows 11 draws on every window.
-        var noBorder = NativeMethods.DWMWA_COLOR_NONE;
-        NativeMethods.DwmSetWindowAttribute(
-            _hwnd, NativeMethods.DWMWA_BORDER_COLOR, ref noBorder, sizeof(uint));
+        // These DWM attributes (border color, corner preference) were introduced in
+        // Windows 11 build 22000. Skip them on Windows 10 — they return E_INVALIDARG
+        // there, and neither rounded corners nor accent borders exist on Windows 10 anyway.
+        if (Helpers.OsVersionHelper.IsWindows11OrGreater)
+        {
+            var noBorder = NativeMethods.DWMWA_COLOR_NONE;
+            NativeMethods.DwmSetWindowAttribute(
+                _hwnd, NativeMethods.DWMWA_BORDER_COLOR, ref noBorder, sizeof(uint));
 
-        // Opt out of Windows 11 automatic rounded corners so the circle clip stays crisp.
-        var noRound = NativeMethods.DWMWCP_DONOTROUND;
-        NativeMethods.DwmSetWindowAttribute(
-            _hwnd, NativeMethods.DWMWA_WINDOW_CORNER_PREFERENCE, ref noRound, sizeof(uint));
+            var noRound = NativeMethods.DWMWCP_DONOTROUND;
+            NativeMethods.DwmSetWindowAttribute(
+                _hwnd, NativeMethods.DWMWA_WINDOW_CORNER_PREFERENCE, ref noRound, sizeof(uint));
+        }
 
         // Extend DWM frame across the entire client area (sheet-of-glass technique).
         // This enables per-pixel alpha compositing on SDR displays, which prevents
