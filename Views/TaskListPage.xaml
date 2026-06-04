@@ -403,7 +403,9 @@
                                                   ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
                                                   SelectionMode="Single"
                                                   SelectionChanged="TaskListView_SelectionChanged"
-                                                  IsTabStop="False">
+                                                  IsTabStop="False"
+                                                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                                             <ListView.ItemContainerTransitions>
                                                 <TransitionCollection />
                                             </ListView.ItemContainerTransitions>
