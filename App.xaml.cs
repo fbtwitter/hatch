@@ -4,6 +4,8 @@ using Hatch.Models;
 using Hatch.Services;
 using Hatch.Views;
 using Microsoft.UI.Dispatching;
+using Microsoft.Windows.AppLifecycle;
+using ProtocolActivatedEventArgs = Windows.ApplicationModel.Activation.IProtocolActivatedEventArgs;
 
 namespace Hatch;
 
@@ -20,24 +22,32 @@ public partial class App : Application
     public App()
     {
         InitializeComponent();
-
         SettingsService.Load();
+
+        // Handle hatch:// protocol activation — used for Google OAuth callback.
+        // Note: protocol registration only works in packaged (MSIX) builds.
+        AppInstance.GetCurrent().Activated += OnAppActivated;
+    }
+
+    private void OnAppActivated(object? sender, AppActivationArguments args)
+    {
+        if (args.Kind != ExtendedActivationKind.Protocol) return;
+        if (args.Data is not ProtocolActivatedEventArgs protocol) return;
+
+        var queue = MainWindowInstance?.DispatcherQueue;
+        if (queue != null)
+            queue.TryEnqueue(async () => await SyncService.HandleOAuthCallbackAsync(protocol.Uri));
+        else
+            _ = SyncService.HandleOAuthCallbackAsync(protocol.Uri);
     }
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
         try
         {
-            // Initialize sync and pull latest data before the main window loads.
-            // If the server has newer data than the last local sync, overwrite tasks.json
-            // so MainViewModel reads the up-to-date content.
+            // Restore the saved session so the user stays signed in across launches.
+            // Sync itself is manual — user presses "Sync now" in Settings.
             await SyncService.InitializeAsync();
-            if (SyncService.IsSignedIn)
-            {
-                var remote = await SyncService.PullIfNewerAsync();
-                if (remote != null)
-                    await new TaskStorageService().SaveAsync(remote);
-            }
             // Unpackaged (Debug): StartupRegistryService writes --startup into the Run key.
             // Packaged (MSIX): activation kind is StartupTask when launched by the OS.
             // Never infer startup from empty args — that would suppress the window on every manual launch.

@@ -1,8 +1,10 @@
 using System.Text.Json;
 using Hatch.Models;
-using Supabase;
 using Supabase.Postgrest.Attributes;
 using Supabase.Postgrest.Models;
+using SupabaseClient = Supabase.Client;
+using GotrueConstants = Supabase.Gotrue.Constants;
+using GotrueSignInOptions = Supabase.Gotrue.SignInOptions;
 
 namespace Hatch.Services;
 
@@ -26,7 +28,7 @@ public sealed class SyncService
     private const string SupabaseUrl = "https://cwgasedfewjarujvsesy.supabase.co";
     private const string SupabaseKey = "sb_publishable_b7RM0NcDWuL0rtHEeWeSHQ_95qa8uH5";
 
-    private Client? _client;
+    private SupabaseClient? _client;
 
     public bool IsSignedIn => _client?.Auth.CurrentSession != null;
     public string? UserEmail => _client?.Auth.CurrentUser?.Email;
@@ -35,8 +37,8 @@ public sealed class SyncService
 
     public async Task InitializeAsync()
     {
-        var options = new SupabaseOptions { AutoRefreshToken = true };
-        _client = new Client(SupabaseUrl, SupabaseKey, options);
+        var options = new Supabase.SupabaseOptions { AutoRefreshToken = true };
+        _client = new SupabaseClient(SupabaseUrl, SupabaseKey, options);
         await _client.InitializeAsync();
         await RestoreSessionAsync();
     }
@@ -100,11 +102,13 @@ public sealed class SyncService
         StateChanged?.Invoke();
     }
 
-    public async Task PushAsync(TasksFile data)
+    // Returns null on success, error message on failure.
+    public async Task<string?> PushAsync(TasksFile data)
     {
-        if (!IsSignedIn || _client == null) return;
+        if (_client == null) return "Sync service not ready.";
+        if (!IsSignedIn)    return "Not signed in.";
         var userId = _client.Auth.CurrentUser?.Id;
-        if (string.IsNullOrEmpty(userId)) return;
+        if (string.IsNullOrEmpty(userId)) return "Could not read user ID.";
         try
         {
             var json = JsonSerializer.Serialize(data);
@@ -117,9 +121,58 @@ public sealed class SyncService
             App.Settings.LastSyncedAt = DateTime.UtcNow;
             _ = App.SettingsService.SaveAsync();
             StateChanged?.Invoke();
+            return null;
         }
-        catch { /* sync failure is silent — local data is always safe */ }
+        catch (Exception ex) { return ex.Message; }
     }
+
+    // Returns the GitHub OAuth URL to open in the browser, or null on failure.
+    public async Task<string?> GetGoogleSignInUrlAsync()
+    {
+        if (_client == null) return null;
+        try
+        {
+            var state = await _client.Auth.SignIn(
+                GotrueConstants.Provider.Github,
+                new GotrueSignInOptions
+                {
+                    RedirectTo = "hatch://auth-callback",
+                    FlowType   = GotrueConstants.OAuthFlowType.Implicit
+                });
+            return state?.Uri?.ToString();
+        }
+        catch { return null; }
+    }
+
+    // Called when the app is activated via hatch://auth-callback after Google OAuth.
+    public async Task HandleOAuthCallbackAsync(Uri callbackUri)
+    {
+        if (_client == null) return;
+        try
+        {
+            // Implicit flow puts tokens in the URL fragment: #access_token=...&refresh_token=...
+            var fragment = callbackUri.Fragment.TrimStart('#');
+            var p = ParseQueryString(fragment);
+
+            var access  = p.GetValueOrDefault("access_token");
+            var refresh = p.GetValueOrDefault("refresh_token");
+            if (string.IsNullOrEmpty(access)) return;
+
+            await _client.Auth.SetSession(access, refresh ?? "");
+            var session = _client.Auth.CurrentSession;
+            if (session != null) await PersistSessionAsync(session);
+            StateChanged?.Invoke();
+        }
+        catch { }
+    }
+
+    private static Dictionary<string, string> ParseQueryString(string query)
+        => query.Split('&', StringSplitOptions.RemoveEmptyEntries)
+                .Select(p => p.Split('=', 2))
+                .Where(p => p.Length == 2)
+                .ToDictionary(
+                    p => Uri.UnescapeDataString(p[0]),
+                    p => Uri.UnescapeDataString(p[1]));
 
     // Pulls server data only if the server has changes newer than the last local sync.
     public async Task<TasksFile?> PullIfNewerAsync()

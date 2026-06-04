@@ -105,4 +105,11 @@ public sealed partial class SettingsPage : Page
 
     private async void SyncSignUp_Click(object sender, RoutedEventArgs e)
         => await _viewModel.SignUpAsync(SyncPasswordBox.Password);
+
+    private async void SyncGitHubSignIn_Click(object sender, RoutedEventArgs e)
+    {
+        var url = await App.SyncService.GetGoogleSignInUrlAsync();
+        if (!string.IsNullOrEmpty(url))
+            _ = Windows.System.Launcher.LaunchUriAsync(new Uri(url));
+    }
 }
