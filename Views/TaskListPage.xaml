@@ -72,7 +72,7 @@
         <DataTemplate x:Key="TaskItemTemplate" x:DataType="models:TodoItem">
             <Grid Tag="{x:Bind}"
                   Margin="0,0"
-                  Padding="16,14"
+                  Padding="16,14,24,14"
                   ColumnSpacing="8"
                   CornerRadius="0"
                   Background="Transparent"
