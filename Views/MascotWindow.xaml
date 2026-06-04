@@ -40,24 +40,6 @@
                     </EasingDoubleKeyFrame>
                 </DoubleAnimationUsingKeyFrames>
 
-                <DoubleAnimationUsingKeyFrames
-                    Storyboard.TargetName="LeftEye"
-                    Storyboard.TargetProperty="Opacity">
-                    <DiscreteDoubleKeyFrame KeyTime="0:0:0"    Value="1"/>
-                    <DiscreteDoubleKeyFrame KeyTime="0:0:2.7"  Value="1"/>
-                    <EasingDoubleKeyFrame   KeyTime="0:0:2.8"  Value="0.05"/>
-                    <EasingDoubleKeyFrame   KeyTime="0:0:2.95" Value="1"/>
-                </DoubleAnimationUsingKeyFrames>
-
-                <DoubleAnimationUsingKeyFrames
-                    Storyboard.TargetName="RightEye"
-                    Storyboard.TargetProperty="Opacity">
-                    <DiscreteDoubleKeyFrame KeyTime="0:0:0"    Value="1"/>
-                    <DiscreteDoubleKeyFrame KeyTime="0:0:2.7"  Value="1"/>
-                    <EasingDoubleKeyFrame   KeyTime="0:0:2.8"  Value="0.05"/>
-                    <EasingDoubleKeyFrame   KeyTime="0:0:2.95" Value="1"/>
-                </DoubleAnimationUsingKeyFrames>
-
             </Storyboard>
 
             <!-- Inactivity fade: full opacity → 0.4 over 2 s (starts after 30 s idle) -->
@@ -172,40 +154,36 @@
                 <CompositeTransform/>
             </Viewbox.RenderTransform>
 
-            <Canvas Width="120" Height="120">
+            <Canvas Width="100" Height="100">
 
-            <!-- Egg body: accent fill, white border -->
-            <Ellipse Canvas.Left="16" Canvas.Top="10"
-                     Width="88" Height="100"
-                     Fill="{ThemeResource AccentFillColorDefaultBrush}"
-                     Stroke="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
-                     StrokeThickness="2.5"/>
+            <!-- Egg body — matches logo.svg -->
+            <Path Data="M50 6 C72 6 88 32 88 58 C88 80 72 94 50 94 C28 94 12 80 12 58 C12 32 28 6 50 6 Z"
+                  Fill="#FFD966"
+                  Stroke="#1A1A1A"
+                  StrokeThickness="3.5"
+                  StrokeLineJoin="Round"/>
 
-            <!-- Shell crack — hatching motif -->
-            <Path Stroke="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
-                  StrokeThickness="2"
+            <!-- Horizontal crack across the middle -->
+            <Path Data="M14 50 L24 56 L32 48 L42 58 L52 50 L60 60 L70 52 L80 60 L86 54"
+                  Fill="Transparent"
+                  Stroke="#1A1A1A"
+                  StrokeThickness="3.5"
+                  StrokeLineJoin="Round"
+                  StrokeStartLineCap="Round"
+                  StrokeEndLineCap="Round"/>
+
+            <!-- Paperclip — translated (36,22) to match logo.svg group transform -->
+            <Path Data="M4 36 Q4 40 8 40 L20 40 Q24 40 24 36 L24 10 Q24 4 18 4 L10 4 Q4 4 4 10 L4 30 Q4 33 7 33 Q10 33 10 30 L10 14 Q10 11 13 11 L15 11 Q18 11 18 14 L18 30"
+                  Fill="Transparent"
+                  Stroke="#1A73E8"
+                  StrokeThickness="3.2"
                   StrokeStartLineCap="Round"
                   StrokeEndLineCap="Round"
-                  Data="M 60,12 L 54,24 L 63,30 L 56,40"/>
-
-            <!-- Left eye -->
-            <Ellipse x:Name="LeftEye"
-                     Canvas.Left="44" Canvas.Top="48"
-                     Width="9" Height="11"
-                     Fill="{ThemeResource TextOnAccentFillColorPrimaryBrush}"/>
-
-            <!-- Right eye -->
-            <Ellipse x:Name="RightEye"
-                     Canvas.Left="67" Canvas.Top="48"
-                     Width="9" Height="11"
-                     Fill="{ThemeResource TextOnAccentFillColorPrimaryBrush}"/>
-
-            <!-- Smile -->
-            <Path Stroke="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
-                  StrokeThickness="2.5"
-                  StrokeStartLineCap="Round"
-                  StrokeEndLineCap="Round"
-                  Data="M 48,70 Q 60,81 72,70"/>
+                  StrokeLineJoin="Round">
+                <Path.RenderTransform>
+                    <TranslateTransform X="36" Y="22"/>
+                </Path.RenderTransform>
+            </Path>
 
             </Canvas>
         </Viewbox>
