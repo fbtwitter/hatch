@@ -97,7 +97,11 @@ internal static class NativeMethods
     internal static extern IntPtr DefSubclassProc(
         IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam);
 
+    internal const int  GWL_STYLE                 = -16;
     internal const int  GWL_EXSTYLE               = -20;
+    internal const uint WS_BORDER                 = 0x00800000;
+    internal const uint WS_EX_TOOLWINDOW           = 0x00000080;
+    internal const uint WS_EX_WINDOWEDGE          = 0x00000100;
     internal const uint WS_EX_NOREDIRECTIONBITMAP = 0x00200000;
     internal const uint SWP_FRAMECHANGED          = 0x0020;
 
