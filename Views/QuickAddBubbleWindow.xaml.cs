@@ -70,14 +70,14 @@ public sealed partial class QuickAddBubbleWindow : Window
         var mainVm = GetMainViewModel();
         if (mainVm != null)
         {
-            ListSelector.ItemsSource = mainVm.Lists;
+            ListSelector.ItemsSource = mainVm.CustomLists;
             ListSelector.DisplayMemberPath = nameof(TaskList.Name);
 
             // Pre-select the last-used list if it still exists, otherwise fall back to first
-            var lastUsedIndex = mainVm.Lists.IndexOf(
-                mainVm.Lists.FirstOrDefault(l => l.Id == App.Settings.LastUsedListId)!);
+            var lastUsedIndex = mainVm.CustomLists.IndexOf(
+                mainVm.CustomLists.FirstOrDefault(l => l.Id == App.Settings.LastUsedListId)!);
             ListSelector.SelectedIndex = lastUsedIndex >= 0 ? lastUsedIndex
-                                       : mainVm.Lists.Count > 0 ? 0 : -1;
+                                       : mainVm.CustomLists.Count > 0 ? 0 : -1;
         }
 
         // Show first-run intro if needed
@@ -200,10 +200,10 @@ public sealed partial class QuickAddBubbleWindow : Window
         var mainVm = GetMainViewModel();
         if (mainVm != null)
         {
-            var lastUsedIndex = mainVm.Lists.IndexOf(
-                mainVm.Lists.FirstOrDefault(l => l.Id == App.Settings.LastUsedListId)!);
+            var lastUsedIndex = mainVm.CustomLists.IndexOf(
+                mainVm.CustomLists.FirstOrDefault(l => l.Id == App.Settings.LastUsedListId)!);
             ListSelector.SelectedIndex = lastUsedIndex >= 0 ? lastUsedIndex
-                                       : mainVm.Lists.Count > 0 ? 0 : -1;
+                                       : mainVm.CustomLists.Count > 0 ? 0 : -1;
         }
 
         // Reposition relative to (possibly moved) mascot
