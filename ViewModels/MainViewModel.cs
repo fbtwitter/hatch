@@ -302,6 +302,18 @@ public sealed class MainViewModel : INotifyPropertyChanged
         };
 
         _ = LoadAsync();
+
+        App.SyncService.TasksReceived += () =>
+            _dispatcherQueue.TryEnqueue(async () => await ReloadAsync());
+    }
+
+    public async Task ReloadAsync()
+    {
+        _isBulkLoading = true;
+        Tasks.Clear();
+        CustomLists.Clear();
+        _isBulkLoading = false;
+        await LoadAsync();
     }
 
     private async Task LoadAsync()

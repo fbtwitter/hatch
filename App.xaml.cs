@@ -55,8 +55,9 @@ public partial class App : Application
             mainInstance.Activated += OnAppActivated;
 
             // Restore the saved session so the user stays signed in across launches.
-            // Sync itself is manual — user presses "Sync now" in Settings.
             await SyncService.InitializeAsync();
+            // Pull before creating windows — MainViewModel.LoadAsync reads the updated file naturally.
+            await SyncService.PullIfNewerAsync();
             // Unpackaged (Debug): StartupRegistryService writes --startup into the Run key.
             // Packaged (MSIX): activation kind is StartupTask when launched by the OS.
             // Never infer startup from empty args — that would suppress the window on every manual launch.

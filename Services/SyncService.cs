@@ -33,6 +33,7 @@ public sealed class SyncService
     public string? UserEmail => _client?.Auth.CurrentUser?.Email;
 
     public event Action? StateChanged;
+    public event Action? TasksReceived; // fires when a pull returned newer data
 
     public async Task InitializeAsync()
     {
@@ -173,7 +174,7 @@ public sealed class SyncService
                     p => Uri.UnescapeDataString(p[0]),
                     p => Uri.UnescapeDataString(p[1]));
 
-    // Pulls server data only if the server has changes newer than the last local sync.
+    // Pulls server data if newer than last sync, saves to disk, and fires TasksReceived.
     public async Task<TasksFile?> PullIfNewerAsync()
     {
         if (!IsSignedIn || _client == null) return null;
@@ -188,7 +189,14 @@ public sealed class SyncService
                 row.UpdatedAt <= App.Settings.LastSyncedAt.Value)
                 return null;
 
-            return JsonSerializer.Deserialize<TasksFile>(row.TasksJson);
+            var data = JsonSerializer.Deserialize<TasksFile>(row.TasksJson);
+            if (data == null) return null;
+
+            await new TaskStorageService().SaveAsync(data);
+            App.Settings.LastSyncedAt = row.UpdatedAt;
+            _ = App.SettingsService.SaveAsync();
+            TasksReceived?.Invoke();
+            return data;
         }
         catch { return null; }
     }

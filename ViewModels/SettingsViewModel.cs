@@ -94,6 +94,9 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         IsSyncing = true;
         SyncError = null;
+        // Pull first — saves to disk and fires TasksReceived so MainViewModel reloads
+        await App.SyncService.PullIfNewerAsync();
+        // Push latest local state
         var data  = await new TaskStorageService().LoadAsync();
         var error = await App.SyncService.PushAsync(data);
         SyncError = error;
