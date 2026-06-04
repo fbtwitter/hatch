@@ -72,9 +72,6 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         var error = await App.SyncService.SignInAsync(SyncEmail.Trim(), password);
         IsSyncing = false;
         if (error != null) { SyncError = error; return; }
-        // Pull latest data after sign-in
-        var data = await App.SyncService.PullIfNewerAsync();
-        if (data != null) await new TaskStorageService().SaveAsync(data);
     }
 
     public async Task SignUpAsync(string password)
@@ -96,9 +93,12 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     public ICommand SyncNowCommand => new RelayCommand(async _ =>
     {
         IsSyncing = true;
-        var data = await App.SyncService.PullIfNewerAsync();
-        if (data != null) await new TaskStorageService().SaveAsync(data);
+        SyncError = null;
+        var data  = await new TaskStorageService().LoadAsync();
+        var error = await App.SyncService.PushAsync(data);
+        SyncError = error;
         IsSyncing = false;
+        OnPropertyChanged(nameof(SyncLastSyncedText));
     });
 
     private void OnSyncStateChanged()
