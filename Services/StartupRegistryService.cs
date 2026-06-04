@@ -1,33 +1,68 @@
 using Microsoft.Win32;
+using Windows.ApplicationModel;
+using Windows.ApplicationModel.Core;
 
 namespace Hatch.Services;
 
 public sealed class StartupRegistryService
 {
-    private const string StartupRegPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
-    private const string AppName = "Hatch";
+    private const string RegPath  = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    private const string AppName  = "Hatch";
+    public  const string StartupArg   = "--startup";
+    private const string StartupTaskId = "HatchStartup";
+
+    // True when running as an MSIX package (Release build).
+    // Unpackaged (Debug) uses the registry; packaged uses the StartupTask API.
+    private static bool IsPackaged()
+    {
+        try { _ = Package.Current.Id.Name; return true; }
+        catch { return false; }
+    }
 
     public void SetStartupEnabled(bool enabled)
     {
+        if (IsPackaged())
+            _ = SetPackagedAsync(enabled);
+        else
+            SetUnpackaged(enabled);
+    }
+
+    private static async Task SetPackagedAsync(bool enabled)
+    {
         try
         {
-            using var key = Registry.CurrentUser.OpenSubKey(StartupRegPath, writable: true);
+            var tasks = await StartupTask.GetForCurrentPackageAsync();
+            foreach (var task in tasks)
+            {
+                if (enabled)
+                    await task.RequestEnableAsync();
+                else
+                    task.Disable();
+            }
+        }
+        catch { }
+    }
+
+    private static void SetUnpackaged(bool enabled)
+    {
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(RegPath, writable: true);
             if (key == null) return;
 
             if (enabled)
             {
-                var exePath = AppContext.BaseDirectory;
-                var fullPath = Path.Combine(exePath, "todo-winui3.exe");
-                if (File.Exists(fullPath))
-                    key.SetValue(AppName, fullPath);
+                // Use the running executable's actual path so the entry survives
+                // project renames. Include --startup so OnLaunched can distinguish
+                // a startup-triggered launch from a normal manual launch.
+                var exe = Environment.ProcessPath
+                    ?? Path.Combine(AppContext.BaseDirectory, "todo-winui3.exe");
+                if (File.Exists(exe))
+                    key.SetValue(AppName, $"\"{exe}\" {StartupArg}");
             }
             else
             {
-                try
-                {
-                    key.DeleteValue(AppName);
-                }
-                catch { }
+                try { key.DeleteValue(AppName); } catch { }
             }
         }
         catch { }
@@ -35,12 +70,26 @@ public sealed class StartupRegistryService
 
     public bool IsStartupEnabled()
     {
-        try
+        if (IsPackaged())
         {
-            using var key = Registry.CurrentUser.OpenSubKey(StartupRegPath);
-            if (key == null) return false;
-            return key.GetValue(AppName) != null;
+            try
+            {
+                var tasks = StartupTask.GetForCurrentPackageAsync()
+                    .AsTask().GetAwaiter().GetResult();
+                return tasks.Any(t =>
+                    t.State is StartupTaskState.Enabled
+                            or StartupTaskState.EnabledByPolicy);
+            }
+            catch { return false; }
         }
-        catch { return false; }
+        else
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(RegPath);
+                return key?.GetValue(AppName) != null;
+            }
+            catch { return false; }
+        }
     }
 }
