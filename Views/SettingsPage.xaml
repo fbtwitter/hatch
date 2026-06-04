@@ -387,16 +387,10 @@
 
                         <toolkit:SettingsCard Header="Author"
                                               Description="Reza Fauzi Augusdi">
-                            <toolkit:SettingsCard.HeaderIcon>
-                                <FontIcon Glyph="&#xE77B;"/>
-                            </toolkit:SettingsCard.HeaderIcon>
                         </toolkit:SettingsCard>
 
                         <toolkit:SettingsCard Header="Source code"
                                               Description="github.com/fbtwitter/hatch">
-                            <toolkit:SettingsCard.HeaderIcon>
-                                <FontIcon Glyph="&#xE774;"/>
-                            </toolkit:SettingsCard.HeaderIcon>
                             <Button Content="Open on GitHub"
                                     AutomationProperties.AutomationId="Settings_OpenGitHub"
                                     Command="{x:Bind ViewModel.OpenGitHubCommand}"/>
@@ -404,9 +398,6 @@
 
                         <toolkit:SettingsCard Header="Report an issue"
                                               Description="Found a bug or have a suggestion?">
-                            <toolkit:SettingsCard.HeaderIcon>
-                                <FontIcon Glyph="&#xEBE8;"/>
-                            </toolkit:SettingsCard.HeaderIcon>
                             <Button Content="Open issues"
                                     AutomationProperties.AutomationId="Settings_OpenGitHubIssues"
                                     Command="{x:Bind ViewModel.OpenGitHubIssuesCommand}"/>
