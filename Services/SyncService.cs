@@ -24,9 +24,8 @@ internal sealed class UserDataRow : BaseModel
 
 public sealed class SyncService
 {
-    // Anon key is intentionally public — Supabase RLS enforces per-user access.
-    private const string SupabaseUrl = "https://cwgasedfewjarujvsesy.supabase.co";
-    private const string SupabaseKey = "sb_publishable_b7RM0NcDWuL0rtHEeWeSHQ_95qa8uH5";
+    private const string SupabaseUrl = Secrets.SupabaseUrl;
+    private const string SupabaseKey = Secrets.SupabaseKey;
 
     private SupabaseClient? _client;
 
