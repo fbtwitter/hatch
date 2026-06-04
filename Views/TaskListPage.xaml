@@ -72,7 +72,7 @@
         <DataTemplate x:Key="TaskItemTemplate" x:DataType="models:TodoItem">
             <Grid Tag="{x:Bind}"
                   Margin="0,0"
-                  Padding="16,12"
+                  Padding="16,14"
                   ColumnSpacing="8"
                   CornerRadius="0"
                   Background="Transparent"
@@ -196,7 +196,7 @@
         <Style x:Key="TaskListViewItemStyle" TargetType="ListViewItem">
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Padding" Value="0" />
-            <Setter Property="Margin" Value="0,2" />
+            <Setter Property="Margin" Value="0,4" />
             <Setter Property="IsTabStop" Value="False" />
             <Setter Property="Template">
                 <Setter.Value>
