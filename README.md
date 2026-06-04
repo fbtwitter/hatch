@@ -2,15 +2,15 @@
 
 <img src="logo.svg" width="140" height="140" alt="Hatch Logo">
 
-# Hatch — Frictionless Task Capture for Windows 11
+# Hatch — Frictionless Task Capture for Windows
 
 Fast. Private. Local-first.
 
-![Windows 11](https://img.shields.io/badge/Windows-11-0078D4?style=flat-square&logo=windows11)
+![Windows 10/11](https://img.shields.io/badge/Windows-10%2F11-0078D4?style=flat-square&logo=windows11)
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=.net)
 ![WinUI 3](https://img.shields.io/badge/WinUI-3-0078D4?style=flat-square)
 ![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![v0.4.0](https://img.shields.io/badge/Version-v0.4.0-blue?style=flat-square)
+![v0.5.1](https://img.shields.io/badge/Version-v0.5.1-blue?style=flat-square)
 
 </div>
 
@@ -19,54 +19,54 @@ Fast. Private. Local-first.
 
 ---
 
-## 🚀 Get Started in 30 Seconds
+## Get Started in 30 Seconds
 
-**Download** the latest `.msix` from [Releases](../../releases) → **Double-click** → **Done** ✨
+**Download** the latest `.msix` from [Releases](../../releases) → **Double-click** → **Done**
 
 First time? [Install the signing cert](../../releases) (one step, one time).
 
-[📥 Download Latest Release](../../releases) • [🏗️ Build from Source](#building-from-source) • [📝 What's New](CHANGELOG.md) • [🗺️ Roadmap](docs/ROADMAP.md)
+[Download Latest Release](../../releases) • [Build from Source](#building-from-source) • [What's New](CHANGELOG.md) • [Roadmap](docs/ROADMAP.md)
 
 ---
 
-## 🎯 Why Hatch?
+## Why Hatch?
 
 | | **Microsoft To Do** | **Hatch** |
 |---|---|---|
-| **Account required** | ✅ Microsoft account | ❌ Never |
-| **Task capture speed** | 3+ clicks | ⚡ ≤4 seconds |
-| **Privacy** | ☁️ Syncs to servers | 🔒 Local disk only |
-| **Windows 11 design** | Pre-Fluent 2 | 💎 Native WinUI 3 |
-| **Personality** | Corporate | 🥚 Mascot + contextual tips |
+| **Account required** | Microsoft account | Never |
+| **Task capture speed** | 3+ clicks | ≤4 seconds |
+| **Privacy** | Syncs to servers | Local disk only |
+| **Windows design** | Pre-Fluent 2 | Native WinUI 3 |
+| **Personality** | Corporate | Mascot + contextual tips |
 
 ---
 
-## ✨ Features at a Glance
+## Features at a Glance
 
-🎯 **Always-on-top mascot** — Click from anywhere, add task in seconds  
-📋 **Smart lists** — My Day, Important, Planned, All Tasks, custom lists  
-🔔 **Contextual tips** — Tips based on your actual task state (v0.3+)  
-⚙️ **Local storage** — `%LocalAppData%` only, nothing ever leaves your device  
-🎨 **Windows 11 native** — Mica, Acrylic, Segoe UI Variable, dark/light mode  
-🔒 **Private by design** — No account, no cloud, no telemetry, ever  
-🎪 **Appreciation cosmetics** — Optional $5 one-time purchase (skins, sounds, themes)  
+**Always-on-top mascot** — Click from anywhere, add task in seconds  
+**Smart lists** — My Day, Important, Planned, All Tasks, custom lists  
+**Contextual tips** — Tips based on your actual task state (v0.3+)  
+**Local storage** — `%LocalAppData%` only, nothing ever leaves your device  
+**Windows native** — Mica (Win11), Acrylic (Win10 2004+), Segoe UI Variable, dark/light mode  
+**Private by design** — No account, no cloud, no telemetry, ever  
+**Appreciation cosmetics** — Optional $5 one-time purchase (skins, sounds, themes)  
 
 ---
 
-## 📦 Installation
+## Installation
 
 ### Windows Package (Recommended)
 
 1. Download the latest `.msix` from [Releases](../../releases)
 2. **First time only** — Download `install-cert.cer`, double-click, select **Install Certificate** → **Local Machine** → **Trusted People** → **Finish**
 3. Double-click the `.msix` file
-4. Hatch starts automatically ✨
+4. Hatch starts automatically
 
 Subsequent releases don't need the cert step.
 
 ### Building from Source
 
-**Requirements:** Windows 11, Visual Studio 2022 with Windows App SDK workload (or .NET 10 SDK + Windows App SDK)
+**Requirements:** Windows 10 (build 17763+) or Windows 11, Visual Studio 2022 with Windows App SDK workload (or .NET 10 SDK + Windows App SDK)
 
 ```powershell
 git clone https://github.com/fbtwitter/todo-winui3.git
@@ -80,26 +80,26 @@ Placeholder assets generate automatically. See [Contributing Guide](docs/CONTRIB
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 | Document | Purpose |
 |----------|---------|
-| **[📝 Changelog](CHANGELOG.md)** | Detailed release history, what shipped in each version |
-| **[🗺️ Roadmap](docs/ROADMAP.md)** | v1.0 planned features, Next, Later, decision-making process |
-| **[🏗️ Architecture](docs/ARCHITECTURE.md)** | Tech stack, folder structure, data model, MVVM patterns |
-| **[🔒 Privacy](docs/PRIVACY.md)** | Data guarantee, storage locations, no-network promise |
-| **[📊 Performance](docs/PERFORMANCE.md)** | Memory budgets, optimization techniques, benchmarks |
-| **[🤝 Contributing](docs/CONTRIBUTING.md)** | How to build, code standards, submitting PRs |
+| **[Changelog](CHANGELOG.md)** | Detailed release history, what shipped in each version |
+| **[Roadmap](docs/ROADMAP.md)** | v1.0 planned features, Next, Later, decision-making process |
+| **[Architecture](docs/ARCHITECTURE.md)** | Tech stack, folder structure, data model, MVVM patterns |
+| **[Privacy](docs/PRIVACY.md)** | Data guarantee, storage locations, no-network promise |
+| **[Performance](docs/PERFORMANCE.md)** | Memory budgets, optimization techniques, benchmarks |
+| **[Contributing](docs/CONTRIBUTING.md)** | How to build, code standards, submitting PRs |
 
 ---
 
-## 🔒 Privacy Guarantee
+## Privacy Guarantee
 
 **Three rules. Non-negotiable.**
 
-✅ **No account** — Installs and runs with zero sign-in  
-✅ **No cloud** — All data in `%LocalAppData%\Hatch\` — nothing leaves your device  
-✅ **No telemetry** — No analytics, no crash reports, no usage pings  
+**No account** — Installs and runs with zero sign-in  
+**No cloud** — All data in `%LocalAppData%\Hatch\` — nothing leaves your device  
+**No telemetry** — No analytics, no crash reports, no usage pings  
 
 Fully functional with the network cable unplugged.
 
@@ -113,7 +113,7 @@ Fully functional with the network cable unplugged.
 
 ---
 
-## ⚡ Performance
+## Performance
 
 Hatch lives on your desktop permanently. Memory is a first-class constraint.
 
@@ -130,12 +130,13 @@ Hatch lives on your desktop permanently. Memory is a first-class constraint.
 
 ---
 
-## 🛣️ What's Shipped
+## What's Shipped
 
-Latest releases have been moving fast. Latest production version is **v0.5.0** (June 3, 2026).
+Latest releases have been moving fast. Latest production version is **v0.5.1** (June 4, 2026).
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.5.1** | Jun 4  | Windows 10 compatibility: OS-guarded backdrops, DWM attribute guards, `OsVersionHelper` |
 | **v0.5.0** | Jun 3  | Keyboard shortcuts: Delete task, Ctrl+D due date, Ctrl+M My Day, ↑/↓ navigation, Ctrl+Enter exit notes |
 | **v0.4.1** | Jun 3  | List reordering via Move up / Move down context menu; SymbolIcon on all list menu items |
 | **v0.4.0** | May 22 | Details pane with inline title edit, notes, My Day toggle, due date; native ListView selection with accent highlight |
@@ -155,19 +156,20 @@ Latest releases have been moving fast. Latest production version is **v0.5.0** (
 
 ---
 
-## 🗺️ Roadmap
+## Roadmap
 
 ### v1.0 — Q3 2026
 
 Core features: contextual tips, details pane, due-date picker, custom lists, privacy onboarding, appreciation cosmetics.
 
 **v0.4.x — shipped:**
-- ~~Details pane — slide-in panel with notes, My Day toggle, due date, created-at~~ ✅
-- ~~List CRUD — create / rename / pin / custom icon / delete custom lists~~ ✅
-- ~~List reordering — Move up / Move down via context menu~~ ✅
+- ~~Details pane — slide-in panel with notes, My Day toggle, due date, created-at~~
+- ~~List CRUD — create / rename / pin / custom icon / delete custom lists~~
+- ~~List reordering — Move up / Move down via context menu~~
 
-**v0.5.0 — shipped:**
-- ~~Keyboard shortcuts: Delete, Ctrl+D, Ctrl+M, ↑/↓, Ctrl+Enter~~ ✅
+**v0.5.x — shipped:**
+- ~~Keyboard shortcuts: Delete, Ctrl+D, Ctrl+M, ↑/↓, Ctrl+Enter~~
+- ~~Windows 10 compatibility (build 17763+): OS-guarded backdrops and DWM attributes~~
 
 **Planned:**
 - Privacy first-run onboarding screen
@@ -185,7 +187,7 @@ Cloud sync (optional, privacy-respecting), task dependencies, custom skins, time
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Want to help? We'd love it!
 
@@ -199,13 +201,13 @@ Want to help? We'd love it!
 
 ---
 
-## ❓ FAQ
+## FAQ
 
 **Q: Does Hatch sync with Microsoft To Do?**  
 A: No. Hatch is local-only by design. No sync, no cloud, no integration.
 
-**Q: Can I use Hatch without Windows 11?**  
-A: No. It's WinUI 3, requires Windows 11 build 22000+.
+**Q: Can I use Hatch on Windows 10?**  
+A: Yes. Hatch requires Windows 10 build 17763 (1809) or later. Mica backdrop is Windows 11-only; Windows 10 2004+ gets acrylic instead.
 
 **Q: Will there be an Android/iOS version?**  
 A: Possibly as a read-only companion app (2027+). Desktop-first for now.
@@ -218,7 +220,7 @@ A: Settings → Delete all my data. One click. Gone. No recovery.
 
 ---
 
-## 📄 License
+## License
 
 MIT License — See [LICENSE](LICENSE) file.
 
@@ -228,8 +230,8 @@ MIT License — See [LICENSE](LICENSE) file.
 
 <img src="logo.svg" width="100" height="100" alt="Hatch Logo">
 
-**Built with ❤️ for Windows 11. No account. No cloud. No compromise.**
+**Built for Windows. No account. No cloud. No compromise.**
 
-[⬆ Back to top](#hatch--frictionless-task-capture-for-windows-11)
+[Back to top](#hatch--frictionless-task-capture-for-windows)
 
 </div>
