@@ -14,6 +14,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Inject secrets
+        shell: pwsh
+        run: |
+          @"
+          namespace Hatch.Services;
+          internal static class Secrets
+          {
+              public const string SupabaseUrl = "${{ secrets.SUPABASE_URL }}";
+              public const string SupabaseKey = "${{ secrets.SUPABASE_KEY }}";
+          }
+          "@ | Set-Content Services/Secrets.cs -Encoding utf8NoBOM
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
