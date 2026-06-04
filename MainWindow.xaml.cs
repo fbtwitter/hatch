@@ -84,7 +84,14 @@ public sealed partial class MainWindow : Window
     {
         Activated -= OnFirstActivated;
         var settings = App.Settings;
-        ApplyBackdrop(settings.Backdrop);
+        try
+        {
+            ApplyBackdrop(settings.Backdrop);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"ApplyBackdrop failed: {ex}");
+        }
         ApplyTheme(settings.Theme);
     }
 
@@ -149,10 +156,14 @@ public sealed partial class MainWindow : Window
     {
         SystemBackdrop = backdrop switch
         {
-            AppBackdrop.Mica          => new MicaBackdrop(),
-            AppBackdrop.MicaAlt       => new MicaBackdrop { Kind = MicaKind.BaseAlt },
-            AppBackdrop.DesktopAcrylic => new DesktopAcrylicBackdrop(),
-            _                         => null
+            AppBackdrop.Mica when Helpers.OsVersionHelper.IsWindows11OrGreater
+                              => new MicaBackdrop(),
+            AppBackdrop.MicaAlt when Helpers.OsVersionHelper.IsWindows11OrGreater
+                              => new MicaBackdrop { Kind = MicaKind.BaseAlt },
+            AppBackdrop.Mica or AppBackdrop.MicaAlt or AppBackdrop.DesktopAcrylic
+                when Helpers.OsVersionHelper.SupportsAcrylic
+                              => new DesktopAcrylicBackdrop(),
+            _                 => null
         };
     }
 

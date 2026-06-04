@@ -132,6 +132,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         void OnFirstActivated(object _, WindowActivatedEventArgs __)
         {
             this.Activated -= OnFirstActivated;
+            SystemBackdrop = OsVersionHelper.CreateMicaOrFallbackBackdrop();
             DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
                 () => TaskTitleBox.Focus(FocusState.Programmatic));
         }
