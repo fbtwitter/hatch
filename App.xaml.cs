@@ -26,7 +26,14 @@ public partial class App : Application
     {
         try
         {
-            IsStartupLaunch = Settings.RunAtStartup && string.IsNullOrEmpty(args.Arguments);
+            // Unpackaged (Debug): StartupRegistryService writes --startup into the Run key.
+            // Packaged (MSIX): activation kind is StartupTask when launched by the OS.
+            // Never infer startup from empty args — that would suppress the window on every manual launch.
+            IsStartupLaunch =
+                args.Arguments.Contains(Services.StartupRegistryService.StartupArg, StringComparison.Ordinal) ||
+                Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent()
+                    .GetActivatedEventArgs().Kind ==
+                    Microsoft.Windows.AppLifecycle.ExtendedActivationKind.StartupTask;
 
             // Initialize mascot position if unset, so main window can position relative to it
             if (Settings.MascotX < 0 || Settings.MascotY < 0)
