@@ -158,10 +158,7 @@
 
             <!-- Egg body — matches logo.svg -->
             <Path Data="M50 6 C72 6 88 32 88 58 C88 80 72 94 50 94 C28 94 12 80 12 58 C12 32 28 6 50 6 Z"
-                  Fill="#FFD966"
-                  Stroke="#1A1A1A"
-                  StrokeThickness="3.5"
-                  StrokeLineJoin="Round"/>
+                  Fill="#FFD966"/>
 
             <!-- Horizontal crack across the middle -->
             <Path Data="M14 50 L24 56 L32 48 L42 58 L52 50 L60 60 L70 52 L80 60 L86 54"
