@@ -1,3 +1,4 @@
+using Hatch.Models;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Xaml.Media;
 
@@ -13,9 +14,21 @@ internal static class OsVersionHelper
     internal static bool SupportsAcrylic =>
         Environment.OSVersion.Version.Build >= 19041;
 
-    // Returns the appropriate backdrop for this OS: Mica on Win11, acrylic on Win10 2004+, null below that.
+    // Returns Mica on Win11, acrylic fallback on Win10 2004+, null below that.
+    // Used for windows/elements whose backdrop is always Mica (e.g. QuickAddBubbleWindow).
     internal static SystemBackdrop? CreateMicaOrFallbackBackdrop() =>
         IsWindows11OrGreater ? new MicaBackdrop()
         : SupportsAcrylic ? new DesktopAcrylicBackdrop()
         : null;
+
+    // Creates the correct backdrop for the given AppBackdrop setting, respecting OS support.
+    // Mica/MicaAlt require Win11; DesktopAcrylic requires Win10 2004+.
+    internal static SystemBackdrop? CreateBackdrop(AppBackdrop backdrop) => backdrop switch
+    {
+        AppBackdrop.Mica    when IsWindows11OrGreater => new MicaBackdrop(),
+        AppBackdrop.MicaAlt when IsWindows11OrGreater => new MicaBackdrop { Kind = MicaKind.BaseAlt },
+        AppBackdrop.Mica or AppBackdrop.MicaAlt or AppBackdrop.DesktopAcrylic
+                            when SupportsAcrylic       => new DesktopAcrylicBackdrop(),
+        _                                              => null
+    };
 }

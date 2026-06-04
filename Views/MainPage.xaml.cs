@@ -27,6 +27,21 @@ public sealed partial class MainPage : Page
     {
         this.InitializeComponent();
         NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
+        Loaded += (_, _) => ApplyContentBackdrop(App.Settings.Backdrop);
+    }
+
+    // Applies SystemBackdropElement to the page content layer — Windows 11 only.
+    // On Windows 10 the element stays Collapsed; the window-level backdrop already
+    // handles the Acrylic fallback there.
+    public void ApplyContentBackdrop(AppBackdrop backdrop)
+    {
+        if (!Helpers.OsVersionHelper.IsWindows11OrGreater || backdrop == AppBackdrop.None)
+        {
+            PageContentBackdrop.Visibility = Visibility.Collapsed;
+            return;
+        }
+        PageContentBackdrop.SystemBackdrop = Helpers.OsVersionHelper.CreateBackdrop(backdrop);
+        PageContentBackdrop.Visibility = Visibility.Visible;
     }
 
     protected override void OnNavigatedTo(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)

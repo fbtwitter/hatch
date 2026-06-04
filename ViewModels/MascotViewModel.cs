@@ -281,11 +281,22 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         var win = App.MainWindowInstance;
         if (win == null) return;
 
-        // Close the bubble if open — only one panel at a time
         if (App.MascotWindowInstance?.ViewModel.IsBubbleOpen == true)
             App.MascotWindowInstance.ViewModel.CloseBubble();
 
-        PositionMainWindowNearMascot(win);
+        var hwnd = Win32Interop.GetWindowFromWindowId(win.AppWindow.Id);
+
+        if (win.AppWindow.IsVisible)
+        {
+            // Already on screen — raise without repositioning or resizing.
+            NativeMethods.SetWindowPos(hwnd, NativeMethods.HWND_TOPMOST,   0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+            NativeMethods.SetWindowPos(hwnd, NativeMethods.HWND_NOTOPMOST, 0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+            win.Activate();
+            return;
+        }
+
+        // Coming from tray — restore default size and position near mascot.
+        PositionMainWindowNearMascot(win, resetSize: true);
         win.AppWindow.Show();
         win.Activate();
     }
@@ -297,30 +308,27 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
         var mainHwnd = Win32Interop.GetWindowFromWindowId(win.AppWindow.Id);
 
-        if (!win.AppWindow.IsVisible)
+        if (win.AppWindow.IsVisible)
         {
-            // Close the bubble if open — only one panel at a time
-            if (App.MascotWindowInstance?.ViewModel.IsBubbleOpen == true)
-                App.MascotWindowInstance.ViewModel.CloseBubble();
-
-            PositionMainWindowNearMascot(win);
-            win.AppWindow.Show();
-
-            NativeMethods.SetWindowPos(
-                mainHwnd,
-                NativeMethods.HWND_TOPMOST,
-                0, 0, 0, 0,
-                NativeMethods.SWP_NOMOVE |
-                NativeMethods.SWP_NOSIZE |
-                NativeMethods.SWP_NOACTIVATE);
-
+            // Already on screen — raise to front without repositioning or resizing.
+            NativeMethods.SetWindowPos(mainHwnd, NativeMethods.HWND_TOPMOST,   0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+            NativeMethods.SetWindowPos(mainHwnd, NativeMethods.HWND_NOTOPMOST, 0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+            win.Activate();
             return;
         }
 
-        win.AppWindow.Hide();
+        // Coming from tray — restore default size and position near mascot.
+        if (App.MascotWindowInstance?.ViewModel.IsBubbleOpen == true)
+            App.MascotWindowInstance.ViewModel.CloseBubble();
+
+        PositionMainWindowNearMascot(win, resetSize: true);
+        win.AppWindow.Show();
+
+        NativeMethods.SetWindowPos(mainHwnd, NativeMethods.HWND_TOPMOST,   0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+        NativeMethods.SetWindowPos(mainHwnd, NativeMethods.HWND_NOTOPMOST, 0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
     }
 
-    internal static void PositionMainWindowNearMascot(MainWindow win)
+    internal static void PositionMainWindowNearMascot(MainWindow win, bool resetSize = false)
     {
         const int logicalWidth  = 620;
         const int logicalHeight = 640;
@@ -354,6 +362,8 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         y = Math.Clamp(y, w.top + scaledGap, w.bottom - winHeight);
         x = Math.Clamp(x, w.left, w.right - winWidth);
 
+        if (resetSize)
+            win.AppWindow.Resize(new Windows.Graphics.SizeInt32(winWidth, winHeight));
         win.AppWindow.Move(new Windows.Graphics.PointInt32(x, y));
     }
 

@@ -154,17 +154,8 @@ public sealed partial class MainWindow : Window
 
     public void ApplyBackdrop(AppBackdrop backdrop)
     {
-        SystemBackdrop = backdrop switch
-        {
-            AppBackdrop.Mica when Helpers.OsVersionHelper.IsWindows11OrGreater
-                              => new MicaBackdrop(),
-            AppBackdrop.MicaAlt when Helpers.OsVersionHelper.IsWindows11OrGreater
-                              => new MicaBackdrop { Kind = MicaKind.BaseAlt },
-            AppBackdrop.Mica or AppBackdrop.MicaAlt or AppBackdrop.DesktopAcrylic
-                when Helpers.OsVersionHelper.SupportsAcrylic
-                              => new DesktopAcrylicBackdrop(),
-            _                 => null
-        };
+        SystemBackdrop = Helpers.OsVersionHelper.CreateBackdrop(backdrop);
+        (RootFrame?.Content as Views.MainPage)?.ApplyContentBackdrop(backdrop);
     }
 
     public void UpdateTrayBehavior(bool minimizeToTray)

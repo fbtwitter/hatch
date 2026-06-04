@@ -1,5 +1,7 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Windows.Input;
 using Hatch.Models;
 using Hatch.Services;
 using Hatch.Views;
@@ -247,6 +249,16 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         mascot.UnregisterHotKey();
         mascot.RegisterHotKey();
     }
+
+    public ICommand OpenDataFolderCommand { get; } =
+        new RelayCommand(_ =>
+        {
+            var path = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Hatch");
+            Directory.CreateDirectory(path);
+            Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+        });
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
