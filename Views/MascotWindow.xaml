@@ -5,16 +5,16 @@
     xmlns:lottie="using:CommunityToolkit.WinUI.Lottie">
 
     <Grid x:Name="MascotGrid"
-      Background="Transparent"
-      PointerEntered="OnPointerEntered"
-      PointerExited="OnPointerExited"
-      PointerPressed="OnPointerPressed"
-      PointerMoved="OnPointerMoved"
-      PointerReleased="OnPointerReleased"
-      Tapped="OnTapped">
-    <Grid.RenderTransform>
-        <CompositeTransform x:Name="MascotGridTransform"/>
-    </Grid.RenderTransform>
+          Background="Transparent"
+          PointerEntered="OnPointerEntered"
+          PointerExited="OnPointerExited"
+          PointerPressed="OnPointerPressed"
+          PointerMoved="OnPointerMoved"
+          PointerReleased="OnPointerReleased"
+          Tapped="OnTapped">
+        <Grid.RenderTransform>
+            <CompositeTransform x:Name="MascotGridTransform" />
+        </Grid.RenderTransform>
 
         <Grid.Resources>
             <!-- 4-second idle cycle: 2 gentle bobs + 1 blink at 2.8 s -->
@@ -24,19 +24,29 @@
                     Storyboard.TargetName="MascotRoot"
                     Storyboard.TargetProperty="(UIElement.RenderTransform).(CompositeTransform.TranslateY)">
                     <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0">
-                        <EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction>
+                        <EasingDoubleKeyFrame.EasingFunction>
+                            <SineEase EasingMode="EaseInOut" />
+                        </EasingDoubleKeyFrame.EasingFunction>
                     </EasingDoubleKeyFrame>
                     <EasingDoubleKeyFrame KeyTime="0:0:1" Value="-5">
-                        <EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction>
+                        <EasingDoubleKeyFrame.EasingFunction>
+                            <SineEase EasingMode="EaseInOut" />
+                        </EasingDoubleKeyFrame.EasingFunction>
                     </EasingDoubleKeyFrame>
                     <EasingDoubleKeyFrame KeyTime="0:0:2" Value="0">
-                        <EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction>
+                        <EasingDoubleKeyFrame.EasingFunction>
+                            <SineEase EasingMode="EaseInOut" />
+                        </EasingDoubleKeyFrame.EasingFunction>
                     </EasingDoubleKeyFrame>
                     <EasingDoubleKeyFrame KeyTime="0:0:3" Value="-5">
-                        <EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction>
+                        <EasingDoubleKeyFrame.EasingFunction>
+                            <SineEase EasingMode="EaseInOut" />
+                        </EasingDoubleKeyFrame.EasingFunction>
                     </EasingDoubleKeyFrame>
                     <EasingDoubleKeyFrame KeyTime="0:0:4" Value="0">
-                        <EasingDoubleKeyFrame.EasingFunction><SineEase EasingMode="EaseInOut"/></EasingDoubleKeyFrame.EasingFunction>
+                        <EasingDoubleKeyFrame.EasingFunction>
+                            <SineEase EasingMode="EaseInOut" />
+                        </EasingDoubleKeyFrame.EasingFunction>
                     </EasingDoubleKeyFrame>
                 </DoubleAnimationUsingKeyFrames>
 
@@ -48,7 +58,9 @@
                     Storyboard.TargetName="MascotGrid"
                     Storyboard.TargetProperty="Opacity"
                     To="0.4" Duration="0:0:2">
-                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseInOut"/></DoubleAnimation.EasingFunction>
+                    <DoubleAnimation.EasingFunction>
+                        <SineEase EasingMode="EaseInOut" />
+                    </DoubleAnimation.EasingFunction>
                 </DoubleAnimation>
             </Storyboard>
 
@@ -58,7 +70,9 @@
                     Storyboard.TargetName="MascotGrid"
                     Storyboard.TargetProperty="Opacity"
                     To="1.0" Duration="0:0:0.2">
-                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+                    <DoubleAnimation.EasingFunction>
+                        <SineEase EasingMode="EaseOut" />
+                    </DoubleAnimation.EasingFunction>
                 </DoubleAnimation>
             </Storyboard>
 
@@ -68,13 +82,17 @@
                     Storyboard.TargetName="MascotGridTransform"
                     Storyboard.TargetProperty="ScaleX"
                     To="1.06" Duration="0:0:0.15">
-                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+                    <DoubleAnimation.EasingFunction>
+                        <SineEase EasingMode="EaseOut" />
+                    </DoubleAnimation.EasingFunction>
                 </DoubleAnimation>
                 <DoubleAnimation
                     Storyboard.TargetName="MascotGridTransform"
                     Storyboard.TargetProperty="ScaleY"
                     To="1.06" Duration="0:0:0.15">
-                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+                    <DoubleAnimation.EasingFunction>
+                        <SineEase EasingMode="EaseOut" />
+                    </DoubleAnimation.EasingFunction>
                 </DoubleAnimation>
             </Storyboard>
 
@@ -84,36 +102,40 @@
                     Storyboard.TargetName="MascotGridTransform"
                     Storyboard.TargetProperty="ScaleX"
                     To="1.0" Duration="0:0:0.2">
-                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseInOut"/></DoubleAnimation.EasingFunction>
+                    <DoubleAnimation.EasingFunction>
+                        <SineEase EasingMode="EaseInOut" />
+                    </DoubleAnimation.EasingFunction>
                 </DoubleAnimation>
                 <DoubleAnimation
                     Storyboard.TargetName="MascotGridTransform"
                     Storyboard.TargetProperty="ScaleY"
                     To="1.0" Duration="0:0:0.2">
-                    <DoubleAnimation.EasingFunction><SineEase EasingMode="EaseInOut"/></DoubleAnimation.EasingFunction>
+                    <DoubleAnimation.EasingFunction>
+                        <SineEase EasingMode="EaseInOut" />
+                    </DoubleAnimation.EasingFunction>
                 </DoubleAnimation>
             </Storyboard>
 
-            </Grid.Resources>
+        </Grid.Resources>
 
         <Grid.ContextFlyout>
             <MenuFlyout>
                 <MenuFlyoutItem Text="Show Main Window"
-                                Command="{x:Bind ViewModel.ShowMainWindowCommand}"/>
+                                Command="{x:Bind ViewModel.ShowMainWindowCommand}" />
                 <MenuFlyoutItem Text="Reset Position"
-                                Command="{x:Bind ViewModel.ResetPositionCommand}"/>
+                                Command="{x:Bind ViewModel.ResetPositionCommand}" />
                 <MenuFlyoutItem Text="Mascot Settings&#x2026;"
-                                Click="OnMascotSettingsMenuItemClick"/>
-                <MenuFlyoutSeparator/>
+                                Click="OnMascotSettingsMenuItemClick" />
+                <MenuFlyoutSeparator />
                 <MenuFlyoutSubItem Text="Hide for...">
                     <MenuFlyoutItem Text="1 hour"
-                                    Command="{x:Bind ViewModel.HideFor1HourCommand}"/>
+                                    Command="{x:Bind ViewModel.HideFor1HourCommand}" />
                     <MenuFlyoutItem Text="3 hours"
-                                    Command="{x:Bind ViewModel.HideFor3HoursCommand}"/>
+                                    Command="{x:Bind ViewModel.HideFor3HoursCommand}" />
                     <MenuFlyoutItem Text="Until tomorrow"
-                                    Command="{x:Bind ViewModel.HideUntilTomorrowCommand}"/>
+                                    Command="{x:Bind ViewModel.HideUntilTomorrowCommand}" />
                     <MenuFlyoutItem Text="Until restart"
-                                    Command="{x:Bind ViewModel.HideUntilRestartCommand}"/>
+                                    Command="{x:Bind ViewModel.HideUntilRestartCommand}" />
                 </MenuFlyoutSubItem>
             </MenuFlyout>
         </Grid.ContextFlyout>
@@ -126,7 +148,7 @@
                               VerticalAlignment="Center"
                               AutoPlay="False"
                               Stretch="Uniform"
-                              Visibility="Collapsed"/>
+                              Visibility="Collapsed" />
 
         <!--
             Egg mascot — XAML vector shapes + Storyboard idle animation.
@@ -145,42 +167,46 @@
             _idleAnimation field + calls from MascotWindow.xaml.cs.
         -->
         <Viewbox x:Name="MascotRoot"
-                Width="{x:Bind ViewModel.WindowSize, Mode=OneWay}"
-                Height="{x:Bind ViewModel.WindowSize, Mode=OneWay}"
-                Stretch="Uniform"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center">
+                 Width="{x:Bind ViewModel.WindowSize, Mode=OneWay}"
+                 Height="{x:Bind ViewModel.WindowSize, Mode=OneWay}"
+                 Stretch="Uniform"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center">
             <Viewbox.RenderTransform>
-                <CompositeTransform/>
+                <CompositeTransform />
             </Viewbox.RenderTransform>
 
             <Canvas Width="100" Height="100">
 
-            <!-- Egg body — matches logo.svg -->
-            <Path Data="M50 6 C72 6 88 32 88 58 C88 80 72 94 50 94 C28 94 12 80 12 58 C12 32 28 6 50 6 Z"
-                  Fill="#FFD966"/>
+                <!-- Egg body — matches logo.svg -->
+                <Path Data="M50 6 C72 6 88 32 88 58 C88 80 72 94 50 94 C28 94 12 80 12 58 C12 32 28 6 50 6 Z"
+                      Fill="#FFD966"
+                      Stroke="#1A1A1A"
+                      StrokeThickness="3.5"
+                      StrokeLineJoin="Round" />
 
-            <!-- Horizontal crack across the middle -->
-            <Path Data="M14 50 L24 56 L32 48 L42 58 L52 50 L60 60 L70 52 L80 60 L86 54"
-                  Fill="Transparent"
-                  Stroke="#1A1A1A"
-                  StrokeThickness="3.5"
-                  StrokeLineJoin="Round"
-                  StrokeStartLineCap="Round"
-                  StrokeEndLineCap="Round"/>
+                <!-- Horizontal crack across the middle -->
+                <Path Data="M14 50 L24 56 L32 48 L42 58 L52 50 L60 60 L70 52 L80 60 L86 54"
+                      Fill="Transparent"
+                      Stroke="#1A1A1A"
+                      StrokeThickness="3.5"
+                      StrokeLineJoin="Round"
+                      StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round" />
 
-            <!-- Paperclip — translated (36,22) to match logo.svg group transform -->
-            <Path Data="M4 36 Q4 40 8 40 L20 40 Q24 40 24 36 L24 10 Q24 4 18 4 L10 4 Q4 4 4 10 L4 30 Q4 33 7 33 Q10 33 10 30 L10 14 Q10 11 13 11 L15 11 Q18 11 18 14 L18 30"
-                  Fill="Transparent"
-                  Stroke="#1A73E8"
-                  StrokeThickness="3.2"
-                  StrokeStartLineCap="Round"
-                  StrokeEndLineCap="Round"
-                  StrokeLineJoin="Round">
-                <Path.RenderTransform>
-                    <TranslateTransform X="36" Y="22"/>
-                </Path.RenderTransform>
-            </Path>
+                <!-- Paperclip — translated (36,22) to match logo.svg group transform -->
+                <Path
+                    Data="M4 36 Q4 40 8 40 L20 40 Q24 40 24 36 L24 10 Q24 4 18 4 L10 4 Q4 4 4 10 L4 30 Q4 33 7 33 Q10 33 10 30 L10 14 Q10 11 13 11 L15 11 Q18 11 18 14 L18 30"
+                    Fill="Transparent"
+                    Stroke="#1A73E8"
+                    StrokeThickness="3.2"
+                    StrokeStartLineCap="Round"
+                    StrokeEndLineCap="Round"
+                    StrokeLineJoin="Round">
+                    <Path.RenderTransform>
+                        <TranslateTransform X="36" Y="22" />
+                    </Path.RenderTransform>
+                </Path>
 
             </Canvas>
         </Viewbox>
@@ -192,7 +218,7 @@
                  HorizontalAlignment="Right"
                  VerticalAlignment="Top"
                  Margin="4,4,4,4"
-                 Visibility="Collapsed"/>
+                 Visibility="Collapsed" />
 
     </Grid>
 
