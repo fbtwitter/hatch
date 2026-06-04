@@ -68,7 +68,10 @@ public sealed partial class MainWindow : Window
             throw new InvalidOperationException(
                 "RootFrame was not initialized by InitializeComponent. " +
                 "Clean and rebuild the solution to regenerate XAML code-behind files.");
-        RootFrame.Navigate(typeof(MainPage), ViewModel);
+        if (!App.Settings.FirstRunComplete)
+            RootFrame.Navigate(typeof(OnboardingPage), ViewModel);
+        else
+            RootFrame.Navigate(typeof(MainPage), ViewModel);
         RootFrame.Navigated += OnFrameNavigated;
 
         // Defer backdrop and theme application to first Activated so the compositor
