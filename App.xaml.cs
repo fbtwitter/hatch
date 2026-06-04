@@ -23,10 +23,6 @@ public partial class App : Application
     {
         InitializeComponent();
         SettingsService.Load();
-
-        // Handle hatch:// protocol activation — used for Google OAuth callback.
-        // Note: protocol registration only works in packaged (MSIX) builds.
-        AppInstance.GetCurrent().Activated += OnAppActivated;
     }
 
     private void OnAppActivated(object? sender, AppActivationArguments args)
@@ -45,6 +41,19 @@ public partial class App : Application
     {
         try
         {
+            // Single-instance: if another Hatch is already running, redirect this activation
+            // to it (e.g. hatch:// OAuth callback) and exit without showing a window.
+            var mainInstance = AppInstance.FindOrRegisterForKey("hatch-main");
+            if (!mainInstance.IsCurrent)
+            {
+                await mainInstance.RedirectActivationToAsync(
+                    AppInstance.GetCurrent().GetActivatedEventArgs());
+                Application.Current.Exit();
+                return;
+            }
+            // We are the main instance — handle future activations (OAuth callbacks, etc.)
+            mainInstance.Activated += OnAppActivated;
+
             // Restore the saved session so the user stays signed in across launches.
             // Sync itself is manual — user presses "Sync now" in Settings.
             await SyncService.InitializeAsync();
