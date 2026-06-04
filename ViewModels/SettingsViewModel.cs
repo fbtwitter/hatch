@@ -260,6 +260,14 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
         });
 
+    public ICommand OpenGitHubCommand { get; } =
+        new RelayCommand(_ => Process.Start(new ProcessStartInfo
+            { FileName = "https://github.com/fbtwitter/hatch", UseShellExecute = true }));
+
+    public ICommand OpenGitHubIssuesCommand { get; } =
+        new RelayCommand(_ => Process.Start(new ProcessStartInfo
+            { FileName = "https://github.com/fbtwitter/hatch/issues", UseShellExecute = true }));
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private void OnPropertyChanged([CallerMemberName] string? name = null)
