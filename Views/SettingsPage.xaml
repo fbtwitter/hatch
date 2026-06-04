@@ -347,6 +347,21 @@
                     </toolkit:SettingsExpander.Items>
                 </toolkit:SettingsExpander>
 
+                <!-- ── Data ─────────────────────────────────────────── -->
+                <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                           Text="Data"/>
+
+                <toolkit:SettingsCard
+                    Header="Open data folder"
+                    Description="Browse or back up your tasks.json and settings.json files">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE8B7;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <Button Content="Open folder"
+                            AutomationProperties.AutomationId="Settings_OpenDataFolder"
+                            Command="{x:Bind ViewModel.OpenDataFolderCommand}"/>
+                </toolkit:SettingsCard>
+
                 <!-- ── About ────────────────────────────────────────── -->
                 <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
                            Text="About"/>
@@ -354,11 +369,11 @@
                 <toolkit:SettingsExpander
                     Margin="0,0,0,24"
                     Header="Hatch"
-                    Description="Local-first task manager for Windows 11">
+                    Description="Local-first task manager for Windows">
                     <toolkit:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE946;"/>
                     </toolkit:SettingsExpander.HeaderIcon>
-                    <TextBlock Text="v0.0.1"
+                    <TextBlock Text="v0.5.1"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                VerticalAlignment="Center"/>
                     <toolkit:SettingsExpander.Items>

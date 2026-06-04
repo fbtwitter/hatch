@@ -5,6 +5,12 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Grid RowDefinitions="Auto,*">
+        <!-- Page-content backdrop — set from code-behind on Windows 11 only -->
+        <SystemBackdropElement x:Name="PageContentBackdrop"
+                               Grid.RowSpan="2"
+                               CornerRadius="0"
+                               Visibility="Collapsed"/>
+
         <TitleBar
             x:Name="MainTitleBar"
             Title="Hatch"

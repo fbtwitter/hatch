@@ -507,14 +507,20 @@ public sealed partial class MascotWindow : Window
         var win = App.MainWindowInstance;
         if (win == null) return;
 
-        MascotViewModel.PositionMainWindowNearMascot(win);
-        win.AppWindow.Show();
-
         var mainHwnd = Win32Interop.GetWindowFromWindowId(win.AppWindow.Id);
-        NativeMethods.SetWindowPos(
-            mainHwnd, NativeMethods.HWND_TOPMOST,
-            0, 0, 0, 0,
-            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+
+        if (!win.AppWindow.IsVisible)
+        {
+            // Coming from tray — restore default size and position near mascot.
+            MascotViewModel.PositionMainWindowNearMascot(win, resetSize: true);
+            win.AppWindow.Show();
+        }
+
+        // Flash TOPMOST→NOTOPMOST to raise above other windows, then activate
+        // so the user can immediately interact with Settings.
+        NativeMethods.SetWindowPos(mainHwnd, NativeMethods.HWND_TOPMOST,   0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+        NativeMethods.SetWindowPos(mainHwnd, NativeMethods.HWND_NOTOPMOST, 0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+        win.Activate();
 
         win.NavigateToSettings();
     }
