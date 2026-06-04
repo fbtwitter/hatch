@@ -135,11 +135,13 @@ public sealed partial class MascotWindow : Window
         var glassMargins = new NativeMethods.MARGINS { Left = -1, Right = -1, Top = -1, Bottom = -1 };
         NativeMethods.DwmExtendFrameIntoClientArea(_hwnd, ref glassMargins);
 
+        // Suppress DWM drop shadow — transparent mascot window needs no shadow
+        var ncrPolicy = NativeMethods.DWMNCRP_DISABLED;
+        NativeMethods.DwmSetWindowAttribute(
+            _hwnd, NativeMethods.DWMWA_NCRENDERING_POLICY, ref ncrPolicy, sizeof(uint));
+
         // Always-on-top via P/Invoke — respects the persisted setting
         ApplyAlwaysOnTop(App.Settings.MascotAlwaysOnTop);
-
-        // Elliptical region mask for the default egg mascot; removed when Lottie is active.
-        SetEggRegion();
 
         // Restore persisted position (already clamped to work area by ViewModel)
         AppWindow.Move(new PointInt32(ViewModel.X, ViewModel.Y));
@@ -259,17 +261,12 @@ public sealed partial class MascotWindow : Window
                 LottiePlayer.Visibility = Visibility.Visible;
                 MascotRoot.Visibility = Visibility.Collapsed;
                 _idleAnimation?.Stop();
-
-                // Remove the elliptical clip so the Lottie renders in the full window rect.
-                // SetWindowRgn(null) restores the default rectangular hit-area.
-                NativeMethods.SetWindowRgn(_hwnd, IntPtr.Zero, true);
             }
             catch
             {
                 LottiePlayer.Source = null;
                 LottiePlayer.Visibility = Visibility.Collapsed;
                 MascotRoot.Visibility = Visibility.Visible;
-                SetEggRegion();
             }
         }
         else
@@ -277,7 +274,6 @@ public sealed partial class MascotWindow : Window
             LottiePlayer.Source = null;
             LottiePlayer.Visibility = Visibility.Collapsed;
             MascotRoot.Visibility = Visibility.Visible;
-            SetEggRegion();
         }
 
         UpdateAnimationState();
@@ -313,29 +309,12 @@ public sealed partial class MascotWindow : Window
         }
     }
 
-    private void SetEggRegion()
-    {
-        SetEggRegion(ViewModel.WindowSize);
-    }
-
-    private void SetEggRegion(int size)
-    {
-        var hRgn = NativeMethods.CreateEllipticRgn(0, 0, size, size);
-        NativeMethods.SetWindowRgn(_hwnd, hRgn, true);
-    }
-
     private void ApplyWindowResize()
     {
         var newSize = ViewModel.WindowSize;
         AppWindow.Resize(new SizeInt32(newSize, newSize));
         MascotGridTransform.CenterX = newSize / 2.0;
         MascotGridTransform.CenterY = newSize / 2.0;
-
-        // Only re-apply the elliptical region when the egg mascot is active.
-        // When Lottie is active SetWindowRgn was cleared to IntPtr.Zero and
-        // must stay that way so the rectangular Lottie canvas receives input.
-        if (LottiePlayer.Visibility != Visibility.Visible)
-            SetEggRegion(newSize);
 
         // Reposition the window to the (already clamped) stored coordinates.
         // ResizeByValue → ClampToWorkArea updates X/Y in settings but the
