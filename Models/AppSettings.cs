@@ -34,4 +34,10 @@ public sealed class AppSettings
     // Tip Engine — smart fallback suppression (avoid filler)
     public DateTime? LastMeaningfulTipTime { get; set; } = null;      // overdue, My Day, progress
     public DateTime? LastUserActivityTime { get; set; } = null;       // bubble open, app activation
+
+    // Optional sync — null when not signed in
+    public string? SyncAccessToken { get; set; }
+    public string? SyncRefreshToken { get; set; }
+    public string? SyncUserEmail { get; set; }
+    public DateTime? LastSyncedAt { get; set; }
 }

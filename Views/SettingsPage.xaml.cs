@@ -98,4 +98,11 @@ public sealed partial class SettingsPage : Page
             MascotSizeSlider.Value = size;
         }
     }
+
+    // PasswordBox.Password cannot be bound via x:Bind — pass directly to ViewModel.
+    private async void SyncSignIn_Click(object sender, RoutedEventArgs e)
+        => await _viewModel.SignInAsync(SyncPasswordBox.Password);
+
+    private async void SyncSignUp_Click(object sender, RoutedEventArgs e)
+        => await _viewModel.SignUpAsync(SyncPasswordBox.Password);
 }

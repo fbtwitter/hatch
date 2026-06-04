@@ -3,9 +3,11 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:toolkit="using:CommunityToolkit.WinUI.Controls"
+    xmlns:converters="using:Hatch.Converters"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Page.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
         <x:Double x:Key="SettingsCardSpacing">8</x:Double>
         <Style
             x:Key="SettingsSectionHeaderTextBlockStyle"
@@ -343,6 +345,74 @@
                                 <ComboBoxItem Content="N" Tag="78"/>
                                 <ComboBoxItem Content="+" Tag="187"/>
                             </ComboBox>
+                        </toolkit:SettingsCard>
+                    </toolkit:SettingsExpander.Items>
+                </toolkit:SettingsExpander>
+
+                <!-- ── Sync ────────────────────────────────────────── -->
+                <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                           Text="Sync"/>
+
+                <!-- Signed-in state -->
+                <toolkit:SettingsCard
+                    Visibility="{x:Bind ViewModel.IsSyncSignedIn, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                    Header="{x:Bind ViewModel.SyncUserEmail, Mode=OneWay}"
+                    Description="{x:Bind ViewModel.SyncLastSyncedText, Mode=OneWay}">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE77B;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Sync now"
+                                AutomationProperties.AutomationId="Settings_SyncNow"
+                                Command="{x:Bind ViewModel.SyncNowCommand}"
+                                IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"/>
+                        <Button Content="Sign out"
+                                AutomationProperties.AutomationId="Settings_SyncSignOut"
+                                Command="{x:Bind ViewModel.SignOutCommand}"/>
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
+                <!-- Sign-in form -->
+                <toolkit:SettingsExpander
+                    Visibility="{x:Bind ViewModel.IsSyncNotSignedIn, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                    Header="Sync across devices"
+                    Description="Sign in to keep your tasks in sync across PCs">
+                    <toolkit:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xE895;"/>
+                    </toolkit:SettingsExpander.HeaderIcon>
+                    <toolkit:SettingsExpander.Items>
+                        <toolkit:SettingsCard Header="Email">
+                            <TextBox x:Name="SyncEmailBox"
+                                     AutomationProperties.AutomationId="Settings_SyncEmail"
+                                     AutomationProperties.Name="Email"
+                                     Text="{x:Bind ViewModel.SyncEmail, Mode=TwoWay}"
+                                     MinWidth="220"
+                                     InputScope="EmailNameOrAddress"/>
+                        </toolkit:SettingsCard>
+                        <toolkit:SettingsCard Header="Password">
+                            <PasswordBox x:Name="SyncPasswordBox"
+                                         AutomationProperties.AutomationId="Settings_SyncPassword"
+                                         AutomationProperties.Name="Password"
+                                         MinWidth="220"/>
+                        </toolkit:SettingsCard>
+                        <toolkit:SettingsCard>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="Sign in"
+                                        AutomationProperties.AutomationId="Settings_SyncSignIn"
+                                        Style="{ThemeResource AccentButtonStyle}"
+                                        IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
+                                        Click="SyncSignIn_Click"/>
+                                <Button Content="Create account"
+                                        AutomationProperties.AutomationId="Settings_SyncSignUp"
+                                        IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
+                                        Click="SyncSignUp_Click"/>
+                            </StackPanel>
+                        </toolkit:SettingsCard>
+                        <toolkit:SettingsCard
+                            Visibility="{x:Bind ViewModel.HasSyncError, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                            <TextBlock Text="{x:Bind ViewModel.SyncError, Mode=OneWay}"
+                                       Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                       TextWrapping="Wrap"/>
                         </toolkit:SettingsCard>
                     </toolkit:SettingsExpander.Items>
                 </toolkit:SettingsExpander>

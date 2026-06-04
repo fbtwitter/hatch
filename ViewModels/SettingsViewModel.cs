@@ -13,6 +13,107 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private readonly SettingsService _settings = App.SettingsService;
     private readonly StartupRegistryService _startupRegistry = new();
 
+    public SettingsViewModel()
+    {
+        App.SyncService.StateChanged += OnSyncStateChanged;
+    }
+
+    // ── Sync ─────────────────────────────────────────────────────────────────
+
+    public bool IsSyncSignedIn => App.SyncService.IsSignedIn;
+
+    public string SyncUserEmail => App.SyncService.UserEmail ?? "";
+
+    public string SyncLastSyncedText
+    {
+        get
+        {
+            var t = _settings.Current.LastSyncedAt;
+            if (t == null) return "Never synced";
+            var diff = DateTime.UtcNow - t.Value;
+            if (diff.TotalMinutes < 1)  return "Just now";
+            if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes} min ago";
+            if (diff.TotalHours   < 24) return $"{(int)diff.TotalHours} hr ago";
+            return t.Value.ToLocalTime().ToString("MMM d, h:mm tt");
+        }
+    }
+
+    private bool _isSyncing;
+    public bool IsSyncing
+    {
+        get => _isSyncing;
+        private set { _isSyncing = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsNotSyncing)); }
+    }
+
+    public bool IsNotSyncing => !_isSyncing;
+    public bool IsSyncNotSignedIn => !IsSyncSignedIn;
+
+    private string? _syncError;
+    public string? SyncError
+    {
+        get => _syncError;
+        private set { _syncError = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasSyncError)); }
+    }
+
+    public bool HasSyncError => !string.IsNullOrEmpty(_syncError);
+
+    private string _syncEmail = "";
+    public string SyncEmail
+    {
+        get => _syncEmail;
+        set { _syncEmail = value; OnPropertyChanged(); }
+    }
+
+    public async Task SignInAsync(string password)
+    {
+        if (string.IsNullOrWhiteSpace(SyncEmail) || string.IsNullOrWhiteSpace(password)) return;
+        IsSyncing = true;
+        SyncError = null;
+        var error = await App.SyncService.SignInAsync(SyncEmail.Trim(), password);
+        IsSyncing = false;
+        if (error != null) { SyncError = error; return; }
+        // Pull latest data after sign-in
+        var data = await App.SyncService.PullIfNewerAsync();
+        if (data != null) await new TaskStorageService().SaveAsync(data);
+    }
+
+    public async Task SignUpAsync(string password)
+    {
+        if (string.IsNullOrWhiteSpace(SyncEmail) || string.IsNullOrWhiteSpace(password)) return;
+        IsSyncing = true;
+        SyncError = null;
+        var msg = await App.SyncService.SignUpAsync(SyncEmail.Trim(), password);
+        IsSyncing = false;
+        if (msg != null) SyncError = msg;
+    }
+
+    public ICommand SignOutCommand => new RelayCommand(async _ =>
+    {
+        await App.SyncService.SignOutAsync();
+        SyncError = null;
+    });
+
+    public ICommand SyncNowCommand => new RelayCommand(async _ =>
+    {
+        IsSyncing = true;
+        var data = await App.SyncService.PullIfNewerAsync();
+        if (data != null) await new TaskStorageService().SaveAsync(data);
+        IsSyncing = false;
+    });
+
+    private void OnSyncStateChanged()
+    {
+        var queue = App.MainWindowInstance?.DispatcherQueue;
+        if (queue == null) return;
+        queue.TryEnqueue(() =>
+        {
+            OnPropertyChanged(nameof(IsSyncSignedIn));
+            OnPropertyChanged(nameof(IsSyncNotSignedIn));
+            OnPropertyChanged(nameof(SyncUserEmail));
+            OnPropertyChanged(nameof(SyncLastSyncedText));
+        });
+    }
+
     public bool MinimizeToTray
     {
         get => _settings.Current.MinimizeToTray;

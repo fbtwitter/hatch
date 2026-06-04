@@ -3,6 +3,7 @@ using Microsoft.UI.Windowing;
 using Hatch.Models;
 using Hatch.Services;
 using Hatch.Views;
+using Microsoft.UI.Dispatching;
 
 namespace Hatch;
 
@@ -10,6 +11,7 @@ public partial class App : Application
 {
     public static SettingsService SettingsService { get; } = new();
     public static AppSettings Settings => SettingsService.Current;
+    public static SyncService SyncService { get; } = new();
     public static MainWindow? MainWindowInstance { get; private set; }
     public static MascotWindow? MascotWindowInstance { get; private set; }
     public static QuickAddBubbleWindow? BubbleWindowInstance { get; set; }
@@ -22,10 +24,20 @@ public partial class App : Application
         SettingsService.Load();
     }
 
-    protected override void OnLaunched(LaunchActivatedEventArgs args)
+    protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
         try
         {
+            // Initialize sync and pull latest data before the main window loads.
+            // If the server has newer data than the last local sync, overwrite tasks.json
+            // so MainViewModel reads the up-to-date content.
+            await SyncService.InitializeAsync();
+            if (SyncService.IsSignedIn)
+            {
+                var remote = await SyncService.PullIfNewerAsync();
+                if (remote != null)
+                    await new TaskStorageService().SaveAsync(remote);
+            }
             // Unpackaged (Debug): StartupRegistryService writes --startup into the Run key.
             // Packaged (MSIX): activation kind is StartupTask when launched by the OS.
             // Never infer startup from empty args — that would suppress the window on every manual launch.
