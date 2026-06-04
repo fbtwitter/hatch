@@ -43,7 +43,6 @@ public sealed class TaskStorageService
     {
         var json = JsonSerializer.Serialize(data, _options);
         await File.WriteAllTextAsync(_filePath, json);
-        _ = App.SyncService.PushAsync(data);
     }
 
     public void ResetDataFile()
