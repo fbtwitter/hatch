@@ -38,20 +38,20 @@
             IsPaneToggleButtonVisible="False">
 
             <NavigationView.MenuItems>
-                <NavigationViewItem x:Name="MyDayItem" AutomationProperties.AutomationId="Nav_MyDay" x:Uid="Nav_MyDay" Tag="myday" Icon="Calendar"/>
-                <NavigationViewItem x:Name="ImportantItem" AutomationProperties.AutomationId="Nav_Important" x:Uid="Nav_Important" Tag="important" Icon="Favorite"/>
-                <NavigationViewItem x:Name="PlannedItem" AutomationProperties.AutomationId="Nav_Planned" x:Uid="Nav_Planned" Tag="planned">
+                <NavigationViewItem x:Name="MyDayItem" AutomationProperties.AutomationId="Nav_MyDay" x:Uid="Nav_MyDay" Tag="myday" Icon="Calendar" ToolTipService.Placement="Right"/>
+                <NavigationViewItem x:Name="ImportantItem" AutomationProperties.AutomationId="Nav_Important" x:Uid="Nav_Important" Tag="important" Icon="Favorite" ToolTipService.Placement="Right"/>
+                <NavigationViewItem x:Name="PlannedItem" AutomationProperties.AutomationId="Nav_Planned" x:Uid="Nav_Planned" Tag="planned" ToolTipService.Placement="Right">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xED28;"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="AllTasksItem" AutomationProperties.AutomationId="Nav_AllTasks" x:Uid="Nav_AllTasks" Tag="alltasks" Icon="List"/>
+                <NavigationViewItem x:Name="AllTasksItem" AutomationProperties.AutomationId="Nav_AllTasks" x:Uid="Nav_AllTasks" Tag="alltasks" Icon="List" ToolTipService.Placement="Right"/>
                 <NavigationViewItemSeparator/>
                 <!-- Custom list items injected after this separator by code-behind -->
             </NavigationView.MenuItems>
 
             <NavigationView.FooterMenuItems>
-                <NavigationViewItem x:Name="NewListFooterItem" Tag="newlist" Content="New list">
+                <NavigationViewItem x:Name="NewListFooterItem" Tag="newlist" Content="New list" ToolTipService.Placement="Right">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE710;"/>
                     </NavigationViewItem.Icon>

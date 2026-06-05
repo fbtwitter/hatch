@@ -1,6 +1,7 @@
 using System.Collections.Specialized;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Windows.System;
@@ -27,7 +28,12 @@ public sealed partial class MainPage : Page
     {
         this.InitializeComponent();
         NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
-        Loaded += (_, _) => ApplyContentBackdrop(App.Settings.Backdrop);
+        Loaded += (_, _) =>
+        {
+            ApplyContentBackdrop(App.Settings.Backdrop);
+            if (NavView.SettingsItem is NavigationViewItem settingsItem)
+                ToolTipService.SetPlacement(settingsItem, PlacementMode.Right);
+        };
     }
 
     // Applies SystemBackdropElement to the page content layer — Windows 11 only.
