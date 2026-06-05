@@ -178,6 +178,14 @@
                         <Button.Flyout>
                             <MenuFlyout Placement="BottomEdgeAlignedRight">
                                 <MenuFlyoutItem Tag="{x:Bind}"
+                                                Text="Focus on this"
+                                                Click="FocusMenuItem_Click">
+                                    <MenuFlyoutItem.Icon>
+                                        <FontIcon Glyph="&#xE8B0;"/>
+                                    </MenuFlyoutItem.Icon>
+                                </MenuFlyoutItem>
+                                <MenuFlyoutSeparator/>
+                                <MenuFlyoutItem Tag="{x:Bind}"
                                                 x:Uid="Task_DeleteMenuItem"
                                                 Click="DeleteButton_Click">
                                     <MenuFlyoutItem.Icon>
