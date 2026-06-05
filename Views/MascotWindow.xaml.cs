@@ -13,6 +13,7 @@ using Windows.Graphics;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Storage.Streams;
 using WinUIEx;
+using Hatch.Models;
 using Hatch.ViewModels;
 
 namespace Hatch.Views;
@@ -42,6 +43,7 @@ public sealed partial class MascotWindow : Window
     private Storyboard? _hoverOut;
     private DispatcherTimer? _inactivityTimer;
     private bool _isFaded = false;
+    private FocusModeViewModel? _focusViewModel;
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
@@ -313,12 +315,12 @@ public sealed partial class MascotWindow : Window
     private void OnPointerEntered(object sender, PointerRoutedEventArgs e)
     {
         ResetInactivity();
-        _hoverIn?.Begin();
+        if (!FocusPopup.IsOpen) _hoverIn?.Begin();
     }
 
     private void OnPointerExited(object sender, PointerRoutedEventArgs e)
     {
-        _hoverOut?.Begin();
+        if (!FocusPopup.IsOpen) _hoverOut?.Begin();
     }
 
     private void OnTapped(object sender, TappedRoutedEventArgs e)
@@ -488,6 +490,61 @@ public sealed partial class MascotWindow : Window
         var sb = new Storyboard();
         sb.Children.Add(anim);
         return sb;
+    }
+
+    public void ShowFocusMode(TodoItem task)
+    {
+        _focusViewModel?.Dispose();
+        _focusViewModel = new FocusModeViewModel(task);
+        _focusViewModel.ExitRequested += () =>
+            DispatcherQueue.TryEnqueue(() => FocusPopup.IsOpen = false);
+        FocusTaskTitle.Text = task.Title;
+        ToolTipService.SetToolTip(FocusTaskTitle, task.Title);
+        // One-shot: position popup once on first measure, then stop listening so
+        // the hover scale animation can't shift it on subsequent layout passes.
+        FocusPopupBorder.SizeChanged -= OnFocusPopupFirstMeasure;
+        FocusPopupBorder.SizeChanged += OnFocusPopupFirstMeasure;
+        FocusPopup.IsOpen = true;
+    }
+
+    private void OnFocusPopupFirstMeasure(object sender, SizeChangedEventArgs e)
+    {
+        FocusPopupBorder.SizeChanged -= OnFocusPopupFirstMeasure;
+        FocusPopup.HorizontalOffset = (ViewModel.WindowSize - e.NewSize.Width) / 2.0;
+        FocusPopup.VerticalOffset   = -(e.NewSize.Height + 8);
+    }
+
+    private void FocusPopup_Opened(object? sender, object e)
+    {
+        // Fade in + slide up from 6 px below final position
+        FocusPopupBorder.Opacity = 0;
+        FocusPopupTranslate.Y = 6;
+
+        var ease = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var dur  = new Duration(TimeSpan.FromMilliseconds(180));
+
+        var fade = new DoubleAnimation { From = 0, To = 1, Duration = dur, EasingFunction = ease };
+        Storyboard.SetTarget(fade, FocusPopupBorder);
+        Storyboard.SetTargetProperty(fade, "Opacity");
+
+        var slide = new DoubleAnimation { From = 6, To = 0, Duration = dur, EasingFunction = ease };
+        Storyboard.SetTarget(slide, FocusPopupTranslate);
+        Storyboard.SetTargetProperty(slide, "Y");
+
+        var sb = new Storyboard();
+        sb.Children.Add(fade);
+        sb.Children.Add(slide);
+        sb.Begin();
+    }
+
+    private void FocusMarkDone_Click(object sender, RoutedEventArgs e)
+        => _focusViewModel?.MarkDoneCommand.Execute(null);
+
+    private void FocusExit_Click(object sender, RoutedEventArgs e)
+    {
+        FocusPopup.IsOpen = false;
+        _focusViewModel?.Dispose();
+        _focusViewModel = null;
     }
 
     public void PlayWiggleAnimation()
