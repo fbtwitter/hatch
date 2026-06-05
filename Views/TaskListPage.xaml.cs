@@ -531,6 +531,18 @@ public sealed partial class TaskListPage : Page
 
     private void OverflowButton_Click(object sender, RoutedEventArgs e) { }
 
+    private void FocusMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        var task = (TodoItem)((MenuFlyoutItem)sender).Tag;
+
+        App.FocusModeWindowInstance?.Close();
+        App.FocusModeWindowInstance = null;
+
+        var window = new FocusModeWindow(task);
+        App.FocusModeWindowInstance = window;
+        window.Activate();
+    }
+
     private void UndoInfoBar_Closed(InfoBar sender, InfoBarClosedEventArgs args)
     {
         ViewModel.DismissUndoBar();
