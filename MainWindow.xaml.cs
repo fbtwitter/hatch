@@ -180,6 +180,17 @@ public sealed partial class MainWindow : Window
             mainPage.NavigateTo(tag);
     }
 
+    public void ShowAndSelectTask(Guid taskId)
+    {
+        ShowWindow(_hwnd, SW_RESTORE);
+        AppWindow.Show(true);
+        Activate();
+        NavigateTo("alltasks");
+        var task = ViewModel.FindTaskById(taskId);
+        if (task != null)
+            ViewModel.SelectedTask = task;
+    }
+
     public SystemTrayService? GetTrayService() => _trayService;
 
     private void RestoreWindow()
