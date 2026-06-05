@@ -14,6 +14,7 @@ public partial class App : Application
     public static SettingsService SettingsService { get; } = new();
     public static AppSettings Settings => SettingsService.Current;
     public static SyncService SyncService { get; } = new();
+    public static NotificationSchedulerService NotificationScheduler { get; } = new();
     public static MainWindow? MainWindowInstance { get; private set; }
     public static MascotWindow? MascotWindowInstance { get; private set; }
     public static QuickAddBubbleWindow? BubbleWindowInstance { get; set; }
@@ -30,11 +31,49 @@ public partial class App : Application
         if (args.Kind != ExtendedActivationKind.Protocol) return;
         if (args.Data is not ProtocolActivatedEventArgs protocol) return;
 
+        var uri = protocol.Uri;
         var queue = MainWindowInstance?.DispatcherQueue;
-        if (queue != null)
-            queue.TryEnqueue(async () => await SyncService.HandleOAuthCallbackAsync(protocol.Uri));
-        else
-            _ = SyncService.HandleOAuthCallbackAsync(protocol.Uri);
+
+        if (uri.Host == "auth-callback")
+        {
+            if (queue != null)
+                queue.TryEnqueue(async () => await SyncService.HandleOAuthCallbackAsync(uri));
+            else
+                _ = SyncService.HandleOAuthCallbackAsync(uri);
+            return;
+        }
+
+        if (queue == null) return;
+
+        queue.TryEnqueue(() =>
+        {
+            if (uri.Host == "opentask" && TryGetQueryParam(uri, "id", out var openId) &&
+                Guid.TryParse(openId, out var openGuid))
+            {
+                MainWindowInstance?.ShowAndSelectTask(openGuid);
+            }
+            else if (uri.Host == "complete" && TryGetQueryParam(uri, "id", out var completeId) &&
+                     Guid.TryParse(completeId, out var completeGuid))
+            {
+                MainWindowInstance?.ViewModel.CompleteTaskById(completeGuid);
+            }
+        });
+    }
+
+    private static bool TryGetQueryParam(Uri uri, string name, out string value)
+    {
+        var query = uri.Query.TrimStart('?');
+        foreach (var part in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var sep = part.IndexOf('=');
+            if (sep > 0 && part[..sep] == name)
+            {
+                value = Uri.UnescapeDataString(part[(sep + 1)..]);
+                return true;
+            }
+        }
+        value = string.Empty;
+        return false;
     }
 
     protected override async void OnLaunched(LaunchActivatedEventArgs args)

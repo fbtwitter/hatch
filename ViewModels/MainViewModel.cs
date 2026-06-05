@@ -337,6 +337,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(IsTaskListEmpty));
             OnPropertyChanged(nameof(PlannedGroups));
             OnPropertyChanged(nameof(IsPlannedEmpty));
+
+            App.NotificationScheduler.RescheduleAll(Tasks);
         }
         catch { _isBulkLoading = false; }
     }
@@ -363,6 +365,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
 
         AttachTaskPropertyChangedHandler(task);
+        App.NotificationScheduler.ScheduleForTask(task);
         Tasks.Insert(0, task);
         NewTaskText = string.Empty;
         SaveAsync();
@@ -470,6 +473,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         foreach (var task in tasksToRemove)
         {
             task.PropertyChanged -= TaskPropertyChanged;
+            App.NotificationScheduler.UnscheduleForTask(task.Id);
             Tasks.Remove(task);
         }
 
@@ -556,7 +560,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
                     OnPropertyChanged(nameof(IsTaskListEmpty));
 
                     if (task.IsCompleted)
+                    {
+                        App.NotificationScheduler.UnscheduleForTask(task.Id);
                         ShowUndoBar();
+                    }
+                    else
+                    {
+                        App.NotificationScheduler.ScheduleForTask(task);
+                    }
                 };
                 timer.Start();
                 break;
@@ -605,6 +616,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     // touch ActiveTasks when the view's filter/membership actually changes.
     private void ApplyDueDateChange(TodoItem task)
     {
+        App.NotificationScheduler.ScheduleForTask(task);
         switch (_activeNavItem)
         {
             case "planned":
@@ -656,6 +668,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public void DeleteTask(TodoItem task)
     {
         task.PropertyChanged -= TaskPropertyChanged;
+        App.NotificationScheduler.UnscheduleForTask(task.Id);
         Tasks.Remove(task);
         SaveAsync();
     }
@@ -671,6 +684,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         task.IsStarred = newStarred;
 
         task.PropertyChanged += TaskPropertyChanged;
+        App.NotificationScheduler.ScheduleForTask(task);
 
         // Apply in-place: keep scroll position by only removing/adding when membership
         // actually changes. x:Bind handles the visual update for title/date/star glyph.
@@ -711,6 +725,15 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public void SetCompletedGroupExpanded(string navItem, bool expanded)
     {
         _completedGroupExpandedState[navItem] = expanded;
+    }
+
+    public TodoItem? FindTaskById(Guid id) => Tasks.FirstOrDefault(t => t.Id == id);
+
+    public void CompleteTaskById(Guid id)
+    {
+        var task = Tasks.FirstOrDefault(t => t.Id == id);
+        if (task != null && !task.IsCompleted)
+            task.IsCompleted = true;
     }
 
     public void SaveAsync()
