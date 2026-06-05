@@ -220,6 +220,65 @@
                  Margin="4,4,4,4"
                  Visibility="Collapsed" />
 
+        <!-- Focus mode overlay — ShouldConstrainToRootBounds=False lets the popup
+             render outside the 120×120 mascot window bounds -->
+        <Popup x:Name="FocusPopup"
+               ShouldConstrainToRootBounds="False"
+               IsLightDismissEnabled="False"
+               Opened="FocusPopup_Opened">
+            <Border x:Name="FocusPopupBorder"
+                    Padding="12,0"
+                    Height="44"
+                    CornerRadius="8"
+                    Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    MinWidth="{x:Bind ViewModel.WindowSize, Mode=OneWay}"
+                    MaxWidth="{x:Bind ViewModel.WindowSize, Mode=OneWay}">
+                <Border.RenderTransform>
+                    <TranslateTransform x:Name="FocusPopupTranslate"/>
+                </Border.RenderTransform>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0"
+                               x:Name="FocusTaskTitle"
+                               Style="{ThemeResource BodyTextBlockStyle}"
+                               TextTrimming="CharacterEllipsis"
+                               TextWrapping="NoWrap"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
+
+                    <Button Grid.Column="1"
+                            AutomationProperties.AutomationId="FocusMode_MarkDone"
+                            AutomationProperties.Name="Mark done"
+                            ToolTipService.ToolTip="Mark done"
+                            Style="{ThemeResource SubtleButtonStyle}"
+                            Width="32" Height="32" Padding="0" MinWidth="0"
+                            Click="FocusMarkDone_Click">
+                        <FontIcon Glyph="&#xE73E;" FontSize="14"
+                                  Foreground="{ThemeResource SystemFillColorSuccessBrush}"/>
+                    </Button>
+
+                    <Button Grid.Column="2"
+                            AutomationProperties.AutomationId="FocusMode_Exit"
+                            AutomationProperties.Name="Exit focus"
+                            ToolTipService.ToolTip="Exit focus"
+                            Style="{ThemeResource SubtleButtonStyle}"
+                            Width="32" Height="32" Padding="0" MinWidth="0"
+                            Click="FocusExit_Click">
+                        <FontIcon Glyph="&#xE711;" FontSize="12"
+                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    </Button>
+
+                </Grid>
+            </Border>
+        </Popup>
+
     </Grid>
 
 </Window>

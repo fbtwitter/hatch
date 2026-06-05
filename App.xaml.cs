@@ -18,7 +18,6 @@ public partial class App : Application
     public static MainWindow? MainWindowInstance { get; private set; }
     public static MascotWindow? MascotWindowInstance { get; private set; }
     public static QuickAddBubbleWindow? BubbleWindowInstance { get; set; }
-    public static Views.FocusModeWindow? FocusModeWindowInstance { get; set; }
     public static bool IsStartupLaunch { get; private set; } = false;
 
     public App()
