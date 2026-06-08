@@ -25,6 +25,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private TodoItem? _selectedTask;
     private DispatcherQueueTimer? _undoDismissTimer;
     private bool _isUndoBarVisible;
+    private List<PlannedGroup>? _cachedPlannedGroups;
 
     private readonly CompletedTaskGroup _openGroup = new() { Name = "Open", EmptyMessage = "All done!" };
     private readonly CompletedTaskGroup _completedGroup = new() { Name = "Completed", TrackCount = true };
@@ -120,7 +121,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(ActiveTagFilter));
             OnPropertyChanged(nameof(IsTagFilterActive));
             OnPropertyChanged(nameof(IsTaskListEmpty));
-            OnPropertyChanged(nameof(PlannedGroups));
+            NotifyPlannedGroupsChanged();
             OnPropertyChanged(nameof(IsPlannedEmpty));
             OnPropertyChanged(nameof(EmptyStateGlyph));
             OnPropertyChanged(nameof(EmptyStateHeadline));
@@ -225,46 +226,51 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    public IList<PlannedGroup> PlannedGroups
+    public IList<PlannedGroup> PlannedGroups => _cachedPlannedGroups ??= BuildPlannedGroups();
+
+    private List<PlannedGroup> BuildPlannedGroups()
     {
-        get
+        // Design decision: tasks without a due date are intentionally excluded from
+        // Planned. Planned is a time-based planning view — undated tasks belong in
+        // All Tasks. The empty-state subtext already guides users to set a due date.
+        var groups = new List<PlannedGroup>();
+        var today = DateTimeOffset.Now.Date;
+        var tomorrow = today.AddDays(1);
+        var weekEnd = today.AddDays(7 - (int)today.DayOfWeek);
+
+        var tasksWithDue = Tasks.Where(t => t.DueDate != null && !t.IsCompleted).GroupBy(t =>
         {
-            // Design decision: tasks without a due date are intentionally excluded from
-            // Planned. Planned is a time-based planning view — undated tasks belong in
-            // All Tasks. The empty-state subtext already guides users to set a due date.
-            var groups = new List<PlannedGroup>();
-            var today = DateTimeOffset.Now.Date;
-            var tomorrow = today.AddDays(1);
-            var weekEnd = today.AddDays(7 - (int)today.DayOfWeek);
+            var dueDate = t.DueDate!.Value.ToLocalTime().Date;
+            if (dueDate < today)     return Strings.PlannedGroup_Overdue;
+            if (dueDate == today)    return Strings.PlannedGroup_Today;
+            if (dueDate == tomorrow) return Strings.PlannedGroup_Tomorrow;
+            if (dueDate <= weekEnd)  return Strings.PlannedGroup_ThisWeek;
+            return Strings.PlannedGroup_Later;
+        }).OrderBy(g => Array.IndexOf(
+            new[] {
+                Strings.PlannedGroup_Overdue,
+                Strings.PlannedGroup_Today,
+                Strings.PlannedGroup_Tomorrow,
+                Strings.PlannedGroup_ThisWeek,
+                Strings.PlannedGroup_Later
+            }, g.Key));
 
-            var tasksWithDue = Tasks.Where(t => t.DueDate != null && !t.IsCompleted).GroupBy(t =>
+        foreach (var group in tasksWithDue)
+        {
+            groups.Add(new PlannedGroup
             {
-                var dueDate = t.DueDate!.Value.ToLocalTime().Date;
-                if (dueDate < today)    return Strings.PlannedGroup_Overdue;
-                if (dueDate == today)   return Strings.PlannedGroup_Today;
-                if (dueDate == tomorrow) return Strings.PlannedGroup_Tomorrow;
-                if (dueDate <= weekEnd) return Strings.PlannedGroup_ThisWeek;
-                return Strings.PlannedGroup_Later;
-            }).OrderBy(g => Array.IndexOf(
-                new[] {
-                    Strings.PlannedGroup_Overdue,
-                    Strings.PlannedGroup_Today,
-                    Strings.PlannedGroup_Tomorrow,
-                    Strings.PlannedGroup_ThisWeek,
-                    Strings.PlannedGroup_Later
-                }, g.Key));
-
-            foreach (var group in tasksWithDue)
-            {
-                groups.Add(new PlannedGroup
-                {
-                    Name = group.Key,
-                    Items = new ObservableCollection<TodoItem>(group.OrderBy(t => t.DueDate))
-                });
-            }
-
-            return groups;
+                Name = group.Key,
+                Items = new ObservableCollection<TodoItem>(group.OrderBy(t => t.DueDate))
+            });
         }
+
+        return groups;
+    }
+
+    private void NotifyPlannedGroupsChanged()
+    {
+        _cachedPlannedGroups = null;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PlannedGroups)));
     }
 
     public IList<CompletedTaskGroup> FlatGroupedTasks => _flatGroupedTasks;
@@ -322,7 +328,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             }
 
             OnPropertyChanged(nameof(IsTaskListEmpty));
-            OnPropertyChanged(nameof(PlannedGroups));
+            NotifyPlannedGroupsChanged();
             OnPropertyChanged(nameof(IsPlannedEmpty));
             if (_activeNavItem == "planned")
                 OnPropertyChanged(nameof(ActiveNavItem));
@@ -362,7 +368,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
             RefreshActiveTasks();
             OnPropertyChanged(nameof(IsTaskListEmpty));
-            OnPropertyChanged(nameof(PlannedGroups));
+            NotifyPlannedGroupsChanged();
             OnPropertyChanged(nameof(IsPlannedEmpty));
 
             App.NotificationScheduler.RescheduleAll(Tasks);
@@ -540,7 +546,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 {
                     RefreshActiveTasks();
                     OnPropertyChanged(nameof(IsTaskListEmpty));
-                    OnPropertyChanged(nameof(PlannedGroups));
+                    NotifyPlannedGroupsChanged();
                     OnPropertyChanged(nameof(IsPlannedEmpty));
                 }
             });
@@ -561,7 +567,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
                     ActiveTasks.Remove(task);
                 else if (!ActiveTasks.Contains(task) && task.DueDate != null)
                     ActiveTasks.Add(task);   // unchecked: re-insert (order refresh below)
-                OnPropertyChanged(nameof(PlannedGroups));
+                NotifyPlannedGroupsChanged();
                 OnPropertyChanged(nameof(IsPlannedEmpty));
                 OnPropertyChanged(nameof(IsTaskListEmpty));
                 break;
@@ -578,9 +584,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 var timer = _dispatcherQueue.CreateTimer();
                 timer.Interval = TimeSpan.FromMilliseconds(250);
                 timer.IsRepeating = false;
-                timer.Tick += (_, _) =>
+                Windows.Foundation.TypedEventHandler<DispatcherQueueTimer, object>? onTick = null;
+                onTick = (_, _) =>
                 {
                     timer.Stop();
+                    timer.Tick -= onTick;
                     FlatGroupMoveStarting?.Invoke();
                     MoveBetweenFlatGroups(task);
                     FlatGroupMoveCompleted?.Invoke();
@@ -596,6 +604,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
                         App.NotificationScheduler.ScheduleForTask(task);
                     }
                 };
+                timer.Tick += onTick;
                 timer.Start();
                 break;
         }
@@ -654,7 +663,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
                     ActiveTasks.Add(task);
                 else if (!shouldBeInPlanned && isInPlanned)
                     ActiveTasks.Remove(task);
-                OnPropertyChanged(nameof(PlannedGroups));
+                NotifyPlannedGroupsChanged();
                 OnPropertyChanged(nameof(IsPlannedEmpty));
                 OnPropertyChanged(nameof(IsTaskListEmpty));
                 break;
@@ -665,7 +674,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             default:
                 // DueDate doesn't affect membership or sort order in these views.
                 // x:Bind converters on the chip handle the visual update automatically.
-                OnPropertyChanged(nameof(PlannedGroups));
+                NotifyPlannedGroupsChanged();
                 break;
         }
     }
@@ -726,7 +735,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 ActiveTasks.Insert(0, task);
 
             OnPropertyChanged(nameof(IsTaskListEmpty));
-            OnPropertyChanged(nameof(PlannedGroups));
+            NotifyPlannedGroupsChanged();
             OnPropertyChanged(nameof(IsPlannedEmpty));
         });
 
