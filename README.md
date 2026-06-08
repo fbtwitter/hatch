@@ -10,7 +10,7 @@ Fast. Private. Local-first.
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=.net)
 ![WinUI 3](https://img.shields.io/badge/WinUI-3-0078D4?style=flat-square)
 ![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![v0.9.0](https://img.shields.io/badge/Version-v0.9.0-blue?style=flat-square)
+![v0.9.1](https://img.shields.io/badge/Version-v0.9.1-blue?style=flat-square)
 
 </div>
 
@@ -132,10 +132,11 @@ Hatch lives on your desktop permanently. Memory is a first-class constraint.
 
 ## What's Shipped
 
-Latest releases have been moving fast. Latest production version is **v0.9.0** (June 8, 2026).
+Latest releases have been moving fast. Latest production version is **v0.9.1** (June 8, 2026).
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.9.1** | Jun 8  | Fix sync stale data — "Sync now" always pulls latest from server; surface pull errors |
 | **v0.9.0** | Jun 8  | Task Tags — chip row per task, add/remove in details pane, filter by tag; project renamed to hatch |
 | **v0.8.1** | Jun 8  | Mascot transparency fix — `WS_EX_NOREDIRECTIONBITMAP` + DWM frame extension |
 | **v0.8.0** | Jun 5  | Focus Mode — compact always-on-top popup above mascot; mark done / exit; fade+slide animation |

@@ -174,8 +174,9 @@ public sealed class SyncService
                     p => Uri.UnescapeDataString(p[0]),
                     p => Uri.UnescapeDataString(p[1]));
 
-    // Pulls server data if newer than last sync, saves to disk, and fires TasksReceived.
-    public async Task<TasksFile?> PullIfNewerAsync()
+    // Returns null on success/no-op, error message on failure.
+    // force=true (user-triggered sync) bypasses the staleness check and always downloads.
+    public async Task<string?> PullIfNewerAsync(bool force = false)
     {
         if (!IsSignedIn || _client == null) return null;
         try
@@ -184,8 +185,8 @@ public sealed class SyncService
             var row = response.Models.FirstOrDefault();
             if (row?.TasksJson == null) return null;
 
-            // Skip if local is already up to date
-            if (App.Settings.LastSyncedAt.HasValue &&
+            if (!force &&
+                App.Settings.LastSyncedAt.HasValue &&
                 row.UpdatedAt <= App.Settings.LastSyncedAt.Value)
                 return null;
 
@@ -196,9 +197,9 @@ public sealed class SyncService
             App.Settings.LastSyncedAt = row.UpdatedAt;
             _ = App.SettingsService.SaveAsync();
             TasksReceived?.Invoke();
-            return data;
+            return null;
         }
-        catch { return null; }
+        catch (Exception ex) { return ex.Message; }
     }
 
     private async Task PersistSessionAsync(Supabase.Gotrue.Session session)

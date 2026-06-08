@@ -94,14 +94,20 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         IsSyncing = true;
         SyncError = null;
-        // Pull first — saves to disk and fires TasksReceived so MainViewModel reloads
-        await App.SyncService.PullIfNewerAsync();
-        // Push latest local state
-        var data  = await new TaskStorageService().LoadAsync();
-        var error = await App.SyncService.PushAsync(data);
-        SyncError = error;
-        IsSyncing = false;
-        OnPropertyChanged(nameof(SyncLastSyncedText));
+        try
+        {
+            // force=true bypasses the staleness check so user always gets latest server data
+            var pullError = await App.SyncService.PullIfNewerAsync(force: true);
+            // Push latest local state (includes any pulled data since pull writes to disk first)
+            var data = await new TaskStorageService().LoadAsync();
+            var pushError = await App.SyncService.PushAsync(data);
+            SyncError = pullError ?? pushError;
+        }
+        finally
+        {
+            IsSyncing = false;
+            OnPropertyChanged(nameof(SyncLastSyncedText));
+        }
     });
 
     private void OnSyncStateChanged()
