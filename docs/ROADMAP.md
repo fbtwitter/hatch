@@ -130,7 +130,7 @@ Dates are aspirational — user feedback and blockers may shift them.
 
 Want to suggest a feature? Have concerns?
 
-- Open an issue: [GitHub Issues](https://github.com/fbtwitter/todo-winui3/issues)
+- Open an issue: [GitHub Issues](https://github.com/fbtwitter/hatch/issues)
 - Check existing issues first (may already be discussed)
 - Be specific: What problem does it solve? For whom?
 

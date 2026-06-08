@@ -28,7 +28,7 @@ $cert = New-SelfSignedCertificate `
     -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}") `
     -NotAfter (Get-Date).AddYears(10)
 
-$pfxPath = Join-Path $PSScriptRoot "todo-winui3-signing.pfx"
+$pfxPath = Join-Path $PSScriptRoot "hatch-signing.pfx"
 Export-PfxCertificate -Cert $cert -FilePath $pfxPath -Password $secPwd -Force | Out-Null
 
 $b64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes($pfxPath))

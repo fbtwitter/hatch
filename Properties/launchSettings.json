@@ -6,7 +6,7 @@
       "nativeDebugging": true,
       "sqlDebugging": true
     },
-    "todo-winui3 (Package)": {
+    "hatch (Package)": {
       "commandName": "MsixPackage",
       "nativeDebugging": true
     }

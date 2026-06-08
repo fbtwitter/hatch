@@ -69,8 +69,8 @@ Subsequent releases don't need the cert step.
 **Requirements:** Windows 10 (build 17763+) or Windows 11, Visual Studio 2022 with Windows App SDK workload (or .NET 10 SDK + Windows App SDK)
 
 ```powershell
-git clone https://github.com/fbtwitter/todo-winui3.git
-cd todo-winui3
+git clone https://github.com/fbtwitter/hatch.git
+cd hatch
 dotnet build              # Debug
 dotnet build -c Release   # Release
 dotnet run                # Run (Windows only)

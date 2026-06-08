@@ -28,8 +28,8 @@ winget install Microsoft.WindowsAppSDK
 ### 1. Clone & Navigate
 
 ```powershell
-git clone https://github.com/fbtwitter/todo-winui3.git
-cd todo-winui3
+git clone https://github.com/fbtwitter/hatch.git
+cd hatch
 ```
 
 ### 2. Build

@@ -69,13 +69,13 @@ jobs:
       - name: Restore dependencies
         shell: pwsh
         run: |
-          msbuild todo-winui3.csproj /t:Restore /p:Configuration=Release /p:Platform=x64 /nowarn:NETSDK1233
-          msbuild todo-winui3.csproj /t:Restore /p:Configuration=Release /p:Platform=arm64 /nowarn:NETSDK1233
+          msbuild hatch.csproj /t:Restore /p:Configuration=Release /p:Platform=x64 /nowarn:NETSDK1233
+          msbuild hatch.csproj /t:Restore /p:Configuration=Release /p:Platform=arm64 /nowarn:NETSDK1233
 
       - name: Build x64 MSIX
         shell: pwsh
         run: |
-          msbuild todo-winui3.csproj `
+          msbuild hatch.csproj `
             /p:Configuration=Release `
             /p:Platform=x64 `
             /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
@@ -88,7 +88,7 @@ jobs:
         continue-on-error: true
         shell: pwsh
         run: |
-          msbuild todo-winui3.csproj `
+          msbuild hatch.csproj `
             /p:Configuration=Release `
             /p:Platform=x86 `
             /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
@@ -100,7 +100,7 @@ jobs:
       - name: Build arm64 MSIX
         shell: pwsh
         run: |
-          msbuild todo-winui3.csproj `
+          msbuild hatch.csproj `
             /p:Configuration=Release `
             /p:Platform=arm64 `
             /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
@@ -180,4 +180,4 @@ jobs:
           files: |
             install-cert.cer
             ${{ env.BUNDLE_PATH }}
-            AppxPackages/*/todo-winui3*.msix
+            AppxPackages/*/hatch*.msix
