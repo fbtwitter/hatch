@@ -18,6 +18,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private string _activeNavItem = "alltasks";
     private CancellationTokenSource? _saveCancelToken;
     private bool _isBulkLoading = false;
+    private string? _activeTagFilter;
     private int _themeVersion = 0;
     private readonly Dictionary<string, bool> _completedGroupExpandedState = new();
     private TodoItem? _lastCompletedTask;
@@ -59,6 +60,21 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public bool IsTaskListEmpty => ActiveTasks.Count == 0;
 
+    public string? ActiveTagFilter
+    {
+        get => _activeTagFilter;
+        set
+        {
+            if (_activeTagFilter == value) return;
+            _activeTagFilter = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsTagFilterActive));
+            _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, RefreshActiveTasks);
+        }
+    }
+
+    public bool IsTagFilterActive => _activeTagFilter != null;
+
     public bool IsUndoBarVisible
     {
         get => _isUndoBarVisible;
@@ -71,6 +87,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     }
 
     public ICommand UndoLastCompletionCommand { get; private set; } = null!;
+    public ICommand ClearTagFilterCommand { get; private set; } = null!;
 
     public bool IsPlannedEmpty => !Tasks.Any(t => t.DueDate != null && !t.IsCompleted);
 
@@ -98,7 +115,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             if (_activeNavItem == value) return;
             _activeNavItem = value;
+            _activeTagFilter = null;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(ActiveTagFilter));
+            OnPropertyChanged(nameof(IsTagFilterActive));
             OnPropertyChanged(nameof(IsTaskListEmpty));
             OnPropertyChanged(nameof(PlannedGroups));
             OnPropertyChanged(nameof(IsPlannedEmpty));
@@ -141,13 +161,19 @@ public sealed class MainViewModel : INotifyPropertyChanged
                         : Strings.EmptyState_AllTasks_Subtext
     };
 
-    private bool MatchesFilter(TodoItem task) => _activeNavItem switch
+    private bool MatchesFilter(TodoItem task)
     {
-        "myday"     => task.IsInMyDay,
-        "important" => task.IsStarred,
-        "planned"   => task.DueDate != null && !task.IsCompleted,
-        _           => !Guid.TryParse(_activeNavItem, out var listId) || task.ListId == listId
-    };
+        bool matchesNav = _activeNavItem switch
+        {
+            "myday"     => task.IsInMyDay,
+            "important" => task.IsStarred,
+            "planned"   => task.DueDate != null && !task.IsCompleted,
+            _           => !Guid.TryParse(_activeNavItem, out var listId) || task.ListId == listId
+        };
+        return matchesNav &&
+               (_activeTagFilter == null ||
+                task.Tags.Contains(_activeTagFilter, StringComparer.OrdinalIgnoreCase));
+    }
 
     private void RefreshActiveTasks()
     {
@@ -255,6 +281,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             _ => !string.IsNullOrWhiteSpace(NewTaskText));
 
         UndoLastCompletionCommand = new RelayCommand(_ => UndoLastCompletion());
+        ClearTagFilterCommand = new RelayCommand(_ => ActiveTagFilter = null);
 
         _flatGroupedTasks = [_openGroup, _completedGroup];
 

@@ -20,6 +20,10 @@
         <converters:DueDateToChipGlyphConverter x:Key="DueDateToChipGlyph" />
         <converters:PlannedGroupNameToForegroundConverter x:Key="PlannedGroupNameToForeground" />
         <converters:BoolToStarTooltipConverter x:Key="BoolToStarTooltip" />
+        <converters:TagsToVisibilityConverter x:Key="TagsToVisibility" />
+        <converters:TagsPreviewConverter x:Key="TagsPreview" />
+        <converters:TagsOverflowCountConverter x:Key="TagsOverflowCount" />
+        <converters:TagsOverflowVisibilityConverter x:Key="TagsOverflowVisibility" />
 
         <!-- Chip button: preserves the chip color on hover/press instead of flashing WinUI default grey -->
         <Style x:Key="ChipButtonStyle" TargetType="Button">
@@ -90,56 +94,98 @@
                           VerticalAlignment="Center"
                           x:Uid="Task_CheckBox" />
 
-                <!-- Title + date chip — fades as a unit when completed -->
+                <!-- Title + meta row — fades as a unit when completed -->
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2"
                             Opacity="{x:Bind IsCompleted, Converter={StaticResource BoolToOpacity}, Mode=OneWay}">
                     <TextBlock Text="{x:Bind Title, Mode=OneWay}"
                                TextDecorations="{x:Bind IsCompleted, Converter={StaticResource BoolToStrikethrough}, Mode=OneWay}"
                                TextTrimming="CharacterEllipsis" />
 
-                    <!-- Date chip — visible when a due date is set; clicking opens the flyout -->
-                    <Button Tag="{x:Bind}"
-                            AutomationProperties.AutomationId="Task_DateChipButton"
-                            Click="ChipDateButton_Click"
-                            Visibility="{x:Bind DueDate, Converter={StaticResource DueDateToChipVisibility}, Mode=OneWay}"
-                            Background="{x:Bind DueDate, Converter={StaticResource DueDateToChipBrush}, Mode=OneWay}"
-                            Style="{StaticResource ChipButtonStyle}"
-                            x:Uid="Task_DateChipButton">
-                        <StackPanel Orientation="Horizontal" Spacing="4">
-                            <FontIcon
-                                Glyph="{x:Bind DueDate, Converter={StaticResource DueDateToChipGlyph}, Mode=OneWay}"
-                                FontSize="11"
-                                Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
-                                VerticalAlignment="Center" />
-                            <TextBlock Text="{x:Bind DueDate, Converter={StaticResource DueDateToString}, Mode=OneWay}"
-                                       Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
-                                       Style="{ThemeResource CaptionTextBlockStyle}"
-                                       VerticalAlignment="Center" />
-                        </StackPanel>
-                    </Button>
+                    <!-- Meta row: date chip · tags — all on one line -->
+                    <StackPanel Orientation="Horizontal" Spacing="4">
 
-                    <!-- No-date placeholder -->
-                    <Border
-                        Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
+                        <!-- Date chip — clicking opens the date flyout -->
                         <Button Tag="{x:Bind}"
-                                AutomationProperties.AutomationId="Task_AddDateButton"
+                                AutomationProperties.AutomationId="Task_DateChipButton"
                                 Click="ChipDateButton_Click"
-                                Visibility="{x:Bind DueDate, Converter={StaticResource DueDateToChipVisibility}, ConverterParameter=Invert, Mode=OneWay}"
-                                Padding="8,3" MinWidth="0" MinHeight="0"
-                                Background="Transparent" BorderThickness="0"
-                                IsTabStop="False"
-                                x:Uid="Task_AddDateButton">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <FontIcon Glyph="&#xE787;" FontSize="11"
-                                          Opacity="0.35"
+                                Visibility="{x:Bind DueDate, Converter={StaticResource DueDateToChipVisibility}, Mode=OneWay}"
+                                Background="{x:Bind DueDate, Converter={StaticResource DueDateToChipBrush}, Mode=OneWay}"
+                                Style="{StaticResource ChipButtonStyle}"
+                                VerticalAlignment="Center"
+                                x:Uid="Task_DateChipButton">
+                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                <FontIcon Glyph="{x:Bind DueDate, Converter={StaticResource DueDateToChipGlyph}, Mode=OneWay}"
+                                          FontSize="11"
+                                          Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
                                           VerticalAlignment="Center" />
-                                <TextBlock x:Uid="Task_AddDateText"
-                                           Opacity="0.35"
+                                <TextBlock Text="{x:Bind DueDate, Converter={StaticResource DueDateToString}, Mode=OneWay}"
+                                           Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
                                            Style="{ThemeResource CaptionTextBlockStyle}"
                                            VerticalAlignment="Center" />
                             </StackPanel>
                         </Button>
-                    </Border>
+
+                        <!-- Add-date ghost — only when not completed and no date -->
+                        <Button Tag="{x:Bind}"
+                                AutomationProperties.AutomationId="Task_AddDateButton"
+                                Click="ChipDateButton_Click"
+                                Visibility="{x:Bind ShowAddDateHint, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                Padding="6,2" MinWidth="0" MinHeight="0"
+                                Background="Transparent" BorderThickness="0"
+                                VerticalAlignment="Center"
+                                IsTabStop="False"
+                                x:Uid="Task_AddDateButton">
+                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE787;" FontSize="11" Opacity="0.35" VerticalAlignment="Center" />
+                                <TextBlock x:Uid="Task_AddDateText" Opacity="0.35"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Button>
+
+                        <!-- · separator — only when both date and tags are present -->
+                        <TextBlock Text="·"
+                                   Visibility="{x:Bind HasMetaSeparator, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                   Opacity="0.35"
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   VerticalAlignment="Center" />
+
+                        <!-- Tag chips: first 2 -->
+                        <ItemsRepeater ItemsSource="{x:Bind Tags, Converter={StaticResource TagsPreview}, Mode=OneWay}"
+                                       Visibility="{x:Bind Tags, Converter={StaticResource TagsToVisibility}, Mode=OneWay}"
+                                       VerticalAlignment="Center">
+                            <ItemsRepeater.Layout>
+                                <StackLayout Orientation="Horizontal" Spacing="4" />
+                            </ItemsRepeater.Layout>
+                            <ItemsRepeater.ItemTemplate>
+                                <DataTemplate x:DataType="x:String">
+                                    <Button Tag="{x:Bind}"
+                                            Click="TagChipInRow_Click"
+                                            Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                            Style="{StaticResource ChipButtonStyle}"
+                                            Padding="6,1">
+                                        <TextBlock Text="{x:Bind}"
+                                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsRepeater.ItemTemplate>
+                        </ItemsRepeater>
+
+                        <!-- +N overflow → tapping opens details pane to show all tags -->
+                        <Button Tag="{x:Bind}"
+                                Click="TagOverflowButton_Click"
+                                Visibility="{x:Bind Tags, Converter={StaticResource TagsOverflowVisibility}, Mode=OneWay}"
+                                Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                Style="{StaticResource ChipButtonStyle}"
+                                VerticalAlignment="Center"
+                                Padding="6,1">
+                            <TextBlock Text="{x:Bind Tags, Converter={StaticResource TagsOverflowCount}, Mode=OneWay}"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </Button>
+
+                    </StackPanel>
                 </StackPanel>
 
                 <!--
@@ -301,6 +347,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
@@ -309,8 +356,33 @@
                        Style="{ThemeResource TitleLargeTextBlockStyle}"
                        VerticalAlignment="Center" />
 
+            <!-- Tag filter banner — visible when a tag filter is active -->
+            <StackPanel Grid.Row="1"
+                        Orientation="Horizontal"
+                        Spacing="8"
+                        Padding="20,0,16,6"
+                        Visibility="{x:Bind ViewModel.IsTagFilterActive, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                <TextBlock Text="Showing:"
+                           VerticalAlignment="Center"
+                           Style="{ThemeResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <Button Command="{x:Bind ViewModel.ClearTagFilterCommand}"
+                        Background="{ThemeResource AccentFillColorDefaultBrush}"
+                        Style="{StaticResource ChipButtonStyle}"
+                        Padding="8,3">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="{x:Bind ViewModel.ActiveTagFilter, Mode=OneWay}"
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                   VerticalAlignment="Center" />
+                        <FontIcon Glyph="&#xE711;" FontSize="9"
+                                  Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+
             <!-- Add task row -->
-            <Grid Grid.Row="1" Padding="16,8,16,16" ColumnSpacing="8">
+            <Grid Grid.Row="2" Padding="16,8,16,16" ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -330,7 +402,7 @@
             </Grid>
 
             <!-- Content area -->
-            <Grid Grid.Row="2">
+            <Grid Grid.Row="3">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
@@ -558,6 +630,17 @@
                                             PlaceholderText="No due date"
                                             HorizontalAlignment="Stretch"
                                             DateChanged="PaneDueDatePicker_DateChanged" />
+
+                        <!-- Tags -->
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="Tags"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                            <StackPanel x:Name="PaneTagChips" Orientation="Vertical" Spacing="6" />
+                            <TextBox x:Name="PaneTagInput"
+                                     PlaceholderText="Add a tag, press Enter"
+                                     KeyDown="PaneTagInput_KeyDown" />
+                        </StackPanel>
 
                         <!-- Created at -->
                         <StackPanel Spacing="4">
