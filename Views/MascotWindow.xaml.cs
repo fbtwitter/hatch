@@ -168,6 +168,9 @@ public sealed partial class MascotWindow : Window
         };
 
         RegisterHotKey();
+
+        // Seed initial HDR state — updated on every WM_DISPLAYCHANGE thereafter.
+        ViewModel.OnDisplayModeChanged(Helpers.DisplayHelper.IsWindowOnHdrDisplay(_hwnd));
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -388,19 +391,45 @@ public sealed partial class MascotWindow : Window
             DispatcherQueue.TryEnqueue(() => ViewModel.ToggleBubbleCommand.Execute(null));
             return IntPtr.Zero;
         }
+        if (uMsg == NativeMethods.WM_ERASEBKGND)
+            return new IntPtr(1);
+        if (uMsg == NativeMethods.WM_DISPLAYCHANGE)
+        {
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                bool hdr = Helpers.DisplayHelper.IsWindowOnHdrDisplay(_hwnd);
+                ViewModel.OnDisplayModeChanged(hdr);
+                ApplyWindowStyles();
+            });
+        }
         return NativeMethods.DefSubclassProc(hWnd, uMsg, wParam, lParam);
     }
 
     private void ApplyWindowStyles()
     {
+        // Remove the Win32 HWND class background brush. Without this, Win32 paints a
+        // white fill under the DComp visual tree before XAML composites on top — the
+        // edges bleed through as a white border on transparent windows. Setting the
+        // class brush to NULL_BRUSH stops that paint entirely.
+        NativeMethods.SetClassLongPtr(
+            _hwnd,
+            NativeMethods.GCLP_HBRBACKGROUND,
+            NativeMethods.GetStockObject(NativeMethods.NULL_BRUSH));
+
         // Flush presenter style changes (border/titlebar removal) to DWM immediately.
         NativeMethods.SetWindowPos(_hwnd, IntPtr.Zero, 0, 0, 0, 0,
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_FRAMECHANGED);
 
-        // Clear WS_BORDER from window style.
+        // Strip WS_BORDER and WS_THICKFRAME — removes the visible frame and resize
+        // border. WS_CAPTION is intentionally kept: DwmExtendFrameIntoClientArea with
+        // -1 margins requires WS_CAPTION to be present on SDR displays so DWM has a
+        // non-client frame to extend across the client area for per-pixel transparency.
+        // Stripping it causes the glass extension to silently fail on SDR, leaving an
+        // opaque white background. SetBorderAndTitleBar(false, false) hides the chrome
+        // visually through DWM attributes without removing the style bit.
         var style = NativeMethods.GetWindowLong(_hwnd, NativeMethods.GWL_STYLE);
         NativeMethods.SetWindowLong(_hwnd, NativeMethods.GWL_STYLE,
-            style & ~NativeMethods.WS_BORDER);
+            style & ~(NativeMethods.WS_BORDER | NativeMethods.WS_THICKFRAME));
 
         // WS_EX_NOREDIRECTIONBITMAP: prevents the GDI redirection bitmap from being
         // allocated, so DWM composites directly from the visual tree. Must be set before
@@ -432,8 +461,7 @@ public sealed partial class MascotWindow : Window
     {
         // Sheet-of-glass: extend DWM frame across the entire client area for per-pixel
         // alpha on SDR. On HDR the display pipeline handles this natively; on SDR this
-        // call is required. Re-applied after TransparentTintBackdrop in OnFirstActivated
-        // in case the backdrop resets these margins.
+        // call is required. Re-applied in OnFirstActivated after ApplyWindowStyles().
         var margins = new NativeMethods.MARGINS { Left = -1, Right = -1, Top = -1, Bottom = -1 };
         NativeMethods.DwmExtendFrameIntoClientArea(_hwnd, ref margins);
     }
@@ -442,15 +470,28 @@ public sealed partial class MascotWindow : Window
     {
         Activated -= OnFirstActivated;
 
-        // Set transparent backdrop after the compositor is ready. Deferred here for
-        // the same reason as before: setting SystemBackdrop in the constructor races
-        // against DWM/WarpPal initialisation and causes a null vtable crash (0xC0000005).
+        // Set transparent backdrop after the compositor is ready. Deferred here because
+        // setting SystemBackdrop in the constructor races against DWM/WarpPal
+        // initialisation and causes a null vtable crash (0xC0000005).
         SystemBackdrop = new TransparentTintBackdrop();
 
         // Re-apply all window styles after backdrop — the backdrop controller can reset
         // GWL_EXSTYLE (clearing WS_EX_NOREDIRECTIONBITMAP) and DwmExtendFrameIntoClientArea,
         // both required for transparent compositing on SDR displays.
         ApplyWindowStyles();
+
+        // Patch XAML island child HWNDs: WinUI 3 creates internal child windows
+        // (ContentIsland host, input source, etc.) that each carry the white HWND
+        // class background. They are created during XAML initialisation, so this
+        // must run after the first Activated event — not in the constructor.
+        NativeMethods.EnumChildWindows(_hwnd, (childHwnd, _) =>
+        {
+            NativeMethods.SetClassLongPtr(
+                childHwnd,
+                NativeMethods.GCLP_HBRBACKGROUND,
+                NativeMethods.GetStockObject(NativeMethods.NULL_BRUSH));
+            return true;
+        }, IntPtr.Zero);
 
         // ApplyLottieSource is called here (deferred from the constructor) so the
         // DComp/WarpPal compositor is fully initialised before any Storyboard or
