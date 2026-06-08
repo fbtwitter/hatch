@@ -636,7 +636,44 @@
                             <TextBlock Text="Tags"
                                        Style="{ThemeResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                            <StackPanel x:Name="PaneTagChips" Orientation="Vertical" Spacing="6" />
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                          VerticalScrollBarVisibility="Disabled"
+                                          HorizontalScrollMode="Auto"
+                                          VerticalScrollMode="Disabled">
+                                <ItemsRepeater x:Name="PaneTagChips">
+                                    <ItemsRepeater.Layout>
+                                        <StackLayout Orientation="Horizontal" Spacing="6" />
+                                    </ItemsRepeater.Layout>
+                                    <ItemsRepeater.ItemTemplate>
+                                        <DataTemplate x:DataType="x:String">
+                                            <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                                    BorderThickness="1"
+                                                    CornerRadius="8"
+                                                    Padding="10,0,0,0">
+                                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                    <TextBlock Text="{x:Bind}"
+                                                               VerticalAlignment="Center"
+                                                               Style="{ThemeResource CaptionTextBlockStyle}"
+                                                               Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                                                    <Button Tag="{x:Bind}"
+                                                            Click="PaneTagChipRemove_Click"
+                                                            Style="{ThemeResource SubtleButtonStyle}"
+                                                            Padding="6"
+                                                            MinWidth="32"
+                                                            MinHeight="32"
+                                                            IsTabStop="False"
+                                                            VerticalAlignment="Center">
+                                                        <FontIcon Glyph="&#xE711;"
+                                                                  FontSize="10"
+                                                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                    </Button>
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsRepeater.ItemTemplate>
+                                </ItemsRepeater>
+                            </ScrollViewer>
                             <TextBox x:Name="PaneTagInput"
                                      PlaceholderText="Add a tag, press Enter"
                                      KeyDown="PaneTagInput_KeyDown" />

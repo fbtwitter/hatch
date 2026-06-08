@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -29,6 +29,15 @@ public sealed partial class TaskListPage : Page
     private bool _suppressSelectionChanged;
     private TodoItem? _preTapSelectedTask;
     private bool _suppressPaneFocusOnOpen;
+    private List<ListView>? _cachedTaskListViews;
+
+    // Cached date flyout controls — built once, reused on every chip tap.
+    private Flyout? _dateFlyout;
+    private CalendarDatePicker? _flyoutCalendar;
+    private Button? _flyoutClearBtn;
+    private Button[]? _flyoutPresetBtns;
+    private TodoItem? _flyoutTask;
+    private bool _updatingFlyout;
 
     private enum PaneLayoutMode { SideBySide, Overlay }
     private PaneLayoutMode _paneMode = PaneLayoutMode.SideBySide;
@@ -240,102 +249,19 @@ public sealed partial class TaskListPage : Page
             : null;
         PaneCreatedAtText.Text = task.CreatedAt.ToLocalTime().ToString("ddd, MMM d, yyyy");
         PaneTagInput.Text = string.Empty;
-        RebuildTagChips(task.Tags);
+        PaneTagChips.ItemsSource = task.Tags;
         _updatingPane = false;
     }
 
-    private void RebuildTagChips(List<string> tags)
+    private void PaneTagChipRemove_Click(object sender, RoutedEventArgs e)
     {
-        PaneTagChips.Children.Clear();
-        if (tags.Count == 0) return;
-
-        // Measure each chip and break into rows when they'd overflow the pane content area.
-        // Pane padding is 16px each side; fall back to 200 while the pane is still measuring.
-        double availableWidth = Math.Max(200, DetailsPaneRoot.ActualWidth - 32);
-        const double chipSpacing = 6;
-
-        var currentRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = chipSpacing };
-        double rowWidth = 0;
-
-        foreach (var tag in tags)
+        if (sender is Button btn && btn.Tag is string tag && _paneTask != null)
         {
-            var chip = MakeTagChip(tag);
-            chip.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
-            double chipWidth = chip.DesiredSize.Width;
-
-            if (currentRow.Children.Count > 0 && rowWidth + chipSpacing + chipWidth > availableWidth)
-            {
-                PaneTagChips.Children.Add(currentRow);
-                currentRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = chipSpacing };
-                rowWidth = 0;
-            }
-
-            currentRow.Children.Add(chip);
-            rowWidth += (rowWidth > 0 ? chipSpacing : 0) + chipWidth;
+            _paneTask.Tags = _paneTask.Tags.Where(t => t != tag).ToList();
+            PaneTagChips.ItemsSource = _paneTask.Tags;
         }
-
-        if (currentRow.Children.Count > 0)
-            PaneTagChips.Children.Add(currentRow);
     }
 
-    private UIElement MakeTagChip(string tag)
-    {
-        var label = new TextBlock
-        {
-            Text = tag,
-            VerticalAlignment = VerticalAlignment.Center,
-            Style = ThemeResourceHelper.GetStyle("CaptionTextBlockStyle"),
-            Foreground = ThemeResourceHelper.GetBrush("TextFillColorPrimaryBrush")
-        };
-
-        var removeIcon = new FontIcon
-        {
-            Glyph = "",
-            FontSize = 10,
-            Foreground = ThemeResourceHelper.GetBrush("TextFillColorSecondaryBrush")
-        };
-
-        // MinHeight=32 gives a touch target close to the 40dp guideline while keeping the
-        // chip compact; SubtleButtonStyle provides hover/press feedback.
-        var removeBtn = new Button
-        {
-            Content = removeIcon,
-            Style = ThemeResourceHelper.GetStyle("SubtleButtonStyle"),
-            Padding = new Thickness(6),
-            MinWidth = 32,
-            MinHeight = 32,
-            IsTabStop = false,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        var captured = tag;
-        removeBtn.Click += (_, _) => RemoveTag(captured);
-
-        var inner = new StackPanel
-        {
-            Orientation = Orientation.Horizontal,
-            Spacing = 4,
-            VerticalAlignment = VerticalAlignment.Center
-        };
-        inner.Children.Add(label);
-        inner.Children.Add(removeBtn);
-
-        return new Border
-        {
-            Background = ThemeResourceHelper.GetBrush("SubtleFillColorSecondaryBrush"),
-            BorderBrush = ThemeResourceHelper.GetBrush("CardStrokeColorDefaultBrush"),
-            BorderThickness = new Thickness(1),
-            CornerRadius = new CornerRadius(8),
-            Padding = new Thickness(10, 0, 0, 0),
-            Child = inner
-        };
-    }
-
-    private void RemoveTag(string tag)
-    {
-        if (_paneTask == null) return;
-        _paneTask.Tags = _paneTask.Tags.Where(t => t != tag).ToList();
-        RebuildTagChips(_paneTask.Tags);
-    }
 
     private void PaneTagInput_KeyDown(object sender, KeyRoutedEventArgs e)
     {
@@ -345,7 +271,7 @@ public sealed partial class TaskListPage : Page
         if (!_paneTask.Tags.Contains(input, StringComparer.OrdinalIgnoreCase))
         {
             _paneTask.Tags = [.._paneTask.Tags, input];
-            RebuildTagChips(_paneTask.Tags);
+            PaneTagChips.ItemsSource = _paneTask.Tags;
         }
         PaneTagInput.Text = string.Empty;
         e.Handled = true;
@@ -471,8 +397,12 @@ public sealed partial class TaskListPage : Page
 
     private IEnumerable<ListView> FindTaskListViews()
     {
+        if (_cachedTaskListViews != null) return _cachedTaskListViews;
         var template = (DataTemplate)Resources["TaskItemTemplate"];
-        return FindDescendants<ListView>(this).Where(lv => lv.ItemTemplate == template);
+        _cachedTaskListViews = FindDescendants<ListView>(this)
+            .Where(lv => lv.ItemTemplate == template)
+            .ToList();
+        return _cachedTaskListViews;
     }
 
     private static IEnumerable<T> FindDescendants<T>(DependencyObject parent) where T : DependencyObject
@@ -491,6 +421,7 @@ public sealed partial class TaskListPage : Page
 
     private void UpdateView(string navItem)
     {
+        _cachedTaskListViews = null;
         HeaderText.Text = navItem switch
         {
             "myday"     => Strings.Header_MyDay,
@@ -689,68 +620,46 @@ public sealed partial class TaskListPage : Page
         var task = (TodoItem)((Button)sender).Tag;
         if (task is null) return;
 
-        var today = DateTime.Today;
-        var flyout = new Flyout();
+        EnsureDateFlyoutBuilt();
 
-        DateTimeOffset? pendingDate = task.DueDate;
+        _flyoutTask = task;
+        UpdateFlyoutState(task.DueDate);
+        _dateFlyout!.ShowAt((FrameworkElement)sender);
+    }
 
-        var accentStyle  = ThemeResourceHelper.GetStyle("AccentButtonStyle");
-        var defaultStyle = ThemeResourceHelper.GetStyle("DefaultButtonStyle");
+    private void EnsureDateFlyoutBuilt()
+    {
+        if (_dateFlyout != null) return;
 
-        var presets = new (string Label, string Glyph, DateTime Date)[]
+        var presetDefs = new (string Label, Func<DateTime> GetDate)[]
         {
-            (Strings.DatePreset_Today,    "", DueDatePresets.GetToday(today)),
-            (Strings.DatePreset_Tomorrow, "", DueDatePresets.GetTomorrow(today)),
-            (Strings.DatePreset_Weekend,  "", DueDatePresets.GetThisWeekend(today)),
-            (Strings.DatePreset_NextWeek, "", DueDatePresets.GetNextWeek(today)),
+            (Strings.DatePreset_Today,    () => DueDatePresets.GetToday(DateTime.Today)),
+            (Strings.DatePreset_Tomorrow, () => DueDatePresets.GetTomorrow(DateTime.Today)),
+            (Strings.DatePreset_Weekend,  () => DueDatePresets.GetThisWeekend(DateTime.Today)),
+            (Strings.DatePreset_NextWeek, () => DueDatePresets.GetNextWeek(DateTime.Today)),
         };
 
-        var calendarPicker = new CalendarDatePicker
+        _flyoutCalendar = new CalendarDatePicker
         {
-            Date                = pendingDate,
             HorizontalAlignment = HorizontalAlignment.Stretch,
             PlaceholderText     = Strings.EditTask_DatePlaceholder,
             Margin              = new Thickness(0, 8, 0, 0)
         };
+        _flyoutCalendar.DateChanged += (_, args) =>
+        {
+            if (!_updatingFlyout && args.NewDate.HasValue)
+                FlyoutCommitAndClose(new DateTimeOffset(args.NewDate.Value.ToLocalTime().Date, TimeSpan.Zero));
+        };
 
-        var clearBtn = new Button
+        _flyoutClearBtn = new Button
         {
             Content                    = Strings.EditTask_ClearDate,
             HorizontalAlignment        = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Center,
             Margin                     = new Thickness(0, 8, 0, 0),
-            Foreground                 = ThemeResourceHelper.GetBrush("SystemFillColorCriticalBrush"),
-            Visibility                 = pendingDate.HasValue ? Visibility.Visible : Visibility.Collapsed
+            Foreground                 = ThemeResourceHelper.GetBrush("SystemFillColorCriticalBrush")
         };
-
-        var presetButtons = new List<(Button Btn, DateTime Date)>();
-
-        void CommitAndClose(DateTimeOffset? date)
-        {
-            flyout.Hide();
-            task.DueDate = date;
-            // Sync pane picker if this task is currently open in the pane
-            if (_paneTask == task)
-            {
-                _updatingPane = true;
-                PaneDueDatePicker.Date = date.HasValue
-                    ? (DateTimeOffset?)new DateTimeOffset(date.Value.ToLocalTime().Date, TimeSpan.Zero)
-                    : null;
-                _updatingPane = false;
-            }
-        }
-
-        void UpdatePresets()
-        {
-            var selected = pendingDate?.ToLocalTime().Date;
-            foreach (var (btn, date) in presetButtons)
-                btn.Style = (selected == date) ? accentStyle : defaultStyle;
-            clearBtn.Visibility = pendingDate.HasValue ? Visibility.Visible : Visibility.Collapsed;
-            if (calendarPicker.Date?.Date != pendingDate?.ToLocalTime().Date)
-                calendarPicker.Date = pendingDate.HasValue
-                    ? (DateTimeOffset?)new DateTimeOffset(pendingDate.Value.ToLocalTime().Date, TimeSpan.Zero)
-                    : null;
-        }
+        _flyoutClearBtn.Click += (_, _) => FlyoutCommitAndClose(null);
 
         var presetGrid = new Grid { ColumnSpacing = 6, RowSpacing = 6 };
         presetGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -758,53 +667,81 @@ public sealed partial class TaskListPage : Page
         presetGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         presetGrid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-        foreach (var (label, glyph, date) in presets)
+        _flyoutPresetBtns = new Button[presetDefs.Length];
+        for (int i = 0; i < presetDefs.Length; i++)
         {
-            var icon  = new FontIcon { Glyph = glyph, FontSize = 13 };
-            var txt   = new TextBlock { Text = label, Style = ThemeResourceHelper.GetStyle("CaptionTextBlockStyle") };
-            var inner = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
-            inner.Children.Add(icon);
-            inner.Children.Add(txt);
-
+            var (label, getDate) = presetDefs[i];
             var btn = new Button
             {
-                Content                    = inner,
                 HorizontalAlignment        = HorizontalAlignment.Stretch,
                 HorizontalContentAlignment = HorizontalAlignment.Center,
                 Padding                    = new Thickness(10, 8, 10, 8),
                 CornerRadius               = new CornerRadius(6)
             };
-            int idx = presetButtons.Count;
-            Grid.SetColumn(btn, idx % 2);
-            Grid.SetRow(btn, idx / 2);
+            btn.Content = new TextBlock { Text = label, Style = ThemeResourceHelper.GetStyle("CaptionTextBlockStyle") };
+            Grid.SetColumn(btn, i % 2);
+            Grid.SetRow(btn, i / 2);
             presetGrid.Children.Add(btn);
 
+            var capturedGetDate = getDate;
             btn.Click += (_, _) =>
             {
-                if (pendingDate.HasValue && pendingDate.Value.ToLocalTime().Date == date)
-                    CommitAndClose(null);
+                var date = capturedGetDate();
+                if (_flyoutTask?.DueDate?.ToLocalTime().Date == date)
+                    FlyoutCommitAndClose(null);
                 else
-                    CommitAndClose(new DateTimeOffset(date));
+                    FlyoutCommitAndClose(new DateTimeOffset(date));
             };
 
-            presetButtons.Add((btn, date));
+            _flyoutPresetBtns[i] = btn;
         }
-
-        calendarPicker.DateChanged += (_, args) =>
-        {
-            if (args.NewDate.HasValue)
-                CommitAndClose(new DateTimeOffset(args.NewDate.Value.ToLocalTime().Date, TimeSpan.Zero));
-        };
-
-        clearBtn.Click += (_, _) => CommitAndClose(null);
-        UpdatePresets();
 
         var panel = new StackPanel { Spacing = 0, MinWidth = 220 };
         panel.Children.Add(presetGrid);
-        panel.Children.Add(calendarPicker);
-        panel.Children.Add(clearBtn);
+        panel.Children.Add(_flyoutCalendar);
+        panel.Children.Add(_flyoutClearBtn);
 
-        flyout.Content = panel;
-        flyout.ShowAt((FrameworkElement)sender);
+        _dateFlyout = new Flyout { Content = panel };
+    }
+
+    private void UpdateFlyoutState(DateTimeOffset? dueDate)
+    {
+        var accentStyle  = ThemeResourceHelper.GetStyle("AccentButtonStyle");
+        var defaultStyle = ThemeResourceHelper.GetStyle("DefaultButtonStyle");
+        var selected     = dueDate?.ToLocalTime().Date;
+
+        var presetGetters = new Func<DateTime>[]
+        {
+            () => DueDatePresets.GetToday(DateTime.Today),
+            () => DueDatePresets.GetTomorrow(DateTime.Today),
+            () => DueDatePresets.GetThisWeekend(DateTime.Today),
+            () => DueDatePresets.GetNextWeek(DateTime.Today),
+        };
+
+        for (int i = 0; i < _flyoutPresetBtns!.Length; i++)
+            _flyoutPresetBtns[i].Style = (selected == presetGetters[i]()) ? accentStyle : defaultStyle;
+
+        _flyoutClearBtn!.Visibility = dueDate.HasValue ? Visibility.Visible : Visibility.Collapsed;
+
+        _updatingFlyout = true;
+        _flyoutCalendar!.Date = dueDate.HasValue
+            ? (DateTimeOffset?)new DateTimeOffset(dueDate.Value.ToLocalTime().Date, TimeSpan.Zero)
+            : null;
+        _updatingFlyout = false;
+    }
+
+    private void FlyoutCommitAndClose(DateTimeOffset? date)
+    {
+        _dateFlyout!.Hide();
+        if (_flyoutTask == null) return;
+        _flyoutTask.DueDate = date;
+        if (_paneTask == _flyoutTask)
+        {
+            _updatingPane = true;
+            PaneDueDatePicker.Date = date.HasValue
+                ? (DateTimeOffset?)new DateTimeOffset(date.Value.ToLocalTime().Date, TimeSpan.Zero)
+                : null;
+            _updatingPane = false;
+        }
     }
 }
