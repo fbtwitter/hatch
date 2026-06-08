@@ -72,7 +72,8 @@ internal static class NativeMethods
     internal static extern bool UnregisterHotKey(IntPtr hWnd, int id);
 
     internal const int  HOTKEY_ID    = 0x4001;
-    internal const uint WM_HOTKEY    = 0x0312;
+    internal const uint WM_HOTKEY      = 0x0312;
+    internal const uint WM_ERASEBKGND = 0x0014;
     internal const uint MOD_ALT      = 0x0001;
     internal const uint MOD_CONTROL  = 0x0002;
     internal const uint MOD_SHIFT    = 0x0004;
@@ -99,6 +100,8 @@ internal static class NativeMethods
 
     internal const int  GWL_STYLE                 = -16;
     internal const int  GWL_EXSTYLE               = -20;
+    internal const uint WS_CAPTION                = 0x00C00000;
+    internal const uint WS_THICKFRAME             = 0x00040000;
     internal const uint WS_BORDER                 = 0x00800000;
     internal const uint WS_EX_TOOLWINDOW           = 0x00000080;
     internal const uint WS_EX_WINDOWEDGE          = 0x00000100;
@@ -177,6 +180,105 @@ internal static class NativeMethods
 
     [DllImport("kernel32.dll", SetLastError = true)]
     internal static extern bool EmptyWorkingSet(IntPtr proc);
+
+    internal delegate bool EnumChildProc(IntPtr hwnd, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    internal static extern bool EnumChildWindows(IntPtr hwndParent, EnumChildProc lpEnumFunc, IntPtr lParam);
+
+    // ── HDR / advanced-color detection ────────────────────────────────────────
+
+    internal const uint WM_DISPLAYCHANGE = 0x007E;
+    internal const uint QDC_ONLY_ACTIVE_PATHS = 0x00000002;
+    internal const uint DISPLAYCONFIG_DEVICE_INFO_GET_ADVANCED_COLOR_INFO = 9;
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct LUID { public uint LowPart; public int HighPart; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct DISPLAYCONFIG_PATH_SOURCE_INFO
+    {
+        public LUID adapterId;
+        public uint id;
+        public uint modeInfoIdx;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct DISPLAYCONFIG_PATH_TARGET_INFO
+    {
+        public LUID adapterId;
+        public uint id;
+        public uint modeInfoIdx;
+        public uint outputTechnology;
+        public uint rotation;
+        public uint scaling;
+        public uint refreshRateNumerator;
+        public uint refreshRateDenominator;
+        public uint scanLineOrdering;
+        public int  targetAvailable;
+        public uint statusFlags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct DISPLAYCONFIG_PATH_INFO
+    {
+        public DISPLAYCONFIG_PATH_SOURCE_INFO sourceInfo;
+        public DISPLAYCONFIG_PATH_TARGET_INFO targetInfo;
+        public uint flags;
+    }
+
+    // We only need the correct byte size (64) — no fields are read from this struct.
+    [StructLayout(LayoutKind.Sequential, Size = 64)]
+    internal struct DISPLAYCONFIG_MODE_INFO { }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct DISPLAYCONFIG_DEVICE_INFO_HEADER
+    {
+        public uint type;
+        public uint size;
+        public LUID adapterId;
+        public uint id;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct DISPLAYCONFIG_ADVANCED_COLOR_INFO
+    {
+        public DISPLAYCONFIG_DEVICE_INFO_HEADER header;
+        // Bit 0 = advancedColorSupported, Bit 1 = advancedColorEnabled
+        public uint value;
+        public uint colorEncoding;
+        public uint bitsPerColorChannel;
+    }
+
+    [DllImport("user32.dll")]
+    internal static extern int GetDisplayConfigBufferSizes(
+        uint flags,
+        out uint numPathArrayElements,
+        out uint numModeInfoArrayElements);
+
+    [DllImport("user32.dll")]
+    internal static extern int QueryDisplayConfig(
+        uint flags,
+        ref uint pathCount,
+        DISPLAYCONFIG_PATH_INFO[] paths,
+        ref uint modeCount,
+        DISPLAYCONFIG_MODE_INFO[] modes,
+        IntPtr currentTopologyId);
+
+    [DllImport("user32.dll")]
+    internal static extern int DisplayConfigGetDeviceInfo(
+        ref DISPLAYCONFIG_ADVANCED_COLOR_INFO requestPacket);
+
+    // Remove the Win32 HWND class background brush so the OS does not paint a white
+    // fill under the DComp visual tree. NULL_BRUSH (stock object 5) = no background.
+    internal const int GCLP_HBRBACKGROUND = -10;
+    internal const int NULL_BRUSH         = 5;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    internal static extern IntPtr SetClassLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+    [DllImport("gdi32.dll")]
+    internal static extern IntPtr GetStockObject(int fnObject);
 
     // SendInput — used to open the Windows emoji picker (Win+.)
     internal const uint   INPUT_KEYBOARD  = 1;
