@@ -52,7 +52,7 @@ public static class TestSetup
             if (Directory.GetFiles(dir, "*.sln").Length > 0)
             {
                 var exe = Path.Combine(dir, "bin", "x64", "Debug",
-                    "net10.0-windows10.0.19041.0", "todo-winui3.exe");
+                    "net10.0-windows10.0.19041.0", "hatch.exe");
                 if (File.Exists(exe))
                     return exe;
             }
@@ -62,7 +62,7 @@ public static class TestSetup
         }
 
         throw new FileNotFoundException(
-            "Could not locate todo-winui3.exe. Build the main project (Debug|x64) first, " +
+            "Could not locate hatch.exe. Build the main project (Debug|x64) first, " +
             "or set HATCH_APP_EXE to the exe path.");
     }
 

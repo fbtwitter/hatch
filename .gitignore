@@ -11,7 +11,7 @@ Assets/
 
 # Signing certificate — never commit
 scripts/Hatch-signing.pfx
-scripts/todo-winui3-signing.pfx
+scripts/hatch-signing.pfx
 signing.pfx
 
 # Visual Studio

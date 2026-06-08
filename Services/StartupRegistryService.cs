@@ -56,7 +56,7 @@ public sealed class StartupRegistryService
                 // project renames. Include --startup so OnLaunched can distinguish
                 // a startup-triggered launch from a normal manual launch.
                 var exe = Environment.ProcessPath
-                    ?? Path.Combine(AppContext.BaseDirectory, "todo-winui3.exe");
+                    ?? Path.Combine(AppContext.BaseDirectory, "hatch.exe");
                 if (File.Exists(exe))
                     key.SetValue(AppName, $"\"{exe}\" {StartupArg}");
             }
