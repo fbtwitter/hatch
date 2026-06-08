@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -239,7 +239,116 @@ public sealed partial class TaskListPage : Page
             ? (DateTimeOffset?)new DateTimeOffset(task.DueDate.Value.ToLocalTime().Date, TimeSpan.Zero)
             : null;
         PaneCreatedAtText.Text = task.CreatedAt.ToLocalTime().ToString("ddd, MMM d, yyyy");
+        PaneTagInput.Text = string.Empty;
+        RebuildTagChips(task.Tags);
         _updatingPane = false;
+    }
+
+    private void RebuildTagChips(List<string> tags)
+    {
+        PaneTagChips.Children.Clear();
+        if (tags.Count == 0) return;
+
+        // Measure each chip and break into rows when they'd overflow the pane content area.
+        // Pane padding is 16px each side; fall back to 200 while the pane is still measuring.
+        double availableWidth = Math.Max(200, DetailsPaneRoot.ActualWidth - 32);
+        const double chipSpacing = 6;
+
+        var currentRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = chipSpacing };
+        double rowWidth = 0;
+
+        foreach (var tag in tags)
+        {
+            var chip = MakeTagChip(tag);
+            chip.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+            double chipWidth = chip.DesiredSize.Width;
+
+            if (currentRow.Children.Count > 0 && rowWidth + chipSpacing + chipWidth > availableWidth)
+            {
+                PaneTagChips.Children.Add(currentRow);
+                currentRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = chipSpacing };
+                rowWidth = 0;
+            }
+
+            currentRow.Children.Add(chip);
+            rowWidth += (rowWidth > 0 ? chipSpacing : 0) + chipWidth;
+        }
+
+        if (currentRow.Children.Count > 0)
+            PaneTagChips.Children.Add(currentRow);
+    }
+
+    private UIElement MakeTagChip(string tag)
+    {
+        var label = new TextBlock
+        {
+            Text = tag,
+            VerticalAlignment = VerticalAlignment.Center,
+            Style = ThemeResourceHelper.GetStyle("CaptionTextBlockStyle"),
+            Foreground = ThemeResourceHelper.GetBrush("TextFillColorPrimaryBrush")
+        };
+
+        var removeIcon = new FontIcon
+        {
+            Glyph = "",
+            FontSize = 10,
+            Foreground = ThemeResourceHelper.GetBrush("TextFillColorSecondaryBrush")
+        };
+
+        // MinHeight=32 gives a touch target close to the 40dp guideline while keeping the
+        // chip compact; SubtleButtonStyle provides hover/press feedback.
+        var removeBtn = new Button
+        {
+            Content = removeIcon,
+            Style = ThemeResourceHelper.GetStyle("SubtleButtonStyle"),
+            Padding = new Thickness(6),
+            MinWidth = 32,
+            MinHeight = 32,
+            IsTabStop = false,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        var captured = tag;
+        removeBtn.Click += (_, _) => RemoveTag(captured);
+
+        var inner = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 4,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        inner.Children.Add(label);
+        inner.Children.Add(removeBtn);
+
+        return new Border
+        {
+            Background = ThemeResourceHelper.GetBrush("SubtleFillColorSecondaryBrush"),
+            BorderBrush = ThemeResourceHelper.GetBrush("CardStrokeColorDefaultBrush"),
+            BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(8),
+            Padding = new Thickness(10, 0, 0, 0),
+            Child = inner
+        };
+    }
+
+    private void RemoveTag(string tag)
+    {
+        if (_paneTask == null) return;
+        _paneTask.Tags = _paneTask.Tags.Where(t => t != tag).ToList();
+        RebuildTagChips(_paneTask.Tags);
+    }
+
+    private void PaneTagInput_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key != VirtualKey.Enter || _paneTask == null || _updatingPane) return;
+        var input = PaneTagInput.Text.Trim();
+        if (string.IsNullOrEmpty(input)) return;
+        if (!_paneTask.Tags.Contains(input, StringComparer.OrdinalIgnoreCase))
+        {
+            _paneTask.Tags = [.._paneTask.Tags, input];
+            RebuildTagChips(_paneTask.Tags);
+        }
+        PaneTagInput.Text = string.Empty;
+        e.Handled = true;
     }
 
     // ── Pane field handlers ──────────────────────────────────────────────────
@@ -527,6 +636,18 @@ public sealed partial class TaskListPage : Page
         if (groups.Count > 1 && groups[1].IsExpanded)
             result.AddRange(groups[1].Items);
         return result;
+    }
+
+    private void TagChipInRow_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string tag)
+            ViewModel.ActiveTagFilter = tag;
+    }
+
+    private void TagOverflowButton_Click(object sender, RoutedEventArgs e)
+    {
+        var task = (TodoItem)((FrameworkElement)sender).Tag;
+        ViewModel.SelectedTask = task;
     }
 
     private void OverflowButton_Click(object sender, RoutedEventArgs e) { }

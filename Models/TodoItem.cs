@@ -23,7 +23,7 @@ public sealed class TodoItem : INotifyPropertyChanged
     public bool IsCompleted
     {
         get => _isCompleted;
-        set { _isCompleted = value; OnPropertyChanged(); }
+        set { _isCompleted = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowAddDateHint)); }
     }
 
     public bool IsStarred
@@ -41,10 +41,20 @@ public sealed class TodoItem : INotifyPropertyChanged
     public DateTimeOffset? DueDate
     {
         get => _dueDate;
-        set { _dueDate = value; OnPropertyChanged(); }
+        set { _dueDate = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasMetaSeparator)); OnPropertyChanged(nameof(ShowAddDateHint)); }
     }
 
     public Guid ListId { get; set; } = Guid.Empty;
+
+    private List<string> _tags = [];
+    public List<string> Tags
+    {
+        get => _tags;
+        set { _tags = value ?? []; OnPropertyChanged(); OnPropertyChanged(nameof(HasMetaSeparator)); }
+    }
+
+    public bool HasMetaSeparator => DueDate != null && Tags.Count > 0;
+    public bool ShowAddDateHint => !IsCompleted && DueDate == null;
 
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
