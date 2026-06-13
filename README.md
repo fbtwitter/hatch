@@ -10,7 +10,7 @@ Fast. Private. Local-first.
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=.net)
 ![WinUI 3](https://img.shields.io/badge/WinUI-3-0078D4?style=flat-square)
 ![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![v0.9.2](https://img.shields.io/badge/Version-v0.9.2-blue?style=flat-square)
+![v0.10.0](https://img.shields.io/badge/Version-v0.10.0-blue?style=flat-square)
 
 </div>
 
@@ -132,10 +132,11 @@ Hatch lives on your desktop permanently. Memory is a first-class constraint.
 
 ## What's Shipped
 
-Latest releases have been moving fast. Latest production version is **v0.9.2** (June 11, 2026).
+Latest releases have been moving fast. Latest production version is **v0.10.0** (June 13, 2026).
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.10.0** | Jun 13 | List name chip in task rows, nav InfoBadge for open tasks, rename flyout in compact pane, bubble dismiss on unfocus, mascot tap shows main window, always-on-top ignores windowed fullscreen |
 | **v0.9.2** | Jun 11 | Upgrade Windows App SDK to 2.2.0 |
 | **v0.9.1** | Jun 8  | Fix sync stale data — "Sync now" always pulls latest from server; surface pull errors |
 | **v0.9.0** | Jun 8  | Task Tags — chip row per task, add/remove in details pane, filter by tag; project renamed to hatch |
@@ -180,11 +181,12 @@ Core features: contextual tips, details pane, due-date picker, custom lists, pri
 - ~~Keyboard shortcuts: Delete, Ctrl+D, Ctrl+M, ↑/↓, Ctrl+Enter~~
 - ~~Windows 10 compatibility (build 17763+): OS-guarded backdrops and DWM attributes~~
 
-**v0.6.x–v0.9.x — shipped:**
+**v0.6.x–v0.10.x — shipped:**
 - ~~Optional Supabase sync + first-run onboarding privacy screen~~
 - ~~Due-date toast notifications with mark-complete action~~
 - ~~Focus Mode — compact always-on-top overlay~~
 - ~~Task Tags — chips, filter, details pane~~
+- ~~UX polish: list name chip, nav InfoBadge, bubble dismiss, mascot tap routing, windowed fullscreen fix~~
 
 **Planned:**
 - Appreciation purchase ($5, cosmetics only)
