@@ -392,7 +392,8 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
         if (IsBubbleOpen)
         {
-            IsBubbleOpen = false;
+            // Bubble is open — pressing mascot again opens main window instead.
+            ShowMainWindow();
         }
         else
         {
@@ -443,18 +444,22 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         {
             while (await _pollTimer!.WaitForNextTickAsync(ct))
             {
-                var isFull = App.Settings.HideWhenFullscreen && IsForegroundWindowFullscreen();
+                var isFull = App.Settings.HideWhenFullscreen &&
+                             IsForegroundWindowFullscreen(App.Settings.MascotAlwaysOnTop);
                 _dispatcher.TryEnqueue(() => IsVisible = !isFull);
             }
         }
         catch (OperationCanceledException) { }
     }
 
-    // Returns true when the user is in a context where Hatch should stay out of the way:
-    // fullscreen window covering a monitor, D3D fullscreen (games), or Windows presentation mode.
-    private static bool IsForegroundWindowFullscreen()
+    // Returns true when the user is in a context where Hatch should stay out of the way.
+    // When alwaysOnTop is true, the mascot is visible above windowed-fullscreen apps
+    // (browsers, video players), so only exclusive-fullscreen (games, D3D) triggers hiding.
+    private static bool IsForegroundWindowFullscreen(bool alwaysOnTop = false)
     {
-        // Fast path: presentation mode or D3D fullscreen (games) via shell API.
+        // Shell API: presentation mode, D3D exclusive fullscreen (games), or system-busy.
+        // These take over the display pipeline entirely — the mascot isn't visible regardless
+        // of HWND_TOPMOST, so we always hide here even when always-on-top is enabled.
         if (NativeMethods.SHQueryUserNotificationState(out var quns) == 0)
         {
             if (quns == NativeMethods.QUERY_USER_NOTIFICATION_STATE.QUNS_PRESENTATION_MODE ||
@@ -463,7 +468,11 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
                 return true;
         }
 
-        // Geometry check: any non-Hatch window that covers the full monitor bounds.
+        // Geometry check: windowed-fullscreen apps (browser video, media players).
+        // When always-on-top is on the mascot stays above these, so skip the check.
+        if (alwaysOnTop) return false;
+
+        // Any non-Hatch window that covers the full monitor bounds.
         var hwnd = NativeMethods.GetForegroundWindow();
         if (hwnd == IntPtr.Zero) return false;
 

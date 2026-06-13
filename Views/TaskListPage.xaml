@@ -101,8 +101,27 @@
                                TextDecorations="{x:Bind IsCompleted, Converter={StaticResource BoolToStrikethrough}, Mode=OneWay}"
                                TextTrimming="CharacterEllipsis" />
 
-                    <!-- Meta row: date chip · tags — all on one line -->
+                    <!-- Meta row: list name · date chip · tags — all on one line -->
                     <StackPanel Orientation="Horizontal" Spacing="4">
+
+                        <!-- List name chip -->
+                        <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                CornerRadius="4"
+                                Padding="6,2"
+                                Visibility="{x:Bind HasListName, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                VerticalAlignment="Center">
+                            <TextBlock Text="{x:Bind ListName, Mode=OneWay}"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       VerticalAlignment="Center" />
+                        </Border>
+
+                        <!-- · separator between list name and date -->
+                        <TextBlock Text="·"
+                                   Visibility="{x:Bind HasListNameToDateSeparator, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                   Opacity="0.35"
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   VerticalAlignment="Center" />
 
                         <!-- Date chip — clicking opens the date flyout -->
                         <Button Tag="{x:Bind}"
