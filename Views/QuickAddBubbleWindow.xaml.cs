@@ -137,6 +137,16 @@ public sealed partial class QuickAddBubbleWindow : Window
                 () => TaskTitleBox.Focus(FocusState.Programmatic));
         }
         this.Activated += OnFirstActivated;
+
+        this.Activated += (_, args) =>
+        {
+            if (args.WindowActivationState == WindowActivationState.Deactivated
+                && !_isClosed
+                && !IsCursorOverMascot())
+            {
+                HideWindow();
+            }
+        };
     }
 
     /// <summary>
@@ -370,6 +380,16 @@ public sealed partial class QuickAddBubbleWindow : Window
 
         if (!_isClosed)
             HideWindow();
+    }
+
+    private bool IsCursorOverMascot()
+    {
+        if (App.MascotWindowInstance == null) return false;
+        NativeMethods.GetCursorPos(out var pt);
+        var mascotHwnd = Win32Interop.GetWindowFromWindowId(App.MascotWindowInstance.AppWindow.Id);
+        NativeMethods.GetWindowRect(mascotHwnd, out var rect);
+        return pt.X >= rect.left && pt.X <= rect.right &&
+               pt.Y >= rect.top  && pt.Y <= rect.bottom;
     }
 
     private void OnWindowClosed()

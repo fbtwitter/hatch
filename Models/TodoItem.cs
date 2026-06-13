@@ -41,7 +41,7 @@ public sealed class TodoItem : INotifyPropertyChanged
     public DateTimeOffset? DueDate
     {
         get => _dueDate;
-        set { _dueDate = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasMetaSeparator)); OnPropertyChanged(nameof(ShowAddDateHint)); }
+        set { _dueDate = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasMetaSeparator)); OnPropertyChanged(nameof(ShowAddDateHint)); OnPropertyChanged(nameof(HasListNameToDateSeparator)); }
     }
 
     public Guid ListId { get; set; } = Guid.Empty;
@@ -53,7 +53,25 @@ public sealed class TodoItem : INotifyPropertyChanged
         set { _tags = value ?? []; OnPropertyChanged(); OnPropertyChanged(nameof(HasMetaSeparator)); }
     }
 
-    public bool HasMetaSeparator => DueDate != null && Tags.Count > 0;
+    private string? _listName;
+
+    [JsonIgnore]
+    public string? ListName
+    {
+        get => _listName;
+        set
+        {
+            _listName = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasListName));
+            OnPropertyChanged(nameof(HasListNameToDateSeparator));
+            OnPropertyChanged(nameof(HasMetaSeparator));
+        }
+    }
+
+    public bool HasListName => _listName != null;
+    public bool HasListNameToDateSeparator => _listName != null && _dueDate != null;
+    public bool HasMetaSeparator => (_dueDate != null || _listName != null) && _tags.Count > 0;
     public bool ShowAddDateHint => !IsCompleted && DueDate == null;
 
     public DateTime CreatedAt { get; set; } = DateTime.Now;

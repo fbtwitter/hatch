@@ -92,6 +92,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public bool IsPlannedEmpty => !Tasks.Any(t => t.DueDate != null && !t.IsCompleted);
 
+    public int BadgeVersion { get; private set; }
+
     public int ThemeVersion
     {
         get => _themeVersion;
@@ -196,6 +198,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         RebuildFlatGroups();
         OnPropertyChanged(nameof(IsTaskListEmpty));
+        BadgeVersion++;
+        OnPropertyChanged(nameof(BadgeVersion));
     }
 
     private void RebuildFlatGroups()
@@ -366,6 +370,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             foreach (var list in data.Lists.OrderByDescending(l => l.IsPinned).ThenBy(l => l.SortOrder))
                 CustomLists.Add(list);
 
+            RefreshListNames();
             RefreshActiveTasks();
             OnPropertyChanged(nameof(IsTaskListEmpty));
             NotifyPlannedGroupsChanged();
@@ -421,6 +426,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public void RenameList(TaskList list, string newName)
     {
         list.Name = newName.Trim();
+        RefreshListNames();
         SaveAsync();
     }
 
@@ -495,6 +501,15 @@ public sealed class MainViewModel : INotifyPropertyChanged
     }
 
     public int GetTaskCountForList(TaskList list) => Tasks.Count(t => t.ListId == list.Id);
+
+    private void RefreshListNames()
+    {
+        var listMap = CustomLists.ToDictionary(l => l.Id, l => l.Name);
+        foreach (var task in Tasks)
+            task.ListName = task.ListId == Guid.Empty
+                ? "Task"
+                : listMap.TryGetValue(task.ListId, out var name) ? name : null;
+    }
 
     public void DeleteList(TaskList list)
     {

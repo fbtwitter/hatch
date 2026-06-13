@@ -56,14 +56,20 @@ public sealed partial class MainPage : Page
         if (e.Parameter is MainViewModel vm && _viewModel != vm)
         {
             if (_viewModel is not null)
+            {
                 _viewModel.CustomLists.CollectionChanged -= CustomLists_CollectionChanged;
+                _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+            }
             _viewModel = vm;
         }
         _viewModel ??= new MainViewModel();
 
         _viewModel.CustomLists.CollectionChanged += CustomLists_CollectionChanged;
+        _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        _viewModel.PropertyChanged += ViewModel_PropertyChanged;
 
         SyncCustomListNavItems();
+        RefreshBadges();
 
         _suppressNavigation = true;
         SelectNavItem(_viewModel.ActiveNavItem);
@@ -77,6 +83,7 @@ public sealed partial class MainPage : Page
     private void CustomLists_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         SyncCustomListNavItems();
+        RefreshBadges();
 
         _suppressNavigation = true;
         SelectNavItem(_viewModel.ActiveNavItem);
@@ -267,6 +274,13 @@ public sealed partial class MainPage : Page
 
     private void BeginInlineRename(TaskList list)
     {
+        // Pane is collapsed — nav item content is hidden behind the icon; use a flyout instead.
+        if (NavView.DisplayMode == NavigationViewDisplayMode.Compact && !NavView.IsPaneOpen)
+        {
+            ShowRenameFlyout(list);
+            return;
+        }
+
         if (!_customNavItemNameBlocks.TryGetValue(list.Id, out var nameBlock)) return;
         if (!_innerContentPanels.TryGetValue(list.Id, out var panel)) return;
 
@@ -316,6 +330,42 @@ public sealed partial class MainPage : Page
         };
 
         textBox.LostFocus += (s, e) => Commit();
+    }
+
+    private void ShowRenameFlyout(TaskList list)
+    {
+        if (!_customNavItems.TryGetValue(list.Id, out var navItem)) return;
+
+        var textBox = new TextBox
+        {
+            Text = list.Name,
+            MinWidth = 160,
+            MaxLength = 18
+        };
+
+        Flyout? flyout = null;
+        textBox.KeyDown += (s, e) =>
+        {
+            if (e.Key == VirtualKey.Enter && !string.IsNullOrWhiteSpace(textBox.Text))
+            {
+                _viewModel.RenameList(list, textBox.Text);
+                if (_customNavItemNameBlocks.TryGetValue(list.Id, out var nb))
+                    nb.Text = list.Name;
+                flyout?.Hide();
+            }
+            else if (e.Key == VirtualKey.Escape)
+            {
+                flyout?.Hide();
+            }
+        };
+
+        flyout = new Flyout { Content = textBox };
+        flyout.Opened += (s, e) =>
+        {
+            textBox.Focus(FocusState.Programmatic);
+            textBox.SelectAll();
+        };
+        flyout.ShowAt(navItem);
     }
 
     // ── Icon picker flyout ────────────────────────────────────────────────────
@@ -389,6 +439,41 @@ public sealed partial class MainPage : Page
         _viewModel.SetListIcon(list, icon);
         if (_customNavItems.TryGetValue(list.Id, out var navItem))
             navItem.Icon = BuildListIcon(list);
+    }
+
+    // ── Badges ───────────────────────────────────────────────────────────────
+
+    private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainViewModel.BadgeVersion))
+            RefreshBadges();
+    }
+
+    private void RefreshBadges()
+    {
+        var tasks = _viewModel.Tasks;
+        SetBadge(MyDayItem,     tasks.Count(t => t.IsInMyDay  && !t.IsCompleted));
+        SetBadge(ImportantItem, tasks.Count(t => t.IsStarred  && !t.IsCompleted));
+        SetBadge(PlannedItem,   tasks.Count(t => t.DueDate != null && !t.IsCompleted));
+        SetBadge(AllTasksItem,  tasks.Count(t => !t.IsCompleted));
+
+        foreach (var (id, item) in _customNavItems)
+            SetBadge(item, tasks.Count(t => t.ListId == id && !t.IsCompleted));
+    }
+
+    private static void SetBadge(NavigationViewItem navItem, int count)
+    {
+        if (count > 0)
+        {
+            if (navItem.InfoBadge is InfoBadge badge)
+                badge.Value = count;
+            else
+                navItem.InfoBadge = new InfoBadge { Value = count };
+        }
+        else
+        {
+            navItem.InfoBadge = null;
+        }
     }
 
     // ── Navigation ────────────────────────────────────────────────────────────
