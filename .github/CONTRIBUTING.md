@@ -6,7 +6,7 @@ Thank you for considering contributing to Hatch! This guide explains how to set 
 
 ## Prerequisites
 
-- **Windows 11** (build 22000+)
+- **Windows 10** (build 17763+) or **Windows 11**
 - **Visual Studio 2022** with Windows App SDK workload, OR
 - **.NET 10 SDK** + **Windows App SDK** installed separately
 - **Git**
