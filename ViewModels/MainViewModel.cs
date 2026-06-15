@@ -33,6 +33,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public ObservableCollection<TodoItem> Tasks { get; } = [];
     public ObservableCollection<TodoItem> ActiveTasks { get; } = [];
+    public ObservableCollection<TodoItem> MySuggestions { get; } = [];
     public ObservableCollection<TaskList> Lists { get; } = [];
     public ObservableCollection<TaskList> CustomLists { get; } = [];
 
@@ -60,6 +61,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
     }
 
     public bool IsTaskListEmpty => ActiveTasks.Count == 0;
+    public bool HasSuggestions => MySuggestions.Count > 0;
+    public bool SuggestionsVisible => _activeNavItem == "myday" && HasSuggestions;
+    public bool ShowEmptyState => IsTaskListEmpty && !SuggestionsVisible;
 
     public string? ActiveTagFilter
     {
@@ -89,6 +93,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public ICommand UndoLastCompletionCommand { get; private set; } = null!;
     public ICommand ClearTagFilterCommand { get; private set; } = null!;
+    public ICommand AddSuggestionToMyDayCommand { get; private set; } = null!;
 
     public bool IsPlannedEmpty => !Tasks.Any(t => t.DueDate != null && !t.IsCompleted);
 
@@ -123,6 +128,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(ActiveTagFilter));
             OnPropertyChanged(nameof(IsTagFilterActive));
             OnPropertyChanged(nameof(IsTaskListEmpty));
+            OnPropertyChanged(nameof(ShowEmptyState));
             NotifyPlannedGroupsChanged();
             OnPropertyChanged(nameof(IsPlannedEmpty));
             OnPropertyChanged(nameof(EmptyStateGlyph));
@@ -131,9 +137,15 @@ public sealed class MainViewModel : INotifyPropertyChanged
             _completedGroup.IsExpanded = IsCompletedGroupExpanded(value);
             App.Settings.ActiveNavItem = value;
             _ = App.SettingsService.SaveAsync();
+            OnPropertyChanged(nameof(SuggestionsVisible));
+            OnPropertyChanged(nameof(ShowEmptyState));
             // Defer one frame so the page shell renders before the list rebuilds,
             // without the visible pause that Low priority causes mid-navigation.
-            _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, RefreshActiveTasks);
+            _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
+            {
+                RefreshActiveTasks();
+                RefreshSuggestions();
+            });
         }
     }
 
@@ -198,8 +210,25 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         RebuildFlatGroups();
         OnPropertyChanged(nameof(IsTaskListEmpty));
+        OnPropertyChanged(nameof(ShowEmptyState));
         BadgeVersion++;
         OnPropertyChanged(nameof(BadgeVersion));
+    }
+
+    private void RefreshSuggestions()
+    {
+        var candidates = Tasks
+            .Where(t => !t.IsCompleted && !t.IsInMyDay)
+            .OrderByDescending(t => t.CreatedAt)
+            .ToList();
+
+        MySuggestions.Clear();
+        foreach (var s in candidates)
+            MySuggestions.Add(s);
+
+        OnPropertyChanged(nameof(HasSuggestions));
+        OnPropertyChanged(nameof(SuggestionsVisible));
+        OnPropertyChanged(nameof(ShowEmptyState));
     }
 
     private void RebuildFlatGroups()
@@ -292,6 +321,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         UndoLastCompletionCommand = new RelayCommand(_ => UndoLastCompletion());
         ClearTagFilterCommand = new RelayCommand(_ => ActiveTagFilter = null);
+        AddSuggestionToMyDayCommand = new RelayCommand(param =>
+        {
+            if (param is not TodoItem task) return;
+            task.IsInMyDay = true;
+            task.MyDayDate = DateOnly.FromDateTime(DateTime.Today);
+            RefreshSuggestions();
+            SaveAsync();
+        });
 
         _flatGroupedTasks = [_openGroup, _completedGroup];
 
@@ -319,12 +356,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
                     if (MatchesFilter(task))
                         ActiveTasks.Insert(0, task);
                 RebuildFlatGroups();
+                RefreshSuggestions();
             }
             else if (e.Action == NotifyCollectionChangedAction.Remove && e.OldItems != null)
             {
                 foreach (TodoItem task in e.OldItems)
                     ActiveTasks.Remove(task);
                 RebuildFlatGroups();
+                RefreshSuggestions();
             }
             else
             {
@@ -332,8 +371,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
             }
 
             OnPropertyChanged(nameof(IsTaskListEmpty));
+            OnPropertyChanged(nameof(ShowEmptyState));
             NotifyPlannedGroupsChanged();
             OnPropertyChanged(nameof(IsPlannedEmpty));
+            BadgeVersion++;
+            OnPropertyChanged(nameof(BadgeVersion));
             if (_activeNavItem == "planned")
                 OnPropertyChanged(nameof(ActiveNavItem));
         };
@@ -346,6 +388,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public async Task ReloadAsync()
     {
+        DismissUndoBar();
         _isBulkLoading = true;
         Tasks.Clear();
         CustomLists.Clear();
@@ -372,7 +415,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
             RefreshListNames();
             RefreshActiveTasks();
+            RefreshSuggestions();
             OnPropertyChanged(nameof(IsTaskListEmpty));
+            OnPropertyChanged(nameof(ShowEmptyState));
             NotifyPlannedGroupsChanged();
             OnPropertyChanged(nameof(IsPlannedEmpty));
 
@@ -389,6 +434,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             case "myday":
                 task.IsInMyDay = true;
+                task.MyDayDate = DateOnly.FromDateTime(DateTime.Today);
                 break;
             case "important":
                 task.IsStarred = true;
@@ -398,7 +444,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 break;
             default:
                 if (Guid.TryParse(_activeNavItem, out var listId))
+                {
                     task.ListId = listId;
+                    task.ListName = CustomLists.FirstOrDefault(l => l.Id == listId)?.Name;
+                }
                 break;
         }
 
@@ -552,17 +601,25 @@ public sealed class MainViewModel : INotifyPropertyChanged
             _dispatcherQueue.TryEnqueue(() =>
             {
                 if (e.PropertyName == nameof(TodoItem.IsCompleted))
+                {
                     ApplyCompletedChange(task);
+                    RefreshSuggestions();
+                }
                 else if (e.PropertyName == nameof(TodoItem.DueDate))
                     ApplyDueDateChange(task);
                 else if (e.PropertyName == nameof(TodoItem.IsStarred))
                     ApplyStarredChange(task);
                 else
                 {
+                    // IsInMyDay changed
                     RefreshActiveTasks();
+                    RefreshSuggestions();
                     OnPropertyChanged(nameof(IsTaskListEmpty));
+                    OnPropertyChanged(nameof(ShowEmptyState));
                     NotifyPlannedGroupsChanged();
                     OnPropertyChanged(nameof(IsPlannedEmpty));
+                    BadgeVersion++;
+                    OnPropertyChanged(nameof(BadgeVersion));
                 }
             });
         }
@@ -585,6 +642,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 NotifyPlannedGroupsChanged();
                 OnPropertyChanged(nameof(IsPlannedEmpty));
                 OnPropertyChanged(nameof(IsTaskListEmpty));
+                OnPropertyChanged(nameof(ShowEmptyState));
+                BadgeVersion++;
+                OnPropertyChanged(nameof(BadgeVersion));
                 break;
 
             case "myday":
@@ -608,8 +668,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
                     MoveBetweenFlatGroups(task);
                     FlatGroupMoveCompleted?.Invoke();
                     OnPropertyChanged(nameof(IsTaskListEmpty));
+                    OnPropertyChanged(nameof(ShowEmptyState));
+                    BadgeVersion++;
+                    OnPropertyChanged(nameof(BadgeVersion));
 
-                    if (task.IsCompleted)
+                    if (task.IsCompleted && Tasks.Contains(task))
                     {
                         App.NotificationScheduler.UnscheduleForTask(task.Id);
                         ShowUndoBar();
@@ -681,6 +744,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 NotifyPlannedGroupsChanged();
                 OnPropertyChanged(nameof(IsPlannedEmpty));
                 OnPropertyChanged(nameof(IsTaskListEmpty));
+                OnPropertyChanged(nameof(ShowEmptyState));
                 break;
 
             case "alltasks":
@@ -692,6 +756,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 NotifyPlannedGroupsChanged();
                 break;
         }
+
+        BadgeVersion++;
+        OnPropertyChanged(nameof(BadgeVersion));
     }
 
     private void ApplyStarredChange(TodoItem task)
@@ -707,6 +774,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 else if (!shouldBeInImportant && isInImportant)
                     ActiveTasks.Remove(task);
                 OnPropertyChanged(nameof(IsTaskListEmpty));
+                OnPropertyChanged(nameof(ShowEmptyState));
                 break;
 
             default:
@@ -714,6 +782,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 // automatically via x:Bind. No list rebuild needed.
                 break;
         }
+
+        BadgeVersion++;
+        OnPropertyChanged(nameof(BadgeVersion));
     }
 
     public void DeleteTask(TodoItem task)
@@ -750,6 +821,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 ActiveTasks.Insert(0, task);
 
             OnPropertyChanged(nameof(IsTaskListEmpty));
+            OnPropertyChanged(nameof(ShowEmptyState));
             NotifyPlannedGroupsChanged();
             OnPropertyChanged(nameof(IsPlannedEmpty));
         });

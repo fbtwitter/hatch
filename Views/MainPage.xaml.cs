@@ -141,6 +141,8 @@ public sealed partial class MainPage : Page
             Content = contentPanel,
             Icon = BuildListIcon(list)
         };
+        ToolTipService.SetToolTip(item, list.Name);
+        ToolTipService.SetPlacement(item, PlacementMode.Right);
 
         item.RightTapped += (s, e) =>
         {
@@ -351,6 +353,8 @@ public sealed partial class MainPage : Page
                 _viewModel.RenameList(list, textBox.Text);
                 if (_customNavItemNameBlocks.TryGetValue(list.Id, out var nb))
                     nb.Text = list.Name;
+                if (_customNavItems.TryGetValue(list.Id, out var navItem))
+                    ToolTipService.SetToolTip(navItem, list.Name);
                 flyout?.Hide();
             }
             else if (e.Key == VirtualKey.Escape)

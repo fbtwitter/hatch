@@ -108,6 +108,17 @@ Console.WriteLine("Generating Hatch assets...");
 // PNG assets — larger sizes for high-DPI displays
 Save("Square44x44Logo.png",    88,  88);
 Save("Square150x150Logo.png", 300, 300);
+
+// Square44x44Logo targetsize variants — required for a transparent (no plate) taskbar icon.
+// The _altform-unplated variants are what Windows uses for the taskbar button when
+// BackgroundColor="transparent" is set in the manifest. Without them Windows falls back to
+// applying a coloured backing plate even though the manifest requests transparency.
+int[] targetSizes = [16, 20, 24, 30, 32, 36, 40, 44, 48, 60, 64, 72, 80, 96, 256];
+foreach (var size in targetSizes)
+{
+    Save($"Square44x44Logo.targetsize-{size}.png", size, size);
+    Save($"Square44x44Logo.targetsize-{size}_altform-unplated.png", size, size);
+}
 Save("Wide310x150Logo.png",   620, 300);
 Save("StoreLogo.png",         100, 100);
 // Splash screen keeps a little breathing room on a white background

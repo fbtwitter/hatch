@@ -38,14 +38,26 @@
             IsPaneToggleButtonVisible="False">
 
             <NavigationView.MenuItems>
-                <NavigationViewItem x:Name="MyDayItem" AutomationProperties.AutomationId="Nav_MyDay" x:Uid="Nav_MyDay" Tag="myday" Icon="Calendar" ToolTipService.Placement="Right"/>
-                <NavigationViewItem x:Name="ImportantItem" AutomationProperties.AutomationId="Nav_Important" x:Uid="Nav_Important" Tag="important" Icon="Favorite" ToolTipService.Placement="Right"/>
+                <NavigationViewItem x:Name="MyDayItem" AutomationProperties.AutomationId="Nav_MyDay" x:Uid="Nav_MyDay" Tag="myday" ToolTipService.Placement="Right">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE706;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="ImportantItem" AutomationProperties.AutomationId="Nav_Important" x:Uid="Nav_Important" Tag="important" ToolTipService.Placement="Right">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE734;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
                 <NavigationViewItem x:Name="PlannedItem" AutomationProperties.AutomationId="Nav_Planned" x:Uid="Nav_Planned" Tag="planned" ToolTipService.Placement="Right">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xED28;"/>
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Name="AllTasksItem" AutomationProperties.AutomationId="Nav_AllTasks" x:Uid="Nav_AllTasks" Tag="alltasks" Icon="List" ToolTipService.Placement="Right"/>
+                <NavigationViewItem x:Name="AllTasksItem" AutomationProperties.AutomationId="Nav_AllTasks" x:Uid="Nav_AllTasks" Tag="alltasks" ToolTipService.Placement="Right">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8FD;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
                 <NavigationViewItemSeparator/>
                 <!-- Custom list items injected after this separator by code-behind -->
             </NavigationView.MenuItems>

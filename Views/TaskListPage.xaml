@@ -432,7 +432,7 @@
                             VerticalAlignment="Center"
                             Spacing="8"
                             MaxWidth="260"
-                            Visibility="{x:Bind ViewModel.IsTaskListEmpty, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                            Visibility="{x:Bind ViewModel.ShowEmptyState, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                     <FontIcon Glyph="{x:Bind ViewModel.EmptyStateGlyph, Mode=OneWay, FallbackValue=&#xE762;}"
                               FontSize="48"
                               Foreground="{ThemeResource TextFillColorDisabledBrush}"
@@ -453,67 +453,114 @@
                 <!-- Flat list with grouping — My Day, Important, All Tasks -->
                 <ScrollViewer Grid.Row="0" x:Name="FlatListView"
                               HorizontalScrollBarVisibility="Disabled">
-                    <ItemsControl ItemsSource="{x:Bind ViewModel.FlatGroupedTasks, Mode=OneWay}"
-                                  HorizontalAlignment="Stretch"
-                                  Padding="24,0,24,24">
-                        <ItemsControl.ItemContainerStyle>
-                            <Style TargetType="ContentPresenter">
-                                <Setter Property="HorizontalAlignment" Value="Stretch" />
-                            </Style>
-                        </ItemsControl.ItemContainerStyle>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="models:CompletedTaskGroup">
-                                <StackPanel Spacing="4" HorizontalAlignment="Stretch">
-                                    <TextBlock Text="{x:Bind EmptyMessage, Mode=OneWay}"
-                                               Visibility="{x:Bind ShowEmptyState, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                               HorizontalAlignment="Center"
-                                               Padding="0,24,0,8"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <StackPanel>
+                        <ItemsControl ItemsSource="{x:Bind ViewModel.FlatGroupedTasks, Mode=OneWay}"
+                                      HorizontalAlignment="Stretch"
+                                      Padding="24,0,24,8">
+                            <ItemsControl.ItemContainerStyle>
+                                <Style TargetType="ContentPresenter">
+                                    <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                </Style>
+                            </ItemsControl.ItemContainerStyle>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="models:CompletedTaskGroup">
+                                    <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                                        <TextBlock Text="{x:Bind EmptyMessage, Mode=OneWay}"
+                                                   Visibility="{x:Bind ShowEmptyState, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                                   HorizontalAlignment="Center"
+                                                   Padding="0,24,0,8"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
 
-                                    <Expander IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
-                                              HorizontalAlignment="Stretch"
-                                              HorizontalContentAlignment="Stretch"
-                                              Padding="0"
-                                              Margin="16,4"
+                                        <Expander IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
+                                                  HorizontalAlignment="Stretch"
+                                                  HorizontalContentAlignment="Stretch"
+                                                  Padding="0"
+                                                  Margin="16,4"
+                                                  CornerRadius="{ThemeResource ControlCornerRadius}"
+                                                  Visibility="{x:Bind HasItems, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                                            <Expander.Resources>
+                                                <StaticResource x:Key="ExpanderHeaderBackground"
+                                                                ResourceKey="SubtleFillColorSecondaryBrush" />
+                                                <StaticResource x:Key="ExpanderHeaderBackgroundPointerOver"
+                                                                ResourceKey="SubtleFillColorTertiaryBrush" />
+                                            </Expander.Resources>
+                                            <Expander.Header>
+                                                <StackPanel Orientation="Horizontal" Spacing="8"
+                                                            Padding="0,16" VerticalAlignment="Center">
+                                                    <TextBlock Text="{x:Bind Name, Mode=OneWay}"
+                                                               FontWeight="SemiBold"
+                                                               Visibility="{x:Bind HasCountLabel, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}"
+                                                               VerticalAlignment="Center" />
+                                                    <TextBlock Text="{x:Bind CountLabel, Mode=OneWay}"
+                                                               Visibility="{x:Bind HasCountLabel, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                                               FontWeight="SemiBold"
+                                                               VerticalAlignment="Center" />
+                                                </StackPanel>
+                                            </Expander.Header>
+
+                                            <ListView ItemsSource="{x:Bind Items, Mode=OneWay}"
+                                                      ItemTemplate="{StaticResource TaskItemTemplate}"
+                                                      ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
+                                                      SelectionMode="Single"
+                                                      SelectionChanged="TaskListView_SelectionChanged"
+                                                      IsTabStop="False"
+                                                      ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                                <ListView.ItemContainerTransitions>
+                                                    <TransitionCollection />
+                                                </ListView.ItemContainerTransitions>
+                                            </ListView>
+                                        </Expander>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <!-- Suggestions — My Day only, shows tasks from previous days not yet completed -->
+                        <StackPanel Margin="16,8,16,24"
+                                    Spacing="4"
+                                    Visibility="{x:Bind ViewModel.SuggestionsVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                            <TextBlock Text="Suggested"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="8,0,0,4" />
+                            <ItemsRepeater ItemsSource="{x:Bind ViewModel.MySuggestions, Mode=OneWay}">
+                                <ItemsRepeater.ItemTemplate>
+                                    <DataTemplate x:DataType="models:TodoItem">
+                                        <Grid Tag="{x:Bind}"
+                                              Padding="12,10"
+                                              Margin="0,2"
+                                              ColumnSpacing="8"
+                                              Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                                               CornerRadius="{ThemeResource ControlCornerRadius}"
-                                              Visibility="{x:Bind HasItems, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                                        <Expander.Resources>
-                                            <StaticResource x:Key="ExpanderHeaderBackground"
-                                                            ResourceKey="SubtleFillColorSecondaryBrush" />
-                                            <StaticResource x:Key="ExpanderHeaderBackgroundPointerOver"
-                                                            ResourceKey="SubtleFillColorTertiaryBrush" />
-                                        </Expander.Resources>
-                                        <Expander.Header>
-                                            <StackPanel Orientation="Horizontal" Spacing="8"
-                                                        Padding="0,16" VerticalAlignment="Center">
-                                                <TextBlock Text="{x:Bind Name, Mode=OneWay}"
-                                                           FontWeight="SemiBold"
-                                                           Visibility="{x:Bind HasCountLabel, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}"
-                                                           VerticalAlignment="Center" />
-                                                <TextBlock Text="{x:Bind CountLabel, Mode=OneWay}"
-                                                           Visibility="{x:Bind HasCountLabel, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                                           FontWeight="SemiBold"
-                                                           VerticalAlignment="Center" />
-                                            </StackPanel>
-                                        </Expander.Header>
+                                              Tapped="SuggestionCard_Tapped">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{x:Bind Title, Mode=OneWay}"
+                                                       VerticalAlignment="Center"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <Button Grid.Column="1"
+                                                    Tag="{x:Bind}"
+                                                    Click="SuggestionAddButton_Click"
+                                                    Style="{ThemeResource AccentButtonStyle}"
+                                                    Padding="6"
+                                                    MinWidth="0"
+                                                    Width="32" Height="32"
+                                                    ToolTipService.ToolTip="Add to My Day"
+                                                    VerticalAlignment="Center">
+                                                <FontIcon Glyph="&#xE710;" FontSize="14" />
+                                            </Button>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsRepeater.ItemTemplate>
+                            </ItemsRepeater>
+                        </StackPanel>
 
-                                        <ListView ItemsSource="{x:Bind Items, Mode=OneWay}"
-                                                  ItemTemplate="{StaticResource TaskItemTemplate}"
-                                                  ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
-                                                  SelectionMode="Single"
-                                                  SelectionChanged="TaskListView_SelectionChanged"
-                                                  IsTabStop="False"
-                                                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                                            <ListView.ItemContainerTransitions>
-                                                <TransitionCollection />
-                                            </ListView.ItemContainerTransitions>
-                                        </ListView>
-                                    </Expander>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+                    </StackPanel>
                 </ScrollViewer>
 
                 <!-- Grouped list — Planned view only -->

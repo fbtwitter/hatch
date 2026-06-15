@@ -25,13 +25,40 @@ public sealed class TaskStorageService
         try
         {
             var json = await File.ReadAllTextAsync(_filePath);
+            TasksFile file;
             // Migration: old format was a plain array of TodoItem
             if (json.TrimStart().StartsWith('['))
             {
                 var tasks = JsonSerializer.Deserialize<List<TodoItem>>(json) ?? [];
-                return new TasksFile { Tasks = tasks };
+                file = new TasksFile { Tasks = tasks };
             }
-            return JsonSerializer.Deserialize<TasksFile>(json) ?? new TasksFile();
+            else
+            {
+                file = JsonSerializer.Deserialize<TasksFile>(json) ?? new TasksFile();
+            }
+
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            bool needsSave = false;
+            foreach (var task in file.Tasks)
+            {
+                if (task.IsInMyDay && task.MyDayDate == null)
+                {
+                    // Migrate: task was in My Day before MyDayDate existed
+                    task.MyDayDate = today;
+                    needsSave = true;
+                }
+                else if (task.IsInMyDay && task.MyDayDate.HasValue && task.MyDayDate < today)
+                {
+                    // Daily reset: My Day doesn't carry over to a new day
+                    task.ResetMyDayForNewDay();
+                    needsSave = true;
+                }
+            }
+
+            if (needsSave)
+                await SaveAsync(file);
+
+            return file;
         }
         catch
         {
