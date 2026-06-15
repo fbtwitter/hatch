@@ -461,7 +461,7 @@
                     <toolkit:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE946;"/>
                     </toolkit:SettingsExpander.HeaderIcon>
-                    <TextBlock Text="v0.11.0"
+                    <TextBlock Text="v0.11.1"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                VerticalAlignment="Center"/>
                     <toolkit:SettingsExpander.Items>
@@ -497,3 +497,4 @@
         </ScrollViewer>
     </Grid>
 </Page>
+
