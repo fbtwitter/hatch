@@ -19,36 +19,15 @@ Fast. Private. Local-first.
 
 ---
 
-## Get Started in 30 Seconds
-
-**Download** the latest `.msix` from [Releases](../../releases) → **Double-click** → **Done**
-
-First time? [Install the signing cert](../../releases) (one step, one time).
-
-[Download Latest Release](../../releases) • [Build from Source](#building-from-source) • [What's New](CHANGELOG.md) • [Roadmap](docs/ROADMAP.md)
-
----
-
-## Why Hatch?
-
-| | **Microsoft To Do** | **Hatch** |
-|---|---|---|
-| **Account required** | Microsoft account | Never |
-| **Task capture speed** | 3+ clicks | ≤4 seconds |
-| **Privacy** | Syncs to servers | Local disk only |
-| **Windows design** | Pre-Fluent 2 | Native WinUI 3 |
-| **Personality** | Corporate | Mascot + contextual tips |
-
----
-
 ## Features at a Glance
 
 **Always-on-top mascot** — Click from anywhere, add task in seconds  
 **Smart lists** — My Day, Important, Planned, All Tasks, custom lists  
+**My Day daily reset** — My Day clears each morning; incomplete tasks surface as suggestions to re-add  
 **Contextual tips** — Tips based on your actual task state (v0.3+)  
-**Local storage** — `%LocalAppData%` only, nothing ever leaves your device  
+**Local storage** — `%LocalAppData%` by default; optional Supabase sync available  
 **Windows native** — Mica (Win11), Acrylic (Win10 2004+), Segoe UI Variable, dark/light mode  
-**Private by design** — No account, no cloud, no telemetry, ever  
+**Private by design** — No mandatory account, no telemetry, no silent cloud  
 **Appreciation cosmetics** — Optional $5 one-time purchase (skins, sounds, themes)  
 
 ---
@@ -76,7 +55,7 @@ dotnet build -c Release   # Release
 dotnet run                # Run (Windows only)
 ```
 
-Placeholder assets generate automatically. See [Contributing Guide](docs/CONTRIBUTING.md#building-from-source) for details.
+Placeholder assets generate automatically. See [Contributing Guide](.github/CONTRIBUTING.md#building-from-source) for details.
 
 ---
 
@@ -85,11 +64,11 @@ Placeholder assets generate automatically. See [Contributing Guide](docs/CONTRIB
 | Document | Purpose |
 |----------|---------|
 | **[Changelog](CHANGELOG.md)** | Detailed release history, what shipped in each version |
-| **[Roadmap](docs/ROADMAP.md)** | v1.0 planned features, Next, Later, decision-making process |
-| **[Architecture](docs/ARCHITECTURE.md)** | Tech stack, folder structure, data model, MVVM patterns |
-| **[Privacy](docs/PRIVACY.md)** | Data guarantee, storage locations, no-network promise |
-| **[Performance](docs/PERFORMANCE.md)** | Memory budgets, optimization techniques, benchmarks |
-| **[Contributing](docs/CONTRIBUTING.md)** | How to build, code standards, submitting PRs |
+| **[Roadmap](.github/ROADMAP.md)** | v1.0 planned features, Next, Later, decision-making process |
+| **[Architecture](.github/ARCHITECTURE.md)** | Tech stack, folder structure, data model, MVVM patterns |
+| **[Privacy](.github/PRIVACY.md)** | Data guarantee, storage locations, no-network promise |
+| **[Performance](.github/PERFORMANCE.md)** | Memory budgets, optimization techniques, benchmarks |
+| **[Contributing](.github/CONTRIBUTING.md)** | How to build, code standards, submitting PRs |
 
 ---
 
@@ -97,8 +76,8 @@ Placeholder assets generate automatically. See [Contributing Guide](docs/CONTRIB
 
 **Three rules. Non-negotiable.**
 
-**No account** — Installs and runs with zero sign-in  
-**No cloud** — All data in `%LocalAppData%\Hatch\` — nothing leaves your device  
+**No mandatory account** — Installs and runs with zero sign-in (optional sync available)  
+**No silent cloud** — All data in `%LocalAppData%\Hatch\` by default — nothing leaves without your consent  
 **No telemetry** — No analytics, no crash reports, no usage pings  
 
 Fully functional with the network cable unplugged.
@@ -107,9 +86,9 @@ Fully functional with the network cable unplugged.
 | File | Contents |
 |------|----------|
 | `tasks.json` | Your tasks + custom lists |
-| `settings.json` | Theme, mascot position, preferences |
+| `settings.json` | Theme, mascot position, preferences, optional sync tokens |
 
-[Full privacy details →](docs/PRIVACY.md)
+[Full privacy details →](.github/PRIVACY.md)
 
 ---
 
@@ -126,79 +105,21 @@ Hatch lives on your desktop permanently. Memory is a first-class constraint.
 
 **Optimizations:** 5s fullscreen polling, 30s hide-restore timer, aggressive memory cleanup, Lottie animations pause when hidden.
 
-[Performance details & benchmarks →](docs/PERFORMANCE.md)
+[Performance details & benchmarks →](.github/PERFORMANCE.md)
 
 ---
 
 ## What's Shipped
 
-Latest releases have been moving fast. Latest production version is **v0.11.1** (June 15, 2026).
-
-| Version | Shipped | Highlights |
-|---------|---------|-----------|
-| **v0.11.1** | Jun 15 | My Day daily reset + suggestions, InfoBadge live updates, nav icon refresh, transparent taskbar icon, list name on new tasks, quick-add list name fix |
-| **v0.10.0** | Jun 13 | List name chip in task rows, nav InfoBadge for open tasks, rename flyout in compact pane, bubble dismiss on unfocus, mascot tap shows main window, always-on-top ignores windowed fullscreen |
-| **v0.9.2** | Jun 11 | Upgrade Windows App SDK to 2.2.0 |
-| **v0.9.1** | Jun 8  | Fix sync stale data — "Sync now" always pulls latest from server; surface pull errors |
-| **v0.9.0** | Jun 8  | Task Tags — chip row per task, add/remove in details pane, filter by tag; project renamed to hatch |
-| **v0.8.1** | Jun 8  | Mascot transparency fix — `WS_EX_NOREDIRECTIONBITMAP` + DWM frame extension |
-| **v0.8.0** | Jun 5  | Focus Mode — compact always-on-top popup above mascot; mark done / exit; fade+slide animation |
-| **v0.7.0** | Jun 5  | Due-date toast notifications with mark-complete action and `hatch://opentask` deep-link |
-| **v0.6.2** | Jun 4  | Bidirectional sync — auto-pull on startup, pull-then-push on "Sync now" |
-| **v0.6.1** | Jun 4  | Single-instance redirect; OAuth callback delivered to running instance |
-| **v0.6.0** | Jun 4  | Optional Supabase sync, first-run onboarding privacy screen, `hatch://` URI scheme |
-| **v0.5.1** | Jun 4  | Windows 10 compatibility: OS-guarded backdrops, DWM attribute guards, `OsVersionHelper` |
-| **v0.5.0** | Jun 3  | Keyboard shortcuts: Delete task, Ctrl+D due date, Ctrl+M My Day, ↑/↓ navigation, Ctrl+Enter exit notes |
-| **v0.4.1** | Jun 3  | List reordering via Move up / Move down context menu; SymbolIcon on all list menu items |
-| **v0.4.0** | May 22 | Details pane with inline title edit, notes, My Day toggle, due date; native ListView selection with accent highlight |
-| **v0.3.1** | May 15 | Completed task grouping with collapsible Expander, 250ms animated move, undo snackbar |
-| **v0.3.0** | May 12 | Contextual tip engine, adaptive silence, actionable tips, dynamic bubble sizing |
-| **v0.2.6** | May 12 | Run at startup toggle, mascot auto-launch on OS boot, responsive UI |
-| **v0.2.5** | May 12 | Memory optimization (<50MB idle), CPU reduction (80% less fullscreen polling) |
-| **v0.2.4** | May | Manual mascot resizing with presets + custom slider |
-| **v0.2.3** | May 11 | Theme-aware colors, 2x high-DPI icons, dark/light mode polish |
-| **v0.2.2** | May | Mascot mute, hide-for-an-hour, first-run onboarding |
-| **v0.2.1** | May 10 | Quick-add bubble, due-date presets, confirmation |
-| **v0.2.0** | May 9 | NavigationView rail, smart lists (My Day, Important, Planned) |
-| **v0.1.0** | May 7 | Always-on-top mascot, drag/reposition, idle animation |
-| **v0.0.1** | May 1 | Initial release: tasks, settings, system tray |
-
-[Full changelog with detailed release notes →](CHANGELOG.md)
+Latest version: **v0.11.1** (June 15, 2026) — [full version history →](.github/ROADMAP.md#whats-shipped)
 
 ---
 
 ## Roadmap
 
-### v1.0 — Q3 2026
+One remaining v1.0 item: appreciation purchase ($5, cosmetics only).
 
-Core features: contextual tips, details pane, due-date picker, custom lists, privacy onboarding, appreciation cosmetics.
-
-**v0.4.x — shipped:**
-- ~~Details pane — slide-in panel with notes, My Day toggle, due date, created-at~~
-- ~~List CRUD — create / rename / pin / custom icon / delete custom lists~~
-- ~~List reordering — Move up / Move down via context menu~~
-
-**v0.5.x — shipped:**
-- ~~Keyboard shortcuts: Delete, Ctrl+D, Ctrl+M, ↑/↓, Ctrl+Enter~~
-- ~~Windows 10 compatibility (build 17763+): OS-guarded backdrops and DWM attributes~~
-
-**v0.6.x–v0.10.x — shipped:**
-- ~~Optional Supabase sync + first-run onboarding privacy screen~~
-- ~~Due-date toast notifications with mark-complete action~~
-- ~~Focus Mode — compact always-on-top overlay~~
-- ~~Task Tags — chips, filter, details pane~~
-- ~~UX polish: list name chip, nav InfoBadge, bubble dismiss, mascot tap routing, windowed fullscreen fix~~
-
-**Planned:**
-- Appreciation purchase ($5, cosmetics only)
-
-### Next (Post-v1.0)
-
-### Later
-
-Cloud sync (optional, privacy-respecting), task dependencies, custom skins, time tracking.
-
-[Full roadmap with timelines →](docs/ROADMAP.md)
+[Full roadmap →](.github/ROADMAP.md)
 
 ---
 
@@ -207,8 +128,8 @@ Cloud sync (optional, privacy-respecting), task dependencies, custom skins, time
 Want to help? We'd love it!
 
 1. Read [Coding Standards](context/coding-standards.md) (non-negotiable)
-2. Check [Architecture](docs/ARCHITECTURE.md) for design decisions
-3. See [Contributing Guide](docs/CONTRIBUTING.md) for build steps, PR process, code review checklist
+2. Check [Architecture](.github/ARCHITECTURE.md) for design decisions
+3. See [Contributing Guide](.github/CONTRIBUTING.md) for build steps, PR process, code review checklist
 
 **Branch naming:** `feature/name`, `fix/name`, `chore/name`  
 **Commits:** Conventional format (`feat:`, `fix:`, etc.)  
@@ -219,7 +140,7 @@ Want to help? We'd love it!
 ## FAQ
 
 **Q: Does Hatch sync with Microsoft To Do?**  
-A: No. Hatch is local-only by design. No sync, no cloud, no integration.
+A: No Microsoft To Do integration. Hatch has optional Supabase sync (Settings → Sync) if you want cross-device access, but it's off by default and never required.
 
 **Q: Can I use Hatch on Windows 10?**  
 A: Yes. Hatch requires Windows 10 build 17763 (1809) or later. Mica backdrop is Windows 11-only; Windows 10 2004+ gets acrylic instead.
