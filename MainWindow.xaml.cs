@@ -240,6 +240,7 @@ public sealed partial class MainWindow : Window
         if (!_isExiting && App.Settings.MinimizeToTray)
         {
             args.Cancel = true;
+            ViewModel.DismissUndoBar();
             ShowWindow(_hwnd, SW_HIDE);
             try
             {

@@ -23,19 +23,50 @@ public sealed class TodoItem : INotifyPropertyChanged
     public bool IsCompleted
     {
         get => _isCompleted;
-        set { _isCompleted = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowAddDateHint)); }
+        set
+        {
+            if (_isCompleted == value) return;
+            _isCompleted = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowAddDateHint));
+        }
     }
 
     public bool IsStarred
     {
         get => _isStarred;
-        set { _isStarred = value; OnPropertyChanged(); }
+        set
+        {
+            if (_isStarred == value) return;
+            _isStarred = value;
+            OnPropertyChanged();
+        }
     }
 
     public bool IsInMyDay
     {
         get => _isInMyDay;
-        set { _isInMyDay = value; OnPropertyChanged(); }
+        set
+        {
+            if (_isInMyDay == value) return;
+            _isInMyDay = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private DateOnly? _myDayDate;
+    public DateOnly? MyDayDate
+    {
+        get => _myDayDate;
+        set { _myDayDate = value; OnPropertyChanged(); }
+    }
+
+    // Used only by daily reset — clears IsInMyDay without touching MyDayDate,
+    // so yesterday's date is preserved for suggestion tracking.
+    internal void ResetMyDayForNewDay()
+    {
+        _isInMyDay = false;
+        OnPropertyChanged(nameof(IsInMyDay));
     }
 
     public DateTimeOffset? DueDate

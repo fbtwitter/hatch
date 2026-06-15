@@ -316,7 +316,8 @@ public sealed partial class QuickAddBubbleWindow : Window
         var task = new TodoItem
         {
             Title = title,
-            ListId = selectedListId
+            ListId = selectedListId,
+            ListName = selectedList?.Name ?? mainVm.Lists.FirstOrDefault(l => l.Id == selectedListId)?.Name
         };
 
         task.DueDate = (DatePresetSelector.SelectedIndex) switch
@@ -613,10 +614,12 @@ public sealed partial class QuickAddBubbleWindow : Window
 
     private void AddSampleTask(MainViewModel mainVm)
     {
+        var firstList = mainVm.Lists.Count > 0 ? mainVm.Lists[0] : null;
         var sampleTask = new TodoItem
         {
             Title = "Example: Click to edit task name",
-            ListId = mainVm.Lists.Count > 0 ? mainVm.Lists[0].Id : Guid.Empty
+            ListId = firstList?.Id ?? Guid.Empty,
+            ListName = firstList?.Name
         };
 
         mainVm.Tasks.Insert(0, sampleTask);

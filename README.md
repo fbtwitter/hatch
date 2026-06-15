@@ -10,7 +10,7 @@ Fast. Private. Local-first.
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=.net)
 ![WinUI 3](https://img.shields.io/badge/WinUI-3-0078D4?style=flat-square)
 ![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![v0.10.0](https://img.shields.io/badge/Version-v0.10.0-blue?style=flat-square)
+![v0.11.0](https://img.shields.io/badge/Version-v0.11.0-blue?style=flat-square)
 
 </div>
 
@@ -132,10 +132,11 @@ Hatch lives on your desktop permanently. Memory is a first-class constraint.
 
 ## What's Shipped
 
-Latest releases have been moving fast. Latest production version is **v0.10.0** (June 13, 2026).
+Latest releases have been moving fast. Latest production version is **v0.11.0** (June 15, 2026).
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.11.0** | Jun 15 | My Day daily reset + suggestions, InfoBadge live updates, nav icon refresh, transparent taskbar icon, list name on new tasks, quick-add list name fix |
 | **v0.10.0** | Jun 13 | List name chip in task rows, nav InfoBadge for open tasks, rename flyout in compact pane, bubble dismiss on unfocus, mascot tap shows main window, always-on-top ignores windowed fullscreen |
 | **v0.9.2** | Jun 11 | Upgrade Windows App SDK to 2.2.0 |
 | **v0.9.1** | Jun 8  | Fix sync stale data — "Sync now" always pulls latest from server; surface pull errors |

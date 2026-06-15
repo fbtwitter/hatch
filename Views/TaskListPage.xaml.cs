@@ -298,6 +298,28 @@ public sealed partial class TaskListPage : Page
     {
         if (_updatingPane || _paneTask == null) return;
         _paneTask.IsInMyDay = PaneMyDayToggle.IsOn;
+        _paneTask.MyDayDate = PaneMyDayToggle.IsOn
+            ? DateOnly.FromDateTime(DateTime.Today)
+            : null;
+    }
+
+    private void SuggestionCard_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        // Don't open pane when the tap originated from the Add button.
+        var source = e.OriginalSource as DependencyObject;
+        while (source != null && !ReferenceEquals(source, sender))
+        {
+            if (source is ButtonBase) return;
+            source = VisualTreeHelper.GetParent(source);
+        }
+        if (sender is Grid { Tag: TodoItem task })
+            ViewModel.SelectedTask = task;
+    }
+
+    private void SuggestionAddButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: TodoItem task })
+            ViewModel.AddSuggestionToMyDayCommand.Execute(task);
     }
 
     private void PaneDueDatePicker_DateChanged(CalendarDatePicker sender, CalendarDatePickerDateChangedEventArgs args)
@@ -500,7 +522,9 @@ public sealed partial class TaskListPage : Page
             case VirtualKey.M when isCtrl && !IsTextInputFocused():
                 if (ViewModel.SelectedTask is { } mTask)
                 {
-                    mTask.IsInMyDay = !mTask.IsInMyDay;
+                    bool myDayOn = !mTask.IsInMyDay;
+                    mTask.IsInMyDay = myDayOn;
+                    mTask.MyDayDate = myDayOn ? DateOnly.FromDateTime(DateTime.Today) : null;
                     if (_paneTask == mTask)
                     {
                         _updatingPane = true;
