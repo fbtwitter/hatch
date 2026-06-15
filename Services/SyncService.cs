@@ -29,8 +29,8 @@ public sealed class SyncService
 
     private SupabaseClient? _client;
 
-    public bool IsSignedIn => _client?.Auth.CurrentSession != null;
-    public string? UserEmail => _client?.Auth.CurrentUser?.Email;
+    public bool IsSignedIn => _client?.Auth?.CurrentSession != null;
+    public string? UserEmail => _client?.Auth?.CurrentUser?.Email;
 
     public event Action? StateChanged;
     public event Action? TasksReceived; // fires when a pull returned newer data
@@ -96,7 +96,7 @@ public sealed class SyncService
 
     public async Task SignOutAsync()
     {
-        try { await _client?.Auth.SignOut(); } catch { }
+        try { await (_client?.Auth?.SignOut() ?? Task.CompletedTask); } catch { }
         ClearTokens();
         await App.SettingsService.SaveAsync();
         StateChanged?.Invoke();
