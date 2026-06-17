@@ -428,7 +428,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private void AddTask()
     {
-        var task = new TodoItem { Title = NewTaskText.Trim() };
+        var task = new TodoItem { Title = NewTaskText.Trim(), ListName = "Task" };
 
         switch (_activeNavItem)
         {
