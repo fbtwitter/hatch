@@ -59,6 +59,13 @@ public sealed partial class MascotWindow : Window
         // InitializeComponent is too late on SDR — the bitmap is already created and
         // the white backing bleeds through transparent areas.
         _hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
+
+        // Hide before Activate() runs so the compositor's default background fill
+        // (black on dark theme) is never painted. Activate() will still trigger
+        // OnFirstActivated via WM_ACTIVATE; we show the window there after
+        // TransparentTintBackdrop is applied and styles are settled.
+        ShowWindow(_hwnd, SW_HIDE);
+
         ApplyWindowStyles();
 
         InitializeComponent();
@@ -85,12 +92,14 @@ public sealed partial class MascotWindow : Window
         // Defer idle animation until after the window is shown to avoid startup lag
         Activated += OnFirstActivated;
 
-        // Borderless, non-resizable, no title bar chrome
+        // Non-resizable, no title bar chrome. hasBorder=true to avoid DWM injecting
+        // WS_DLGFRAME on Windows 10 22H2 (which produces a thin white border).
+        // The border is stripped entirely via Win32 style bits in ApplyWindowStyles().
         var presenter = OverlappedPresenter.Create();
         presenter.IsMaximizable = false;
         presenter.IsMinimizable = false;
         presenter.IsResizable   = false;
-        presenter.SetBorderAndTitleBar(false, false);
+        presenter.SetBorderAndTitleBar(true, false);
         AppWindow.SetPresenter(presenter);
 
         // Required for TransparentTintBackdrop to cover the full window surface.
@@ -169,8 +178,6 @@ public sealed partial class MascotWindow : Window
 
         RegisterHotKey();
 
-        // Seed initial HDR state — updated on every WM_DISPLAYCHANGE thereafter.
-        ViewModel.OnDisplayModeChanged(Helpers.DisplayHelper.IsWindowOnHdrDisplay(_hwnd));
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -204,7 +211,9 @@ public sealed partial class MascotWindow : Window
         }
     }
 
-    private async void ApplyLottieSource()
+    private void ApplyLottieSource() => _ = ApplyLottieSourceAsync();
+
+    private async Task ApplyLottieSourceAsync()
     {
         _lottieStarted = false;
 
@@ -213,6 +222,10 @@ public sealed partial class MascotWindow : Window
 
         if (hasFile)
         {
+            // Hide canvas immediately before the first await — prevents the canvas mascot
+            // from flashing on screen while the Lottie file is being read and decoded.
+            MascotRoot.Visibility = Visibility.Collapsed;
+            LottiePlayer.Visibility = Visibility.Collapsed;
             try
             {
                 // LottieVisualSource.UriSource does not support file:// URIs — the internal
@@ -231,7 +244,6 @@ public sealed partial class MascotWindow : Window
                 await source.SetSourceAsync(memStream);
                 LottiePlayer.Source = source;
                 LottiePlayer.Visibility = Visibility.Visible;
-                MascotRoot.Visibility = Visibility.Collapsed;
                 _idleAnimation?.Stop();
             }
             catch
@@ -395,54 +407,37 @@ public sealed partial class MascotWindow : Window
             return new IntPtr(1);
         if (uMsg == NativeMethods.WM_DISPLAYCHANGE)
         {
-            DispatcherQueue.TryEnqueue(() =>
-            {
-                bool hdr = Helpers.DisplayHelper.IsWindowOnHdrDisplay(_hwnd);
-                ViewModel.OnDisplayModeChanged(hdr);
-                ApplyWindowStyles();
-            });
+            DispatcherQueue.TryEnqueue(ApplyWindowStyles);
         }
         return NativeMethods.DefSubclassProc(hWnd, uMsg, wParam, lParam);
     }
 
     private void ApplyWindowStyles()
     {
-        // Remove the Win32 HWND class background brush. Without this, Win32 paints a
-        // white fill under the DComp visual tree before XAML composites on top — the
-        // edges bleed through as a white border on transparent windows. Setting the
-        // class brush to NULL_BRUSH stops that paint entirely.
+        // Prevent GDI from painting white behind the DComp visual tree.
         NativeMethods.SetClassLongPtr(
             _hwnd,
             NativeMethods.GCLP_HBRBACKGROUND,
             NativeMethods.GetStockObject(NativeMethods.NULL_BRUSH));
 
-        // Flush presenter style changes (border/titlebar removal) to DWM immediately.
+        // Flush presenter changes to DWM.
         NativeMethods.SetWindowPos(_hwnd, IntPtr.Zero, 0, 0, 0, 0,
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_FRAMECHANGED);
 
-        // Strip WS_BORDER and WS_THICKFRAME — removes the visible frame and resize
-        // border. WS_CAPTION is intentionally kept: DwmExtendFrameIntoClientArea with
-        // -1 margins requires WS_CAPTION to be present on SDR displays so DWM has a
-        // non-client frame to extend across the client area for per-pixel transparency.
-        // Stripping it causes the glass extension to silently fail on SDR, leaving an
-        // opaque white background. SetBorderAndTitleBar(false, false) hides the chrome
-        // visually through DWM attributes without removing the style bit.
+        // Strip all border style bits. SetBorderAndTitleBar(true, false) prevents DWM from
+        // injecting WS_DLGFRAME (thin white border artifact on Windows 10 22H2); stripping
+        // all three here ensures no visible frame remains.
         var style = NativeMethods.GetWindowLong(_hwnd, NativeMethods.GWL_STYLE);
         NativeMethods.SetWindowLong(_hwnd, NativeMethods.GWL_STYLE,
-            style & ~(NativeMethods.WS_BORDER | NativeMethods.WS_THICKFRAME));
+            style & ~(NativeMethods.WS_BORDER | NativeMethods.WS_DLGFRAME | NativeMethods.WS_THICKFRAME));
 
-        // WS_EX_NOREDIRECTIONBITMAP: prevents the GDI redirection bitmap from being
-        // allocated, so DWM composites directly from the visual tree. Must be set before
-        // InitializeComponent on SDR — once the bitmap exists it cannot be removed.
-        // Clear WS_EX_WINDOWEDGE: removes the 3D-edge shell border.
-        // Note: WS_EX_TOOLWINDOW is intentionally omitted — it causes DWM to skip the
-        // sheet-of-glass compositing path, which breaks per-pixel transparency on SDR.
+        // WS_EX_NOREDIRECTIONBITMAP: DWM composites from the DComp visual tree instead of
+        // a GDI bitmap, enabling per-pixel alpha. Must be set before InitializeComponent.
         var exStyle = NativeMethods.GetWindowLong(_hwnd, NativeMethods.GWL_EXSTYLE);
         NativeMethods.SetWindowLong(_hwnd, NativeMethods.GWL_EXSTYLE,
             (exStyle | NativeMethods.WS_EX_NOREDIRECTIONBITMAP)
             & ~NativeMethods.WS_EX_WINDOWEDGE);
 
-        // Win11-only DWM attributes — E_INVALIDARG on Windows 10.
         if (Helpers.OsVersionHelper.IsWindows11OrGreater)
         {
             var noBorder = NativeMethods.DWMWA_COLOR_NONE;
@@ -454,14 +449,8 @@ public sealed partial class MascotWindow : Window
                 _hwnd, NativeMethods.DWMWA_WINDOW_CORNER_PREFERENCE, ref noRound, sizeof(uint));
         }
 
-        ApplyGlassMargins();
-    }
-
-    private void ApplyGlassMargins()
-    {
-        // Sheet-of-glass: extend DWM frame across the entire client area for per-pixel
-        // alpha on SDR. On HDR the display pipeline handles this natively; on SDR this
-        // call is required. Re-applied in OnFirstActivated after ApplyWindowStyles().
+        // Extend DWM frame across the entire client area — required to eliminate the
+        // thin top-edge artifact DWM leaves when the frame is not fully extended.
         var margins = new NativeMethods.MARGINS { Left = -1, Right = -1, Top = -1, Bottom = -1 };
         NativeMethods.DwmExtendFrameIntoClientArea(_hwnd, ref margins);
     }
@@ -476,8 +465,7 @@ public sealed partial class MascotWindow : Window
         SystemBackdrop = new TransparentTintBackdrop();
 
         // Re-apply all window styles after backdrop — the backdrop controller can reset
-        // GWL_EXSTYLE (clearing WS_EX_NOREDIRECTIONBITMAP) and DwmExtendFrameIntoClientArea,
-        // both required for transparent compositing on SDR displays.
+        // GWL_EXSTYLE (clearing WS_EX_NOREDIRECTIONBITMAP) and DwmExtendFrameIntoClientArea.
         ApplyWindowStyles();
 
         // Patch XAML island child HWNDs: WinUI 3 creates internal child windows
@@ -493,10 +481,9 @@ public sealed partial class MascotWindow : Window
             return true;
         }, IntPtr.Zero);
 
-        // ApplyLottieSource is called here (deferred from the constructor) so the
-        // DComp/WarpPal compositor is fully initialised before any Storyboard or
-        // AnimatedVisualPlayer touches it. Calling it in the constructor races
-        // against DWM setup and causes a null vtable dereference (0xC0000005).
+        // Backdrop and styles are settled — reveal the window and start Lottie.
+        ShowWindow(_hwnd, SW_SHOWNOACTIVATE);
+        ResetInactivity();
         ApplyLottieSource();
 
         // Auto-open bubble on first run with intro copy, but not on startup launch
