@@ -156,6 +156,22 @@ jobs:
           "BUNDLE_NAME=$bundleName" | Out-File $env:GITHUB_ENV -Append
           Write-Host "Bundle created: $bundlePath"
 
+      - name: Sign MSIX bundle
+        shell: pwsh
+        run: |
+          $signtool = Get-ChildItem -Path "C:\Program Files (x86)\Windows Kits\10\bin" `
+            -Filter "signtool.exe" -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match "x64" } |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+          if (-not $signtool) { Write-Error "signtool.exe not found"; exit 1 }
+          & $signtool.FullName sign `
+            /fd sha256 `
+            /sha1 "${{ env.CERT_THUMBPRINT }}" `
+            "${{ env.BUNDLE_PATH }}"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Write-Host "Bundle signed successfully"
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
