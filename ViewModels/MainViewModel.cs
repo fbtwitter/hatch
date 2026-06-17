@@ -873,6 +873,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             await Task.Delay(500, ct);
             var data = new TasksFile { Tasks = [.. Tasks], Lists = [.. CustomLists] };
             await _storage.SaveAsync(data);
+            App.SyncService.SchedulePush(data);
         }
         catch (OperationCanceledException) { }
         catch { }

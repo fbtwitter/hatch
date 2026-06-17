@@ -361,19 +361,9 @@
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE77B;"/>
                     </toolkit:SettingsCard.HeaderIcon>
-                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <ProgressRing IsActive="{x:Bind ViewModel.IsSyncing, Mode=OneWay}"
-                                      Width="20" Height="20"
-                                      Visibility="{x:Bind ViewModel.IsSyncing, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"/>
-                        <Button Content="Sync now"
-                                AutomationProperties.AutomationId="Settings_SyncNow"
-                                Command="{x:Bind ViewModel.SyncNowCommand}"
-                                IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"/>
-                        <Button Content="Sign out"
-                                AutomationProperties.AutomationId="Settings_SyncSignOut"
-                                Command="{x:Bind ViewModel.SignOutCommand}"
-                                IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"/>
-                    </StackPanel>
+                    <Button Content="Sign out"
+                            AutomationProperties.AutomationId="Settings_SyncSignOut"
+                            Command="{x:Bind ViewModel.SignOutCommand}"/>
                 </toolkit:SettingsCard>
 
                 <!-- Sync error (shown when signed in and sync fails) -->
@@ -461,7 +451,7 @@
                     <toolkit:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE946;"/>
                     </toolkit:SettingsExpander.HeaderIcon>
-                    <TextBlock Text="v0.12.5"
+                    <TextBlock Text="v0.12.7"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                VerticalAlignment="Center"/>
                     <toolkit:SettingsExpander.Items>

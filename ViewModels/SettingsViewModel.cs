@@ -12,9 +12,15 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 {
     private readonly SettingsService _settings = App.SettingsService;
     private readonly StartupRegistryService _startupRegistry = new();
+    private bool _wasSignedIn;
+
+    // Raised on the UI thread when both local and server have tasks after a fresh sign-in.
+    // Subscriber (SettingsPage) shows the conflict dialog and calls ResolveConflictAsync.
+    public event Action<SyncConflict>? ConflictDetected;
 
     public SettingsViewModel()
     {
+        _wasSignedIn = App.SyncService.IsSignedIn;
         App.SyncService.StateChanged += OnSyncStateChanged;
     }
 
@@ -90,37 +96,80 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         SyncError = null;
     });
 
-    public ICommand SyncNowCommand => new RelayCommand(async _ =>
+    private void OnSyncStateChanged()
+    {
+        var queue = App.MainWindowInstance?.DispatcherQueue;
+        if (queue == null) return;
+        queue.TryEnqueue(async () =>
+        {
+            bool isNowSignedIn = App.SyncService.IsSignedIn;
+            bool justSignedIn  = isNowSignedIn && !_wasSignedIn;
+            _wasSignedIn = isNowSignedIn;
+
+            OnPropertyChanged(nameof(IsSyncSignedIn));
+            OnPropertyChanged(nameof(IsSyncNotSignedIn));
+            OnPropertyChanged(nameof(SyncUserEmail));
+            OnPropertyChanged(nameof(SyncLastSyncedText));
+
+            if (justSignedIn)
+                await CheckAndHandleConflictAsync();
+        });
+    }
+
+    private async Task CheckAndHandleConflictAsync()
     {
         IsSyncing = true;
         SyncError = null;
         try
         {
-            // force=true bypasses the staleness check so user always gets latest server data
-            var pullError = await App.SyncService.PullIfNewerAsync(force: true);
-            // Push latest local state (includes any pulled data since pull writes to disk first)
-            var data = await new TaskStorageService().LoadAsync();
-            var pushError = await App.SyncService.PushAsync(data);
-            SyncError = pullError ?? pushError;
+            var conflict = await App.SyncService.CheckConflictAsync();
+            if (conflict == null)
+            {
+                // No conflict: pull if there's newer data on the server, then start the timer.
+                await App.SyncService.PullIfNewerAsync();
+                App.SyncService.StartAutoSync();
+                OnPropertyChanged(nameof(SyncLastSyncedText));
+                return;
+            }
+
+            if (ConflictDetected != null)
+            {
+                // Hand off to the View — StartAutoSync called after user resolves.
+                ConflictDetected.Invoke(conflict);
+            }
+            else
+            {
+                // No UI subscriber (e.g. OAuth callback with Settings closed): safe fallback.
+                await App.SyncService.ResolveConflictUseServerAsync();
+                App.SyncService.StartAutoSync();
+                OnPropertyChanged(nameof(SyncLastSyncedText));
+            }
         }
+        catch { App.SyncService.StartAutoSync(); }
         finally
         {
             IsSyncing = false;
             OnPropertyChanged(nameof(SyncLastSyncedText));
         }
-    });
+    }
 
-    private void OnSyncStateChanged()
+    public async Task ResolveConflictAsync(bool useLocal)
     {
-        var queue = App.MainWindowInstance?.DispatcherQueue;
-        if (queue == null) return;
-        queue.TryEnqueue(() =>
+        IsSyncing = true;
+        SyncError = null;
+        try
         {
-            OnPropertyChanged(nameof(IsSyncSignedIn));
-            OnPropertyChanged(nameof(IsSyncNotSignedIn));
-            OnPropertyChanged(nameof(SyncUserEmail));
+            var error = useLocal
+                ? await App.SyncService.ResolveConflictUseLocalAsync()
+                : await App.SyncService.ResolveConflictUseServerAsync();
+            SyncError = error;
+        }
+        finally
+        {
+            IsSyncing = false;
             OnPropertyChanged(nameof(SyncLastSyncedText));
-        });
+            App.SyncService.StartAutoSync();
+        }
     }
 
     public bool MinimizeToTray
