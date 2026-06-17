@@ -10,7 +10,7 @@ Fast. Private. Local-first.
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=.net)
 ![WinUI 3](https://img.shields.io/badge/WinUI-3-0078D4?style=flat-square)
 ![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![v0.11.1](https://img.shields.io/badge/Version-v0.11.1-blue?style=flat-square)
+![v0.12.0](https://img.shields.io/badge/Version-v0.12.0-blue?style=flat-square)
 
 </div>
 
@@ -111,7 +111,7 @@ Hatch lives on your desktop permanently. Memory is a first-class constraint.
 
 ## What's Shipped
 
-Latest version: **v0.11.1** (June 15, 2026) — [full version history →](.github/ROADMAP.md#whats-shipped)
+Latest version: **v0.12.0** (June 17, 2026) — [full version history →](.github/ROADMAP.md#whats-shipped)
 
 ---
 
@@ -145,6 +145,9 @@ A: No Microsoft To Do integration. Hatch has optional Supabase sync (Settings �
 **Q: Can I use Hatch on Windows 10?**  
 A: Yes. Hatch requires Windows 10 build 17763 (1809) or later. Mica backdrop is Windows 11-only; Windows 10 2004+ gets acrylic instead.
 
+**Q: The mascot has a faint shadow around it — how do I remove it?**  
+A: Disable **Show shadows under windows** in Windows performance settings: search for *"Adjust the appearance and performance of Windows"* → uncheck **Show shadows under windows**. This cannot be suppressed per-app via any public Windows API.
+
 **Q: Will there be an Android/iOS version?**  
 A: Possibly as a read-only companion app (2027+). Desktop-first for now.
 
@@ -159,16 +162,3 @@ A: Settings → Delete all my data. One click. Gone. No recovery.
 ## License
 
 MIT License — See [LICENSE](LICENSE) file.
-
----
-
-<div align="center">
-
-<img src="logo.svg" width="100" height="100" alt="Hatch Logo">
-
-**Built for Windows. No account. No cloud. No compromise.**
-
-[Back to top](#hatch--frictionless-task-capture-for-windows)
-
-</div>
-

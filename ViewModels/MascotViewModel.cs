@@ -28,20 +28,6 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     private int _bubbleY;
     private bool _isMascotHidden;
     private bool _showDailyTipIndicator;
-    private bool _isOnHdrDisplay;
-
-    public bool IsOnHdrDisplay
-    {
-        get => _isOnHdrDisplay;
-        private set
-        {
-            if (_isOnHdrDisplay == value) return;
-            _isOnHdrDisplay = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public void OnDisplayModeChanged(bool isHdr) => IsOnHdrDisplay = isHdr;
 
     public bool IsVisible
     {
