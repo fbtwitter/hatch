@@ -8,7 +8,7 @@
 
   <Identity
     Name="Hatch"
-    Publisher="CN=Hatch"
+    Publisher="CN=Reza Fauzi Augusdi"
     Version="0.12.1.0" />
 
   <Properties>

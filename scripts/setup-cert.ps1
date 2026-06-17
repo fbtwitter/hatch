@@ -17,11 +17,11 @@ if (-not $Password) {
     $secPwd = ConvertTo-SecureString $Password -AsPlainText -Force
 }
 
-Write-Host "`nCreating self-signed certificate (CN=Hatch, valid 10 years)..."
+Write-Host "`nCreating self-signed certificate (CN=Reza Fauzi Augusdi, valid 10 years)..."
 
 $cert = New-SelfSignedCertificate `
     -Type Custom `
-    -Subject "CN=Hatch" `
+    -Subject "CN=Reza Fauzi Augusdi" `
     -KeyUsage DigitalSignature `
     -FriendlyName "Hatch Package Signing" `
     -CertStoreLocation "Cert:\CurrentUser\My" `
