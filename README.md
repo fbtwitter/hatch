@@ -10,7 +10,7 @@ Fast. Private. Local-first.
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=.net)
 ![WinUI 3](https://img.shields.io/badge/WinUI-3-0078D4?style=flat-square)
 ![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![v0.12.4](https://img.shields.io/badge/Version-v0.12.4-blue?style=flat-square)
+![v0.12.5](https://img.shields.io/badge/Version-v0.12.5-blue?style=flat-square)
 
 </div>
 
@@ -111,7 +111,7 @@ Hatch lives on your desktop permanently. Memory is a first-class constraint.
 
 ## What's Shipped
 
-Latest version: **v0.12.4** (June 17, 2026) — [full version history →](.github/ROADMAP.md#whats-shipped)
+Latest version: **v0.12.5** (June 17, 2026) — [full version history →](.github/ROADMAP.md#whats-shipped)
 
 ---
 
