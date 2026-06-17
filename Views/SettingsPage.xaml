@@ -461,7 +461,7 @@
                     <toolkit:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE946;"/>
                     </toolkit:SettingsExpander.HeaderIcon>
-                    <TextBlock Text="v0.12.1"
+                    <TextBlock Text="v0.12.4"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                VerticalAlignment="Center"/>
                     <toolkit:SettingsExpander.Items>
