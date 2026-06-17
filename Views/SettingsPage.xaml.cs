@@ -1,7 +1,9 @@
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Windows.Storage.Pickers;
+using Hatch.Models;
 using Hatch.ViewModels;
 
 namespace Hatch.Views;
@@ -18,6 +20,8 @@ public sealed partial class SettingsPage : Page
         DataContext = _viewModel;
         NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
 
+        _viewModel.ConflictDetected += OnConflictDetected;
+
         // Pre-select the currently saved hotkey key in the ComboBox
         // and initialise the mascot size slider/label
         Loaded += (_, _) =>
@@ -25,6 +29,120 @@ public sealed partial class SettingsPage : Page
             SyncHotkeyKeySelector();
             SyncMascotSizeSlider();
         };
+    }
+
+    private async void OnConflictDetected(SyncConflict conflict)
+    {
+        var choice = await ShowConflictDialogAsync(conflict);
+        if (choice == null)
+        {
+            // User cancelled: sign out so state is clean.
+            await App.SyncService.SignOutAsync();
+            return;
+        }
+        await _viewModel.ResolveConflictAsync(useLocal: choice.Value);
+    }
+
+    private async Task<bool?> ShowConflictDialogAsync(SyncConflict conflict)
+    {
+        static string FormatDate(DateTime utc) => utc == DateTime.MinValue
+            ? "Unknown"
+            : utc.ToLocalTime().ToString("MMM d, h:mm tt");
+
+        static string Pluralize(int n, string word) => $"{n} {word}{(n == 1 ? "" : "s")}";
+
+        var description = new TextBlock
+        {
+            Text = "You have tasks on this device and on your account. " +
+                   "Choose which to keep — the other will be permanently replaced.",
+            TextWrapping = TextWrapping.Wrap,
+            Margin = new Thickness(0, 0, 0, 16)
+        };
+
+        var comparisonGrid = new Grid { ColumnSpacing = 12 };
+        comparisonGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        comparisonGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        var localCard = MakeSummaryCard(
+            "  This device",
+            Pluralize(conflict.LocalTaskCount, "task"),
+            Pluralize(conflict.LocalListCount, "list"),
+            "Last updated",
+            FormatDate(conflict.LocalLastModified),
+            column: 0);
+
+        var serverCard = MakeSummaryCard(
+            "  Your account",
+            Pluralize(conflict.ServerTaskCount, "task"),
+            Pluralize(conflict.ServerListCount, "list"),
+            "Last synced",
+            FormatDate(conflict.ServerLastModified),
+            column: 1);
+
+        comparisonGrid.Children.Add(localCard);
+        comparisonGrid.Children.Add(serverCard);
+
+        var content = new StackPanel { Spacing = 0, MinWidth = 420 };
+        content.Children.Add(description);
+        content.Children.Add(comparisonGrid);
+
+        var dialog = new ContentDialog
+        {
+            Title = "Data conflict",
+            Content = content,
+            PrimaryButtonText = "Keep this device's data",
+            SecondaryButtonText = "Use account data",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.None,
+            XamlRoot = XamlRoot
+        };
+
+        var result = await dialog.ShowAsync();
+        return result switch
+        {
+            ContentDialogResult.Primary   => true,
+            ContentDialogResult.Secondary => false,
+            _                             => null
+        };
+    }
+
+    private static UIElement MakeSummaryCard(
+        string title, string tasks, string lists, string dateLabel, string dateStr, int column)
+    {
+        var panel = new StackPanel { Spacing = 3, Padding = new Thickness(12) };
+
+        panel.Children.Add(new TextBlock
+        {
+            Text = title,
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+            Margin = new Thickness(0, 0, 0, 6)
+        });
+        panel.Children.Add(new TextBlock { Text = tasks });
+        panel.Children.Add(new TextBlock { Text = lists });
+        panel.Children.Add(new TextBlock
+        {
+            Text = $"{dateLabel}: {dateStr}",
+            FontSize = 12,
+            Opacity = 0.7,
+            Margin = new Thickness(0, 6, 0, 0),
+            TextWrapping = TextWrapping.Wrap
+        });
+
+        var border = new Border
+        {
+            Child = panel,
+            CornerRadius = new CornerRadius(6),
+            BorderThickness = new Thickness(1)
+        };
+
+        // Look up theme brushes via the app's merged resource dictionaries.
+        if (Application.Current.Resources.TryGetValue("CardBackgroundFillColorDefaultBrush", out var bg) && bg is Brush bgBrush)
+            border.Background = bgBrush;
+        if (Application.Current.Resources.TryGetValue("CardStrokeColorDefaultBrush", out var stroke) && stroke is Brush strokeBrush)
+            border.BorderBrush = strokeBrush;
+
+        Grid.SetColumn(border, column);
+        return border;
     }
 
     private void BackButton_Click(object sender, RoutedEventArgs e)

@@ -28,12 +28,60 @@ public sealed class SyncService
     private const string SupabaseKey = Secrets.SupabaseKey;
 
     private SupabaseClient? _client;
+    private PeriodicTimer? _autoSyncTimer;
+    private CancellationTokenSource? _autoSyncCts;
+    private CancellationTokenSource? _pushDebounce;
 
     public bool IsSignedIn => _client?.Auth?.CurrentSession != null;
     public string? UserEmail => _client?.Auth?.CurrentUser?.Email;
 
     public event Action? StateChanged;
     public event Action? TasksReceived; // fires when a pull returned newer data
+
+    public void StartAutoSync()
+    {
+        StopAutoSync();
+        if (!IsSignedIn) return;
+        _autoSyncCts = new CancellationTokenSource();
+        _autoSyncTimer = new PeriodicTimer(TimeSpan.FromMinutes(5));
+        _ = RunAutoSyncLoopAsync(_autoSyncCts.Token);
+    }
+
+    public void StopAutoSync()
+    {
+        _autoSyncCts?.Cancel();
+        _autoSyncTimer?.Dispose();
+        _autoSyncTimer = null;
+        _autoSyncCts = null;
+    }
+
+    private async Task RunAutoSyncLoopAsync(CancellationToken ct)
+    {
+        try
+        {
+            while (await _autoSyncTimer!.WaitForNextTickAsync(ct))
+                await PullIfNewerAsync();
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    public void SchedulePush(TasksFile data)
+    {
+        if (!IsSignedIn) return;
+        _pushDebounce?.Cancel();
+        _pushDebounce = new CancellationTokenSource();
+        _ = PushAfterDelayAsync(data, _pushDebounce.Token);
+    }
+
+    private async Task PushAfterDelayAsync(TasksFile data, CancellationToken ct)
+    {
+        try
+        {
+            await Task.Delay(3000, ct);
+            await PushAsync(data);
+        }
+        catch (OperationCanceledException) { }
+    }
 
     public async Task InitializeAsync()
     {
@@ -97,6 +145,7 @@ public sealed class SyncService
     public async Task SignOutAsync()
     {
         try { await (_client?.Auth?.SignOut() ?? Task.CompletedTask); } catch { }
+        StopAutoSync();
         ClearTokens();
         await App.SettingsService.SaveAsync();
         StateChanged?.Invoke();
@@ -201,6 +250,62 @@ public sealed class SyncService
         }
         catch (Exception ex) { return ex.Message; }
     }
+
+    // Checks whether both local and server have tasks after a fresh sign-in.
+    // Returns SyncConflict when both sides have data and the user must choose.
+    // Returns null when there is no conflict; also pushes local data to the server
+    // when the account is new/empty so existing tasks are backed up immediately.
+    public async Task<SyncConflict?> CheckConflictAsync()
+    {
+        if (!IsSignedIn || _client == null) return null;
+        try
+        {
+            var localData = await new TaskStorageService().LoadAsync();
+            var response  = await _client.From<UserDataRow>().Get();
+            var row       = response.Models.FirstOrDefault();
+
+            TasksFile? serverData = row?.TasksJson != null
+                ? JsonSerializer.Deserialize<TasksFile>(row.TasksJson)
+                : null;
+
+            bool localHasData  = localData.Tasks.Count > 0;
+            bool serverHasData = (serverData?.Tasks.Count ?? 0) > 0;
+
+            if (localHasData && serverHasData)
+            {
+                var localPath = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Hatch", "tasks.json");
+                var localLastMod = File.Exists(localPath)
+                    ? File.GetLastWriteTimeUtc(localPath)
+                    : DateTime.MinValue;
+
+                return new SyncConflict(
+                    localData.Tasks.Count,
+                    localData.Lists.Count,
+                    localLastMod,
+                    serverData!.Tasks.Count,
+                    serverData.Lists.Count,
+                    row!.UpdatedAt);
+            }
+
+            // Server is empty but local has tasks → push local so it's backed up.
+            if (localHasData)
+                await PushAsync(localData);
+
+            return null;
+        }
+        catch { return null; }
+    }
+
+    public async Task<string?> ResolveConflictUseLocalAsync()
+    {
+        var data = await new TaskStorageService().LoadAsync();
+        return await PushAsync(data);
+    }
+
+    public Task<string?> ResolveConflictUseServerAsync()
+        => PullIfNewerAsync(force: true);
 
     private async Task PersistSessionAsync(Supabase.Gotrue.Session session)
     {
