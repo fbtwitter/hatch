@@ -27,12 +27,14 @@
     <EnableMsixTooling>false</EnableMsixTooling>
   </PropertyGroup>
 
-  <!-- Release: packaged MSIX for distribution -->
+  <!-- Release: packaged MSIX for distribution.
+       WindowsAppSDKSelfContained bundles the Windows App SDK runtime inside the MSIX
+       so users don't need to install it separately (fixes 0x8007007E on sideload). -->
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <WindowsPackageType>MSIX</WindowsPackageType>
     <EnableMsixTooling>true</EnableMsixTooling>
     <GenerateAppxPackageOnBuild>true</GenerateAppxPackageOnBuild>
-    <WindowsAppSDKDeploymentManagerInitialize>false</WindowsAppSDKDeploymentManagerInitialize>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
   </PropertyGroup>
 
   <!-- x86 apphost is not available in the CI .NET 10 SDK; MSIX packaging is skipped for x86 -->
