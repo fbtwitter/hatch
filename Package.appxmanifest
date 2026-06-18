@@ -7,12 +7,12 @@
   IgnorableNamespaces="uap uap5 rescap">
 
   <Identity
-    Name="Hatch"
-    Publisher="CN=Reza Fauzi Augusdi"
+    Name="RezaFauziAugusdi.HatchAlways-OnTo-Do"
+    Publisher="CN=9D1F8C40-115A-44D9-94E5-BA0ECC194C4C"
     Version="0.12.7.0" />
 
   <Properties>
-    <DisplayName>Hatch</DisplayName>
+    <DisplayName>Hatch: Always On To-Do</DisplayName>
     <PublisherDisplayName>Reza Fauzi Augusdi</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -31,7 +31,7 @@
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
         DisplayName="Hatch"
-        Description="Hatch — A Fluent To-Do App for Windows"
+        Description="Your tasks, always one click away. Hatch lives on your desktop as a friendly mascot — capture a to-do in under 4 seconds, from anywhere. Built with WinUI 3 for a native Windows feel. No account. No cloud. Totally private."
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
