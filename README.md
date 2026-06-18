@@ -2,9 +2,9 @@
 
 <img src="logo.svg" width="140" height="140" alt="Hatch Logo">
 
-# Hatch — Frictionless Task Capture for Windows
+# Hatch: Always On To-Do
 
-Fast. Private. Local-first.
+Your tasks, always one click away.
 
 ![Windows 10/11](https://img.shields.io/badge/Windows-10%2F11-0078D4?style=flat-square&logo=windows11)
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=.net)
@@ -14,34 +14,38 @@ Fast. Private. Local-first.
 
 </div>
 
-> A native WinUI 3 desktop app with a friendly always-on-top eggclip mascot.  
-> Capture tasks in ≤4 seconds from anywhere. No account. No cloud. No telemetry.
+> A friendly always-on-top mascot lives on your desktop — capture a task in under 4 seconds, from anywhere.  
+> Built with WinUI 3 for a native Windows feel. No account. No cloud. No telemetry.
 
 ---
 
 ## Features at a Glance
 
-**Always-on-top mascot** — Click from anywhere, add task in seconds  
-**Smart lists** — My Day, Important, Planned, All Tasks, custom lists  
-**My Day daily reset** — My Day clears each morning; incomplete tasks surface as suggestions to re-add  
-**Contextual tips** — Tips based on your actual task state (v0.3+)  
-**Local storage** — `%LocalAppData%` by default; optional Supabase sync available  
-**Windows native** — Mica (Win11), Acrylic (Win10 2004+), Segoe UI Variable, dark/light mode  
+**Always-on-top mascot** — Click from anywhere, add a task in seconds, never leave your current app  
+**Smart lists** — My Day, Important, Planned, All Tasks, unlimited custom lists  
+**My Day daily reset** — Resets each morning; incomplete tasks surface as suggestions to re-add  
+**Focus Mode** — Always-on-top overlay above the mascot; one task, two buttons, everything else gone  
+**Due dates & reminders** — Calendar flyout with quick presets; toast notifications with Mark Complete action  
+**Tags & filtering** — Free-form tags per task; click any chip to filter instantly across lists  
+**Contextual tips** — Nudges based on your actual task state, never random  
+**Feels right at home** — WinUI 3, Mica (Win11), Acrylic (Win10), Segoe UI Variable, system accent color  
 **Private by design** — No mandatory account, no telemetry, no silent cloud  
-**Appreciation cosmetics** — Optional $5 one-time purchase (skins, sounds, themes)  
 
 ---
 
 ## Installation
 
-### Windows Package (Recommended)
+### Microsoft Store *(recommended)*
 
-1. Download the latest `.msix` from [Releases](../../releases)
-2. **First time only** — Download `install-cert.cer`, double-click, select **Install Certificate** → **Local Machine** → **Trusted People** → **Finish**
-3. Double-click the `.msix` file
-4. Hatch starts automatically
+No certificate setup needed — get it directly from the Store.
 
-Subsequent releases don't need the cert step.
+### Direct download *(sideload)*
+
+1. Download `install-cert.cer` from [Releases](../../releases) → double-click → **Install Certificate** → **Local Machine** → **Trusted People** → **Finish** *(first time only)*
+2. Download `Hatch_x.x.x.x_bundle.msixbundle` — Windows picks the right architecture automatically
+3. Double-click to install — Hatch starts automatically
+
+Subsequent releases don't need the certificate step again.
 
 ### Building from Source
 
@@ -59,19 +63,6 @@ Placeholder assets generate automatically. See [Contributing Guide](.github/CONT
 
 ---
 
-## Documentation
-
-| Document | Purpose |
-|----------|---------|
-| **[Changelog](CHANGELOG.md)** | Detailed release history, what shipped in each version |
-| **[Roadmap](.github/ROADMAP.md)** | v1.0 planned features, Next, Later, decision-making process |
-| **[Architecture](.github/ARCHITECTURE.md)** | Tech stack, folder structure, data model, MVVM patterns |
-| **[Privacy](.github/PRIVACY.md)** | Data guarantee, storage locations, no-network promise |
-| **[Performance](.github/PERFORMANCE.md)** | Memory budgets, optimization techniques, benchmarks |
-| **[Contributing](.github/CONTRIBUTING.md)** | How to build, code standards, submitting PRs |
-
----
-
 ## Privacy Guarantee
 
 **Three rules. Non-negotiable.**
@@ -80,32 +71,15 @@ Placeholder assets generate automatically. See [Contributing Guide](.github/CONT
 **No silent cloud** — All data in `%LocalAppData%\Hatch\` by default — nothing leaves without your consent  
 **No telemetry** — No analytics, no crash reports, no usage pings  
 
-Fully functional with the network cable unplugged.
-
-**Data:** Two files, plain JSON, human-readable.  
-| File | Contents |
-|------|----------|
-| `tasks.json` | Your tasks + custom lists |
-| `settings.json` | Theme, mascot position, preferences, optional sync tokens |
+Fully functional with the network cable unplugged. Export or delete all your data in one click from Settings.
 
 [Full privacy details →](.github/PRIVACY.md)
 
 ---
 
-## Performance
+## Learn More
 
-Hatch lives on your desktop permanently. Memory is a first-class constraint.
-
-| Scenario | Target |
-|----------|--------|
-| Mascot idle, window closed | <50 MB |
-| Main window open | <100 MB |
-| Cold start → visible | <1.5s |
-| MSIX install size | <30 MB |
-
-**Optimizations:** 5s fullscreen polling, 30s hide-restore timer, aggressive memory cleanup, Lottie animations pause when hidden.
-
-[Performance details & benchmarks →](.github/PERFORMANCE.md)
+[Changelog](CHANGELOG.md) · [Roadmap](.github/ROADMAP.md) · [Architecture](.github/ARCHITECTURE.md) · [Performance](.github/PERFORMANCE.md) · [Contributing](.github/CONTRIBUTING.md)
 
 ---
 
@@ -129,7 +103,7 @@ Want to help? We'd love it!
 A: No Microsoft To Do integration. Hatch has optional Supabase sync (Settings → Sync) if you want cross-device access, but it's off by default and never required.
 
 **Q: Can I use Hatch on Windows 10?**  
-A: Yes. Hatch requires Windows 10 build 17763 (1809) or later. Mica backdrop is Windows 11-only; Windows 10 2004+ gets acrylic instead.
+A: Yes. Hatch requires Windows 10 build 17763 (1809) or later. Mica backdrop is Windows 11-only; Windows 10 2004+ gets Acrylic instead.
 
 **Q: The mascot has a faint shadow around it — how do I remove it?**  
 A: Disable **Show shadows under windows** in Windows performance settings: search for *"Adjust the appearance and performance of Windows"* → uncheck **Show shadows under windows**. This cannot be suppressed per-app via any public Windows API.

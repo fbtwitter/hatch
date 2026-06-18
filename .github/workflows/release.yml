@@ -135,17 +135,6 @@ jobs:
           New-Item -ItemType Directory -Path $stagingDir -Force | Out-Null
           $msixFiles | ForEach-Object { Copy-Item $_.FullName -Destination $stagingDir }
 
-          # Export per-arch env vars for the release notes
-          $msixFiles | ForEach-Object {
-            if ($_.Name -match "_x64_") {
-              "X64_MSIX_NAME=$($_.Name)" | Out-File $env:GITHUB_ENV -Append
-            } elseif ($_.Name -match "_x86_") {
-              "X86_MSIX_NAME=$($_.Name)" | Out-File $env:GITHUB_ENV -Append
-            } elseif ($_.Name -match "_arm64_") {
-              "ARM64_MSIX_NAME=$($_.Name)" | Out-File $env:GITHUB_ENV -Append
-            }
-          }
-
           # Create the bundle
           $bundleName = "Hatch_${{ env.MSIX_VERSION }}_bundle.msixbundle"
           $bundlePath = "${{ github.workspace }}\$bundleName"
@@ -178,22 +167,13 @@ jobs:
           name: Hatch ${{ github.ref_name }}
           generate_release_notes: true
           body: |
-            ## Installation
+            ## Install
 
-            **First time only — install the signing certificate so Windows trusts the package:**
-            1. Download `install-cert.cer`
-            2. Double-click it → **Install Certificate** → **Local Machine** → **Trusted People** → Finish
+            **[Get Hatch on the Microsoft Store](#)** — recommended, no setup required.
 
-            **Install the app:**
-            - **Recommended:** Download `${{ env.BUNDLE_NAME }}` — Windows picks the right architecture automatically
-            - Or choose your platform manually:
-              - **Intel/AMD 64-bit:** `${{ env.X64_MSIX_NAME }}`
-              - **Intel/AMD 32-bit:** `${{ env.X86_MSIX_NAME }}`
-              - **ARM 64-bit:** `${{ env.ARM64_MSIX_NAME }}`
-            - Double-click the downloaded file to install
+            Or download `${{ env.BUNDLE_NAME }}` below and double-click to install.
+            Windows picks the right architecture (x64, ARM64, or x86) automatically.
 
-            > Subsequent updates from this repo won't need the certificate step again.
+            ---
           files: |
-            install-cert.cer
             ${{ env.BUNDLE_PATH }}
-            AppxPackages/*/hatch*.msix
