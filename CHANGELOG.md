@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+---
+
+## [0.12.8] - 2026-06-19
+
+### Changed
+- Package identity updated to match Microsoft Store Partner Center (Name, Publisher, DisplayName)
+- Signing certificate regenerated with Store publisher CN for sideload compatibility
+- GitHub releases now ship msixbundle only — Windows selects the right architecture automatically
+- README refreshed: title, features, and installation aligned with Store listing
+
 ### Planned
 - Contextual tip engine — priority-based tips in quick-add bubble
 - Task list polish — star toggle, open/completed grouping, notes field
