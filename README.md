@@ -10,7 +10,7 @@ Your tasks, always one click away.
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=.net)
 ![WinUI 3](https://img.shields.io/badge/WinUI-3-0078D4?style=flat-square)
 ![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![v0.12.7](https://img.shields.io/badge/Version-v0.12.7-blue?style=flat-square)
+![v0.12.8](https://img.shields.io/badge/Version-v0.12.8-blue?style=flat-square)
 
 </div>
 
