@@ -171,9 +171,11 @@ jobs:
 
             **[Get Hatch on the Microsoft Store](#)** — recommended, no setup required.
 
-            Or download `${{ env.BUNDLE_NAME }}` below and double-click to install.
-            Windows picks the right architecture (x64, ARM64, or x86) automatically.
+            Or download directly:
+            1. **First time only** — download `install-cert.cer`, double-click → Install Certificate → Local Machine → Trusted People → Finish
+            2. Download `${{ env.BUNDLE_NAME }}` and double-click — Windows picks the right architecture (x64, ARM64, or x86) automatically
 
             ---
           files: |
             ${{ env.BUNDLE_PATH }}
+            install-cert.cer
