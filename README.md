@@ -36,15 +36,20 @@ Your tasks, always one click away.
 
 ## Screenshots
 
-![Quick-add](docs/screenshots/01-quick-add.png)
-
-![My Day](docs/screenshots/02-my-day.png)
-
-![Planned](docs/screenshots/03-planned.png)
-
-![Focus Mode](docs/screenshots/04-focus-mode.png)
-
-![Settings](docs/screenshots/05-settings.png)
+<table>
+  <tr>
+    <td><img src="docs/screenshots/01-quick-add.png" alt="Quick-add bubble"/></td>
+    <td><img src="docs/screenshots/02-my-day.png" alt="My Day list"/></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/03-planned.png" alt="Planned list"/></td>
+    <td><img src="docs/screenshots/04-focus-mode.png" alt="Focus Mode"/></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/05-settings.png" alt="Settings"/></td>
+    <td></td>
+  </tr>
+</table>
 
 ---
 
