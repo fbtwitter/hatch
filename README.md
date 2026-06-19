@@ -77,26 +77,6 @@ Fully functional with the network cable unplugged. Export or delete all your dat
 
 ---
 
-## Learn More
-
-[Changelog](CHANGELOG.md) · [Roadmap](.github/ROADMAP.md) · [Architecture](.github/ARCHITECTURE.md) · [Performance](.github/PERFORMANCE.md) · [Contributing](.github/CONTRIBUTING.md)
-
----
-
-## Contributing
-
-Want to help? We'd love it!
-
-1. Read [Coding Standards](context/coding-standards.md) (non-negotiable)
-2. Check [Architecture](.github/ARCHITECTURE.md) for design decisions
-3. See [Contributing Guide](.github/CONTRIBUTING.md) for build steps, PR process, code review checklist
-
-**Branch naming:** `feature/name`, `fix/name`, `chore/name`  
-**Commits:** Conventional format (`feat:`, `fix:`, etc.)  
-**Memory:** Every PR must note memory impact
-
----
-
 ## FAQ
 
 **Q: Does Hatch sync with Microsoft To Do?**  
@@ -119,6 +99,4 @@ A: Settings → Delete all my data. One click. Gone. No recovery.
 
 ---
 
-## License
-
-MIT License — See [LICENSE](LICENSE) file.
+[Changelog](CHANGELOG.md) · [Roadmap](.github/ROADMAP.md) · [Architecture](.github/ARCHITECTURE.md) · [Performance](.github/PERFORMANCE.md) · [Contributing](.github/CONTRIBUTING.md)
