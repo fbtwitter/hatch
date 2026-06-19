@@ -9,10 +9,10 @@
   <Identity
     Name="RezaFauziAugusdi.HatchAlways-OnTo-Do"
     Publisher="CN=9D1F8C40-115A-44D9-94E5-BA0ECC194C4C"
-    Version="0.12.8.0" />
+    Version="0.12.9.0" />
 
   <Properties>
-    <DisplayName>Hatch: Always On To-Do</DisplayName>
+    <DisplayName>Hatch: Always-On To-Do</DisplayName>
     <PublisherDisplayName>Reza Fauzi Augusdi</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>

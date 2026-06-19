@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.12.9] - 2026-06-19
+
+### Fixed
+- Package DisplayName corrected to match exact Partner Center reserved name: "Hatch: Always-On To-Do"
+
+---
+
 ## [0.12.8] - 2026-06-19
 
 ### Changed
