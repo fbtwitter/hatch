@@ -11,6 +11,7 @@ Your tasks, always one click away.
 ![WinUI 3](https://img.shields.io/badge/WinUI-3-0078D4?style=flat-square)
 ![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 ![v0.12.10](https://img.shields.io/badge/Version-v0.12.10-blue?style=flat-square)
+[![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?style=flat-square&logo=github-sponsors)](https://github.com/sponsors/fbtwitter)
 
 </div>
 
