@@ -36,31 +36,15 @@ Your tasks, always one click away.
 
 ## Screenshots
 
-<!-- SCREENSHOT 1: Hero shot
-     Mascot sitting on desktop with the quick-add bubble open.
-     Show a real wallpaper behind it so the always-on-top effect is clear.
-     Replace the line below with: ![Quick-add](docs/screenshots/01-quick-add.png) -->
-> 📸 *Screenshot 1 — mascot on desktop with quick-add bubble open*
+![Quick-add](docs/screenshots/01-quick-add.png)
 
-<!-- SCREENSHOT 2: Main window — My Day
-     Main window open, My Day list with several tasks, details pane open on the right.
-     Replace with: ![My Day](docs/screenshots/02-my-day.png) -->
-> 📸 *Screenshot 2 — My Day list with details pane*
+![My Day](docs/screenshots/02-my-day.png)
 
-<!-- SCREENSHOT 3: Planned list
-     Planned list showing tasks with due-date chips (overdue, today, upcoming).
-     Replace with: ![Planned](docs/screenshots/03-planned.png) -->
-> 📸 *Screenshot 3 — Planned list with due-date chips*
+![Planned](docs/screenshots/03-planned.png)
 
-<!-- SCREENSHOT 4: Focus Mode
-     Focus Mode overlay floating above the mascot on the desktop.
-     Replace with: ![Focus Mode](docs/screenshots/04-focus-mode.png) -->
-> 📸 *Screenshot 4 — Focus Mode above the mascot*
+![Focus Mode](docs/screenshots/04-focus-mode.png)
 
-<!-- SCREENSHOT 5: Settings
-     Settings page showing theme toggle and privacy section.
-     Replace with: ![Settings](docs/screenshots/05-settings.png) -->
-> 📸 *Screenshot 5 — Settings page*
+![Settings](docs/screenshots/05-settings.png)
 
 ---
 
