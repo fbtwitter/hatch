@@ -180,6 +180,12 @@ public sealed partial class MainWindow : Window
             mainPage.NavigateTo(tag);
     }
 
+    public void NavigateToTask(TodoItem task)
+    {
+        if (RootFrame.Content is MainPage mainPage)
+            mainPage.NavigateToTask(task);
+    }
+
     public void ShowAndSelectTask(Guid taskId)
     {
         ShowWindow(_hwnd, SW_RESTORE);
