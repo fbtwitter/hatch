@@ -144,6 +144,14 @@
                             </StackPanel>
                         </Button>
 
+                        <!-- Repeat indicator — only when the task has an active recurrence -->
+                        <FontIcon Glyph="&#xE895;"
+                                  FontSize="11"
+                                  Opacity="0.6"
+                                  VerticalAlignment="Center"
+                                  ToolTipService.ToolTip="Repeats"
+                                  Visibility="{x:Bind HasRecurrence, Converter={StaticResource BoolToVisibility}, Mode=OneWay}" />
+
                         <!-- Add-date ghost — only when not completed and no date -->
                         <Button Tag="{x:Bind}"
                                 AutomationProperties.AutomationId="Task_AddDateButton"
@@ -742,6 +750,19 @@
                                             PlaceholderText="No due date"
                                             HorizontalAlignment="Stretch"
                                             DateChanged="PaneDueDatePicker_DateChanged" />
+
+                        <!-- Repeat — only meaningful once a due date is set -->
+                        <ComboBox x:Name="PaneRepeatCombo"
+                                  AutomationProperties.AutomationId="PaneRepeatCombo"
+                                  Header="Repeat"
+                                  HorizontalAlignment="Stretch"
+                                  SelectionChanged="PaneRepeatCombo_SelectionChanged">
+                            <ComboBoxItem Content="Doesn't repeat" />
+                            <ComboBoxItem Content="Daily" />
+                            <ComboBoxItem Content="Weekdays" />
+                            <ComboBoxItem Content="Weekly" />
+                            <ComboBoxItem Content="Monthly" />
+                        </ComboBox>
 
                         <!-- Tags -->
                         <StackPanel Spacing="8">

@@ -77,6 +77,15 @@ public sealed class TodoItem : INotifyPropertyChanged
 
     public Guid ListId { get; set; } = Guid.Empty;
 
+    private TaskRecurrence _recurrence = TaskRecurrence.None;
+    public TaskRecurrence Recurrence
+    {
+        get => _recurrence;
+        set { _recurrence = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasRecurrence)); }
+    }
+
+    public bool HasRecurrence => _recurrence != TaskRecurrence.None;
+
     private List<string> _tags = [];
     public List<string> Tags
     {

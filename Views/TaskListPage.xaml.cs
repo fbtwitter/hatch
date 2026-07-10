@@ -258,6 +258,8 @@ public sealed partial class TaskListPage : Page
         PaneDueDatePicker.Date = task.DueDate.HasValue
             ? (DateTimeOffset?)new DateTimeOffset(task.DueDate.Value.ToLocalTime().Date, TimeSpan.Zero)
             : null;
+        PaneRepeatCombo.SelectedIndex = (int)task.Recurrence;
+        PaneRepeatCombo.IsEnabled = task.DueDate.HasValue;
         PaneCreatedAtText.Text = task.CreatedAt.ToLocalTime().ToString("ddd, MMM d, yyyy");
         PaneTagInput.Text = string.Empty;
         PaneTagChips.ItemsSource = task.Tags;
@@ -339,6 +341,13 @@ public sealed partial class TaskListPage : Page
         _paneTask.DueDate = args.NewDate.HasValue
             ? (DateTimeOffset?)new DateTimeOffset(args.NewDate.Value.ToLocalTime().Date, TimeSpan.Zero)
             : null;
+        PaneRepeatCombo.IsEnabled = _paneTask.DueDate.HasValue;
+    }
+
+    private void PaneRepeatCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_updatingPane || _paneTask == null) return;
+        _paneTask.Recurrence = (TaskRecurrence)PaneRepeatCombo.SelectedIndex;
     }
 
     // ── Keyboard / pointer close triggers ───────────────────────────────────
