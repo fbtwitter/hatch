@@ -15,6 +15,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private readonly TaskStorageService _storage;
     private readonly DispatcherQueue _dispatcherQueue;
     private string _newTaskText = string.Empty;
+    private string _searchQuery = string.Empty;
     private string _activeNavItem = "alltasks";
     private CancellationTokenSource? _saveCancelToken;
     private bool _isBulkLoading = false;
@@ -34,6 +35,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public ObservableCollection<TodoItem> Tasks { get; } = [];
     public ObservableCollection<TodoItem> ActiveTasks { get; } = [];
     public ObservableCollection<TodoItem> MySuggestions { get; } = [];
+    public ObservableCollection<TodoItem> SearchResults { get; } = [];
     public ObservableCollection<TaskList> Lists { get; } = [];
     public ObservableCollection<TaskList> CustomLists { get; } = [];
 
@@ -48,6 +50,22 @@ public sealed class MainViewModel : INotifyPropertyChanged
             ((RelayCommand)AddTaskCommand).RaiseCanExecuteChanged();
         }
     }
+
+    public string SearchQuery
+    {
+        get => _searchQuery;
+        set
+        {
+            if (_searchQuery == value) return;
+            _searchQuery = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsSearchActive));
+            RefreshSearchResults();
+        }
+    }
+
+    public bool IsSearchActive => !string.IsNullOrWhiteSpace(_searchQuery);
+    public bool IsSearchEmpty => IsSearchActive && SearchResults.Count == 0;
 
     public TodoItem? SelectedTask
     {
@@ -231,6 +249,23 @@ public sealed class MainViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(ShowEmptyState));
     }
 
+    private static bool MatchesSearch(TodoItem task, string query) =>
+        task.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+        (task.Notes != null && task.Notes.Contains(query, StringComparison.OrdinalIgnoreCase)) ||
+        task.Tags.Any(t => t.Contains(query, StringComparison.OrdinalIgnoreCase));
+
+    private void RefreshSearchResults()
+    {
+        SearchResults.Clear();
+        if (IsSearchActive)
+        {
+            var query = _searchQuery.Trim();
+            foreach (var task in Tasks.Where(t => MatchesSearch(t, query)).OrderByDescending(t => t.CreatedAt))
+                SearchResults.Add(task);
+        }
+        OnPropertyChanged(nameof(IsSearchEmpty));
+    }
+
     private void RebuildFlatGroups()
     {
         _openGroup.Items.Clear();
@@ -369,6 +404,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
             {
                 RefreshActiveTasks();
             }
+
+            if (IsSearchActive)
+                RefreshSearchResults();
 
             OnPropertyChanged(nameof(IsTaskListEmpty));
             OnPropertyChanged(nameof(ShowEmptyState));
@@ -623,6 +661,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 }
             });
         }
+
+        if (IsSearchActive && e.PropertyName is nameof(TodoItem.Title) or nameof(TodoItem.Notes) or nameof(TodoItem.Tags))
+            _dispatcherQueue.TryEnqueue(RefreshSearchResults);
 
         SaveAsync();
     }
