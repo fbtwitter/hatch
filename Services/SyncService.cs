@@ -307,6 +307,28 @@ public sealed class SyncService
     public Task<string?> ResolveConflictUseServerAsync()
         => PullIfNewerAsync(force: true);
 
+    // Non-destructive alternative to picking a side: unions both datasets (see SyncMerge),
+    // saves the result locally, and pushes it back so both sides converge.
+    public async Task<string?> ResolveConflictMergeAsync()
+    {
+        if (!IsSignedIn || _client == null) return "Not signed in.";
+        try
+        {
+            var local = await new TaskStorageService().LoadAsync();
+            var response = await _client.From<UserDataRow>().Get();
+            var row = response.Models.FirstOrDefault();
+            var server = row?.TasksJson != null
+                ? JsonSerializer.Deserialize<TasksFile>(row.TasksJson)
+                : null;
+
+            var merged = SyncMerge.Merge(local, server ?? new TasksFile());
+            await new TaskStorageService().SaveAsync(merged);
+            TasksReceived?.Invoke();
+            return await PushAsync(merged);
+        }
+        catch (Exception ex) { return ex.Message; }
+    }
+
     private async Task PersistSessionAsync(Supabase.Gotrue.Session session)
     {
         App.Settings.SyncAccessToken = session.AccessToken;
