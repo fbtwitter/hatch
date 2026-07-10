@@ -259,6 +259,34 @@
                     </Grid>
                 </Border>
 
+                <!-- Show Tips Automatically — custom toggle card -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE946;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock Text="Show Tips Automatically"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Pop up tips above the mascot on their own, instead of waiting for a click"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="2"
+                                      AutomationProperties.AutomationId="Settings_ShowTipsAutomatically"
+                                      AutomationProperties.Name="Show tips automatically"
+                                      IsOn="{x:Bind ViewModel.ShowTipsAutomatically, Mode=TwoWay}"
+                                      OnContent="On" OffContent="Off" MinWidth="80"
+                                      VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
                 <!-- Lottie Animation File -->
                 <toolkit:SettingsCard
                     Header="Lottie Animation File"

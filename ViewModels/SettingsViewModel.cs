@@ -267,6 +267,18 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         App.MascotWindowInstance?.ViewModel.RaiseLottieFileChanged();
     }
 
+    public bool ShowTipsAutomatically
+    {
+        get => _settings.Current.ShowTipsAutomatically;
+        set
+        {
+            if (_settings.Current.ShowTipsAutomatically == value) return;
+            _settings.Current.ShowTipsAutomatically = value;
+            _ = _settings.SaveAsync();
+            OnPropertyChanged();
+        }
+    }
+
     public bool HideWhenFullscreen
     {
         get => _settings.Current.HideWhenFullscreen;
