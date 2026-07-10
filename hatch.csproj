@@ -49,6 +49,8 @@
     <None Remove="scripts\AssetGen\**" />
     <Compile Remove="Hatch.Tests\**" />
     <None Remove="Hatch.Tests\**" />
+    <Compile Remove="Hatch.Tests.Unit\**" />
+    <None Remove="Hatch.Tests.Unit\**" />
   </ItemGroup>
 
   <ItemGroup>
