@@ -255,6 +255,7 @@ public sealed partial class TaskListPage : Page
         PaneTitleBox.Text = task.Title;
         PaneNotesBox.Text = task.Notes ?? string.Empty;
         PaneMyDayToggle.IsOn = task.IsInMyDay;
+        PanePriorityCombo.SelectedIndex = (int)task.Priority;
         PaneDueDatePicker.Date = task.DueDate.HasValue
             ? (DateTimeOffset?)new DateTimeOffset(task.DueDate.Value.ToLocalTime().Date, TimeSpan.Zero)
             : null;
@@ -314,6 +315,12 @@ public sealed partial class TaskListPage : Page
         _paneTask.MyDayDate = PaneMyDayToggle.IsOn
             ? DateOnly.FromDateTime(DateTime.Today)
             : null;
+    }
+
+    private void PanePriorityCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_updatingPane || _paneTask == null) return;
+        _paneTask.Priority = (TaskPriority)PanePriorityCombo.SelectedIndex;
     }
 
     private void SuggestionCard_Tapped(object sender, TappedRoutedEventArgs e)

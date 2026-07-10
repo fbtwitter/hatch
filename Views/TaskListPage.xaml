@@ -24,6 +24,8 @@
         <converters:TagsPreviewConverter x:Key="TagsPreview" />
         <converters:TagsOverflowCountConverter x:Key="TagsOverflowCount" />
         <converters:TagsOverflowVisibilityConverter x:Key="TagsOverflowVisibility" />
+        <converters:PriorityToBrushConverter x:Key="PriorityToBrush" />
+        <converters:PriorityToForegroundConverter x:Key="PriorityToForeground" />
 
         <!-- Chip button: preserves the chip color on hover/press instead of flashing WinUI default grey -->
         <Style x:Key="ChipButtonStyle" TargetType="Button">
@@ -144,13 +146,34 @@
                             </StackPanel>
                         </Button>
 
-                        <!-- Repeat indicator — only when the task has an active recurrence -->
-                        <FontIcon Glyph="&#xE895;"
-                                  FontSize="11"
-                                  Opacity="0.6"
-                                  VerticalAlignment="Center"
-                                  ToolTipService.ToolTip="Repeats"
-                                  Visibility="{x:Bind HasRecurrence, Converter={StaticResource BoolToVisibility}, Mode=OneWay}" />
+                        <!-- Repeat chip — only when the task has an active recurrence -->
+                        <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                CornerRadius="4"
+                                Padding="6,2"
+                                VerticalAlignment="Center"
+                                ToolTipService.ToolTip="Repeats"
+                                Visibility="{x:Bind HasRecurrence, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                            <FontIcon Glyph="&#xE895;"
+                                      FontSize="10"
+                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </Border>
+
+                        <!-- Priority chip — only when a priority tier is set; color-coded by tier -->
+                        <Border Background="{x:Bind Priority, Converter={StaticResource PriorityToBrush}, Mode=OneWay}"
+                                CornerRadius="4"
+                                Padding="6,2"
+                                VerticalAlignment="Center"
+                                ToolTipService.ToolTip="{x:Bind Priority, Mode=OneWay}"
+                                Visibility="{x:Bind HasPriority, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                <FontIcon Glyph="&#xE7C1;"
+                                          FontSize="10"
+                                          Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
+                                <TextBlock Text="{x:Bind Priority, Mode=OneWay}"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
+                            </StackPanel>
+                        </Border>
 
                         <!-- Add-date ghost — only when not completed and no date -->
                         <Button Tag="{x:Bind}"
@@ -743,6 +766,18 @@
                                       OnContent=""
                                       Toggled="PaneMyDayToggle_Toggled"
                                       Margin="0,-4,0,-4" />
+
+                        <!-- Priority -->
+                        <ComboBox x:Name="PanePriorityCombo"
+                                  AutomationProperties.AutomationId="PanePriorityCombo"
+                                  Header="Priority"
+                                  HorizontalAlignment="Stretch"
+                                  SelectionChanged="PanePriorityCombo_SelectionChanged">
+                            <ComboBoxItem Content="None" />
+                            <ComboBoxItem Content="Low" />
+                            <ComboBoxItem Content="Medium" />
+                            <ComboBoxItem Content="High" />
+                        </ComboBox>
 
                         <!-- Due date -->
                         <CalendarDatePicker x:Name="PaneDueDatePicker"
