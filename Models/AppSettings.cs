@@ -31,6 +31,10 @@ public sealed class AppSettings
     public int ConsecutiveTipDismissals { get; set; } = 0;
     public DateTime? TipAutoOpenCooldownUntil { get; set; } = null;
 
+    // Proactive tip popup — off by default (opt-in; more interruptive than the click-only default)
+    public bool ShowTipsAutomatically { get; set; } = false;
+    public DateTime? LastProactiveTipCheckDate { get; set; } = null;
+
     // Tip Engine — smart fallback suppression (avoid filler)
     public DateTime? LastMeaningfulTipTime { get; set; } = null;      // overdue, My Day, progress
     public DateTime? LastUserActivityTime { get; set; } = null;       // bubble open, app activation

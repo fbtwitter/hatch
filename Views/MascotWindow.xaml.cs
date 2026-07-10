@@ -132,20 +132,19 @@ public sealed partial class MascotWindow : Window
                 if (ViewModel.IsBubbleOpen)
                 {
                     _wigglePlayed = false;
-                    if (_bubbleWindow == null)
+                    bool wasNull = _bubbleWindow == null;
+                    var bubble = EnsureBubbleWindowCreated();
+                    if (wasNull)
                     {
                         // First open: create the window once and keep it alive.
                         // Subsequent opens reuse the same window (hide/show) to avoid
                         // paying the XAML island + Mica + DComp initialization cost.
-                        _bubbleWindow = new QuickAddBubbleWindow();
-                        App.BubbleWindowInstance = _bubbleWindow;
-                        _bubbleWindow.Dismissed += () => ViewModel.CloseBubble();
-                        _bubbleWindow.PositionRelativeToMascot(ViewModel.X, ViewModel.Y, ViewModel.WindowSize);
-                        _bubbleWindow.Activate();
+                        bubble.PositionRelativeToMascot(ViewModel.X, ViewModel.Y, ViewModel.WindowSize);
+                        bubble.Activate();
                     }
                     else
                     {
-                        _bubbleWindow.ShowAndReset(ViewModel.X, ViewModel.Y, ViewModel.WindowSize);
+                        bubble.ShowAndReset(ViewModel.X, ViewModel.Y, ViewModel.WindowSize);
                     }
                 }
                 else
@@ -156,6 +155,9 @@ public sealed partial class MascotWindow : Window
             else if (e.PropertyName == nameof(MascotViewModel.IsMascotHidden))
             {
                 ShowWindow(_hwnd, ViewModel.IsMascotHidden ? SW_HIDE : SW_SHOWNOACTIVATE);
+                // "Hide for an hour" etc. should also suppress any proactive tip popup.
+                if (ViewModel.IsMascotHidden)
+                    _bubbleWindow?.HideWindow();
             }
             else if (e.PropertyName == nameof(MascotViewModel.WindowSize))
             {
@@ -178,6 +180,28 @@ public sealed partial class MascotWindow : Window
 
         RegisterHotKey();
 
+        ViewModel.ProactiveTipDue += TryShowProactiveTip;
+    }
+
+    // Lazily creates the quick-add bubble window if it doesn't exist yet, without
+    // activating or positioning it — callers (click-open vs. proactive tip) finish
+    // setup differently.
+    private QuickAddBubbleWindow EnsureBubbleWindowCreated()
+    {
+        if (_bubbleWindow == null)
+        {
+            _bubbleWindow = new QuickAddBubbleWindow();
+            App.BubbleWindowInstance = _bubbleWindow;
+            _bubbleWindow.Dismissed += () => ViewModel.CloseBubble();
+        }
+        return _bubbleWindow;
+    }
+
+    private void TryShowProactiveTip()
+    {
+        if (ViewModel.IsBubbleOpen) return; // real bubble already open — don't interrupt
+        var bubble = EnsureBubbleWindowCreated();
+        bubble.ShowProactiveTip(ViewModel.X, ViewModel.Y, ViewModel.WindowSize);
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)

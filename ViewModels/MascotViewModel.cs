@@ -175,6 +175,24 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
+    // Fired at most once per calendar day, on the UI thread, when the user has opted
+    // into proactive tips and the mascot is currently visible and not user-hidden.
+    // MascotWindow owns the QuickAddBubbleWindow instance, so it subscribes and shows it.
+    public event Action? ProactiveTipDue;
+
+    // Called from the dispatcher-queued fullscreen-poll tick — already on the UI thread.
+    private void CheckProactiveTipDue()
+    {
+        if (!App.Settings.ShowTipsAutomatically) return;
+        if (App.Settings.LastProactiveTipCheckDate?.Date == DateTime.Today) return;
+        if (!IsVisible || IsMascotHidden || IsBubbleOpen) return;
+
+        App.Settings.LastProactiveTipCheckDate = DateTime.Today;
+        _ = App.SettingsService.SaveAsync();
+
+        ProactiveTipDue?.Invoke();
+    }
+
     public void SetDailyTipIndicatorVisible()
     {
         _dispatcher.TryEnqueue(() => { ShowDailyTipIndicator = true; });
@@ -432,7 +450,11 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
             {
                 var isFull = App.Settings.HideWhenFullscreen &&
                              IsForegroundWindowFullscreen(App.Settings.MascotAlwaysOnTop);
-                _dispatcher.TryEnqueue(() => IsVisible = !isFull);
+                _dispatcher.TryEnqueue(() =>
+                {
+                    IsVisible = !isFull;
+                    CheckProactiveTipDue();
+                });
             }
         }
         catch (OperationCanceledException) { }
