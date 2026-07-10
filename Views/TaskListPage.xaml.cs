@@ -675,6 +675,20 @@ public sealed partial class TaskListPage : Page
         App.MascotWindowInstance?.ShowFocusMode(task);
     }
 
+    // One-tap re-date without reopening the calendar flyout — the common move of
+    // pushing a stale or badly-timed task forward without re-triaging it from scratch.
+    private void SnoozeTomorrow_Click(object sender, RoutedEventArgs e)
+    {
+        var task = (TodoItem)((MenuFlyoutItem)sender).Tag;
+        ViewModel.UpdateTaskDueDate(task, new DateTimeOffset(DueDatePresets.GetTomorrow(DateTime.Today)));
+    }
+
+    private void SnoozeNextWeek_Click(object sender, RoutedEventArgs e)
+    {
+        var task = (TodoItem)((MenuFlyoutItem)sender).Tag;
+        ViewModel.UpdateTaskDueDate(task, new DateTimeOffset(DueDatePresets.GetNextWeek(DateTime.Today)));
+    }
+
     private void UndoInfoBar_Closed(InfoBar sender, InfoBarClosedEventArgs args)
     {
         ViewModel.DismissUndoBar();
