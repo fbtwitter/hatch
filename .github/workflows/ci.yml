@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: windows-2022
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Secrets.cs is gitignored (Services/Secrets.cs) — CI builds don't need real
+      # Supabase access, just something for the compiler to reference.
+      - name: Write dummy Secrets.cs
+        shell: pwsh
+        run: |
+          @"
+          namespace Hatch.Services;
+          internal static class Secrets
+          {
+              public const string SupabaseUrl = "https://ci-placeholder.invalid/";
+              public const string SupabaseKey = "ci-placeholder";
+          }
+          "@ | Set-Content Services/Secrets.cs -Encoding utf8NoBOM
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Generate placeholder assets
+        shell: pwsh
+        run: .\scripts\create-assets.ps1
+
+      - name: Build (Debug, x64)
+        shell: pwsh
+        run: |
+          msbuild hatch.csproj /t:Restore /p:Configuration=Debug /p:Platform=x64 /nowarn:NETSDK1233
+          msbuild hatch.csproj /p:Configuration=Debug /p:Platform=x64 /nowarn:NETSDK1233
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # Pure-logic tests only (Models/Helpers/Services with no WinUI dependency).
+      # The FlaUI UI-automation suite in Hatch.Tests launches the packaged app and
+      # stays manual — not run here. See context/current-feature.md.
+      - name: Run unit tests
+        shell: pwsh
+        run: dotnet test Hatch.Tests.Unit/Hatch.Tests.Unit.csproj --configuration Debug
