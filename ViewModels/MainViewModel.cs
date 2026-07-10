@@ -23,6 +23,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private int _themeVersion = 0;
     private readonly Dictionary<string, bool> _completedGroupExpandedState = new();
     private TodoItem? _lastCompletedTask;
+    private TodoItem? _lastSpawnedRecurrence;
     private TodoItem? _selectedTask;
     private DispatcherQueueTimer? _undoDismissTimer;
     private bool _isUndoBarVisible;
@@ -672,6 +673,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
     // container destruction and the resulting checkbox blink / access violation.
     private void ApplyCompletedChange(TodoItem task)
     {
+        if (task.IsCompleted)
+            TrySpawnNextRecurrence(task);
+
         switch (_activeNavItem)
         {
             case "planned":
@@ -729,6 +733,54 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
+    private void TrySpawnNextRecurrence(TodoItem task)
+    {
+        _lastSpawnedRecurrence = null;
+        if (task.Recurrence == TaskRecurrence.None || task.DueDate == null) return;
+
+        var next = new TodoItem
+        {
+            Title      = task.Title,
+            Notes      = task.Notes,
+            Tags       = [.. task.Tags],
+            ListId     = task.ListId,
+            ListName   = task.ListName,
+            IsStarred  = task.IsStarred,
+            DueDate    = AdvanceDueDate(task.DueDate.Value, task.Recurrence),
+            Recurrence = task.Recurrence
+        };
+
+        AttachTaskPropertyChangedHandler(next);
+        App.NotificationScheduler.ScheduleForTask(next);
+        Tasks.Insert(0, next);
+        _lastSpawnedRecurrence = next;
+    }
+
+    // Anchored to the original due date (not "today") so a Monday task stays on Monday
+    // even if completed late. DueDate is normalized to local calendar date + zero offset,
+    // matching the convention used by the calendar picker and date-chip flyout.
+    private static DateTimeOffset AdvanceDueDate(DateTimeOffset due, TaskRecurrence recurrence)
+    {
+        var date = due.ToLocalTime().Date;
+        var next = recurrence switch
+        {
+            TaskRecurrence.Daily    => date.AddDays(1),
+            TaskRecurrence.Weekly   => date.AddDays(7),
+            TaskRecurrence.Monthly  => date.AddMonths(1),
+            TaskRecurrence.Weekdays => AdvanceSkippingWeekend(date),
+            _                       => date
+        };
+        return new DateTimeOffset(next, TimeSpan.Zero);
+    }
+
+    private static DateTime AdvanceSkippingWeekend(DateTime date)
+    {
+        var next = date.AddDays(1);
+        while (next.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+            next = next.AddDays(1);
+        return next;
+    }
+
     public event Action? FlatGroupMoveStarting;
     public event Action? FlatGroupMoveCompleted;
 
@@ -751,6 +803,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         _undoDismissTimer?.Stop();
         _undoDismissTimer = null;
         _lastCompletedTask = null;
+        _lastSpawnedRecurrence = null;
         IsUndoBarVisible = false;
     }
 
@@ -761,6 +814,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
             DismissUndoBar();
             return;
         }
+
+        // Undoing a recurring task's completion also removes the occurrence it spawned —
+        // otherwise the user would end up with a duplicate.
+        if (_lastSpawnedRecurrence != null)
+            DeleteTask(_lastSpawnedRecurrence);
 
         task.IsCompleted = false;
         DismissUndoBar();
