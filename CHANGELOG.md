@@ -8,6 +8,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.14.0] - 2026-07-10
+
+### Added
+- Summary page (top-level nav item): Overdue/Completed Today/Open KPI tiles, a "Today"
+  section (daily-agenda glance), and a strictly-future "Upcoming" list
+- Quick Snooze — task row ⋯ menu → Tomorrow / Next week re-date without reopening the
+  calendar picker
+- Export tasks — Settings → Data → JSON, CSV, or Markdown (Markdown groups by list with
+  checkboxes, ready to paste into a status update)
+- Dedicated Search page — task search moved from the task-list header into the window's
+  title bar (global, accessible from every page); results render on their own page
+  instead of overlaid inside a task list; typing debounced 250ms; clearing a search
+  returns to whichever page you were on before (Summary, Settings, or a specific list)
+- Non-destructive "Merge both" option for sync conflict resolution, alongside the
+  existing "keep this device" / "use account data" choices
+
+### Changed
+- `MainViewModel` split from a single 993-line file into six focused partial classes
+- CI now builds and runs a new pure-logic unit test suite on every push/PR, not just on
+  release tags
+
+### Removed
+- Summary page's "Computed locally..." subtitle and the "All done!" congratulatory
+  message shown when a list's Open group was empty
+
+---
+
 ## [0.12.9] - 2026-06-19
 
 ### Fixed
