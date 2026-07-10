@@ -219,7 +219,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 .Where(t => t.IsInMyDay)
                 .OrderByDescending(t => t.CreatedAt)
                 .ThenBy(t => t.IsCompleted),
-            "important" => Tasks.Where(t => t.IsStarred).OrderByDescending(t => t.CreatedAt),
+            "important" => Tasks.Where(t => t.IsStarred)
+                .OrderByDescending(t => t.Priority)
+                .ThenByDescending(t => t.CreatedAt),
             "planned"   => Tasks.Where(t => t.DueDate != null && !t.IsCompleted).OrderBy(t => t.DueDate),
             _           => Tasks.Where(MatchesFilter).OrderByDescending(t => t.CreatedAt)
         };

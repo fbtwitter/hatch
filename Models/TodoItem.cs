@@ -86,6 +86,15 @@ public sealed class TodoItem : INotifyPropertyChanged
 
     public bool HasRecurrence => _recurrence != TaskRecurrence.None;
 
+    private TaskPriority _priority = TaskPriority.None;
+    public TaskPriority Priority
+    {
+        get => _priority;
+        set { _priority = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasPriority)); }
+    }
+
+    public bool HasPriority => _priority != TaskPriority.None;
+
     private List<string> _tags = [];
     public List<string> Tags
     {
