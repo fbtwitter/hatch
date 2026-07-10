@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Deliberately plain net10.0, not net10.0-windows10.0.19041.0 — this project must stay
+    free of any WinUI/WindowsAppSDK dependency so it builds and runs fast on any CI runner
+    with just the .NET SDK. Source files are linked directly (no ProjectReference to
+    hatch.csproj) for the same reason: only Models/Helpers/Services with zero WinUI usings
+    may be added here. See context/current-feature.md for the CI rationale.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Hatch.Tests.Unit</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.7.3" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.7.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Models\TodoItem.cs" Link="Source\Models\TodoItem.cs" />
+    <Compile Include="..\Models\TaskList.cs" Link="Source\Models\TaskList.cs" />
+    <Compile Include="..\Models\TasksFile.cs" Link="Source\Models\TasksFile.cs" />
+    <Compile Include="..\Models\TaskRecurrence.cs" Link="Source\Models\TaskRecurrence.cs" />
+    <Compile Include="..\Models\TaskPriority.cs" Link="Source\Models\TaskPriority.cs" />
+    <Compile Include="..\Models\Tip.cs" Link="Source\Models\Tip.cs" />
+    <Compile Include="..\Helpers\RecurrenceHelper.cs" Link="Source\Helpers\RecurrenceHelper.cs" />
+    <Compile Include="..\Helpers\TaskSorting.cs" Link="Source\Helpers\TaskSorting.cs" />
+    <Compile Include="..\Helpers\TaskSearchMatcher.cs" Link="Source\Helpers\TaskSearchMatcher.cs" />
+    <Compile Include="..\Services\TipEngine.cs" Link="Source\Services\TipEngine.cs" />
+    <Compile Include="..\Services\SyncMerge.cs" Link="Source\Services\SyncMerge.cs" />
+  </ItemGroup>
+
+</Project>
