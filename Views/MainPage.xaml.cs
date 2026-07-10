@@ -22,8 +22,8 @@ public sealed partial class MainPage : Page
     private readonly Dictionary<Guid, TextBlock> _customNavItemNameBlocks = new();
     private readonly Dictionary<Guid, StackPanel> _innerContentPanels = new();
 
-    // Static menu item count (My Day, Important, Planned, All Tasks, Separator)
-    private const int StaticMenuItemCount = 5;
+    // Static menu item count (Summary, Separator, My Day, Important, Planned, All Tasks, Separator)
+    private const int StaticMenuItemCount = 7;
 
     public MainViewModel ViewModel => _viewModel;
 
@@ -527,14 +527,22 @@ public sealed partial class MainPage : Page
         {
             ContentFrame.Navigate(typeof(SettingsPage), null, new DrillInNavigationTransitionInfo());
             MainTitleBar.IsBackButtonVisible = true;
+            return;
         }
-        else if (args.SelectedItem is NavigationViewItem item &&
-                 item.Tag is string tag &&
-                 tag != "newlist")
+
+        if (args.SelectedItem is not NavigationViewItem item || item.Tag is not string tag || tag == "newlist")
+            return;
+
+        if (tag == "summary")
         {
-            _viewModel.ActiveNavItem = tag;
-            NavigateToTaskList();
+            ContentFrame.Navigate(typeof(StatsPage), null, new SuppressNavigationTransitionInfo());
+            ContentFrame.BackStack.Clear();
+            MainTitleBar.IsBackButtonVisible = false;
+            return;
         }
+
+        _viewModel.ActiveNavItem = tag;
+        NavigateToTaskList();
     }
 
     private void NavView_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
