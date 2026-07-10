@@ -14,7 +14,7 @@ public sealed partial class MainViewModel
     private List<PlannedGroup>? _cachedPlannedGroups;
     private readonly Dictionary<string, bool> _completedGroupExpandedState = new();
 
-    private readonly CompletedTaskGroup _openGroup = new() { Name = "Open", EmptyMessage = "All done!" };
+    private readonly CompletedTaskGroup _openGroup = new() { Name = "Open" };
     private readonly CompletedTaskGroup _completedGroup = new() { Name = "Completed", TrackCount = true };
     private readonly IList<CompletedTaskGroup> _flatGroupedTasks;
 

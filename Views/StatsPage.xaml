@@ -54,9 +54,6 @@
 
             <StackPanel Spacing="4">
                 <TextBlock Text="Summary" Style="{ThemeResource TitleLargeTextBlockStyle}"/>
-                <TextBlock Text="Computed locally from your tasks. Nothing here ever leaves your device."
-                           Style="{ThemeResource CaptionTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
             </StackPanel>
 
             <!-- Responsive KPI grid — UniformGridLayout reflows the column count to fill
