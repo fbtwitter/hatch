@@ -371,9 +371,23 @@
             </Grid.RowDefinitions>
 
             <!-- Header -->
-            <TextBlock Grid.Row="0" Padding="16,24,16,8" x:Name="HeaderText" Text="My Tasks"
-                       Style="{ThemeResource TitleLargeTextBlockStyle}"
-                       VerticalAlignment="Center" />
+            <Grid Grid.Row="0" Padding="16,24,16,8" ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" x:Name="HeaderText" Text="My Tasks"
+                           Style="{ThemeResource TitleLargeTextBlockStyle}"
+                           VerticalAlignment="Center" />
+                <AutoSuggestBox Grid.Column="1" x:Name="SearchBox"
+                                AutomationProperties.AutomationId="Search_AutoSuggestBox"
+                                PlaceholderText="Search tasks"
+                                QueryIcon="Find"
+                                Width="220"
+                                VerticalAlignment="Center"
+                                Text="{x:Bind ViewModel.SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                KeyDown="SearchBox_KeyDown" />
+            </Grid>
 
             <!-- Tag filter banner — visible when a tag filter is active -->
             <StackPanel Grid.Row="1"
@@ -588,6 +602,38 @@
                         </GroupStyle>
                     </ListView.GroupStyle>
                 </ListView>
+
+                <!-- Search results — visible only while a search query is active -->
+                <ListView Grid.Row="0" x:Name="SearchListView"
+                          ItemsSource="{x:Bind ViewModel.SearchResults, Mode=OneWay}"
+                          SelectionMode="Single"
+                          SelectionChanged="TaskListView_SelectionChanged"
+                          Padding="16,0,16,0"
+                          ItemTemplate="{StaticResource TaskItemTemplate}"
+                          ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
+                          Visibility="Collapsed">
+                    <ListView.ItemContainerTransitions>
+                        <TransitionCollection />
+                    </ListView.ItemContainerTransitions>
+                </ListView>
+
+                <!-- Search empty state -->
+                <StackPanel Grid.Row="0" x:Name="SearchEmptyState"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="8"
+                            MaxWidth="260"
+                            Visibility="Collapsed">
+                    <FontIcon Glyph="&#xE721;"
+                              FontSize="48"
+                              Foreground="{ThemeResource TextFillColorDisabledBrush}"
+                              HorizontalAlignment="Center" />
+                    <TextBlock Text="No matching tasks"
+                               HorizontalAlignment="Center"
+                               TextAlignment="Center"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                </StackPanel>
 
                 <!-- Undo snackbar -->
                 <InfoBar Grid.Row="1"

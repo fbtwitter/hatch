@@ -1,10 +1,13 @@
 using System.Collections.Specialized;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Windows.System;
+using Windows.UI.Core;
 using Hatch.Models;
 using Hatch.ViewModels;
 
@@ -34,6 +37,21 @@ public sealed partial class MainPage : Page
             if (NavView.SettingsItem is NavigationViewItem settingsItem)
                 ToolTipService.SetPlacement(settingsItem, PlacementMode.Right);
         };
+
+        // handledEventsToo so Ctrl+F reaches the search box even when focus is inside
+        // the nav pane or another child control that already handled the key press.
+        this.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(OnPageKeyDown), handledEventsToo: true);
+    }
+
+    private void OnPageKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        bool isCtrl = (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control)
+                       & CoreVirtualKeyStates.Down) != 0;
+        if (isCtrl && e.Key == VirtualKey.F && ContentFrame.Content is TaskListPage taskListPage)
+        {
+            taskListPage.FocusSearchBox();
+            e.Handled = true;
+        }
     }
 
     // Applies SystemBackdropElement to the page content layer — Windows 11 only.
