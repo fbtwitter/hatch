@@ -32,6 +32,7 @@
     <Compile Include="..\Helpers\RecurrenceHelper.cs" Link="Source\Helpers\RecurrenceHelper.cs" />
     <Compile Include="..\Helpers\TaskSorting.cs" Link="Source\Helpers\TaskSorting.cs" />
     <Compile Include="..\Helpers\TaskSearchMatcher.cs" Link="Source\Helpers\TaskSearchMatcher.cs" />
+    <Compile Include="..\Helpers\TaskExportFormatter.cs" Link="Source\Helpers\TaskExportFormatter.cs" />
     <Compile Include="..\Services\TipEngine.cs" Link="Source\Services\TipEngine.cs" />
     <Compile Include="..\Services\SyncMerge.cs" Link="Source\Services\SyncMerge.cs" />
   </ItemGroup>

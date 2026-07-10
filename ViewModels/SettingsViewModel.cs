@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using Hatch.Helpers;
 using Hatch.Models;
 using Hatch.Services;
 using Hatch.Views;
@@ -434,6 +435,36 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             Directory.CreateDirectory(path);
             Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
         });
+
+    // ── Export ───────────────────────────────────────────────────────────────
+
+    private string? _exportError;
+    public string? ExportError
+    {
+        get => _exportError;
+        private set { _exportError = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasExportError)); }
+    }
+
+    public bool HasExportError => !string.IsNullOrEmpty(_exportError);
+
+    // Reads directly from disk (not the live in-memory MainViewModel) so the export always
+    // reflects the last-saved state, and Settings stays decoupled from MainViewModel.
+    public async Task ExportAsync(string format, string path)
+    {
+        ExportError = null;
+        try
+        {
+            var data = await new TaskStorageService().LoadAsync();
+            var content = format switch
+            {
+                "csv"      => TaskExportFormatter.ToCsv(data),
+                "markdown" => TaskExportFormatter.ToMarkdown(data),
+                _          => TaskExportFormatter.ToJson(data)
+            };
+            await File.WriteAllTextAsync(path, content);
+        }
+        catch (Exception ex) { ExportError = ex.Message; }
+    }
 
     public ICommand OpenGitHubCommand { get; } =
         new RelayCommand(_ => Process.Start(new ProcessStartInfo

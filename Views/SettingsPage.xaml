@@ -468,6 +468,32 @@
                             Command="{x:Bind ViewModel.OpenDataFolderCommand}"/>
                 </toolkit:SettingsCard>
 
+                <toolkit:SettingsCard
+                    Header="Export tasks"
+                    Description="Save your tasks as a file you choose where to put — JSON for a full backup, CSV for a spreadsheet, Markdown for a checklist you can paste into a status update">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE898;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="JSON" Tag="json"
+                                AutomationProperties.AutomationId="Settings_ExportJson"
+                                Click="ExportButton_Click"/>
+                        <Button Content="CSV" Tag="csv"
+                                AutomationProperties.AutomationId="Settings_ExportCsv"
+                                Click="ExportButton_Click"/>
+                        <Button Content="Markdown" Tag="markdown"
+                                AutomationProperties.AutomationId="Settings_ExportMarkdown"
+                                Click="ExportButton_Click"/>
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
+                <toolkit:SettingsCard
+                    Visibility="{x:Bind ViewModel.HasExportError, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <TextBlock Text="{x:Bind ViewModel.ExportError, Mode=OneWay}"
+                               Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                               TextWrapping="Wrap"/>
+                </toolkit:SettingsCard>
+
                 <!-- ── About ────────────────────────────────────────── -->
                 <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
                            Text="About"/>
