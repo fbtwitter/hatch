@@ -27,10 +27,13 @@ public sealed class TodoItem : INotifyPropertyChanged
         {
             if (_isCompleted == value) return;
             _isCompleted = value;
+            CompletedAt = value ? DateTimeOffset.Now : null;
             OnPropertyChanged();
             OnPropertyChanged(nameof(ShowAddDateHint));
         }
     }
+
+    public DateTimeOffset? CompletedAt { get; set; }
 
     public bool IsStarred
     {
@@ -124,6 +127,12 @@ public sealed class TodoItem : INotifyPropertyChanged
     public bool ShowAddDateHint => !IsCompleted && DueDate == null;
 
     public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+    // Stamped explicitly by MainViewModel on real edits (not by property setters here) —
+    // JSON deserialization must restore the persisted value untouched, and cosmetic
+    // OnPropertyChanged re-raises (e.g. RefreshDueDateBinding) must not count as edits.
+    // Used by SyncMerge to resolve which side wins when the same task changed on both.
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 
     private string? _notes;
     public string? Notes

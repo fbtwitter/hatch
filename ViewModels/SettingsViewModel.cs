@@ -139,8 +139,9 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             }
             else
             {
-                // No UI subscriber (e.g. OAuth callback with Settings closed): safe fallback.
-                await App.SyncService.ResolveConflictUseServerAsync();
+                // No UI subscriber (e.g. OAuth callback with Settings closed): merge is the
+                // safe fallback — unlike "use server", it can't silently discard local data.
+                await App.SyncService.ResolveConflictMergeAsync();
                 App.SyncService.StartAutoSync();
                 OnPropertyChanged(nameof(SyncLastSyncedText));
             }
@@ -153,15 +154,18 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         }
     }
 
-    public async Task ResolveConflictAsync(bool useLocal)
+    public async Task ResolveConflictAsync(SyncConflictResolution resolution)
     {
         IsSyncing = true;
         SyncError = null;
         try
         {
-            var error = useLocal
-                ? await App.SyncService.ResolveConflictUseLocalAsync()
-                : await App.SyncService.ResolveConflictUseServerAsync();
+            var error = resolution switch
+            {
+                SyncConflictResolution.UseLocal  => await App.SyncService.ResolveConflictUseLocalAsync(),
+                SyncConflictResolution.UseServer => await App.SyncService.ResolveConflictUseServerAsync(),
+                _                                 => await App.SyncService.ResolveConflictMergeAsync()
+            };
             SyncError = error;
         }
         finally

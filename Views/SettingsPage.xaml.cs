@@ -40,10 +40,10 @@ public sealed partial class SettingsPage : Page
             await App.SyncService.SignOutAsync();
             return;
         }
-        await _viewModel.ResolveConflictAsync(useLocal: choice.Value);
+        await _viewModel.ResolveConflictAsync(choice.Value);
     }
 
-    private async Task<bool?> ShowConflictDialogAsync(SyncConflict conflict)
+    private async Task<SyncConflictResolution?> ShowConflictDialogAsync(SyncConflict conflict)
     {
         static string FormatDate(DateTime utc) => utc == DateTime.MinValue
             ? "Unknown"
@@ -54,7 +54,7 @@ public sealed partial class SettingsPage : Page
         var description = new TextBlock
         {
             Text = "You have tasks on this device and on your account. " +
-                   "Choose which to keep — the other will be permanently replaced.",
+                   "Merge keeps everything from both; the other two options replace one side entirely.",
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, 0, 0, 16)
         };
@@ -82,28 +82,35 @@ public sealed partial class SettingsPage : Page
         comparisonGrid.Children.Add(localCard);
         comparisonGrid.Children.Add(serverCard);
 
+        var mergeOption = new RadioButton { Content = "Merge both (recommended) — keeps everything", IsChecked = true };
+        var localOption = new RadioButton { Content = "Keep this device's data only" };
+        var serverOption = new RadioButton { Content = "Use account data only" };
+        var options = new StackPanel { Spacing = 4, Margin = new Thickness(0, 16, 0, 0) };
+        options.Children.Add(mergeOption);
+        options.Children.Add(localOption);
+        options.Children.Add(serverOption);
+
         var content = new StackPanel { Spacing = 0, MinWidth = 420 };
         content.Children.Add(description);
         content.Children.Add(comparisonGrid);
+        content.Children.Add(options);
 
         var dialog = new ContentDialog
         {
             Title = "Data conflict",
             Content = content,
-            PrimaryButtonText = "Keep this device's data",
-            SecondaryButtonText = "Use account data",
+            PrimaryButtonText = "Continue",
             CloseButtonText = "Cancel",
-            DefaultButton = ContentDialogButton.None,
+            DefaultButton = ContentDialogButton.Primary,
             XamlRoot = XamlRoot
         };
 
         var result = await dialog.ShowAsync();
-        return result switch
-        {
-            ContentDialogResult.Primary   => true,
-            ContentDialogResult.Secondary => false,
-            _                             => null
-        };
+        if (result != ContentDialogResult.Primary) return null;
+
+        if (localOption.IsChecked == true)  return SyncConflictResolution.UseLocal;
+        if (serverOption.IsChecked == true) return SyncConflictResolution.UseServer;
+        return SyncConflictResolution.Merge;
     }
 
     private static UIElement MakeSummaryCard(
