@@ -38,6 +38,12 @@
             IsPaneToggleButtonVisible="False">
 
             <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="SummaryItem" AutomationProperties.AutomationId="Nav_Summary" Content="Summary" Tag="summary" ToolTipService.Placement="Right">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE80F;"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItemSeparator/>
                 <NavigationViewItem x:Name="MyDayItem" AutomationProperties.AutomationId="Nav_MyDay" x:Uid="Nav_MyDay" Tag="myday" ToolTipService.Placement="Right">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE706;"/>
