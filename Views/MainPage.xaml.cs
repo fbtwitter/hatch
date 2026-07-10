@@ -47,11 +47,30 @@ public sealed partial class MainPage : Page
     {
         bool isCtrl = (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control)
                        & CoreVirtualKeyStates.Down) != 0;
-        if (isCtrl && e.Key == VirtualKey.F && ContentFrame.Content is TaskListPage taskListPage)
+        if (isCtrl && e.Key == VirtualKey.F)
         {
-            taskListPage.FocusSearchBox();
+            TitleBarSearchBox.Focus(FocusState.Programmatic);
             e.Handled = true;
         }
+    }
+
+    // Reason distinguishes real typing from the programmatic Text= set in
+    // ViewModel_PropertyChanged below — without this check the two would feed back
+    // into each other on every keystroke. Navigation to/from SearchPage is handled
+    // centrally in ViewModel_PropertyChanged's SearchQuery case, since SearchQuery can
+    // also change via Escape, a nav click, or NavigateToTask — not just typing here.
+    private void TitleBarSearchBox_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
+    {
+        if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput) return;
+        _viewModel.SearchQuery = sender.Text;
+    }
+
+    private void TitleBarSearchBox_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key != VirtualKey.Escape) return;
+        _viewModel.SearchQuery = string.Empty;
+        e.Handled = true;
+        this.Focus(FocusState.Programmatic);
     }
 
     // Applies SystemBackdropElement to the page content layer — Windows 11 only.
@@ -85,6 +104,9 @@ public sealed partial class MainPage : Page
         _viewModel.CustomLists.CollectionChanged += CustomLists_CollectionChanged;
         _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+
+        if (TitleBarSearchBox.Text != _viewModel.SearchQuery)
+            TitleBarSearchBox.Text = _viewModel.SearchQuery;
 
         SyncCustomListNavItems();
         RefreshBadges();
@@ -469,6 +491,54 @@ public sealed partial class MainPage : Page
     {
         if (e.PropertyName == nameof(MainViewModel.BadgeVersion))
             RefreshBadges();
+        else if (e.PropertyName == nameof(MainViewModel.SearchQuery))
+        {
+            if (TitleBarSearchBox.Text != _viewModel.SearchQuery)
+                TitleBarSearchBox.Text = _viewModel.SearchQuery;
+
+            // Single choke point for SearchPage navigation — SearchQuery can change via
+            // typing, Escape, a nav click, or NavigateToTask, not just the box itself.
+            bool isSearchActive = _viewModel.IsSearchActive;
+            bool isOnSearchPage = ContentFrame.Content is SearchPage;
+
+            if (isSearchActive && !isOnSearchPage)
+            {
+                ContentFrame.Navigate(typeof(SearchPage), _viewModel, new SuppressNavigationTransitionInfo());
+                ContentFrame.BackStack.Clear();
+                MainTitleBar.IsBackButtonVisible = false;
+            }
+            else if (!isSearchActive && isOnSearchPage)
+            {
+                NavigateBackFromSearch();
+            }
+        }
+    }
+
+    // Restores whichever page/nav item was showing before the search started. Entering
+    // SearchPage never touches NavView.SelectedItem, so it's still exactly what the user
+    // last clicked — no separate "page before search" field needs to be tracked.
+    private void NavigateBackFromSearch()
+    {
+        if (NavView.SelectedItem is NavigationViewItem item)
+        {
+            if (ReferenceEquals(item, NavView.SettingsItem))
+            {
+                ContentFrame.Navigate(typeof(SettingsPage), null, new SuppressNavigationTransitionInfo());
+                MainTitleBar.IsBackButtonVisible = true;
+                return;
+            }
+            if (item.Tag as string == "summary")
+            {
+                ContentFrame.Navigate(typeof(StatsPage), null, new SuppressNavigationTransitionInfo());
+                ContentFrame.BackStack.Clear();
+                MainTitleBar.IsBackButtonVisible = false;
+                return;
+            }
+        }
+
+        // Any other nav item (My Day, Important, Planned, All Tasks, a custom list) —
+        // ActiveNavItem was never touched by the search detour, so this lands correctly.
+        NavigateToTaskList();
     }
 
     private void RefreshBadges()
@@ -523,6 +593,11 @@ public sealed partial class MainPage : Page
     {
         if (_suppressNavigation) return;
 
+        // Explicitly picking a nav item exits search mode — otherwise a stale query
+        // would keep overriding whatever view the user just asked to see.
+        if (_viewModel.IsSearchActive)
+            _viewModel.SearchQuery = string.Empty;
+
         if (args.IsSettingsSelected)
         {
             ContentFrame.Navigate(typeof(SettingsPage), null, new DrillInNavigationTransitionInfo());
@@ -568,11 +643,32 @@ public sealed partial class MainPage : Page
 
     public void NavigateTo(string tag)
     {
+        if (_viewModel.IsSearchActive)
+            _viewModel.SearchQuery = string.Empty;
+
         _viewModel.ActiveNavItem = tag;
         _suppressNavigation = true;
         SelectNavItem(tag);
         _suppressNavigation = false;
         NavigateToTaskList();
+    }
+
+    // Called from SearchPage when a result is tapped. "All Tasks" is the one nav item
+    // guaranteed to contain the task regardless of which list/state it actually belongs
+    // to — the details pane itself opens from SelectedTask alone, independent of the
+    // active filter, so this is just about landing somewhere coherent behind the pane.
+    public void NavigateToTask(TodoItem task)
+    {
+        if (_viewModel.IsSearchActive)
+            _viewModel.SearchQuery = string.Empty;
+
+        _viewModel.ActiveNavItem = "alltasks";
+        _suppressNavigation = true;
+        SelectNavItem("alltasks");
+        _suppressNavigation = false;
+
+        NavigateToTaskList();
+        _viewModel.SelectedTask = task;
     }
 
     public void NavigateToSettingsPage()

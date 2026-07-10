@@ -21,6 +21,17 @@
             <TitleBar.IconSource>
                 <BitmapIconSource UriSource="ms-appx:///Assets/Square44x44Logo.png" ShowAsMonochrome="False"/>
             </TitleBar.IconSource>
+            <TitleBar.Content>
+                <AutoSuggestBox x:Name="TitleBarSearchBox"
+                                AutomationProperties.AutomationId="Search_AutoSuggestBox"
+                                PlaceholderText="Search tasks"
+                                QueryIcon="Find"
+                                MinWidth="240"
+                                MaxWidth="480"
+                                VerticalAlignment="Center"
+                                TextChanged="TitleBarSearchBox_TextChanged"
+                                KeyDown="TitleBarSearchBox_KeyDown"/>
+            </TitleBar.Content>
         </TitleBar>
 
         <NavigationView

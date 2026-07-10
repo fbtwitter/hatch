@@ -119,7 +119,7 @@ public sealed partial class TaskListPage : Page
 
         _vm = vm;
         DataContext = vm;
-        UpdateSearchVisibility();
+        UpdateView(vm.ActiveNavItem);
         vm.PropertyChanged += OnViewModelPropertyChanged;
         vm.FlatGroupMoveStarting += OnFlatGroupMoveStarting;
         vm.FlatGroupMoveCompleted += OnFlatGroupMoveCompleted;
@@ -155,18 +155,7 @@ public sealed partial class TaskListPage : Page
                 // setter is a no-op and SyncListViewSelection would never be called.
                 _vm.SelectedTask = null;
                 SyncListViewSelection(null);
-                // While a search is active, the search results view stays in place
-                // regardless of nav selection — it spans all lists.
-                if (!_vm.IsSearchActive)
-                    UpdateView(_vm.ActiveNavItem);
-                break;
-
-            case nameof(MainViewModel.IsSearchActive):
-                UpdateSearchVisibility();
-                break;
-
-            case nameof(MainViewModel.IsSearchEmpty):
-                SearchEmptyState.Visibility = _vm.IsSearchEmpty ? Visibility.Visible : Visibility.Collapsed;
+                UpdateView(_vm.ActiveNavItem);
                 break;
 
             case nameof(MainViewModel.PlannedGroups) or nameof(MainViewModel.IsPlannedEmpty)
@@ -489,39 +478,6 @@ public sealed partial class TaskListPage : Page
             RefreshPlannedGroups();
     }
 
-    private void UpdateSearchVisibility()
-    {
-        if (_vm == null) return;
-        _cachedTaskListViews = null;
-
-        if (_vm.IsSearchActive)
-        {
-            FlatListView.Visibility = Visibility.Collapsed;
-            GroupedListView.Visibility = Visibility.Collapsed;
-            SearchListView.Visibility = Visibility.Visible;
-            SearchEmptyState.Visibility = _vm.IsSearchEmpty ? Visibility.Visible : Visibility.Collapsed;
-        }
-        else
-        {
-            SearchListView.Visibility = Visibility.Collapsed;
-            SearchEmptyState.Visibility = Visibility.Collapsed;
-            UpdateView(_vm.ActiveNavItem);
-        }
-    }
-
-    public void FocusSearchBox()
-    {
-        SearchBox.Focus(FocusState.Programmatic);
-    }
-
-    private void SearchBox_KeyDown(object sender, KeyRoutedEventArgs e)
-    {
-        if (e.Key != VirtualKey.Escape) return;
-        ViewModel.SearchQuery = string.Empty;
-        e.Handled = true;
-        this.Focus(FocusState.Programmatic);
-    }
-
     private void RefreshPlannedGroups()
     {
         if (_vm == null) return;
@@ -644,8 +600,6 @@ public sealed partial class TaskListPage : Page
 
     private List<TodoItem> GetVisibleTasksInOrder()
     {
-        if (_vm?.IsSearchActive == true)
-            return ViewModel.SearchResults.ToList();
         if (_vm?.ActiveNavItem == "planned")
             return ViewModel.PlannedGroups.SelectMany(g => g.Items).ToList();
         var groups = ViewModel.FlatGroupedTasks;
