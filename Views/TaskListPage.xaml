@@ -281,6 +281,18 @@
                                     </MenuFlyoutItem.Icon>
                                 </MenuFlyoutItem>
                                 <MenuFlyoutSeparator/>
+                                <MenuFlyoutSubItem Text="Snooze">
+                                    <MenuFlyoutSubItem.Icon>
+                                        <FontIcon Glyph="&#xE121;"/>
+                                    </MenuFlyoutSubItem.Icon>
+                                    <MenuFlyoutItem Tag="{x:Bind}"
+                                                    Text="Tomorrow"
+                                                    Click="SnoozeTomorrow_Click"/>
+                                    <MenuFlyoutItem Tag="{x:Bind}"
+                                                    Text="Next week"
+                                                    Click="SnoozeNextWeek_Click"/>
+                                </MenuFlyoutSubItem>
+                                <MenuFlyoutSeparator/>
                                 <MenuFlyoutItem Tag="{x:Bind}"
                                                 x:Uid="Task_DeleteMenuItem"
                                                 Click="DeleteButton_Click">
