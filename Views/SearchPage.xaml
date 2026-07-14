@@ -109,7 +109,7 @@
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                 <TextBlock Text="·"
                                            Visibility="{x:Bind HasListNameToDateSeparator, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                           Opacity="0.35"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                            Style="{ThemeResource CaptionTextBlockStyle}" />
                                 <TextBlock Text="{x:Bind DueDate, Converter={StaticResource DueDateToString}, Mode=OneWay}"
                                            Visibility="{x:Bind DueDate, Converter={StaticResource DueDateToChipVisibility}, Mode=OneWay}"
