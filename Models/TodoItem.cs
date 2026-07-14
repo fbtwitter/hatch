@@ -64,6 +64,14 @@ public sealed class TodoItem : INotifyPropertyChanged
         set { _myDayDate = value; OnPropertyChanged(); }
     }
 
+    // The one place the My Day membership/date pairing rule lives: adding stamps
+    // today, removing clears the date. Callers must not set the two independently.
+    public void SetMyDay(bool on)
+    {
+        IsInMyDay = on;
+        MyDayDate = on ? DateOnly.FromDateTime(DateTime.Today) : null;
+    }
+
     // Used only by daily reset — clears IsInMyDay without touching MyDayDate,
     // so yesterday's date is preserved for suggestion tracking.
     internal void ResetMyDayForNewDay()

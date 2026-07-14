@@ -11,6 +11,9 @@ namespace Hatch.ViewModels;
 
 public sealed class SettingsViewModel : INotifyPropertyChanged
 {
+    private static readonly Windows.Globalization.DateTimeFormatting.DateTimeFormatter _lastSyncedFormatter =
+        new("month.abbreviated day hour minute");
+
     private readonly SettingsService _settings = App.SettingsService;
     private readonly StartupRegistryService _startupRegistry = new();
     private bool _wasSignedIn;
@@ -36,12 +39,12 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         get
         {
             var t = _settings.Current.LastSyncedAt;
-            if (t == null) return "Never synced";
+            if (t == null) return Strings.Sync_NeverSynced;
             var diff = DateTime.UtcNow - t.Value;
-            if (diff.TotalMinutes < 1)  return "Just now";
-            if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes} min ago";
-            if (diff.TotalHours   < 24) return $"{(int)diff.TotalHours} hr ago";
-            return t.Value.ToLocalTime().ToString("MMM d, h:mm tt");
+            if (diff.TotalMinutes < 1)  return Strings.Sync_JustNow;
+            if (diff.TotalMinutes < 60) return Strings.Sync_MinAgo((int)diff.TotalMinutes);
+            if (diff.TotalHours   < 24) return Strings.Sync_HrAgo((int)diff.TotalHours);
+            return _lastSyncedFormatter.Format(t.Value.ToLocalTime());
         }
     }
 
@@ -272,7 +275,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     }
 
     public string LottieFileDisplay =>
-        string.IsNullOrEmpty(LottieFilePath) ? "(none selected)" : Path.GetFileName(LottieFilePath);
+        string.IsNullOrEmpty(LottieFilePath) ? Strings.Settings_NoFileSelected : Path.GetFileName(LottieFilePath);
 
     public bool HasLottieFile => !string.IsNullOrEmpty(LottieFilePath);
 

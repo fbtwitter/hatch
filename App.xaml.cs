@@ -93,6 +93,21 @@ public partial class App : Application
         return false;
     }
 
+    private static async Task InitializeSyncAsync()
+    {
+        try
+        {
+            await SyncService.InitializeAsync();
+            await SyncService.PullIfNewerAsync();
+            SyncService.StartAutoSync();
+        }
+        catch
+        {
+            // Offline or Supabase unreachable — the app is fully functional without sync;
+            // signing in again from Settings re-establishes it.
+        }
+    }
+
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
         try
@@ -110,11 +125,6 @@ public partial class App : Application
             // We are the main instance — handle future activations (OAuth callbacks, etc.)
             mainInstance.Activated += OnAppActivated;
 
-            // Restore the saved session so the user stays signed in across launches.
-            await SyncService.InitializeAsync();
-            // Pull before creating windows — MainViewModel.LoadAsync reads the updated file naturally.
-            await SyncService.PullIfNewerAsync();
-            SyncService.StartAutoSync();
             // Unpackaged (Debug): StartupRegistryService writes --startup into the Run key.
             // Packaged (MSIX): activation kind is StartupTask when launched by the OS.
             // Never infer startup from empty args — that would suppress the window on every manual launch.
@@ -151,6 +161,11 @@ public partial class App : Application
 
             MascotWindowInstance = new MascotWindow();
             MascotWindowInstance.Activate(); // focus returns to MascotWindow last
+
+            // Sync runs off the launch path — a slow network round-trip must not delay
+            // the mascot past the cold-start budget. A pull that lands after LoadAsync
+            // reaches MainViewModel via TasksReceived → ReloadAsync.
+            _ = InitializeSyncAsync();
         }
         catch (Exception ex)
         {
