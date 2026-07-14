@@ -6,7 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+### Added
+- Show Mascot setting (Settings → Mascot) — turn the floating mascot off entirely;
+  quick-add hotkey and tray keep working
+- Mascot shows a loading ring while a Lottie file decodes and fades in on first reveal
+
 ### Changed
+- Manual launch now opens just the mascot; the main window only opens at launch when
+  there is nothing else to show (first run, Show Mascot off, or an active "Hide for…"
+  window)
+- Proactive tips ("Show Tips Automatically") now appear as a proper tip balloon above
+  the mascot instead of a repurposed quick-add bubble; clicking a tip's action button
+  no longer counts as a dismissal toward tip cooldown
 - Summary page is now a launchpad: the Overdue tile opens Planned, the Open tile opens
   All Tasks, and Today/Upcoming rows jump straight to the tapped task with the details
   pane open. Tiles and rows are real buttons (keyboard- and screen-reader-reachable),
