@@ -121,7 +121,7 @@
                         <!-- · separator between list name and date -->
                         <TextBlock Text="·"
                                    Visibility="{x:Bind HasListNameToDateSeparator, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                   Opacity="0.35"
+                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    VerticalAlignment="Center" />
 
@@ -186,8 +186,11 @@
                                 IsTabStop="False"
                                 x:Uid="Task_AddDateButton">
                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                <FontIcon Glyph="&#xE787;" FontSize="11" Opacity="0.35" VerticalAlignment="Center" />
-                                <TextBlock x:Uid="Task_AddDateText" Opacity="0.35"
+                                <FontIcon Glyph="&#xE787;" FontSize="11"
+                                          Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                          VerticalAlignment="Center" />
+                                <TextBlock x:Uid="Task_AddDateText"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                            Style="{ThemeResource CaptionTextBlockStyle}"
                                            VerticalAlignment="Center" />
                             </StackPanel>
@@ -196,7 +199,7 @@
                         <!-- · separator — only when both date and tags are present -->
                         <TextBlock Text="·"
                                    Visibility="{x:Bind HasMetaSeparator, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                   Opacity="0.35"
+                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    VerticalAlignment="Center" />
 
@@ -584,6 +587,7 @@
                                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                             <Button Grid.Column="1"
                                                     Tag="{x:Bind}"
+                                                    AutomationProperties.Name="Add to My Day"
                                                     Click="SuggestionAddButton_Click"
                                                     Style="{ThemeResource AccentButtonStyle}"
                                                     Padding="6"
@@ -682,6 +686,7 @@
                                VerticalAlignment="Center" />
                     <Button x:Name="PaneCloseButton"
                             AutomationProperties.AutomationId="PaneCloseButton"
+                            AutomationProperties.Name="Close details"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Center"
                             Style="{ThemeResource SubtleButtonStyle}"
@@ -787,6 +792,7 @@
                                                                Style="{ThemeResource CaptionTextBlockStyle}"
                                                                Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
                                                     <Button Tag="{x:Bind}"
+                                                            AutomationProperties.Name="Remove tag"
                                                             Click="PaneTagChipRemove_Click"
                                                             Style="{ThemeResource SubtleButtonStyle}"
                                                             Padding="6"
