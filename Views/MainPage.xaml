@@ -18,6 +18,11 @@
             IsPaneToggleButtonVisible="True"
             BackRequested="TitleBar_BackRequested"
             PaneToggleRequested="TitleBar_PaneToggleRequested">
+            <TitleBar.Resources>
+                <!-- Template default is Center, which collapses the content presenter to the
+                     search box's minimum desired width — Stretch lets MaxWidth govern it. -->
+                <HorizontalAlignment x:Key="TitleBarContentHorizontalAlignment">Stretch</HorizontalAlignment>
+            </TitleBar.Resources>
             <TitleBar.IconSource>
                 <BitmapIconSource UriSource="ms-appx:///Assets/Square44x44Logo.png" ShowAsMonochrome="False"/>
             </TitleBar.IconSource>
@@ -26,8 +31,8 @@
                                 AutomationProperties.AutomationId="Search_AutoSuggestBox"
                                 PlaceholderText="Search tasks"
                                 QueryIcon="Find"
-                                MinWidth="240"
-                                MaxWidth="480"
+                                MaxWidth="360"
+                                HorizontalAlignment="Stretch"
                                 VerticalAlignment="Center"
                                 TextChanged="TitleBarSearchBox_TextChanged"
                                 KeyDown="TitleBarSearchBox_KeyDown"/>
