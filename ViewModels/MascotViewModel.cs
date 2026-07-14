@@ -5,6 +5,8 @@ using System.Windows.Input;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
+using Hatch.Models;
+using Hatch.Services;
 using Hatch.Views;
 
 namespace Hatch.ViewModels;
@@ -28,6 +30,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     private int _bubbleY;
     private bool _isMascotHidden;
     private bool _showDailyTipIndicator;
+    private readonly TipEngine _tipEngine = new();
 
     public bool IsVisible
     {
@@ -93,6 +96,15 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
     // Called by SettingsViewModel so MascotWindow responds without re-saving.
     public void RaiseMuteChanged() => OnPropertyChanged(nameof(MuteAnimation));
+
+    // Called by SettingsViewModel after saving ShowMascot. The fullscreen poll
+    // re-evaluates within 5 s, so a plain assignment is enough here.
+    public void ApplyShowMascotChanged()
+    {
+        var show = App.Settings.ShowMascot;
+        if (!show && IsBubbleOpen) CloseBubble();
+        IsVisible = show;
+    }
 
     public string? LottieFilePath => App.Settings.LottieFilePath;
     public void RaiseLottieFileChanged() => OnPropertyChanged(nameof(LottieFilePath));
@@ -176,9 +188,9 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     }
 
     // Fired at most once per calendar day, on the UI thread, when the user has opted
-    // into proactive tips and the mascot is currently visible and not user-hidden.
-    // MascotWindow owns the QuickAddBubbleWindow instance, so it subscribes and shows it.
-    public event Action? ProactiveTipDue;
+    // into proactive tips, the mascot is currently visible/not hidden, and TipEngine
+    // actually has something to say. MascotWindow owns the TeachingTip that displays it.
+    public event Action<Tip>? ProactiveTipDue;
 
     // Called from the dispatcher-queued fullscreen-poll tick — already on the UI thread.
     private void CheckProactiveTipDue()
@@ -187,10 +199,35 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         if (App.Settings.LastProactiveTipCheckDate?.Date == DateTime.Today) return;
         if (!IsVisible || IsMascotHidden || IsBubbleOpen) return;
 
-        App.Settings.LastProactiveTipCheckDate = DateTime.Today;
+        var today = DateTime.Today;
+        App.Settings.LastProactiveTipCheckDate = today;
         _ = App.SettingsService.SaveAsync();
 
-        ProactiveTipDue?.Invoke();
+        // Adaptive silence: 3 consecutive dismissals put proactive tips on cooldown.
+        if (App.Settings.TipAutoOpenCooldownUntil.HasValue && today < App.Settings.TipAutoOpenCooldownUntil.Value)
+            return;
+
+        var mainVm = App.MainWindowInstance?.ViewModel;
+        if (mainVm == null) return;
+
+        App.Settings.LastUserActivityTime = DateTime.Now;
+        _ = App.SettingsService.SaveAsync();
+
+        var tip = _tipEngine.GetTip(mainVm.Tasks, App.Settings.LastMeaningfulTipTime, App.Settings.LastUserActivityTime);
+        if (tip == null) return;
+
+        if (tip.IsMeaningful)
+            App.Settings.LastMeaningfulTipTime = DateTime.Now;
+
+        if (App.Settings.LastTipShowDate?.Date != today)
+        {
+            App.Settings.LastTipShowDate = today;
+            ShowDailyTipIndicator = true;
+        }
+
+        _ = App.SettingsService.SaveAsync();
+
+        ProactiveTipDue?.Invoke(tip);
     }
 
     public void SetDailyTipIndicatorVisible()
@@ -203,9 +240,33 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         _dispatcher.TryEnqueue(() => { ShowDailyTipIndicator = false; });
     }
 
+    // Called by MascotWindow when the proactive TeachingTip closes. Reason.Programmatic
+    // means we closed it ourselves (auto-dismiss timer elapsed or action button clicked) —
+    // both count as engagement. CloseButton/LightDismiss means the user waved it off.
+    public void ResetProactiveTipDismissalCounter()
+    {
+        if (App.Settings.ConsecutiveTipDismissals > 0)
+        {
+            App.Settings.ConsecutiveTipDismissals = 0;
+            _ = App.SettingsService.SaveAsync();
+        }
+    }
+
+    public void RecordProactiveTipDismissal()
+    {
+        App.Settings.ConsecutiveTipDismissals++;
+        if (App.Settings.ConsecutiveTipDismissals >= 3)
+        {
+            App.Settings.TipAutoOpenCooldownUntil = DateTime.Today.AddDays(3);
+            App.Settings.ConsecutiveTipDismissals = 0;
+        }
+        _ = App.SettingsService.SaveAsync();
+    }
+
     public MascotViewModel(DispatcherQueue dispatcher)
     {
         _dispatcher = dispatcher;
+        _isVisible = App.Settings.ShowMascot;
         ResetPositionCommand     = new RelayCommand(_ => ResetPosition());
         ShowMainWindowCommand    = new RelayCommand(_ => ShowMainWindow());
         ToggleMainWindowCommand  = new RelayCommand(_ => ToggleMainWindow());
@@ -452,7 +513,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
                              IsForegroundWindowFullscreen(App.Settings.MascotAlwaysOnTop);
                 _dispatcher.TryEnqueue(() =>
                 {
-                    IsVisible = !isFull;
+                    IsVisible = App.Settings.ShowMascot && !isFull;
                     CheckProactiveTipDue();
                 });
             }

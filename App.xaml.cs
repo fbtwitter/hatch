@@ -60,6 +60,23 @@ public partial class App : Application
         });
     }
 
+    private static void CenterOnWorkArea(AppWindow window)
+    {
+        var workArea = DisplayArea.Primary.WorkArea;
+        var size = window.Size;
+        window.Move(new Windows.Graphics.PointInt32(
+            workArea.X + (workArea.Width  - size.Width)  / 2,
+            workArea.Y + (workArea.Height - size.Height) / 2));
+    }
+
+    private static bool IsMascotHiddenAtLaunch()
+    {
+        var ticks = Settings.HideUntilTicks;
+        if (ticks == null) return false;
+        if (ticks.Value == long.MaxValue) return true;
+        return DateTime.UtcNow < new DateTime(ticks.Value, DateTimeKind.Utc);
+    }
+
     private static bool TryGetQueryParam(Uri uri, string name, out string value)
     {
         var query = uri.Query.TrimStart('?');
@@ -120,8 +137,17 @@ public partial class App : Application
             MainWindowInstance = new MainWindow();
             // HATCH_UI_TEST=1 forces main window visible even during startup-launch suppression
             var uiTest = Environment.GetEnvironmentVariable("HATCH_UI_TEST") == "1";
-            if (!IsStartupLaunch || uiTest)
+            // Mascot-only launch: the main window opens on demand (mascot click, tray,
+            // hotkey). It still opens when there would otherwise be nothing on screen —
+            // first run (onboarding), Show Mascot off, or an active "Hide for…" window.
+            var mascotVisibleAtLaunch = Settings.ShowMascot && !IsMascotHiddenAtLaunch();
+            if (uiTest || (!IsStartupLaunch && (!Settings.FirstRunComplete || !mascotVisibleAtLaunch)))
+            {
+                // Without a visible mascot there is no anchor to position near — center instead.
+                if (!mascotVisibleAtLaunch)
+                    CenterOnWorkArea(MainWindowInstance.AppWindow);
                 MainWindowInstance.Activate();
+            }
 
             MascotWindowInstance = new MascotWindow();
             MascotWindowInstance.Activate(); // focus returns to MascotWindow last

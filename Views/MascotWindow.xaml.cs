@@ -28,6 +28,7 @@ public sealed partial class MascotWindow : Window
     private QuickAddBubbleWindow? _bubbleWindow;
     private bool _wigglePlayed = false;
     private bool _hasDragged = false;
+    private bool _entrancePlayed = false;
 
     // Tracks whether LottiePlayer.PlayAsync has been called at least once for the
     // current source. Resume() is only valid after a Pause(); before first play we
@@ -44,6 +45,8 @@ public sealed partial class MascotWindow : Window
     private DispatcherTimer? _inactivityTimer;
     private bool _isFaded = false;
     private FocusModeViewModel? _focusViewModel;
+    private DispatcherTimer? _proactiveTipDismissTimer;
+    private Tip? _currentProactiveTip;
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
@@ -69,6 +72,8 @@ public sealed partial class MascotWindow : Window
         ApplyWindowStyles();
 
         InitializeComponent();
+
+        ProactiveTip.Target = MascotGrid;
 
         _idleAnimation = MascotGrid.Resources["IdleAnimation"] as Storyboard;
         _idleFadeOut   = MascotGrid.Resources["IdleFadeOut"]   as Storyboard;
@@ -131,6 +136,7 @@ public sealed partial class MascotWindow : Window
             {
                 if (ViewModel.IsBubbleOpen)
                 {
+                    ProactiveTip.IsOpen = false;
                     _wigglePlayed = false;
                     bool wasNull = _bubbleWindow == null;
                     var bubble = EnsureBubbleWindowCreated();
@@ -157,7 +163,14 @@ public sealed partial class MascotWindow : Window
                 ShowWindow(_hwnd, ViewModel.IsMascotHidden ? SW_HIDE : SW_SHOWNOACTIVATE);
                 // "Hide for an hour" etc. should also suppress any proactive tip popup.
                 if (ViewModel.IsMascotHidden)
+                {
                     _bubbleWindow?.HideWindow();
+                    ProactiveTip.IsOpen = false;
+                }
+                else
+                {
+                    TryPlayEntrance();
+                }
             }
             else if (e.PropertyName == nameof(MascotViewModel.WindowSize))
             {
@@ -173,6 +186,7 @@ public sealed partial class MascotWindow : Window
         Closed += (_, _) =>
         {
             _inactivityTimer?.Stop();
+            _proactiveTipDismissTimer?.Stop();
             UnregisterHotKey();
             _bubbleWindow?.Close();
             ViewModel.Dispose();
@@ -180,7 +194,7 @@ public sealed partial class MascotWindow : Window
 
         RegisterHotKey();
 
-        ViewModel.ProactiveTipDue += TryShowProactiveTip;
+        ViewModel.ProactiveTipDue += OnProactiveTipDue;
     }
 
     // Lazily creates the quick-add bubble window if it doesn't exist yet, without
@@ -197,11 +211,104 @@ public sealed partial class MascotWindow : Window
         return _bubbleWindow;
     }
 
-    private void TryShowProactiveTip()
+    private void OnProactiveTipDue(Tip tip)
     {
         if (ViewModel.IsBubbleOpen) return; // real bubble already open — don't interrupt
-        var bubble = EnsureBubbleWindowCreated();
-        bubble.ShowProactiveTip(ViewModel.X, ViewModel.Y, ViewModel.WindowSize);
+
+        _currentProactiveTip = tip;
+
+        ProactiveTip.Subtitle = tip.Message;
+        ProactiveTip.ActionButtonContent = tip.Action?.Label;
+        ProactiveTip.IsOpen = true;
+
+        _proactiveTipDismissTimer?.Stop();
+        if (tip.DismissAfterMs > 0)
+        {
+            _proactiveTipDismissTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(tip.DismissAfterMs) };
+            _proactiveTipDismissTimer.Tick += ProactiveTipDismissTimer_Tick;
+            _proactiveTipDismissTimer.Start();
+        }
+    }
+
+    private void ProactiveTipDismissTimer_Tick(object? sender, object e)
+    {
+        _proactiveTipDismissTimer?.Stop();
+        ProactiveTip.IsOpen = false;
+    }
+
+    private void ProactiveTip_ActionButtonClick(TeachingTip sender, object args)
+    {
+        var actionType = _currentProactiveTip?.Action?.Type;
+        ProactiveTip.IsOpen = false;
+        if (actionType.HasValue)
+            ExecuteTipAction(actionType.Value);
+    }
+
+    private void ProactiveTip_Closed(TeachingTip sender, TeachingTipClosedEventArgs args)
+    {
+        _proactiveTipDismissTimer?.Stop();
+        ViewModel.HideDailyTipIndicator();
+
+        var tip = _currentProactiveTip;
+        _currentProactiveTip = null;
+        if (tip == null) return;
+
+        if (tip.Severity == TipSeverity.Critical)
+        {
+            // Critical tips (overdue, My Day empty) are reminders, not nags — being
+            // shown at all counts as engagement regardless of how they're closed.
+            ViewModel.ResetProactiveTipDismissalCounter();
+            return;
+        }
+
+        if (args.Reason == TeachingTipCloseReason.Programmatic)
+            ViewModel.ResetProactiveTipDismissalCounter();
+        else
+            ViewModel.RecordProactiveTipDismissal();
+    }
+
+    private void ExecuteTipAction(TipActionType actionType)
+    {
+        var mainWindow = App.MainWindowInstance;
+        var mainVm = mainWindow?.ViewModel;
+        if (mainVm == null || mainWindow == null) return;
+
+        switch (actionType)
+        {
+            case TipActionType.ViewOverdue:
+                mainWindow.NavigateTo("planned");
+                mainWindow.Activate();
+                break;
+
+            case TipActionType.ViewMyDay:
+                mainWindow.NavigateTo("myday");
+                mainWindow.Activate();
+                break;
+
+            case TipActionType.AddSampleTask:
+                AddSampleTask(mainVm);
+                mainWindow.Activate();
+                break;
+
+            case TipActionType.OpenMainWindow:
+                mainWindow.Activate();
+                break;
+        }
+    }
+
+    private void AddSampleTask(MainViewModel mainVm)
+    {
+        var firstList = mainVm.Lists.Count > 0 ? mainVm.Lists[0] : null;
+        var sampleTask = new TodoItem
+        {
+            Title = "Example: Click to edit task name",
+            ListId = firstList?.Id ?? Guid.Empty,
+            ListName = firstList?.Name
+        };
+
+        mainVm.Tasks.Insert(0, sampleTask);
+        mainVm.AttachTaskPropertyChangedHandler(sampleTask);
+        mainVm.SaveAsync();
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -215,10 +322,12 @@ public sealed partial class MascotWindow : Window
                 {
                     _lottieStarted = false;
                     _inactivityTimer?.Stop();
+                    ProactiveTip.IsOpen = false;
                 }
                 else
                 {
                     ResetInactivity();
+                    TryPlayEntrance();
                 }
                 UpdateAnimationState();
                 break;
@@ -248,8 +357,11 @@ public sealed partial class MascotWindow : Window
         {
             // Hide canvas immediately before the first await — prevents the canvas mascot
             // from flashing on screen while the Lottie file is being read and decoded.
+            // The ring keeps the window from looking empty during the decode.
             MascotRoot.Visibility = Visibility.Collapsed;
             LottiePlayer.Visibility = Visibility.Collapsed;
+            MascotLoadingRing.Visibility = Visibility.Visible;
+            MascotLoadingRing.IsActive = true;
             try
             {
                 // LottieVisualSource.UriSource does not support file:// URIs — the internal
@@ -284,7 +396,49 @@ public sealed partial class MascotWindow : Window
             MascotRoot.Visibility = Visibility.Visible;
         }
 
+        MascotLoadingRing.IsActive = false;
+        MascotLoadingRing.Visibility = Visibility.Collapsed;
+
+        TryPlayEntrance();
+
         UpdateAnimationState();
+    }
+
+    // Entrance runs once, on the first reveal where the mascot is actually on screen
+    // and its content is ready. If the window is hidden (Show Mascot off, "Hide for…",
+    // fullscreen) the entrance is deferred until the mascot is shown; if a Lottie load
+    // is still in flight the ring stays up and the entrance plays when the load lands.
+    private void TryPlayEntrance()
+    {
+        if (_entrancePlayed) return;
+        if (!ViewModel.IsVisible || ViewModel.IsMascotHidden) return;
+        if (MascotLoadingRing.Visibility == Visibility.Visible) return;
+        _entrancePlayed = true;
+        PlayMascotEntrance();
+    }
+
+    private void PlayMascotEntrance()
+    {
+        if (ViewModel.MuteAnimation) return;
+
+        UIElement target = LottiePlayer.Visibility == Visibility.Visible ? LottiePlayer : MascotRoot;
+
+        // Zero out before Begin() — a frame can render between the reveal and the
+        // storyboard's first tick, flashing the mascot at full opacity.
+        target.Opacity = 0;
+
+        var fade = new DoubleAnimation
+        {
+            From = 0, To = 1,
+            Duration = new Duration(TimeSpan.FromMilliseconds(250)),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        Storyboard.SetTarget(fade, target);
+        Storyboard.SetTargetProperty(fade, "Opacity");
+
+        var sb = new Storyboard();
+        sb.Children.Add(fade);
+        sb.Begin();
     }
 
     private void UpdateAnimationState()
@@ -506,8 +660,19 @@ public sealed partial class MascotWindow : Window
         }, IntPtr.Zero);
 
         // Backdrop and styles are settled — reveal the window and start Lottie.
-        ShowWindow(_hwnd, SW_SHOWNOACTIVATE);
-        ResetInactivity();
+        // Stay hidden when the mascot is disabled (Show Mascot off) or inside an
+        // active "Hide for…" window; content is still prepared for a later reveal.
+        if (ViewModel.IsVisible && !ViewModel.IsMascotHidden)
+        {
+            ShowWindow(_hwnd, SW_SHOWNOACTIVATE);
+            ResetInactivity();
+        }
+        else
+        {
+            // Activate() in App.OnLaunched maps the HWND visible as a side effect of
+            // firing this event — hide it again when the mascot should stay hidden.
+            ShowWindow(_hwnd, SW_HIDE);
+        }
         ApplyLottieSource();
 
         // Auto-open bubble on first run with intro copy, but not on startup launch

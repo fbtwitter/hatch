@@ -19,6 +19,7 @@ public sealed class AppSettings
     public bool FirstRunComplete { get; set; } = false;
     public long? HideUntilTicks { get; set; } = null; // DateTime.UtcNow.Ticks when hide expires
     public bool MascotAlwaysOnTop { get; set; } = true;
+    public bool ShowMascot { get; set; } = true;
     public bool HideWhenFullscreen { get; set; } = true;
     public bool RunAtStartup { get; set; } = false;
 

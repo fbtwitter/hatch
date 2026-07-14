@@ -218,6 +218,19 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         }
     }
 
+    public bool ShowMascot
+    {
+        get => _settings.Current.ShowMascot;
+        set
+        {
+            if (_settings.Current.ShowMascot == value) return;
+            _settings.Current.ShowMascot = value;
+            _ = _settings.SaveAsync();
+            App.MascotWindowInstance?.ViewModel.ApplyShowMascotChanged();
+            OnPropertyChanged();
+        }
+    }
+
     public bool MuteAnimation
     {
         get => _settings.Current.MuteAnimation;
