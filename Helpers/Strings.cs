@@ -98,4 +98,27 @@ internal static class Strings
 
     // ── Default list ─────────────────────────────────────────
     public static string List_AllTasks_Name => Get("List_AllTasks_Name");
+
+    // ── Priority chip labels ─────────────────────────────────
+    public static string Priority_None   => Get("Priority_None");
+    public static string Priority_Low    => Get("Priority_Low");
+    public static string Priority_Medium => Get("Priority_Medium");
+    public static string Priority_High   => Get("Priority_High");
+
+    // ── Tips ─────────────────────────────────────────────────
+    public static string Tip_SampleTaskTitle => Get("Tip_SampleTaskTitle");
+
+    // ── Sync ─────────────────────────────────────────────────
+    public static string Sync_Error_NotReady     => Get("Sync_Error_NotReady");
+    public static string Sync_Error_SignInFailed => Get("Sync_Error_SignInFailed");
+    public static string Sync_Info_ConfirmEmail  => Get("Sync_Info_ConfirmEmail");
+    public static string Sync_Error_NotSignedIn  => Get("Sync_Error_NotSignedIn");
+    public static string Sync_Error_NoUserId     => Get("Sync_Error_NoUserId");
+    public static string Sync_NeverSynced        => Get("Sync_NeverSynced");
+    public static string Sync_JustNow            => Get("Sync_JustNow");
+    public static string Sync_MinAgo(int minutes) => string.Format(Get("Sync_MinAgo"), minutes);
+    public static string Sync_HrAgo(int hours)    => string.Format(Get("Sync_HrAgo"), hours);
+
+    // ── Settings ─────────────────────────────────────────────
+    public static string Settings_NoFileSelected => Get("Settings_NoFileSelected");
 }

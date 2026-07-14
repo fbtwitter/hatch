@@ -14,6 +14,9 @@ public sealed class StatsViewModel : INotifyPropertyChanged
     private const string CheckGlyph   = "";
     private const string ListGlyph    = "";
 
+    private static readonly Windows.Globalization.DateTimeFormatting.DateTimeFormatter _dueLabelFormatter =
+        new("dayofweek.abbreviated month.abbreviated day");
+
     public ObservableCollection<StatTileInfo> Tiles { get; } = [];
     public ObservableCollection<UpcomingTaskInfo> TodayTasks { get; } = [];
     public ObservableCollection<UpcomingTaskInfo> UpcomingTasks { get; } = [];
@@ -84,7 +87,7 @@ public sealed class StatsViewModel : INotifyPropertyChanged
         foreach (var task in upcoming)
         {
             var dueDate = task.DueDate!.Value.ToLocalTime().Date;
-            var dueLabel = dueDate == tomorrow ? Strings.DueDate_Tomorrow : dueDate.ToString("ddd, MMM d");
+            var dueLabel = dueDate == tomorrow ? Strings.DueDate_Tomorrow : _dueLabelFormatter.Format(dueDate);
             UpcomingTasks.Add(new UpcomingTaskInfo(task, task.Title, dueLabel));
         }
         HasUpcomingTasks = UpcomingTasks.Count > 0;

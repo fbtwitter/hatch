@@ -40,7 +40,9 @@ public sealed class AppSettings
     public DateTime? LastMeaningfulTipTime { get; set; } = null;      // overdue, My Day, progress
     public DateTime? LastUserActivityTime { get; set; } = null;       // bubble open, app activation
 
-    // Optional sync — null when not signed in
+    // Optional sync — null when not signed in.
+    // Tokens now live in the Credential Locker (SyncTokenStore); these two properties
+    // remain only so values written by older versions can be migrated, then nulled.
     public string? SyncAccessToken { get; set; }
     public string? SyncRefreshToken { get; set; }
     public string? SyncUserEmail { get; set; }

@@ -44,6 +44,9 @@ public sealed partial class TaskListPage : Page
 
     private const double BreakpointWidth = 700;
 
+    private static readonly Windows.Globalization.DateTimeFormatting.DateTimeFormatter _createdAtFormatter =
+        new("dayofweek.abbreviated month.abbreviated day year.full");
+
     public TaskListPage()
     {
         this.InitializeComponent();
@@ -250,7 +253,7 @@ public sealed partial class TaskListPage : Page
             : null;
         PaneRepeatCombo.SelectedIndex = (int)task.Recurrence;
         PaneRepeatCombo.IsEnabled = task.DueDate.HasValue;
-        PaneCreatedAtText.Text = task.CreatedAt.ToLocalTime().ToString("ddd, MMM d, yyyy");
+        PaneCreatedAtText.Text = _createdAtFormatter.Format(task.CreatedAt.ToLocalTime());
         PaneTagInput.Text = string.Empty;
         PaneTagChips.ItemsSource = task.Tags;
         _updatingPane = false;
@@ -260,22 +263,16 @@ public sealed partial class TaskListPage : Page
     {
         if (sender is Button btn && btn.Tag is string tag && _paneTask != null)
         {
-            _paneTask.Tags = _paneTask.Tags.Where(t => t != tag).ToList();
+            ViewModel.RemoveTagFromTask(_paneTask, tag);
             PaneTagChips.ItemsSource = _paneTask.Tags;
         }
     }
 
-
     private void PaneTagInput_KeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key != VirtualKey.Enter || _paneTask == null || _updatingPane) return;
-        var input = PaneTagInput.Text.Trim();
-        if (string.IsNullOrEmpty(input)) return;
-        if (!_paneTask.Tags.Contains(input, StringComparer.OrdinalIgnoreCase))
-        {
-            _paneTask.Tags = [.._paneTask.Tags, input];
-            PaneTagChips.ItemsSource = _paneTask.Tags;
-        }
+        ViewModel.AddTagToTask(_paneTask, PaneTagInput.Text);
+        PaneTagChips.ItemsSource = _paneTask.Tags;
         PaneTagInput.Text = string.Empty;
         e.Handled = true;
     }
@@ -300,10 +297,7 @@ public sealed partial class TaskListPage : Page
     private void PaneMyDayToggle_Toggled(object sender, RoutedEventArgs e)
     {
         if (_updatingPane || _paneTask == null) return;
-        _paneTask.IsInMyDay = PaneMyDayToggle.IsOn;
-        _paneTask.MyDayDate = PaneMyDayToggle.IsOn
-            ? DateOnly.FromDateTime(DateTime.Today)
-            : null;
+        _paneTask.SetMyDay(PaneMyDayToggle.IsOn);
     }
 
     private void PanePriorityCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -312,16 +306,9 @@ public sealed partial class TaskListPage : Page
         _paneTask.Priority = (TaskPriority)PanePriorityCombo.SelectedIndex;
     }
 
-    private void SuggestionCard_Tapped(object sender, TappedRoutedEventArgs e)
+    private void SuggestionCard_Click(object sender, RoutedEventArgs e)
     {
-        // Don't open pane when the tap originated from the Add button.
-        var source = e.OriginalSource as DependencyObject;
-        while (source != null && !ReferenceEquals(source, sender))
-        {
-            if (source is ButtonBase) return;
-            source = VisualTreeHelper.GetParent(source);
-        }
-        if (sender is Grid { Tag: TodoItem task })
+        if (sender is Button { Tag: TodoItem task })
             ViewModel.SelectedTask = task;
     }
 
@@ -538,9 +525,7 @@ public sealed partial class TaskListPage : Page
             case VirtualKey.M when isCtrl && !IsTextInputFocused():
                 if (ViewModel.SelectedTask is { } mTask)
                 {
-                    bool myDayOn = !mTask.IsInMyDay;
-                    mTask.IsInMyDay = myDayOn;
-                    mTask.MyDayDate = myDayOn ? DateOnly.FromDateTime(DateTime.Today) : null;
+                    mTask.SetMyDay(!mTask.IsInMyDay);
                     if (_paneTask == mTask)
                     {
                         _updatingPane = true;
@@ -620,8 +605,6 @@ public sealed partial class TaskListPage : Page
         var task = (TodoItem)((FrameworkElement)sender).Tag;
         ViewModel.SelectedTask = task;
     }
-
-    private void OverflowButton_Click(object sender, RoutedEventArgs e) { }
 
     private void FocusMenuItem_Click(object sender, RoutedEventArgs e)
     {

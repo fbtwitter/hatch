@@ -120,21 +120,21 @@
 
         <Grid.ContextFlyout>
             <MenuFlyout>
-                <MenuFlyoutItem Text="Show Main Window"
+                <MenuFlyoutItem x:Uid="Mascot_MenuShowMain" Text="Show Main Window"
                                 Command="{x:Bind ViewModel.ShowMainWindowCommand}" />
-                <MenuFlyoutItem Text="Reset Position"
+                <MenuFlyoutItem x:Uid="Mascot_MenuResetPosition" Text="Reset Position"
                                 Command="{x:Bind ViewModel.ResetPositionCommand}" />
-                <MenuFlyoutItem Text="Mascot Settings&#x2026;"
+                <MenuFlyoutItem x:Uid="Mascot_MenuSettings" Text="Mascot Settings&#x2026;"
                                 Click="OnMascotSettingsMenuItemClick" />
                 <MenuFlyoutSeparator />
-                <MenuFlyoutSubItem Text="Hide for...">
-                    <MenuFlyoutItem Text="1 hour"
+                <MenuFlyoutSubItem x:Uid="Mascot_MenuHideFor" Text="Hide for...">
+                    <MenuFlyoutItem x:Uid="Mascot_MenuHide1Hour" Text="1 hour"
                                     Command="{x:Bind ViewModel.HideFor1HourCommand}" />
-                    <MenuFlyoutItem Text="3 hours"
+                    <MenuFlyoutItem x:Uid="Mascot_MenuHide3Hours" Text="3 hours"
                                     Command="{x:Bind ViewModel.HideFor3HoursCommand}" />
-                    <MenuFlyoutItem Text="Until tomorrow"
+                    <MenuFlyoutItem x:Uid="Mascot_MenuHideTomorrow" Text="Until tomorrow"
                                     Command="{x:Bind ViewModel.HideUntilTomorrowCommand}" />
-                    <MenuFlyoutItem Text="Until restart"
+                    <MenuFlyoutItem x:Uid="Mascot_MenuHideRestart" Text="Until restart"
                                     Command="{x:Bind ViewModel.HideUntilRestartCommand}" />
                 </MenuFlyoutSubItem>
             </MenuFlyout>
@@ -213,6 +213,7 @@
 
         <!-- Startup loading indicator — shown while a Lottie source is decoding -->
         <ProgressRing x:Name="MascotLoadingRing"
+                      x:Uid="Mascot_LoadingRing"
                       AutomationProperties.Name="Loading mascot"
                       Width="36" Height="36"
                       IsActive="False"
@@ -264,6 +265,7 @@
                                Margin="0,0,8,0"/>
 
                     <Button Grid.Column="1"
+                            x:Uid="FocusMode_MarkDoneButton"
                             AutomationProperties.AutomationId="FocusMode_MarkDone"
                             AutomationProperties.Name="Mark done"
                             ToolTipService.ToolTip="Mark done"
@@ -275,6 +277,7 @@
                     </Button>
 
                     <Button Grid.Column="2"
+                            x:Uid="FocusMode_ExitButton"
                             AutomationProperties.AutomationId="FocusMode_Exit"
                             AutomationProperties.Name="Exit focus"
                             ToolTipService.ToolTip="Exit focus"

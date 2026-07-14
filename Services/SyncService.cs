@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Hatch.Helpers;
 using Hatch.Models;
 using Supabase.Postgrest.Attributes;
 using Supabase.Postgrest.Models;
@@ -93,8 +94,7 @@ public sealed class SyncService
 
     private async Task RestoreSessionAsync()
     {
-        var access  = App.Settings.SyncAccessToken;
-        var refresh = App.Settings.SyncRefreshToken;
+        var (access, refresh) = SyncTokenStore.Load();
         if (string.IsNullOrEmpty(access) || string.IsNullOrEmpty(refresh)) return;
         try
         {
@@ -111,11 +111,11 @@ public sealed class SyncService
     // Returns null on success, error message on failure.
     public async Task<string?> SignInAsync(string email, string password)
     {
-        if (_client == null) return "Service not ready.";
+        if (_client == null) return Strings.Sync_Error_NotReady;
         try
         {
             var session = await _client.Auth.SignIn(email, password);
-            if (session?.AccessToken == null) return "Sign-in failed — check your credentials.";
+            if (session?.AccessToken == null) return Strings.Sync_Error_SignInFailed;
             await PersistSessionAsync(session);
             StateChanged?.Invoke();
             return null;
@@ -126,7 +126,7 @@ public sealed class SyncService
     // Returns null on success, message on partial success (email confirmation needed).
     public async Task<string?> SignUpAsync(string email, string password)
     {
-        if (_client == null) return "Service not ready.";
+        if (_client == null) return Strings.Sync_Error_NotReady;
         try
         {
             var session = await _client.Auth.SignUp(email, password);
@@ -137,7 +137,7 @@ public sealed class SyncService
                 return null;
             }
             // Email confirmation required
-            return "Account created. Check your email to confirm before signing in.";
+            return Strings.Sync_Info_ConfirmEmail;
         }
         catch (Exception ex) { return ex.Message; }
     }
@@ -154,10 +154,10 @@ public sealed class SyncService
     // Returns null on success, error message on failure.
     public async Task<string?> PushAsync(TasksFile data)
     {
-        if (_client == null) return "Sync service not ready.";
-        if (!IsSignedIn)    return "Not signed in.";
+        if (_client == null) return Strings.Sync_Error_NotReady;
+        if (!IsSignedIn)    return Strings.Sync_Error_NotSignedIn;
         var userId = _client.Auth.CurrentUser?.Id;
-        if (string.IsNullOrEmpty(userId)) return "Could not read user ID.";
+        if (string.IsNullOrEmpty(userId)) return Strings.Sync_Error_NoUserId;
         try
         {
             var json = JsonSerializer.Serialize(data);
@@ -176,7 +176,7 @@ public sealed class SyncService
     }
 
     // Returns the GitHub OAuth URL to open in the browser, or null on failure.
-    public async Task<string?> GetGoogleSignInUrlAsync()
+    public async Task<string?> GetGitHubSignInUrlAsync()
     {
         if (_client == null) return null;
         try
@@ -193,7 +193,7 @@ public sealed class SyncService
         catch { return null; }
     }
 
-    // Called when the app is activated via hatch://auth-callback after Google OAuth.
+    // Called when the app is activated via hatch://auth-callback after GitHub OAuth.
     public async Task HandleOAuthCallbackAsync(Uri callbackUri)
     {
         if (_client == null) return;
@@ -311,7 +311,7 @@ public sealed class SyncService
     // saves the result locally, and pushes it back so both sides converge.
     public async Task<string?> ResolveConflictMergeAsync()
     {
-        if (!IsSignedIn || _client == null) return "Not signed in.";
+        if (!IsSignedIn || _client == null) return Strings.Sync_Error_NotSignedIn;
         try
         {
             var local = await new TaskStorageService().LoadAsync();
@@ -331,17 +331,15 @@ public sealed class SyncService
 
     private async Task PersistSessionAsync(Supabase.Gotrue.Session session)
     {
-        App.Settings.SyncAccessToken = session.AccessToken;
-        App.Settings.SyncRefreshToken = session.RefreshToken;
+        SyncTokenStore.Save(session.AccessToken, session.RefreshToken);
         App.Settings.SyncUserEmail = _client?.Auth.CurrentUser?.Email;
         await App.SettingsService.SaveAsync();
     }
 
     private static void ClearTokens()
     {
-        App.Settings.SyncAccessToken  = null;
-        App.Settings.SyncRefreshToken = null;
-        App.Settings.SyncUserEmail    = null;
-        App.Settings.LastSyncedAt     = null;
+        SyncTokenStore.Clear();
+        App.Settings.SyncUserEmail = null;
+        App.Settings.LastSyncedAt  = null;
     }
 }
