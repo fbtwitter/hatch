@@ -26,13 +26,13 @@ public sealed partial class StatsPage : Page
 
     private void TaskRow_Click(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.DataContext is UpcomingTaskInfo row)
-            (App.MainWindowInstance as MainWindow)?.NavigateToTask(row.Task);
+        if ((sender as FrameworkElement)?.Tag is UpcomingTaskInfo row)
+            App.MainWindowInstance?.NavigateToTask(row.Task);
     }
 
     private void Tile_Click(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.DataContext is StatTileInfo tile && tile.NavTag is { } tag)
-            (App.MainWindowInstance as MainWindow)?.NavigateTo(tag);
+        if ((sender as FrameworkElement)?.Tag is StatTileInfo tile && tile.NavTag is { } tag)
+            App.MainWindowInstance?.NavigateTo(tag);
     }
 }

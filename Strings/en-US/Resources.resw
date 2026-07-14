@@ -149,4 +149,82 @@
   <data name="Stats_Tile_Overdue" xml:space="preserve"><value>Overdue</value></data>
   <data name="Stats_Tile_CompletedToday" xml:space="preserve"><value>Completed today</value></data>
   <data name="Stats_Tile_Open" xml:space="preserve"><value>Open</value></data>
+
+  <!-- ── Task row overflow menu (x:Uid mapped) ───────────────── -->
+  <data name="TaskRow_FocusMenuItem.Text" xml:space="preserve"><value>Focus on this</value></data>
+  <data name="TaskRow_SnoozeSubItem.Text" xml:space="preserve"><value>Snooze</value></data>
+  <data name="TaskRow_SnoozeTomorrowItem.Text" xml:space="preserve"><value>Tomorrow</value></data>
+  <data name="TaskRow_SnoozeNextWeekItem.Text" xml:space="preserve"><value>Next week</value></data>
+  <data name="Task_RepeatChip.ToolTipService.ToolTip" xml:space="preserve"><value>Repeats</value></data>
+
+  <!-- ── Tag filter banner + suggestions (x:Uid mapped) ──────── -->
+  <data name="TagFilter_ShowingText.Text" xml:space="preserve"><value>Showing:</value></data>
+  <data name="Suggestions_Header.Text" xml:space="preserve"><value>Suggested</value></data>
+  <data name="Suggestion_AddButton.ToolTipService.ToolTip" xml:space="preserve"><value>Add to My Day</value></data>
+  <data name="Suggestion_AddButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Add to My Day</value></data>
+
+  <!-- ── Details pane (x:Uid mapped) ─────────────────────────── -->
+  <data name="Pane_Header.Text" xml:space="preserve"><value>Details</value></data>
+  <data name="PaneCloseButton.ToolTipService.ToolTip" xml:space="preserve"><value>Close (Esc)</value></data>
+  <data name="PaneCloseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Close details</value></data>
+  <data name="PaneTitleBox.Header" xml:space="preserve"><value>Title</value></data>
+  <data name="PaneTitleBox.PlaceholderText" xml:space="preserve"><value>Task title</value></data>
+  <data name="PaneNotesBox.Header" xml:space="preserve"><value>Notes</value></data>
+  <data name="PaneNotesBox.PlaceholderText" xml:space="preserve"><value>Add a note…</value></data>
+  <data name="PaneMyDayToggle.Header" xml:space="preserve"><value>My Day</value></data>
+  <data name="PanePriorityCombo.Header" xml:space="preserve"><value>Priority</value></data>
+  <data name="PriorityItem_None.Content" xml:space="preserve"><value>None</value></data>
+  <data name="PriorityItem_Low.Content" xml:space="preserve"><value>Low</value></data>
+  <data name="PriorityItem_Medium.Content" xml:space="preserve"><value>Medium</value></data>
+  <data name="PriorityItem_High.Content" xml:space="preserve"><value>High</value></data>
+  <data name="PaneDueDatePicker.Header" xml:space="preserve"><value>Due date</value></data>
+  <data name="PaneDueDatePicker.PlaceholderText" xml:space="preserve"><value>No due date</value></data>
+  <data name="PaneRepeatCombo.Header" xml:space="preserve"><value>Repeat</value></data>
+  <data name="RepeatItem_None.Content" xml:space="preserve"><value>Doesn't repeat</value></data>
+  <data name="RepeatItem_Daily.Content" xml:space="preserve"><value>Daily</value></data>
+  <data name="RepeatItem_Weekdays.Content" xml:space="preserve"><value>Weekdays</value></data>
+  <data name="RepeatItem_Weekly.Content" xml:space="preserve"><value>Weekly</value></data>
+  <data name="RepeatItem_Monthly.Content" xml:space="preserve"><value>Monthly</value></data>
+  <data name="Pane_TagsLabel.Text" xml:space="preserve"><value>Tags</value></data>
+  <data name="PaneTagInput.PlaceholderText" xml:space="preserve"><value>Add a tag, press Enter</value></data>
+  <data name="PaneTagChipRemove.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Remove tag</value></data>
+  <data name="Pane_CreatedLabel.Text" xml:space="preserve"><value>Created</value></data>
+
+  <!-- ── Priority chip labels (code-accessed) ────────────────── -->
+  <data name="Priority_None" xml:space="preserve"><value>None</value></data>
+  <data name="Priority_Low" xml:space="preserve"><value>Low</value></data>
+  <data name="Priority_Medium" xml:space="preserve"><value>Medium</value></data>
+  <data name="Priority_High" xml:space="preserve"><value>High</value></data>
+
+  <!-- ── Mascot window (x:Uid mapped) ────────────────────────── -->
+  <data name="Mascot_MenuShowMain.Text" xml:space="preserve"><value>Show Main Window</value></data>
+  <data name="Mascot_MenuResetPosition.Text" xml:space="preserve"><value>Reset Position</value></data>
+  <data name="Mascot_MenuSettings.Text" xml:space="preserve"><value>Mascot Settings…</value></data>
+  <data name="Mascot_MenuHideFor.Text" xml:space="preserve"><value>Hide for...</value></data>
+  <data name="Mascot_MenuHide1Hour.Text" xml:space="preserve"><value>1 hour</value></data>
+  <data name="Mascot_MenuHide3Hours.Text" xml:space="preserve"><value>3 hours</value></data>
+  <data name="Mascot_MenuHideTomorrow.Text" xml:space="preserve"><value>Until tomorrow</value></data>
+  <data name="Mascot_MenuHideRestart.Text" xml:space="preserve"><value>Until restart</value></data>
+  <data name="Mascot_LoadingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Loading mascot</value></data>
+  <data name="FocusMode_MarkDoneButton.ToolTipService.ToolTip" xml:space="preserve"><value>Mark done</value></data>
+  <data name="FocusMode_MarkDoneButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mark done</value></data>
+  <data name="FocusMode_ExitButton.ToolTipService.ToolTip" xml:space="preserve"><value>Exit focus</value></data>
+  <data name="FocusMode_ExitButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Exit focus</value></data>
+
+  <!-- ── Tips ────────────────────────────────────────────────── -->
+  <data name="Tip_SampleTaskTitle" xml:space="preserve"><value>Example: Click to edit task name</value></data>
+
+  <!-- ── Sync (code-accessed) ────────────────────────────────── -->
+  <data name="Sync_Error_NotReady" xml:space="preserve"><value>Sync service not ready.</value></data>
+  <data name="Sync_Error_SignInFailed" xml:space="preserve"><value>Sign-in failed — check your credentials.</value></data>
+  <data name="Sync_Info_ConfirmEmail" xml:space="preserve"><value>Account created. Check your email to confirm before signing in.</value></data>
+  <data name="Sync_Error_NotSignedIn" xml:space="preserve"><value>Not signed in.</value></data>
+  <data name="Sync_Error_NoUserId" xml:space="preserve"><value>Could not read user ID.</value></data>
+  <data name="Sync_NeverSynced" xml:space="preserve"><value>Never synced</value></data>
+  <data name="Sync_JustNow" xml:space="preserve"><value>Just now</value></data>
+  <data name="Sync_MinAgo" xml:space="preserve"><value>{0} min ago</value><comment>{0} = whole minutes</comment></data>
+  <data name="Sync_HrAgo" xml:space="preserve"><value>{0} hr ago</value><comment>{0} = whole hours</comment></data>
+
+  <!-- ── Settings (code-accessed) ────────────────────────────── -->
+  <data name="Settings_NoFileSelected" xml:space="preserve"><value>(none selected)</value></data>
 </root>

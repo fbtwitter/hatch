@@ -286,7 +286,7 @@ public sealed partial class MascotWindow : Window
                 break;
 
             case TipActionType.AddSampleTask:
-                AddSampleTask(mainVm);
+                mainVm.AddSampleTask();
                 mainWindow.Activate();
                 break;
 
@@ -294,21 +294,6 @@ public sealed partial class MascotWindow : Window
                 mainWindow.Activate();
                 break;
         }
-    }
-
-    private void AddSampleTask(MainViewModel mainVm)
-    {
-        var firstList = mainVm.Lists.Count > 0 ? mainVm.Lists[0] : null;
-        var sampleTask = new TodoItem
-        {
-            Title = "Example: Click to edit task name",
-            ListId = firstList?.Id ?? Guid.Empty,
-            ListName = firstList?.Name
-        };
-
-        mainVm.Tasks.Insert(0, sampleTask);
-        mainVm.AttachTaskPropertyChangedHandler(sampleTask);
-        mainVm.SaveAsync();
     }
 
     private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)

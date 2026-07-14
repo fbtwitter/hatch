@@ -46,7 +46,10 @@
         </Style>
 
         <DataTemplate x:Key="TaskRowTemplate" x:DataType="vm:UpcomingTaskInfo">
+            <!-- Tag carries the item: ItemsRepeater does not set DataContext on
+                 x:Bind-compiled templates, so the Click handler reads Tag instead. -->
             <Button Style="{StaticResource TaskRowButtonStyle}"
+                    Tag="{x:Bind}"
                     AutomationProperties.Name="{x:Bind Title}"
                     Click="TaskRow_Click">
                 <Grid ColumnSpacing="12">
@@ -86,6 +89,7 @@
                         <!-- Tiles without a NavTag (Completed today) stay visually identical
                              but are inert: not clickable, not in the tab order. -->
                         <Button Style="{StaticResource StatTileButtonStyle}"
+                                Tag="{x:Bind}"
                                 AutomationProperties.Name="{x:Bind Label}"
                                 IsHitTestVisible="{x:Bind local:StatsPage.HasNav(NavTag)}"
                                 IsTabStop="{x:Bind local:StatsPage.HasNav(NavTag)}"

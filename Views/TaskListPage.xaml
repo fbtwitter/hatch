@@ -26,6 +26,7 @@
         <converters:TagsOverflowVisibilityConverter x:Key="TagsOverflowVisibility" />
         <converters:PriorityToBrushConverter x:Key="PriorityToBrush" />
         <converters:PriorityToForegroundConverter x:Key="PriorityToForeground" />
+        <converters:PriorityToLabelConverter x:Key="PriorityToLabel" />
 
         <!-- Chip button: preserves the chip color on hover/press instead of flashing WinUI default grey -->
         <Style x:Key="ChipButtonStyle" TargetType="Button">
@@ -147,11 +148,11 @@
                         </Button>
 
                         <!-- Repeat chip — only when the task has an active recurrence -->
-                        <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                        <Border x:Uid="Task_RepeatChip"
+                                Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                                 CornerRadius="4"
                                 Padding="6,2"
                                 VerticalAlignment="Center"
-                                ToolTipService.ToolTip="Repeats"
                                 Visibility="{x:Bind HasRecurrence, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                             <FontIcon Glyph="&#xE895;"
                                       FontSize="10"
@@ -163,13 +164,13 @@
                                 CornerRadius="4"
                                 Padding="6,2"
                                 VerticalAlignment="Center"
-                                ToolTipService.ToolTip="{x:Bind Priority, Mode=OneWay}"
+                                ToolTipService.ToolTip="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, Mode=OneWay}"
                                 Visibility="{x:Bind HasPriority, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                             <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                 <FontIcon Glyph="&#xE7C1;"
                                           FontSize="10"
                                           Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
-                                <TextBlock Text="{x:Bind Priority, Mode=OneWay}"
+                                <TextBlock Text="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, Mode=OneWay}"
                                            Style="{ThemeResource CaptionTextBlockStyle}"
                                            Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
                             </StackPanel>
@@ -256,7 +257,6 @@
                             Click="StarButton_Click"
                             ToolTipService.ToolTip="{x:Bind IsStarred, Converter={StaticResource BoolToStarTooltip}, Mode=OneWay}"
                             Style="{ThemeResource SubtleButtonStyle}"
-                            IsTabStop="False"
                             Padding="8,6" MinWidth="0">
                         <FontIcon Glyph="{x:Bind IsStarred, Converter={StaticResource BoolToStarGlyph}, Mode=OneWay}"
                                   FontSize="14"
@@ -267,16 +267,15 @@
                     <Button Tag="{x:Bind}"
                             AutomationProperties.AutomationId="Task_OverflowButton"
                             AutomationProperties.Name="More options"
-                            Click="OverflowButton_Click"
                             x:Uid="Task_OverflowButton"
                             Style="{ThemeResource SubtleButtonStyle}"
-                            IsTabStop="False"
                             Padding="8,6" MinWidth="0">
                         <FontIcon Glyph="&#xE712;" FontSize="14"
                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                         <Button.Flyout>
                             <MenuFlyout Placement="BottomEdgeAlignedRight">
                                 <MenuFlyoutItem Tag="{x:Bind}"
+                                                x:Uid="TaskRow_FocusMenuItem"
                                                 Text="Focus on this"
                                                 Click="FocusMenuItem_Click">
                                     <MenuFlyoutItem.Icon>
@@ -284,14 +283,16 @@
                                     </MenuFlyoutItem.Icon>
                                 </MenuFlyoutItem>
                                 <MenuFlyoutSeparator/>
-                                <MenuFlyoutSubItem Text="Snooze">
+                                <MenuFlyoutSubItem x:Uid="TaskRow_SnoozeSubItem" Text="Snooze">
                                     <MenuFlyoutSubItem.Icon>
                                         <FontIcon Glyph="&#xE121;"/>
                                     </MenuFlyoutSubItem.Icon>
                                     <MenuFlyoutItem Tag="{x:Bind}"
+                                                    x:Uid="TaskRow_SnoozeTomorrowItem"
                                                     Text="Tomorrow"
                                                     Click="SnoozeTomorrow_Click"/>
                                     <MenuFlyoutItem Tag="{x:Bind}"
+                                                    x:Uid="TaskRow_SnoozeNextWeekItem"
                                                     Text="Next week"
                                                     Click="SnoozeNextWeek_Click"/>
                                 </MenuFlyoutSubItem>
@@ -429,7 +430,8 @@
                         Spacing="8"
                         Padding="20,0,16,6"
                         Visibility="{x:Bind ViewModel.IsTagFilterActive, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                <TextBlock Text="Showing:"
+                <TextBlock x:Uid="TagFilter_ShowingText"
+                           Text="Showing:"
                            VerticalAlignment="Center"
                            Style="{ThemeResource CaptionTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
@@ -562,38 +564,44 @@
                         <StackPanel Margin="16,8,16,24"
                                     Spacing="4"
                                     Visibility="{x:Bind ViewModel.SuggestionsVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                            <TextBlock Text="Suggested"
+                            <TextBlock x:Uid="Suggestions_Header"
+                                       Text="Suggested"
                                        Style="{ThemeResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                        Margin="8,0,0,4" />
                             <ItemsRepeater ItemsSource="{x:Bind ViewModel.MySuggestions, Mode=OneWay}">
                                 <ItemsRepeater.ItemTemplate>
                                     <DataTemplate x:DataType="models:TodoItem">
-                                        <Grid Tag="{x:Bind}"
-                                              Padding="12,10"
-                                              Margin="0,2"
-                                              ColumnSpacing="8"
-                                              Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                                              CornerRadius="{ThemeResource ControlCornerRadius}"
-                                              Tapped="SuggestionCard_Tapped">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Grid.Column="0"
-                                                       Text="{x:Bind Title, Mode=OneWay}"
-                                                       VerticalAlignment="Center"
-                                                       TextTrimming="CharacterEllipsis"
-                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                            <Button Grid.Column="1"
-                                                    Tag="{x:Bind}"
+                                        <!-- Card is a real Button (keyboard + narrator reachable);
+                                             the Add button overlays as a sibling to avoid nesting
+                                             interactive controls. -->
+                                        <Grid Margin="0,2">
+                                            <Button Tag="{x:Bind}"
+                                                    AutomationProperties.Name="{x:Bind Title, Mode=OneWay}"
+                                                    Click="SuggestionCard_Click"
+                                                    HorizontalAlignment="Stretch"
+                                                    HorizontalContentAlignment="Stretch"
+                                                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                                    BorderThickness="0"
+                                                    CornerRadius="{ThemeResource ControlCornerRadius}"
+                                                    Padding="12,10">
+                                                <TextBlock Text="{x:Bind Title, Mode=OneWay}"
+                                                           VerticalAlignment="Center"
+                                                           TextTrimming="CharacterEllipsis"
+                                                           Margin="0,0,40,0"
+                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            </Button>
+                                            <Button Tag="{x:Bind}"
+                                                    x:Uid="Suggestion_AddButton"
                                                     AutomationProperties.Name="Add to My Day"
                                                     Click="SuggestionAddButton_Click"
                                                     Style="{ThemeResource AccentButtonStyle}"
                                                     Padding="6"
                                                     MinWidth="0"
                                                     Width="32" Height="32"
+                                                    Margin="0,0,6,0"
                                                     ToolTipService.ToolTip="Add to My Day"
+                                                    HorizontalAlignment="Right"
                                                     VerticalAlignment="Center">
                                                 <FontIcon Glyph="&#xE710;" FontSize="14" />
                                             </Button>
@@ -681,10 +689,12 @@
 
                 <!-- Pane header -->
                 <Grid Grid.Row="0" Padding="16,16,16,8">
-                    <TextBlock Text="Details"
+                    <TextBlock x:Uid="Pane_Header"
+                               Text="Details"
                                Style="{ThemeResource BodyStrongTextBlockStyle}"
                                VerticalAlignment="Center" />
                     <Button x:Name="PaneCloseButton"
+                            x:Uid="PaneCloseButton"
                             AutomationProperties.AutomationId="PaneCloseButton"
                             AutomationProperties.Name="Close details"
                             HorizontalAlignment="Right"
@@ -705,6 +715,7 @@
 
                         <!-- Title -->
                         <TextBox x:Name="PaneTitleBox"
+                                 x:Uid="PaneTitleBox"
                                  Header="Title"
                                  PlaceholderText="Task title"
                                  TextWrapping="Wrap"
@@ -714,6 +725,7 @@
 
                         <!-- Notes -->
                         <TextBox x:Name="PaneNotesBox"
+                                 x:Uid="PaneNotesBox"
                                  AutomationProperties.AutomationId="PaneNotesBox"
                                  Header="Notes"
                                  PlaceholderText="Add a note…"
@@ -728,6 +740,7 @@
 
                         <!-- My Day toggle -->
                         <ToggleSwitch x:Name="PaneMyDayToggle"
+                                      x:Uid="PaneMyDayToggle"
                                       Header="My Day"
                                       OffContent=""
                                       OnContent=""
@@ -735,40 +748,48 @@
                                       Margin="0,-4,0,-4" />
 
                         <!-- Priority -->
+                        <!-- Item order must match the TaskPriority enum — code-behind maps
+                             SelectedIndex straight to the enum value. -->
                         <ComboBox x:Name="PanePriorityCombo"
+                                  x:Uid="PanePriorityCombo"
                                   AutomationProperties.AutomationId="PanePriorityCombo"
                                   Header="Priority"
                                   HorizontalAlignment="Stretch"
                                   SelectionChanged="PanePriorityCombo_SelectionChanged">
-                            <ComboBoxItem Content="None" />
-                            <ComboBoxItem Content="Low" />
-                            <ComboBoxItem Content="Medium" />
-                            <ComboBoxItem Content="High" />
+                            <ComboBoxItem x:Uid="PriorityItem_None" Content="None" />
+                            <ComboBoxItem x:Uid="PriorityItem_Low" Content="Low" />
+                            <ComboBoxItem x:Uid="PriorityItem_Medium" Content="Medium" />
+                            <ComboBoxItem x:Uid="PriorityItem_High" Content="High" />
                         </ComboBox>
 
                         <!-- Due date -->
                         <CalendarDatePicker x:Name="PaneDueDatePicker"
+                                            x:Uid="PaneDueDatePicker"
                                             Header="Due date"
                                             PlaceholderText="No due date"
                                             HorizontalAlignment="Stretch"
                                             DateChanged="PaneDueDatePicker_DateChanged" />
 
                         <!-- Repeat — only meaningful once a due date is set -->
+                        <!-- Item order must match the TaskRecurrence enum — code-behind maps
+                             SelectedIndex straight to the enum value. -->
                         <ComboBox x:Name="PaneRepeatCombo"
+                                  x:Uid="PaneRepeatCombo"
                                   AutomationProperties.AutomationId="PaneRepeatCombo"
                                   Header="Repeat"
                                   HorizontalAlignment="Stretch"
                                   SelectionChanged="PaneRepeatCombo_SelectionChanged">
-                            <ComboBoxItem Content="Doesn't repeat" />
-                            <ComboBoxItem Content="Daily" />
-                            <ComboBoxItem Content="Weekdays" />
-                            <ComboBoxItem Content="Weekly" />
-                            <ComboBoxItem Content="Monthly" />
+                            <ComboBoxItem x:Uid="RepeatItem_None" Content="Doesn't repeat" />
+                            <ComboBoxItem x:Uid="RepeatItem_Daily" Content="Daily" />
+                            <ComboBoxItem x:Uid="RepeatItem_Weekdays" Content="Weekdays" />
+                            <ComboBoxItem x:Uid="RepeatItem_Weekly" Content="Weekly" />
+                            <ComboBoxItem x:Uid="RepeatItem_Monthly" Content="Monthly" />
                         </ComboBox>
 
                         <!-- Tags -->
                         <StackPanel Spacing="8">
-                            <TextBlock Text="Tags"
+                            <TextBlock x:Uid="Pane_TagsLabel"
+                                       Text="Tags"
                                        Style="{ThemeResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                             <ScrollViewer HorizontalScrollBarVisibility="Auto"
@@ -792,6 +813,7 @@
                                                                Style="{ThemeResource CaptionTextBlockStyle}"
                                                                Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
                                                     <Button Tag="{x:Bind}"
+                                                            x:Uid="PaneTagChipRemove"
                                                             AutomationProperties.Name="Remove tag"
                                                             Click="PaneTagChipRemove_Click"
                                                             Style="{ThemeResource SubtleButtonStyle}"
@@ -811,13 +833,15 @@
                                 </ItemsRepeater>
                             </ScrollViewer>
                             <TextBox x:Name="PaneTagInput"
+                                     x:Uid="PaneTagInput"
                                      PlaceholderText="Add a tag, press Enter"
                                      KeyDown="PaneTagInput_KeyDown" />
                         </StackPanel>
 
                         <!-- Created at -->
                         <StackPanel Spacing="4">
-                            <TextBlock Text="Created"
+                            <TextBlock x:Uid="Pane_CreatedLabel"
+                                       Text="Created"
                                        Style="{ThemeResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                             <TextBlock x:Name="PaneCreatedAtText"

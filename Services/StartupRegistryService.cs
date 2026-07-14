@@ -68,28 +68,4 @@ public sealed class StartupRegistryService
         catch { }
     }
 
-    public bool IsStartupEnabled()
-    {
-        if (IsPackaged())
-        {
-            try
-            {
-                var tasks = StartupTask.GetForCurrentPackageAsync()
-                    .AsTask().GetAwaiter().GetResult();
-                return tasks.Any(t =>
-                    t.State is StartupTaskState.Enabled
-                            or StartupTaskState.EnabledByPolicy);
-            }
-            catch { return false; }
-        }
-        else
-        {
-            try
-            {
-                using var key = Registry.CurrentUser.OpenSubKey(RegPath);
-                return key?.GetValue(AppName) != null;
-            }
-            catch { return false; }
-        }
-    }
 }

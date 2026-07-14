@@ -83,8 +83,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         AddSuggestionToMyDayCommand = new RelayCommand(param =>
         {
             if (param is not TodoItem task) return;
-            task.IsInMyDay = true;
-            task.MyDayDate = DateOnly.FromDateTime(DateTime.Today);
+            task.SetMyDay(true);
             RefreshSuggestions();
             SaveAsync();
         });
@@ -195,8 +194,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         switch (_activeNavItem)
         {
             case "myday":
-                task.IsInMyDay = true;
-                task.MyDayDate = DateOnly.FromDateTime(DateTime.Today);
+                task.SetMyDay(true);
                 break;
             case "important":
                 task.IsStarred = true;
@@ -410,6 +408,33 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(BadgeVersion));
     }
 
+    // Seeded by the "add a sample task" tip action (mascot proactive tip).
+    public void AddSampleTask()
+    {
+        var firstList = Lists.Count > 0 ? Lists[0] : null;
+        var task = new TodoItem
+        {
+            Title = Helpers.Strings.Tip_SampleTaskTitle,
+            ListId = firstList?.Id ?? Guid.Empty,
+            ListName = firstList?.Name
+        };
+
+        AttachTaskPropertyChangedHandler(task);
+        Tasks.Insert(0, task);
+        SaveAsync();
+    }
+
+    public void AddTagToTask(TodoItem task, string tag)
+    {
+        var trimmed = tag.Trim();
+        if (trimmed.Length == 0) return;
+        if (task.Tags.Contains(trimmed, StringComparer.OrdinalIgnoreCase)) return;
+        task.Tags = [.. task.Tags, trimmed];
+    }
+
+    public void RemoveTagFromTask(TodoItem task, string tag)
+        => task.Tags = task.Tags.Where(t => t != tag).ToList();
+
     public void DeleteTask(TodoItem task)
     {
         task.PropertyChanged -= TaskPropertyChanged;
@@ -490,7 +515,19 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             App.SyncService.SchedulePush(data);
         }
         catch (OperationCanceledException) { }
-        catch { }
+        catch (Exception ex)
+        {
+            // A failed save must not crash the UI, but it must leave a trace —
+            // this is the user's only copy of their data.
+            try
+            {
+                var log = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "Hatch", "errors.log");
+                await File.AppendAllTextAsync(log, $"{DateTime.Now:O} tasks.json save failed: {ex}{Environment.NewLine}");
+            }
+            catch { }
+        }
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

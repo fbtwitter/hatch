@@ -693,6 +693,14 @@ public sealed partial class MainPage : Page
             SelectNavItem(_viewModel.ActiveNavItem);
             _suppressNavigation = false;
         }
+        else if (ContentFrame.Content is StatsPage)
+        {
+            // Summary never becomes ActiveNavItem (it isn't a task list), so
+            // SelectNavItem can't restore it — select the nav item directly.
+            _suppressNavigation = true;
+            NavView.SelectedItem = SummaryItem;
+            _suppressNavigation = false;
+        }
     }
 
     private void TitleBar_PaneToggleRequested(TitleBar sender, object args)

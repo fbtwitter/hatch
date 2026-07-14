@@ -7,8 +7,8 @@
     <ScrollViewer x:Name="RootScroller"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
-        <Grid Padding="24,32,24,24"
-              MinHeight="{Binding ElementName=RootScroller, Path=ViewportHeight}">
+        <Grid x:Name="ContentRoot"
+              Padding="24,32,24,24">
             <StackPanel MaxWidth="400"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Center"

@@ -12,6 +12,9 @@ public sealed partial class OnboardingPage : Page
     public OnboardingPage()
     {
         InitializeComponent();
+        // ScrollViewer.ViewportHeight is not a change-notifying binding source —
+        // keep the content at least viewport-tall (for vertical centering) manually.
+        RootScroller.SizeChanged += (_, _) => ContentRoot.MinHeight = RootScroller.ViewportHeight;
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
