@@ -1,3 +1,5 @@
+using Hatch.Models;
+
 namespace Hatch.ViewModels;
 
-public sealed record UpcomingTaskInfo(string Title, string DueLabel, string? ListName);
+public sealed record UpcomingTaskInfo(TodoItem Task, string Title, string? Detail);
