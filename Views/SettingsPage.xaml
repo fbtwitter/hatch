@@ -147,6 +147,34 @@
                 <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
                            Text="Mascot"/>
 
+                <!-- Show Mascot — custom toggle card -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE7B3;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock Text="Show Mascot"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Display the floating mascot on your desktop. Quick-add hotkey and tray keep working when off"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="2"
+                                      AutomationProperties.AutomationId="Settings_ShowMascot"
+                                      AutomationProperties.Name="Show mascot"
+                                      IsOn="{x:Bind ViewModel.ShowMascot, Mode=TwoWay}"
+                                      OnContent="On" OffContent="Off" MinWidth="80"
+                                      VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
                 <!-- Lock Position — custom toggle card -->
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
@@ -415,7 +443,7 @@
                             <TextBox x:Name="SyncEmailBox"
                                      AutomationProperties.AutomationId="Settings_SyncEmail"
                                      AutomationProperties.Name="Email"
-                                     Text="{x:Bind ViewModel.SyncEmail, Mode=TwoWay}"
+                                     Text="{x:Bind ViewModel.SyncEmail, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                      MinWidth="220"
                                      InputScope="EmailNameOrAddress"/>
                         </toolkit:SettingsCard>

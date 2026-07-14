@@ -211,6 +211,15 @@
             </Canvas>
         </Viewbox>
 
+        <!-- Startup loading indicator — shown while a Lottie source is decoding -->
+        <ProgressRing x:Name="MascotLoadingRing"
+                      AutomationProperties.Name="Loading mascot"
+                      Width="36" Height="36"
+                      IsActive="False"
+                      Visibility="Collapsed"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center" />
+
         <!-- Daily tip indicator: small dot in top-right corner -->
         <Ellipse x:Name="DailyTipIndicator"
                  Width="12" Height="12"
@@ -227,12 +236,13 @@
                IsLightDismissEnabled="False"
                Opened="FocusPopup_Opened">
             <Border x:Name="FocusPopupBorder"
-                    Padding="12,0"
-                    Height="44"
+                    Padding="12,6"
+                    MinHeight="44"
                     CornerRadius="8"
                     Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderBrush="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
                     BorderThickness="1"
+                    BackgroundSizing="InnerBorderEdge"
                     MinWidth="{x:Bind ViewModel.WindowSize, Mode=OneWay}"
                     MaxWidth="{x:Bind ViewModel.WindowSize, Mode=OneWay}">
                 <Border.RenderTransform>
@@ -278,6 +288,17 @@
                 </Grid>
             </Border>
         </Popup>
+
+        <!-- Proactive contextual tip ("Show Tips Automatically" setting) — floats above
+             the mascot using TeachingTip's own tail + placement logic, escaping the tiny
+             120x120 mascot window bounds via ShouldConstrainToRootBounds, same as
+             FocusPopup above. -->
+        <TeachingTip x:Name="ProactiveTip"
+                     PreferredPlacement="Top"
+                     ShouldConstrainToRootBounds="False"
+                     IsLightDismissEnabled="True"
+                     ActionButtonClick="ProactiveTip_ActionButtonClick"
+                     Closed="ProactiveTip_Closed" />
 
     </Grid>
 
