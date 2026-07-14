@@ -1,5 +1,5 @@
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Input;
 using Hatch.ViewModels;
 
 namespace Hatch.Views;
@@ -22,6 +22,17 @@ public sealed partial class StatsPage : Page
         _viewModel.RefreshStats();
     }
 
-    private void UpcomingRow_Tapped(object sender, TappedRoutedEventArgs e)
-        => (App.MainWindowInstance as MainWindow)?.NavigateTo("planned");
+    public static bool HasNav(string? navTag) => navTag != null;
+
+    private void TaskRow_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is UpcomingTaskInfo row)
+            (App.MainWindowInstance as MainWindow)?.NavigateToTask(row.Task);
+    }
+
+    private void Tile_Click(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is StatTileInfo tile && tile.NavTag is { } tag)
+            (App.MainWindowInstance as MainWindow)?.NavigateTo(tag);
+    }
 }

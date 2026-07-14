@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using Hatch.Converters;
+using Hatch.Helpers;
 using Hatch.Models;
 using Hatch.Views;
 
@@ -55,9 +56,10 @@ public sealed class StatsViewModel : INotifyPropertyChanged
             t.CompletedAt.HasValue && t.CompletedAt.Value.ToLocalTime().Date == today);
 
         Tiles.Clear();
-        Tiles.Add(new StatTileInfo("Stats_Overdue", overdue, "Overdue", OverdueGlyph, criticalFg, criticalBg));
-        Tiles.Add(new StatTileInfo("Stats_CompletedToday", completedToday, "Completed today", CheckGlyph, successFg, successBg));
-        Tiles.Add(new StatTileInfo("Stats_Open", open, "Open", ListGlyph, neutralFg, neutralBg));
+        Tiles.Add(new StatTileInfo("Stats_Overdue", overdue, Strings.Stats_Tile_Overdue, OverdueGlyph,
+            overdue > 0 ? criticalFg : neutralFg, overdue > 0 ? criticalBg : neutralBg, "planned"));
+        Tiles.Add(new StatTileInfo("Stats_CompletedToday", completedToday, Strings.Stats_Tile_CompletedToday, CheckGlyph, successFg, successBg, null));
+        Tiles.Add(new StatTileInfo("Stats_Open", open, Strings.Stats_Tile_Open, ListGlyph, neutralFg, neutralBg, "alltasks"));
 
         var tomorrow = today.AddDays(1);
 
@@ -70,7 +72,7 @@ public sealed class StatsViewModel : INotifyPropertyChanged
 
         TodayTasks.Clear();
         foreach (var task in dueToday)
-            TodayTasks.Add(new UpcomingTaskInfo(task.Title, task.ListName ?? "Task", task.ListName));
+            TodayTasks.Add(new UpcomingTaskInfo(task, task.Title, task.ListName));
         HasTodayTasks = TodayTasks.Count > 0;
 
         var upcoming = tasks
@@ -82,8 +84,8 @@ public sealed class StatsViewModel : INotifyPropertyChanged
         foreach (var task in upcoming)
         {
             var dueDate = task.DueDate!.Value.ToLocalTime().Date;
-            var dueLabel = dueDate == tomorrow ? "Tomorrow" : dueDate.ToString("ddd, MMM d");
-            UpcomingTasks.Add(new UpcomingTaskInfo(task.Title, dueLabel, task.ListName));
+            var dueLabel = dueDate == tomorrow ? Strings.DueDate_Tomorrow : dueDate.ToString("ddd, MMM d");
+            UpcomingTasks.Add(new UpcomingTaskInfo(task, task.Title, dueLabel));
         }
         HasUpcomingTasks = UpcomingTasks.Count > 0;
     }

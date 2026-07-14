@@ -8,4 +8,5 @@ public sealed record StatTileInfo(
     string Label,
     string IconGlyph,
     Brush IconForeground,
-    Brush BadgeBackground);
+    Brush BadgeBackground,
+    string? NavTag);

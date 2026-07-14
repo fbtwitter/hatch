@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+### Changed
+- Summary page is now a launchpad: the Overdue tile opens Planned, the Open tile opens
+  All Tasks, and Today/Upcoming rows jump straight to the tapped task with the details
+  pane open. Tiles and rows are real buttons (keyboard- and screen-reader-reachable),
+  the Overdue tile drops its red badge when the count is zero, and its strings are
+  localized like the rest of the app
+- Title-bar search box sizes like PowerToys' (fills available space up to 360px,
+  shrinks freely on narrow windows)
+
 ---
 
 ## [0.14.0] - 2026-07-10

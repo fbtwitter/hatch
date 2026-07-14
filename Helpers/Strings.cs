@@ -54,6 +54,11 @@ internal static class Strings
     public static string DueDate_Tomorrow => Get("DueDate_Tomorrow");
     public static string DueDate_Overdue(int days) => string.Format(Get("DueDate_Overdue"), days);
 
+    // ── Summary page tiles ────────────────────────────────────
+    public static string Stats_Tile_Overdue        => Get("Stats_Tile_Overdue");
+    public static string Stats_Tile_CompletedToday => Get("Stats_Tile_CompletedToday");
+    public static string Stats_Tile_Open           => Get("Stats_Tile_Open");
+
     // ── Planned group headers ─────────────────────────────────
     public static string PlannedGroup_Overdue   => Get("PlannedGroup_Overdue");
     public static string PlannedGroup_Today     => Get("PlannedGroup_Today");
