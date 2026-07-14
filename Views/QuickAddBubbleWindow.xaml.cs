@@ -35,8 +35,6 @@ public sealed partial class QuickAddBubbleWindow : Window
     private bool _tipAutoDismissCompleted = false;
     private Tip? _currentTip;
     private int _mascotX, _mascotY, _mascotWidth;
-    private bool _tipOnlyMode = false;
-    private const int ProactiveTipFallbackDismissMs = 8000;
 
     public QuickAddBubbleWindow()
     {
@@ -193,7 +191,6 @@ public sealed partial class QuickAddBubbleWindow : Window
     {
         // Reset session flags
         _isClosed = false;
-        _tipOnlyMode = false;
         _tipWasShown = false;
         _tipAutoDismissCompleted = false;
         _tipDismissCts?.Cancel();
@@ -239,55 +236,6 @@ public sealed partial class QuickAddBubbleWindow : Window
             () => TaskTitleBox.Focus(FocusState.Programmatic));
 
         ShowContextualTip();
-    }
-
-    // Shows only the contextual tip, above the mascot, without stealing focus and
-    // without the quick-add form — used by the "Show tips automatically" setting.
-    // Reuses ShowContextualTip() so cadence/suppression rules stay identical to the
-    // click-triggered path; if no tip is available right now, nothing is shown at all.
-    public void ShowProactiveTip(int mascotX, int mascotY, int mascotWidth)
-    {
-        _isClosed = false;
-        _tipOnlyMode = true;
-        _tipWasShown = false;
-        _tipAutoDismissCompleted = false;
-        _tipDismissCts?.Cancel();
-        _tipDismissCts = null;
-
-        QuickAddFormPanel.Visibility = Visibility.Collapsed;
-        IntroMessage.Visibility = Visibility.Collapsed;
-        ConfirmationOverlay.Visibility = Visibility.Collapsed;
-        BubbleContent.Visibility = Visibility.Visible;
-        TipBubble.Visibility = Visibility.Collapsed;
-        TipBubble.Opacity = 0;
-
-        _mascotX = mascotX;
-        _mascotY = mascotY;
-        _mascotWidth = mascotWidth;
-
-        ShowContextualTip();
-
-        if (TipBubble.Visibility != Visibility.Visible)
-        {
-            // No tip available right now (cooldown/suppressed) — don't show an empty window.
-            _isClosed = true;
-            _tipOnlyMode = false;
-            return;
-        }
-
-        // Tip-only mode has no close button — unlike the click-triggered bubble, it must
-        // always self-dismiss even for Critical tips that normally rely on the user
-        // closing the form manually.
-        if (_currentTip != null && _currentTip.DismissAfterMs <= 0)
-        {
-            _tipDismissRemainingMs = ProactiveTipFallbackDismissMs;
-            _ = ScheduleTipDismissAsync(_tipDismissCts!.Token);
-        }
-
-        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal,
-            () => { FitWindowToContent(); UpdatePosition(); });
-
-        NativeMethods.ShowWindow(_hwnd, SW_SHOWNOACTIVATE);
     }
 
     private void UpdatePosition()
@@ -578,10 +526,6 @@ public sealed partial class QuickAddBubbleWindow : Window
             if (ct.IsCancellationRequested) return;
 
             TipBubble.Visibility = Visibility.Collapsed;
-
-            // Tip-only mode has nothing else to show once the tip is gone.
-            if (_tipOnlyMode && !_isClosed)
-                HideWindow();
         }
         catch (OperationCanceledException) { }
     }
