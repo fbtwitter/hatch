@@ -139,4 +139,14 @@
 
   <!-- ── Default list name ─────────────────────────────────── -->
   <data name="List_AllTasks_Name" xml:space="preserve"><value>All Tasks</value></data>
+
+  <!-- ── Summary page ──────────────────────────────────────── -->
+  <data name="Stats_TitleText.Text" xml:space="preserve"><value>Summary</value></data>
+  <data name="Stats_TodayHeader.Text" xml:space="preserve"><value>Today</value></data>
+  <data name="Stats_UpcomingHeader.Text" xml:space="preserve"><value>Upcoming</value></data>
+  <data name="Stats_EmptyToday.Text" xml:space="preserve"><value>Nothing due today.</value></data>
+  <data name="Stats_EmptyUpcoming.Text" xml:space="preserve"><value>Nothing due soon.</value></data>
+  <data name="Stats_Tile_Overdue" xml:space="preserve"><value>Overdue</value></data>
+  <data name="Stats_Tile_CompletedToday" xml:space="preserve"><value>Completed today</value></data>
+  <data name="Stats_Tile_Open" xml:space="preserve"><value>Open</value></data>
 </root>

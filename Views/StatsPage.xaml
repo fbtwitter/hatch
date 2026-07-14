@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:vm="using:Hatch.ViewModels"
+    xmlns:local="using:Hatch.Views"
     xmlns:converters="using:Hatch.Converters"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
@@ -18,6 +19,25 @@
             <Setter Property="MinHeight" Value="104"/>
         </Style>
 
+        <Style x:Key="StatTileButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="{ThemeResource OverlayCornerRadius}"/>
+            <Setter Property="Padding" Value="20"/>
+            <Setter Property="MinHeight" Value="104"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="VerticalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style x:Key="TaskRowButtonStyle" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
+            <Setter Property="Padding" Value="16,12"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+        </Style>
+
         <Style x:Key="StatIconBadgeStyle" TargetType="Border">
             <Setter Property="Width" Value="40"/>
             <Setter Property="Height" Value="40"/>
@@ -25,27 +45,24 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
-        <Style x:Key="StatNumberStyle" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="28"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-        </Style>
-
         <DataTemplate x:Key="TaskRowTemplate" x:DataType="vm:UpcomingTaskInfo">
-            <Grid Padding="16,12" ColumnSpacing="12"
-                  Background="Transparent"
-                  Tapped="UpcomingRow_Tapped">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="{x:Bind Title}"
-                           TextTrimming="CharacterEllipsis"
-                           VerticalAlignment="Center"/>
-                <TextBlock Grid.Column="1" Text="{x:Bind DueLabel}"
-                           Style="{ThemeResource CaptionTextBlockStyle}"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           VerticalAlignment="Center"/>
-            </Grid>
+            <Button Style="{StaticResource TaskRowButtonStyle}"
+                    AutomationProperties.Name="{x:Bind Title}"
+                    Click="TaskRow_Click">
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="{x:Bind Title}"
+                               TextTrimming="CharacterEllipsis"
+                               VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" Text="{x:Bind Detail}"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               VerticalAlignment="Center"/>
+                </Grid>
+            </Button>
         </DataTemplate>
     </Page.Resources>
 
@@ -53,7 +70,7 @@
         <StackPanel Spacing="20">
 
             <StackPanel Spacing="4">
-                <TextBlock Text="Summary" Style="{ThemeResource TitleLargeTextBlockStyle}"/>
+                <TextBlock x:Uid="Stats_TitleText" Text="Summary" Style="{ThemeResource TitleLargeTextBlockStyle}"/>
             </StackPanel>
 
             <!-- Responsive KPI grid — UniformGridLayout reflows the column count to fill
@@ -66,10 +83,17 @@
                 </ItemsRepeater.Layout>
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate x:DataType="vm:StatTileInfo">
-                        <Border Style="{StaticResource StatTileStyle}" Translation="0,0,16">
-                            <Border.Shadow>
+                        <!-- Tiles without a NavTag (Completed today) stay visually identical
+                             but are inert: not clickable, not in the tab order. -->
+                        <Button Style="{StaticResource StatTileButtonStyle}"
+                                AutomationProperties.Name="{x:Bind Label}"
+                                IsHitTestVisible="{x:Bind local:StatsPage.HasNav(NavTag)}"
+                                IsTabStop="{x:Bind local:StatsPage.HasNav(NavTag)}"
+                                Click="Tile_Click"
+                                Translation="0,0,16">
+                            <Button.Shadow>
                                 <ThemeShadow/>
-                            </Border.Shadow>
+                            </Button.Shadow>
                             <Grid ColumnSpacing="14">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
@@ -84,14 +108,14 @@
                                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                     <TextBlock AutomationProperties.AutomationId="{x:Bind AutomationId}"
                                                Text="{x:Bind Value}"
-                                               Style="{StaticResource StatNumberStyle}"/>
+                                               Style="{ThemeResource TitleTextBlockStyle}"/>
                                     <TextBlock Text="{x:Bind Label}"
                                                Style="{ThemeResource CaptionTextBlockStyle}"
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                TextWrapping="WrapWholeWords"/>
                                 </StackPanel>
                             </Grid>
-                        </Border>
+                        </Button>
                     </DataTemplate>
                 </ItemsRepeater.ItemTemplate>
             </ItemsRepeater>
@@ -99,7 +123,7 @@
             <!-- Today — the daily-agenda glance: what's actually due right now, grouped
                  apart from Upcoming so it reads as "do these today" not "coming up" -->
             <StackPanel Spacing="12">
-                <TextBlock Text="Today" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                <TextBlock x:Uid="Stats_TodayHeader" Text="Today" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
 
                 <Border Style="{StaticResource StatTileStyle}" Padding="4" MinHeight="0"
                         Visibility="{x:Bind ViewModel.HasTodayTasks, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
@@ -109,7 +133,7 @@
 
                 <Border Style="{StaticResource StatTileStyle}" MinHeight="0"
                         Visibility="{x:Bind ViewModel.HasTodayTasks, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
-                    <TextBlock Text="Nothing due today."
+                    <TextBlock x:Uid="Stats_EmptyToday" Text="Nothing due today."
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                HorizontalAlignment="Center" Padding="8"/>
                 </Border>
@@ -117,7 +141,7 @@
 
             <!-- Upcoming — next non-overdue due tasks, most actionable forward-looking info -->
             <StackPanel Spacing="12">
-                <TextBlock Text="Upcoming" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                <TextBlock x:Uid="Stats_UpcomingHeader" Text="Upcoming" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
 
                 <Border Style="{StaticResource StatTileStyle}" Padding="4" MinHeight="0"
                         Visibility="{x:Bind ViewModel.HasUpcomingTasks, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
@@ -127,7 +151,7 @@
 
                 <Border Style="{StaticResource StatTileStyle}" MinHeight="0"
                         Visibility="{x:Bind ViewModel.HasUpcomingTasks, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
-                    <TextBlock Text="Nothing due soon."
+                    <TextBlock x:Uid="Stats_EmptyUpcoming" Text="Nothing due soon."
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                HorizontalAlignment="Center" Padding="8"/>
                 </Border>
