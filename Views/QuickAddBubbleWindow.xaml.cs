@@ -16,7 +16,6 @@ namespace Hatch.Views;
 public sealed partial class QuickAddBubbleWindow : Window
 {
     private readonly IntPtr _hwnd;
-    private readonly TipEngine _tipEngine = new();
     private Storyboard? _fadeIn;
     private Storyboard? _fadeOut;
     private Storyboard? _tipFadeIn;
@@ -410,24 +409,9 @@ public sealed partial class QuickAddBubbleWindow : Window
         var mainVm = GetMainViewModel();
         if (mainVm == null) return;
 
-        // Check if in cooldown period (adaptive silence)
-        var today = DateTime.Today;
-        if (App.Settings.TipAutoOpenCooldownUntil.HasValue &&
-            today < App.Settings.TipAutoOpenCooldownUntil.Value)
-        {
-            // In cooldown — don't show tip
-            return;
-        }
+        _currentTip = App.TipCoordinator.TryGetContextualTip(mainVm.Tasks, out var isNewDailyTip);
 
-        // Track user activity
-        App.Settings.LastUserActivityTime = DateTime.Now;
-        _ = App.SettingsService.SaveAsync();
-
-        _currentTip = _tipEngine.GetTip(mainVm.Tasks,
-                                       App.Settings.LastMeaningfulTipTime,
-                                       App.Settings.LastUserActivityTime);
-
-        // If tip is null (suppressed fallback), don't show anything
+        // Null = cooldown or suppressed fallback — show nothing
         if (_currentTip == null)
         {
             return;
@@ -457,21 +441,8 @@ public sealed partial class QuickAddBubbleWindow : Window
 
         _tipFadeIn?.Begin();
 
-        // Track meaningful tips for smart fallback suppression
-        if (_currentTip.IsMeaningful)
-        {
-            App.Settings.LastMeaningfulTipTime = DateTime.Now;
-        }
-
-        // Check if this is a new daily tip
-        bool isNewDay = App.Settings.LastTipShowDate?.Date != today;
-        if (isNewDay)
-        {
-            App.Settings.LastTipShowDate = today;
+        if (isNewDailyTip)
             SignalMascotDailyTip();
-        }
-
-        _ = App.SettingsService.SaveAsync();
 
         // Use Severity and DismissAfterMs to determine timeout
         if (_currentTip.DismissAfterMs > 0)
@@ -541,26 +512,9 @@ public sealed partial class QuickAddBubbleWindow : Window
         }
     }
 
-    private void ResetTipDismissalCounter()
-    {
-        if (App.Settings.ConsecutiveTipDismissals > 0)
-        {
-            App.Settings.ConsecutiveTipDismissals = 0;
-            _ = App.SettingsService.SaveAsync();
-        }
-    }
+    private void ResetTipDismissalCounter() => App.TipCoordinator.RecordEngagement();
 
-    private void RecordTipDismissal()
-    {
-        App.Settings.ConsecutiveTipDismissals++;
-        if (App.Settings.ConsecutiveTipDismissals >= 3)
-        {
-            // Adaptive silence: cooldown for 3 days
-            App.Settings.TipAutoOpenCooldownUntil = DateTime.Today.AddDays(3);
-            App.Settings.ConsecutiveTipDismissals = 0;
-        }
-        _ = App.SettingsService.SaveAsync();
-    }
+    private void RecordTipDismissal() => App.TipCoordinator.RecordDismissal();
 
     private void TipBubble_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
     {
@@ -598,8 +552,13 @@ public sealed partial class QuickAddBubbleWindow : Window
                 mainWindow.Activate();
                 break;
 
+            case TipActionType.ViewPlanned:
+                mainWindow.NavigateTo("planned");
+                mainWindow.Activate();
+                break;
+
             case TipActionType.AddSampleTask:
-                AddSampleTask(mainVm);
+                mainVm.AddSampleTask();
                 mainWindow.Activate();
                 break;
 
@@ -611,20 +570,5 @@ public sealed partial class QuickAddBubbleWindow : Window
             default:
                 break;
         }
-    }
-
-    private void AddSampleTask(MainViewModel mainVm)
-    {
-        var firstList = mainVm.Lists.Count > 0 ? mainVm.Lists[0] : null;
-        var sampleTask = new TodoItem
-        {
-            Title = "Example: Click to edit task name",
-            ListId = firstList?.Id ?? Guid.Empty,
-            ListName = firstList?.Name
-        };
-
-        mainVm.Tasks.Insert(0, sampleTask);
-        mainVm.AttachTaskPropertyChangedHandler(sampleTask);
-        mainVm.SaveAsync();
     }
 }

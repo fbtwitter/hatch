@@ -28,5 +28,6 @@ public enum TipActionType
     ViewOverdue = 1,
     ViewMyDay = 2,
     AddSampleTask = 3,
-    OpenMainWindow = 4
+    OpenMainWindow = 4,
+    ViewPlanned = 5
 }

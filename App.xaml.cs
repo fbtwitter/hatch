@@ -15,6 +15,7 @@ public partial class App : Application
     public static AppSettings Settings => SettingsService.Current;
     public static SyncService SyncService { get; } = new();
     public static NotificationSchedulerService NotificationScheduler { get; } = new();
+    public static TipCoordinator TipCoordinator { get; } = new(SettingsService);
     public static MainWindow? MainWindowInstance { get; private set; }
     public static MascotWindow? MascotWindowInstance { get; private set; }
     public static QuickAddBubbleWindow? BubbleWindowInstance { get; set; }

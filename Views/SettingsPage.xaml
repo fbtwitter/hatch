@@ -315,6 +315,40 @@
                     </Grid>
                 </Border>
 
+                <!-- Automatic tip time window — only meaningful while the toggle above is on -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE823;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock x:Uid="Settings_TipTimeHeader"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock x:Uid="Settings_TipTimeDescription"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
+                        </StackPanel>
+                        <!-- Item order maps 1:1 onto TipTimePreference (Anytime=0, Morning=1,
+                             Afternoon=2, Evening=3) — keep in sync with the enum. -->
+                        <ComboBox Grid.Column="2" MinWidth="140" VerticalAlignment="Center"
+                                  AutomationProperties.AutomationId="Settings_TipTime"
+                                  AutomationProperties.Name="Automatic tip time"
+                                  IsEnabled="{x:Bind ViewModel.ShowTipsAutomatically, Mode=OneWay}"
+                                  SelectedIndex="{x:Bind ViewModel.ProactiveTipTimeIndex, Mode=TwoWay}">
+                            <ComboBoxItem x:Uid="Settings_TipTime_Anytime"/>
+                            <ComboBoxItem x:Uid="Settings_TipTime_Morning"/>
+                            <ComboBoxItem x:Uid="Settings_TipTime_Afternoon"/>
+                            <ComboBoxItem x:Uid="Settings_TipTime_Evening"/>
+                        </ComboBox>
+                    </Grid>
+                </Border>
+
                 <!-- Lottie Animation File -->
                 <toolkit:SettingsCard
                     Header="Lottie Animation File"

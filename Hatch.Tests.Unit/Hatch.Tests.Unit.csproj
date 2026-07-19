@@ -29,6 +29,8 @@
     <Compile Include="..\Models\TaskRecurrence.cs" Link="Source\Models\TaskRecurrence.cs" />
     <Compile Include="..\Models\TaskPriority.cs" Link="Source\Models\TaskPriority.cs" />
     <Compile Include="..\Models\Tip.cs" Link="Source\Models\Tip.cs" />
+    <Compile Include="..\Models\AppSettings.cs" Link="Source\Models\AppSettings.cs" />
+    <Compile Include="..\Helpers\TipSchedule.cs" Link="Source\Helpers\TipSchedule.cs" />
     <Compile Include="..\Helpers\RecurrenceHelper.cs" Link="Source\Helpers\RecurrenceHelper.cs" />
     <Compile Include="..\Helpers\TaskSorting.cs" Link="Source\Helpers\TaskSorting.cs" />
     <Compile Include="..\Helpers\TaskSearchMatcher.cs" Link="Source\Helpers\TaskSearchMatcher.cs" />

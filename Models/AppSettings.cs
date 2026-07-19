@@ -1,6 +1,7 @@
 namespace Hatch.Models;
 
 public enum AppTheme { SystemDefault = 0, Light = 1, Dark = 2 }
+public enum TipTimePreference { Anytime = 0, Morning = 1, Afternoon = 2, Evening = 3 }
 public enum AppBackdrop { None = 0, Mica = 1, MicaAlt = 2, DesktopAcrylic = 3 }
 
 public sealed class AppSettings
@@ -35,6 +36,7 @@ public sealed class AppSettings
     // Proactive tip popup — off by default (opt-in; more interruptive than the click-only default)
     public bool ShowTipsAutomatically { get; set; } = false;
     public DateTime? LastProactiveTipCheckDate { get; set; } = null;
+    public TipTimePreference ProactiveTipTime { get; set; } = TipTimePreference.Anytime;
 
     // Tip Engine — smart fallback suppression (avoid filler)
     public DateTime? LastMeaningfulTipTime { get; set; } = null;      // overdue, My Day, progress

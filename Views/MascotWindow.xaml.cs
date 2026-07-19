@@ -285,6 +285,11 @@ public sealed partial class MascotWindow : Window
                 mainWindow.Activate();
                 break;
 
+            case TipActionType.ViewPlanned:
+                mainWindow.NavigateTo("planned");
+                mainWindow.Activate();
+                break;
+
             case TipActionType.AddSampleTask:
                 mainVm.AddSampleTask();
                 mainWindow.Activate();
