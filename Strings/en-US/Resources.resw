@@ -213,6 +213,44 @@
 
   <!-- ── Tips ────────────────────────────────────────────────── -->
   <data name="Tip_SampleTaskTitle" xml:space="preserve"><value>Example: Click to edit task name</value></data>
+  <data name="Tip_Overdue_One" xml:space="preserve"><value>You have 1 overdue task</value></data>
+  <data name="Tip_Overdue_Many" xml:space="preserve"><value>You have {0} overdue tasks</value><comment>{0} = overdue task count, always ≥ 2</comment></data>
+  <data name="Tip_Action_ViewOverdue" xml:space="preserve"><value>View overdue</value></data>
+  <data name="Tip_DueToday_One" xml:space="preserve"><value>1 task is due today</value></data>
+  <data name="Tip_DueToday_Many" xml:space="preserve"><value>{0} tasks are due today</value><comment>{0} = due-today task count, always ≥ 2</comment></data>
+  <data name="Tip_Action_ViewPlanned" xml:space="preserve"><value>View planned</value></data>
+  <data name="Tip_MyDayEmpty" xml:space="preserve"><value>Your My Day list is empty—ready to plan?</value></data>
+  <data name="Tip_Action_PlanMyDay" xml:space="preserve"><value>Plan My Day</value></data>
+  <data name="Tip_EveningWrapUp" xml:space="preserve"><value>My Day is clear. Plan tomorrow?</value></data>
+  <data name="Tip_Action_PlanTomorrow" xml:space="preserve"><value>Plan tomorrow</value></data>
+  <data name="Tip_CompletedToday" xml:space="preserve"><value>Great progress! {0} tasks done today.</value><comment>{0} = tasks completed today, always ≥ 5</comment></data>
+  <data name="Tip_StaleTask" xml:space="preserve"><value>“{0}” has been waiting {1} days</value><comment>{0} = task title, {1} = days since created</comment></data>
+  <data name="Tip_Action_TakeALook" xml:space="preserve"><value>Take a look</value></data>
+  <data name="Tip_EmptyList" xml:space="preserve"><value>Your task list is empty. Add one to get started.</value></data>
+  <data name="Tip_Action_AddSample" xml:space="preserve"><value>Add sample task</value></data>
+  <data name="Tip_Greeting_Morning_0" xml:space="preserve"><value>Good morning</value></data>
+  <data name="Tip_Greeting_Morning_1" xml:space="preserve"><value>What's the priority today?</value></data>
+  <data name="Tip_Greeting_Morning_2" xml:space="preserve"><value>Ready to plan your day?</value></data>
+  <data name="Tip_Greeting_Afternoon_0" xml:space="preserve"><value>Small steps count</value></data>
+  <data name="Tip_Greeting_Afternoon_1" xml:space="preserve"><value>Let's clear one thing first</value></data>
+  <data name="Tip_Greeting_Afternoon_2" xml:space="preserve"><value>How's the day going?</value></data>
+  <data name="Tip_Greeting_Afternoon_3" xml:space="preserve"><value>Keep the momentum</value></data>
+  <data name="Tip_Greeting_Evening_0" xml:space="preserve"><value>Great work today</value></data>
+  <data name="Tip_Greeting_Evening_1" xml:space="preserve"><value>Tomorrow's a new slate</value></data>
+  <data name="Tip_Greeting_Evening_2" xml:space="preserve"><value>You earned this</value></data>
+  <data name="Tip_Greeting_Evening_3" xml:space="preserve"><value>Wrap up strong</value></data>
+  <data name="Tip_Greeting_Anytime_0" xml:space="preserve"><value>You've got this</value></data>
+  <data name="Tip_Greeting_Anytime_1" xml:space="preserve"><value>One task at a time</value></data>
+  <data name="Tip_Greeting_Anytime_2" xml:space="preserve"><value>You're all caught up</value></data>
+  <data name="Tip_Greeting_Anytime_3" xml:space="preserve"><value>Every task counts</value></data>
+
+  <!-- ── Settings › Automatic tip time (x:Uid mapped) ────────── -->
+  <data name="Settings_TipTimeHeader.Text" xml:space="preserve"><value>Automatic Tip Time</value></data>
+  <data name="Settings_TipTimeDescription.Text" xml:space="preserve"><value>When the once-a-day automatic tip is allowed to appear</value></data>
+  <data name="Settings_TipTime_Anytime.Content" xml:space="preserve"><value>Any time</value></data>
+  <data name="Settings_TipTime_Morning.Content" xml:space="preserve"><value>Morning</value></data>
+  <data name="Settings_TipTime_Afternoon.Content" xml:space="preserve"><value>Afternoon</value></data>
+  <data name="Settings_TipTime_Evening.Content" xml:space="preserve"><value>Evening</value></data>
 
   <!-- ── Sync (code-accessed) ────────────────────────────────── -->
   <data name="Sync_Error_NotReady" xml:space="preserve"><value>Sync service not ready.</value></data>

@@ -4,49 +4,61 @@ namespace Hatch.Services;
 
 public sealed class TipEngine
 {
-    private static readonly string[] MorningGreetings =
+    private static readonly string[] MorningGreetingKeys =
     [
-        "Good morning",
-        "What's the priority today?",
-        "Ready to plan your day?"
+        "Tip_Greeting_Morning_0",
+        "Tip_Greeting_Morning_1",
+        "Tip_Greeting_Morning_2"
     ];
 
-    private static readonly string[] AfternoonGreetings =
+    private static readonly string[] AfternoonGreetingKeys =
     [
-        "Small steps count",
-        "Let's clear one thing first",
-        "How's the day going?",
-        "Keep the momentum"
+        "Tip_Greeting_Afternoon_0",
+        "Tip_Greeting_Afternoon_1",
+        "Tip_Greeting_Afternoon_2",
+        "Tip_Greeting_Afternoon_3"
     ];
 
-    private static readonly string[] EveningGreetings =
+    private static readonly string[] EveningGreetingKeys =
     [
-        "Great work today",
-        "Tomorrow's a new slate",
-        "You earned this",
-        "Wrap up strong"
+        "Tip_Greeting_Evening_0",
+        "Tip_Greeting_Evening_1",
+        "Tip_Greeting_Evening_2",
+        "Tip_Greeting_Evening_3"
     ];
 
-    private static readonly string[] AnytimeGreetings =
+    private static readonly string[] AnytimeGreetingKeys =
     [
-        "You've got this",
-        "One task at a time",
-        "You're all caught up",
-        "Every task counts"
+        "Tip_Greeting_Anytime_0",
+        "Tip_Greeting_Anytime_1",
+        "Tip_Greeting_Anytime_2",
+        "Tip_Greeting_Anytime_3"
     ];
 
     private static int _greetingIndex = 0;
 
-    // Thresholds for smart fallback suppression
     private const int InactivityThresholdMinutes = 5;
     private const int MeaningfulTipThresholdHours = 4;
+    private const int CompletedTodayCelebrationThreshold = 5;
+    private const int StaleTaskThresholdDays = 14;
+    private const int EveningHour = 18;
 
-    public Tip? GetTip(IReadOnlyList<TodoItem> tasks, DateTime? lastMeaningfulTip = null, DateTime? lastActivity = null)
+    private readonly Func<string, string> _resolve;
+
+    // This file is compiled into the WinUI-free test project, so it must not touch the
+    // resource pipeline itself — TipCoordinator injects Strings.Get; the identity default
+    // means Message carries raw resource keys, which is exactly what the tests assert on.
+    public TipEngine(Func<string, string>? resolve = null)
     {
-        var now = DateTime.Now;
-        var today = now.Date;
+        _resolve = resolve ?? (key => key);
+    }
 
-        // 1. Check for overdue tasks (≥ 1)
+    public Tip? GetTip(IReadOnlyList<TodoItem> tasks, DateTime? lastMeaningfulTip = null,
+                       DateTime? lastActivity = null, DateTime? now = null)
+    {
+        var current = now ?? DateTime.Now;
+        var today = current.Date;
+
         var overdueTasks = tasks.Count(t =>
             !t.IsCompleted && t.DueDate.HasValue &&
             t.DueDate.Value.ToLocalTime().Date < today);
@@ -54,107 +66,142 @@ public sealed class TipEngine
         if (overdueTasks >= 1)
             return new Tip
             {
-                Message = $"You have {overdueTasks} overdue task{(overdueTasks > 1 ? "s" : "")}",
+                Message = overdueTasks == 1
+                    ? _resolve("Tip_Overdue_One")
+                    : string.Format(_resolve("Tip_Overdue_Many"), overdueTasks),
                 Severity = TipSeverity.Critical,
-                Action = new TipAction { Label = "View overdue", Type = TipActionType.ViewOverdue },
-                DismissAfterMs = 0,  // 0 = indefinite (user dismisses)
+                Action = new TipAction { Label = _resolve("Tip_Action_ViewOverdue"), Type = TipActionType.ViewOverdue },
+                DismissAfterMs = 0,
                 IsMeaningful = true
             };
 
-        // 2. Check My Day empty (no time condition — prompt planning any time)
-        var myDayTasks = tasks.Count(t => t.IsInMyDay && !t.IsCompleted);
-        if (myDayTasks == 0)
+        var dueToday = tasks.Count(t =>
+            !t.IsCompleted && t.DueDate.HasValue &&
+            t.DueDate.Value.ToLocalTime().Date == today);
+
+        if (dueToday >= 1)
             return new Tip
             {
-                Message = "Your My Day list is empty—ready to plan?",
-                Severity = TipSeverity.Critical,
-                Action = new TipAction { Label = "Plan My Day", Type = TipActionType.ViewMyDay },
-                DismissAfterMs = 0,  // indefinite
+                Message = dueToday == 1
+                    ? _resolve("Tip_DueToday_One")
+                    : string.Format(_resolve("Tip_DueToday_Many"), dueToday),
+                Severity = TipSeverity.Warning,
+                Action = new TipAction { Label = _resolve("Tip_Action_ViewPlanned"), Type = TipActionType.ViewPlanned },
+                DismissAfterMs = 0,
                 IsMeaningful = true
             };
 
-        // 3. Check ≥ 5 tasks completed (no time tracking, so this checks total completed)
-        var completedCount = tasks.Count(t => t.IsCompleted);
+        var openMyDay = tasks.Count(t => t.IsInMyDay && !t.IsCompleted);
+        var hasOpenTasks = tasks.Any(t => !t.IsCompleted);
+        var hasUsedMyDay = tasks.Any(t => t.MyDayDate.HasValue || t.IsInMyDay);
 
-        if (completedCount >= 5)
+        if (openMyDay == 0 && current.Hour < EveningHour && hasUsedMyDay && hasOpenTasks)
             return new Tip
             {
-                Message = $"Great progress! {completedCount} tasks completed.",
+                Message = _resolve("Tip_MyDayEmpty"),
+                Severity = TipSeverity.Warning,
+                Action = new TipAction { Label = _resolve("Tip_Action_PlanMyDay"), Type = TipActionType.ViewMyDay },
+                DismissAfterMs = 0,
+                IsMeaningful = true
+            };
+
+        var completedToday = tasks.Count(t =>
+            t.IsCompleted && t.CompletedAt.HasValue &&
+            t.CompletedAt.Value.ToLocalTime().Date == today);
+
+        if (current.Hour >= EveningHour && openMyDay == 0 && completedToday >= 1)
+            return new Tip
+            {
+                Message = _resolve("Tip_EveningWrapUp"),
+                Severity = TipSeverity.Info,
+                Action = new TipAction { Label = _resolve("Tip_Action_PlanTomorrow"), Type = TipActionType.ViewMyDay },
+                DismissAfterMs = 0,
+                IsMeaningful = true
+            };
+
+        if (completedToday >= CompletedTodayCelebrationThreshold)
+            return new Tip
+            {
+                Message = string.Format(_resolve("Tip_CompletedToday"), completedToday),
                 Severity = TipSeverity.Info,
                 Action = null,
-                DismissAfterMs = 3000,  // 3s for celebratory tip
+                DismissAfterMs = 3000,
                 IsMeaningful = true
             };
 
-        // 4. Check first open of day (any uncompleted task exists) — fallback tip
-        var hasOpenTasks = tasks.Any(t => !t.IsCompleted);
+        var staleTask = tasks
+            .Where(t => !t.IsCompleted && t.DueDate == null &&
+                        (today - t.CreatedAt.Date).TotalDays >= StaleTaskThresholdDays)
+            .OrderBy(t => t.CreatedAt)
+            .FirstOrDefault();
+
+        if (staleTask != null)
+            return new Tip
+            {
+                Message = string.Format(_resolve("Tip_StaleTask"),
+                    staleTask.Title, (today - staleTask.CreatedAt.Date).Days),
+                Severity = TipSeverity.Info,
+                Action = new TipAction { Label = _resolve("Tip_Action_TakeALook"), Type = TipActionType.OpenMainWindow },
+                DismissAfterMs = 0,
+                IsMeaningful = true
+            };
+
         if (hasOpenTasks)
         {
             var fallbackTip = new Tip
             {
-                Message = GetTimeBasedGreeting(),
+                Message = _resolve(GetTimeBasedGreetingKey(current)),
                 Severity = TipSeverity.Warning,
                 Action = null,
-                DismissAfterMs = 5000,  // 5s for greeting
+                DismissAfterMs = 5000,
                 IsMeaningful = false
             };
-            return ShouldSuppressFallback(lastMeaningfulTip, lastActivity) ? null : fallbackTip;
+            return ShouldSuppressFallback(current, lastMeaningfulTip, lastActivity) ? null : fallbackTip;
         }
 
-        // 5. No tasks exist — fallback tip
         if (tasks.Count == 0)
         {
             var fallbackTip = new Tip
             {
-                Message = "Your task list is empty. Add one to get started.",
+                Message = _resolve("Tip_EmptyList"),
                 Severity = TipSeverity.Warning,
-                Action = new TipAction { Label = "Add sample task", Type = TipActionType.AddSampleTask },
-                DismissAfterMs = 0,  // indefinite with action
+                Action = new TipAction { Label = _resolve("Tip_Action_AddSample"), Type = TipActionType.AddSampleTask },
+                DismissAfterMs = 0,
                 IsMeaningful = false
             };
-            return ShouldSuppressFallback(lastMeaningfulTip, lastActivity) ? null : fallbackTip;
+            return ShouldSuppressFallback(current, lastMeaningfulTip, lastActivity) ? null : fallbackTip;
         }
 
-        // 6. Rotating anytime greetings — fallback tip
-        var tipText = AnytimeGreetings[_greetingIndex % AnytimeGreetings.Length];
-        _greetingIndex++;
         var anytimeTip = new Tip
         {
-            Message = tipText,
+            Message = _resolve(AnytimeGreetingKeys[_greetingIndex++ % AnytimeGreetingKeys.Length]),
             Severity = TipSeverity.Info,
             Action = null,
-            DismissAfterMs = 3000,  // 3s for fallback greeting
+            DismissAfterMs = 3000,
             IsMeaningful = false
         };
-        return ShouldSuppressFallback(lastMeaningfulTip, lastActivity) ? null : anytimeTip;
+        return ShouldSuppressFallback(current, lastMeaningfulTip, lastActivity) ? null : anytimeTip;
     }
 
-    private bool ShouldSuppressFallback(DateTime? lastMeaningfulTip, DateTime? lastActivity)
+    private static bool ShouldSuppressFallback(DateTime now, DateTime? lastMeaningfulTip, DateTime? lastActivity)
     {
-        // Show fallback only if user inactive for X minutes OR no meaningful tip for Y hours
-        var now = DateTime.Now;
         var inactiveDuration = now - (lastActivity ?? now);
         var timeSinceMeaningful = now - (lastMeaningfulTip ?? DateTime.MinValue);
 
-        // If user is active and we've shown a meaningful tip recently, suppress fallback
-        if (inactiveDuration.TotalMinutes < InactivityThresholdMinutes &&
-            timeSinceMeaningful.TotalHours < MeaningfulTipThresholdHours)
-        {
-            return true;  // Suppress (silence is better than filler)
-        }
-
-        return false;  // Show fallback
+        // Silence is better than filler: suppress when the user is active and has
+        // recently seen a meaningful tip.
+        return inactiveDuration.TotalMinutes < InactivityThresholdMinutes &&
+               timeSinceMeaningful.TotalHours < MeaningfulTipThresholdHours;
     }
 
-    private string GetTimeBasedGreeting()
+    private static string GetTimeBasedGreetingKey(DateTime now)
     {
-        var hour = DateTime.Now.Hour;
         var index = _greetingIndex++;
 
-        return hour < 12
-            ? MorningGreetings[index % MorningGreetings.Length]
-            : hour < 18
-                ? AfternoonGreetings[index % AfternoonGreetings.Length]
-                : EveningGreetings[index % EveningGreetings.Length];
+        return now.Hour < 12
+            ? MorningGreetingKeys[index % MorningGreetingKeys.Length]
+            : now.Hour < EveningHour
+                ? AfternoonGreetingKeys[index % AfternoonGreetingKeys.Length]
+                : EveningGreetingKeys[index % EveningGreetingKeys.Length];
     }
 }

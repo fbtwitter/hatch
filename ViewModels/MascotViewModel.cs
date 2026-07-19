@@ -30,7 +30,6 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     private int _bubbleY;
     private bool _isMascotHidden;
     private bool _showDailyTipIndicator;
-    private readonly TipEngine _tipEngine = new();
 
     public bool IsVisible
     {
@@ -195,37 +194,16 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     // Called from the dispatcher-queued fullscreen-poll tick — already on the UI thread.
     private void CheckProactiveTipDue()
     {
-        if (!App.Settings.ShowTipsAutomatically) return;
-        if (App.Settings.LastProactiveTipCheckDate?.Date == DateTime.Today) return;
         if (!IsVisible || IsMascotHidden || IsBubbleOpen) return;
-
-        var today = DateTime.Today;
-        App.Settings.LastProactiveTipCheckDate = today;
-        _ = App.SettingsService.SaveAsync();
-
-        // Adaptive silence: 3 consecutive dismissals put proactive tips on cooldown.
-        if (App.Settings.TipAutoOpenCooldownUntil.HasValue && today < App.Settings.TipAutoOpenCooldownUntil.Value)
-            return;
 
         var mainVm = App.MainWindowInstance?.ViewModel;
         if (mainVm == null) return;
 
-        App.Settings.LastUserActivityTime = DateTime.Now;
-        _ = App.SettingsService.SaveAsync();
-
-        var tip = _tipEngine.GetTip(mainVm.Tasks, App.Settings.LastMeaningfulTipTime, App.Settings.LastUserActivityTime);
+        var tip = App.TipCoordinator.TryGetProactiveTip(mainVm.Tasks, out var isNewDailyTip);
         if (tip == null) return;
 
-        if (tip.IsMeaningful)
-            App.Settings.LastMeaningfulTipTime = DateTime.Now;
-
-        if (App.Settings.LastTipShowDate?.Date != today)
-        {
-            App.Settings.LastTipShowDate = today;
+        if (isNewDailyTip)
             ShowDailyTipIndicator = true;
-        }
-
-        _ = App.SettingsService.SaveAsync();
 
         ProactiveTipDue?.Invoke(tip);
     }
@@ -243,25 +221,9 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     // Called by MascotWindow when the proactive TeachingTip closes. Reason.Programmatic
     // means we closed it ourselves (auto-dismiss timer elapsed or action button clicked) —
     // both count as engagement. CloseButton/LightDismiss means the user waved it off.
-    public void ResetProactiveTipDismissalCounter()
-    {
-        if (App.Settings.ConsecutiveTipDismissals > 0)
-        {
-            App.Settings.ConsecutiveTipDismissals = 0;
-            _ = App.SettingsService.SaveAsync();
-        }
-    }
+    public void ResetProactiveTipDismissalCounter() => App.TipCoordinator.RecordEngagement();
 
-    public void RecordProactiveTipDismissal()
-    {
-        App.Settings.ConsecutiveTipDismissals++;
-        if (App.Settings.ConsecutiveTipDismissals >= 3)
-        {
-            App.Settings.TipAutoOpenCooldownUntil = DateTime.Today.AddDays(3);
-            App.Settings.ConsecutiveTipDismissals = 0;
-        }
-        _ = App.SettingsService.SaveAsync();
-    }
+    public void RecordProactiveTipDismissal() => App.TipCoordinator.RecordDismissal();
 
     public MascotViewModel(DispatcherQueue dispatcher)
     {

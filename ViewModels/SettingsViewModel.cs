@@ -300,6 +300,20 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         }
     }
 
+    // ComboBox index maps 1:1 onto TipTimePreference (Anytime=0, Morning=1, Afternoon=2,
+    // Evening=3) — keep SettingsPage item order in sync with the enum.
+    public int ProactiveTipTimeIndex
+    {
+        get => (int)_settings.Current.ProactiveTipTime;
+        set
+        {
+            if (value < 0 || (int)_settings.Current.ProactiveTipTime == value) return;
+            _settings.Current.ProactiveTipTime = (TipTimePreference)value;
+            _ = _settings.SaveAsync();
+            OnPropertyChanged();
+        }
+    }
+
     public bool HideWhenFullscreen
     {
         get => _settings.Current.HideWhenFullscreen;
