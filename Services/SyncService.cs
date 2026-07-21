@@ -35,6 +35,13 @@ public sealed class SyncService
 
     public bool IsSignedIn => _client?.Auth?.CurrentSession != null;
     public string? UserEmail => _client?.Auth?.CurrentUser?.Email;
+    public bool HasPassphrase => SyncPassphraseStore.Load().Passphrase != null;
+
+    public void SetPassphrase(string passphrase)
+    {
+        SyncPassphraseStore.Save(passphrase);
+        StateChanged?.Invoke();
+    }
 
     public event Action? StateChanged;
     public event Action? TasksReceived; // fires when a pull returned newer data
@@ -42,7 +49,7 @@ public sealed class SyncService
     public void StartAutoSync()
     {
         StopAutoSync();
-        if (!IsSignedIn) return;
+        if (!IsSignedIn || !HasPassphrase) return;
         _autoSyncCts = new CancellationTokenSource();
         _autoSyncTimer = new PeriodicTimer(TimeSpan.FromMinutes(5));
         _ = RunAutoSyncLoopAsync(_autoSyncCts.Token);
@@ -146,25 +153,42 @@ public sealed class SyncService
     {
         try { await (_client?.Auth?.SignOut() ?? Task.CompletedTask); } catch { }
         StopAutoSync();
+        SyncPassphraseStore.Clear();
         ClearTokens();
         await App.SettingsService.SaveAsync();
         StateChanged?.Invoke();
     }
 
     // Returns null on success, error message on failure.
-    public async Task<string?> PushAsync(TasksFile data)
+    // mergeFirst=false is only for the conflict-resolution paths, where the user has
+    // explicitly chosen to replace the server copy.
+    public async Task<string?> PushAsync(TasksFile data, bool mergeFirst = true)
     {
         if (_client == null) return Strings.Sync_Error_NotReady;
         if (!IsSignedIn)    return Strings.Sync_Error_NotSignedIn;
         var userId = _client.Auth.CurrentUser?.Id;
         if (string.IsNullOrEmpty(userId)) return Strings.Sync_Error_NoUserId;
+        var (passphrase, salt) = SyncPassphraseStore.Load();
+        if (passphrase == null || salt == null) return Strings.Sync_Error_NoPassphrase;
         try
         {
-            var json = JsonSerializer.Serialize(data);
+            if (mergeFirst)
+            {
+                var (merged, mergeError) = await MergeWithServerAsync(data);
+                if (mergeError != null) return mergeError;
+                if (merged != null)
+                {
+                    data = merged;
+                    await new TaskStorageService().SaveAsync(data);
+                    TasksReceived?.Invoke();
+                }
+            }
+
+            var json = SyncWire.Serialize(data);
             await _client.From<UserDataRow>().Upsert(new UserDataRow
             {
                 UserId    = userId,
-                TasksJson = json,
+                TasksJson = SyncCrypto.Encrypt(json, passphrase, salt),
                 UpdatedAt = DateTime.UtcNow
             });
             App.Settings.LastSyncedAt = DateTime.UtcNow;
@@ -173,6 +197,28 @@ public sealed class SyncService
             return null;
         }
         catch (Exception ex) { return ex.Message; }
+    }
+
+    // The row is a whole-state upsert, not a delta, so a client holding stale state would
+    // otherwise replace server changes it has never seen — silent data loss the moment a
+    // second device exists. Returns the union when the server is ahead of our last sync,
+    // (null, null) when there is nothing to merge, and an error when the row exists but
+    // cannot be read (unreadable row rule: never overwrite it).
+    private async Task<(TasksFile? Merged, string? Error)> MergeWithServerAsync(TasksFile local)
+    {
+        var response = await _client!.From<UserDataRow>().Get();
+        var row = response.Models.FirstOrDefault();
+        if (string.IsNullOrEmpty(row?.TasksJson)) return (null, null);
+
+        if (App.Settings.LastSyncedAt.HasValue &&
+            row.UpdatedAt <= App.Settings.LastSyncedAt.Value)
+            return (null, null);
+
+        var (server, readError) = ReadServerTasks(row);
+        if (readError != null) return (null, readError);
+        if (server == null) return (null, null);
+
+        return (SyncMerge.Merge(local, server), null);
     }
 
     // Returns the GitHub OAuth URL to open in the browser, or null on failure.
@@ -215,6 +261,28 @@ public sealed class SyncService
         catch { }
     }
 
+    // Single reader for server payloads. Error is set when a row exists but cannot be
+    // read — callers must treat that as "server has data" and never overwrite it.
+    // Plaintext rows predate E2E encryption; they parse as-is and get encrypted on the
+    // next push.
+    private static (TasksFile? Data, string? Error) ReadServerTasks(UserDataRow? row)
+    {
+        if (string.IsNullOrEmpty(row?.TasksJson)) return (null, null);
+
+        string json = row.TasksJson;
+        if (SyncCrypto.IsEncrypted(json))
+        {
+            var (passphrase, _) = SyncPassphraseStore.Load();
+            if (passphrase == null) return (null, Strings.Sync_Error_NoPassphrase);
+            var plain = SyncCrypto.TryDecrypt(json, passphrase);
+            if (plain == null) return (null, Strings.Sync_Error_WrongPassphrase);
+            json = plain;
+        }
+
+        try   { return (SyncWire.Deserialize(json), null); }
+        catch { return (null, Strings.Sync_Error_WrongPassphrase); }
+    }
+
     private static Dictionary<string, string> ParseQueryString(string query)
         => query.Split('&', StringSplitOptions.RemoveEmptyEntries)
                 .Select(p => p.Split('=', 2))
@@ -239,7 +307,8 @@ public sealed class SyncService
                 row.UpdatedAt <= App.Settings.LastSyncedAt.Value)
                 return null;
 
-            var data = JsonSerializer.Deserialize<TasksFile>(row.TasksJson);
+            var (data, readError) = ReadServerTasks(row);
+            if (readError != null) return readError;
             if (data == null) return null;
 
             await new TaskStorageService().SaveAsync(data);
@@ -264,9 +333,10 @@ public sealed class SyncService
             var response  = await _client.From<UserDataRow>().Get();
             var row       = response.Models.FirstOrDefault();
 
-            TasksFile? serverData = row?.TasksJson != null
-                ? JsonSerializer.Deserialize<TasksFile>(row.TasksJson)
-                : null;
+            var (serverData, readError) = ReadServerTasks(row);
+            // Unreadable server data (missing/wrong passphrase) must never be treated as
+            // an empty account — pushing here would overwrite it.
+            if (readError != null) return null;
 
             bool localHasData  = localData.Tasks.Count > 0;
             bool serverHasData = (serverData?.Tasks.Count ?? 0) > 0;
@@ -301,7 +371,9 @@ public sealed class SyncService
     public async Task<string?> ResolveConflictUseLocalAsync()
     {
         var data = await new TaskStorageService().LoadAsync();
-        return await PushAsync(data);
+        // "Use local" means replace the server copy — merging here would silently do the
+        // opposite of what the user picked.
+        return await PushAsync(data, mergeFirst: false);
     }
 
     public Task<string?> ResolveConflictUseServerAsync()
@@ -317,14 +389,13 @@ public sealed class SyncService
             var local = await new TaskStorageService().LoadAsync();
             var response = await _client.From<UserDataRow>().Get();
             var row = response.Models.FirstOrDefault();
-            var server = row?.TasksJson != null
-                ? JsonSerializer.Deserialize<TasksFile>(row.TasksJson)
-                : null;
+            var (server, readError) = ReadServerTasks(row);
+            if (readError != null) return readError;
 
             var merged = SyncMerge.Merge(local, server ?? new TasksFile());
             await new TaskStorageService().SaveAsync(merged);
             TasksReceived?.Invoke();
-            return await PushAsync(merged);
+            return await PushAsync(merged, mergeFirst: false);
         }
         catch (Exception ex) { return ex.Message; }
     }

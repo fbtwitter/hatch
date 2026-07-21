@@ -34,6 +34,28 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
     public string SyncUserEmail => App.SyncService.UserEmail ?? "";
 
+    public bool IsPassphraseSet => App.SyncService.HasPassphrase;
+
+    // Drives the passphrase card + info bar: sync is paused in this state.
+    public bool IsSignedInWithoutPassphrase => IsSyncSignedIn && !IsPassphraseSet;
+
+    public async Task SetSyncPassphraseAsync(string passphrase)
+    {
+        if (passphrase.Trim().Length < 8)
+        {
+            SyncError = Strings.Sync_Error_PassphraseTooShort;
+            return;
+        }
+
+        SyncError = null;
+        App.SyncService.SetPassphrase(passphrase);
+        OnPropertyChanged(nameof(IsPassphraseSet));
+        OnPropertyChanged(nameof(IsSignedInWithoutPassphrase));
+
+        // The conflict check deferred at sign-in runs now that server data is readable.
+        await CheckAndHandleConflictAsync();
+    }
+
     public string SyncLastSyncedText
     {
         get
@@ -114,8 +136,12 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(IsSyncNotSignedIn));
             OnPropertyChanged(nameof(SyncUserEmail));
             OnPropertyChanged(nameof(SyncLastSyncedText));
+            OnPropertyChanged(nameof(IsPassphraseSet));
+            OnPropertyChanged(nameof(IsSignedInWithoutPassphrase));
 
-            if (justSignedIn)
+            // Without a passphrase the server payload is unreadable — the conflict check
+            // is deferred until SetSyncPassphraseAsync provides one.
+            if (justSignedIn && IsPassphraseSet)
                 await CheckAndHandleConflictAsync();
         });
     }
@@ -130,7 +156,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             if (conflict == null)
             {
                 // No conflict: pull if there's newer data on the server, then start the timer.
-                await App.SyncService.PullIfNewerAsync();
+                SyncError = await App.SyncService.PullIfNewerAsync();
                 App.SyncService.StartAutoSync();
                 OnPropertyChanged(nameof(SyncLastSyncedText));
                 return;

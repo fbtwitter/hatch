@@ -456,6 +456,31 @@
                             Command="{x:Bind ViewModel.SignOutCommand}"/>
                 </toolkit:SettingsCard>
 
+                <!-- E2E passphrase — sync stays paused until one is set -->
+                <InfoBar x:Uid="Settings_SyncPassphraseInfo"
+                         Severity="Informational"
+                         IsOpen="{x:Bind ViewModel.IsSignedInWithoutPassphrase, Mode=OneWay}"
+                         Visibility="{x:Bind ViewModel.IsSignedInWithoutPassphrase, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                         IsClosable="False"/>
+
+                <toolkit:SettingsCard x:Uid="Settings_SyncPassphraseCard"
+                    Visibility="{x:Bind ViewModel.IsSignedInWithoutPassphrase, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE72E;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <PasswordBox x:Name="SyncPassphraseBox"
+                                     AutomationProperties.AutomationId="Settings_SyncPassphrase"
+                                     AutomationProperties.Name="Sync passphrase"
+                                     MinWidth="220"/>
+                        <Button x:Uid="Settings_SyncPassphraseSet"
+                                AutomationProperties.AutomationId="Settings_SyncSetPassphrase"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
+                                Click="SyncSetPassphrase_Click"/>
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
                 <!-- Sync error (shown when signed in and sync fails) -->
                 <InfoBar x:Name="SyncErrorBar"
                          Severity="Error"
