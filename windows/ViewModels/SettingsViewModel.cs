@@ -48,6 +48,16 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         }
 
         SyncError = null;
+
+        // Verify against the existing row before storing. Storing first hides the entry
+        // card (IsSignedInWithoutPassphrase goes false) and strands the user with a
+        // passphrase that cannot decrypt anything and no way to correct it.
+        if (!await App.SyncService.CanDecryptServerRowAsync(passphrase))
+        {
+            SyncError = Strings.Sync_Error_WrongPassphrase;
+            return;
+        }
+
         App.SyncService.SetPassphrase(passphrase);
         OnPropertyChanged(nameof(IsPassphraseSet));
         OnPropertyChanged(nameof(IsSignedInWithoutPassphrase));
@@ -84,7 +94,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     public string? SyncError
     {
         get => _syncError;
-        private set { _syncError = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasSyncError)); }
+        internal set { _syncError = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasSyncError)); }
     }
 
     public bool HasSyncError => !string.IsNullOrEmpty(_syncError);
@@ -139,11 +149,23 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(IsPassphraseSet));
             OnPropertyChanged(nameof(IsSignedInWithoutPassphrase));
 
+            // Surface OAuth callback failures; without this the browser closes and the app
+            // shows nothing at all.
+            if (App.SyncService.LastAuthError is { } authError)
+                SyncError = authError;
+
             // Without a passphrase the server payload is unreadable — the conflict check
             // is deferred until SetSyncPassphraseAsync provides one.
             if (justSignedIn && IsPassphraseSet)
                 await CheckAndHandleConflictAsync();
         });
+    }
+
+    private void ForgetPassphrase()
+    {
+        App.SyncService.ClearPassphrase();
+        OnPropertyChanged(nameof(IsPassphraseSet));
+        OnPropertyChanged(nameof(IsSignedInWithoutPassphrase));
     }
 
     private async Task CheckAndHandleConflictAsync()
@@ -157,6 +179,9 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             {
                 // No conflict: pull if there's newer data on the server, then start the timer.
                 SyncError = await App.SyncService.PullIfNewerAsync();
+                // A stored passphrase that cannot decrypt the row is worse than none: it
+                // hides the entry card forever. Discard it so the user can try again.
+                if (SyncError == Strings.Sync_Error_WrongPassphrase) ForgetPassphrase();
                 App.SyncService.StartAutoSync();
                 OnPropertyChanged(nameof(SyncLastSyncedText));
                 return;

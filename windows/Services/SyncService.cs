@@ -32,6 +32,11 @@ public sealed class SyncService
     private PeriodicTimer? _autoSyncTimer;
     private CancellationTokenSource? _autoSyncCts;
     private CancellationTokenSource? _pushDebounce;
+    private string? _pkceVerifier;
+
+    // Set by the OAuth callback so the Settings UI can show why sign-in failed instead of
+    // the browser closing and nothing happening.
+    public string? LastAuthError { get; private set; }
 
     public bool IsSignedIn => _client?.Auth?.CurrentSession != null;
     public string? UserEmail => _client?.Auth?.CurrentUser?.Email;
@@ -41,6 +46,33 @@ public sealed class SyncService
     {
         SyncPassphraseStore.Save(passphrase);
         StateChanged?.Invoke();
+    }
+
+    public void ClearPassphrase()
+    {
+        SyncPassphraseStore.Clear();
+        StateChanged?.Invoke();
+    }
+
+    // Verify before storing: a passphrase that cannot open the existing row must be
+    // rejected at the point of entry, not silently accepted and then discovered on every
+    // subsequent sync. Without this the UI hides the entry card and leaves no way back.
+    // True when the account has no envelope yet (nothing to verify against).
+    public async Task<bool> CanDecryptServerRowAsync(string passphrase)
+    {
+        if (_client == null || !IsSignedIn) return true;
+        try
+        {
+            var response = await _client.From<UserDataRow>().Get();
+            var json = response.Models.FirstOrDefault()?.TasksJson;
+            if (string.IsNullOrEmpty(json) || !SyncCrypto.IsEncrypted(json)) return true;
+            return SyncCrypto.TryDecrypt(json, passphrase) != null;
+        }
+        catch
+        {
+            // Network failure is not a wrong passphrase — do not reject on it.
+            return true;
+        }
     }
 
     public event Action? StateChanged;
@@ -222,9 +254,12 @@ public sealed class SyncService
     }
 
     // Returns the GitHub OAuth URL to open in the browser, or null on failure.
-    public async Task<string?> GetGitHubSignInUrlAsync()
+    // Returns the URL to open, or an error to show. Previously this swallowed every
+    // exception and returned null, so a failure was indistinguishable from the button
+    // doing nothing at all.
+    public async Task<(string? Url, string? Error)> GetGitHubSignInUrlAsync()
     {
-        if (_client == null) return null;
+        if (_client == null) return (null, Strings.Sync_Error_NotReady);
         try
         {
             var state = await _client.Auth.SignIn(
@@ -232,33 +267,73 @@ public sealed class SyncService
                 new GotrueSignInOptions
                 {
                     RedirectTo = "hatch://auth-callback",
-                    FlowType   = GotrueConstants.OAuthFlowType.Implicit
+                    // PKCE, not implicit: hatch:// is not an exclusive scheme, so any app
+                    // can register it. Under the implicit flow a hijacked redirect hands
+                    // over live access and refresh tokens with nothing left to defeat.
+                    FlowType   = GotrueConstants.OAuthFlowType.PKCE
                 });
-            return state?.Uri?.ToString();
+
+            var url = state?.Uri?.ToString();
+            if (string.IsNullOrEmpty(url)) return (null, "GitHub sign-in returned no URL.");
+
+            // Held only until the callback returns. It never leaves this process — that is
+            // the whole point: the code in the redirect is useless without it.
+            _pkceVerifier = state!.PKCEVerifier;
+            return (url, null);
         }
-        catch { return null; }
+        catch (Exception ex) { return (null, ex.Message); }
     }
 
     // Called when the app is activated via hatch://auth-callback after GitHub OAuth.
     public async Task HandleOAuthCallbackAsync(Uri callbackUri)
     {
         if (_client == null) return;
+        LastAuthError = null;
         try
         {
-            // Implicit flow puts tokens in the URL fragment: #access_token=...&refresh_token=...
-            var fragment = callbackUri.Fragment.TrimStart('#');
-            var p = ParseQueryString(fragment);
+            // PKCE returns a single-use code in the query string. (The implicit flow used
+            // to return tokens in the fragment; that is deliberately no longer accepted.)
+            var p = ParseQueryString(callbackUri.Query.TrimStart('?'));
 
-            var access  = p.GetValueOrDefault("access_token");
-            var refresh = p.GetValueOrDefault("refresh_token");
-            if (string.IsNullOrEmpty(access)) return;
+            var providerError = p.GetValueOrDefault("error_description")
+                             ?? p.GetValueOrDefault("error");
+            if (!string.IsNullOrEmpty(providerError))
+            {
+                LastAuthError = providerError;
+                StateChanged?.Invoke();
+                return;
+            }
 
-            await _client.Auth.SetSession(access, refresh ?? "");
-            var session = _client.Auth.CurrentSession;
+            var code = p.GetValueOrDefault("code");
+            if (string.IsNullOrEmpty(code))
+            {
+                LastAuthError = "Sign-in callback carried no authorization code.";
+                StateChanged?.Invoke();
+                return;
+            }
+
+            if (string.IsNullOrEmpty(_pkceVerifier))
+            {
+                // The verifier lives in memory for the duration of the browser round trip;
+                // it is gone if the app restarted in between.
+                LastAuthError = "Sign-in expired. Start the GitHub sign-in again.";
+                StateChanged?.Invoke();
+                return;
+            }
+
+            var session = await _client.Auth.ExchangeCodeForSession(_pkceVerifier, code);
+            _pkceVerifier = null;
+
             if (session != null) await PersistSessionAsync(session);
+            else LastAuthError = "Could not exchange the sign-in code for a session.";
+
             StateChanged?.Invoke();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            LastAuthError = ex.Message;
+            StateChanged?.Invoke();
+        }
     }
 
     // Single reader for server payloads. Error is set when a row exists but cannot be

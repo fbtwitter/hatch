@@ -263,8 +263,12 @@ public sealed partial class SettingsPage : Page
 
     private async void SyncGitHubSignIn_Click(object sender, RoutedEventArgs e)
     {
-        var url = await App.SyncService.GetGitHubSignInUrlAsync();
-        if (!string.IsNullOrEmpty(url))
-            _ = Windows.System.Launcher.LaunchUriAsync(new Uri(url));
+        var (url, error) = await App.SyncService.GetGitHubSignInUrlAsync();
+        if (error != null)
+        {
+            ViewModel.SyncError = error;
+            return;
+        }
+        _ = Windows.System.Launcher.LaunchUriAsync(new Uri(url!));
     }
 }
