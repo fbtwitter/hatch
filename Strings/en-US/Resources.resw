@@ -262,6 +262,16 @@
   <data name="Sync_JustNow" xml:space="preserve"><value>Just now</value></data>
   <data name="Sync_MinAgo" xml:space="preserve"><value>{0} min ago</value><comment>{0} = whole minutes</comment></data>
   <data name="Sync_HrAgo" xml:space="preserve"><value>{0} hr ago</value><comment>{0} = whole hours</comment></data>
+  <data name="Sync_Error_NoPassphrase" xml:space="preserve"><value>Set your sync passphrase to resume syncing.</value></data>
+  <data name="Sync_Error_WrongPassphrase" xml:space="preserve"><value>Wrong sync passphrase — use the same passphrase you set on your other device.</value></data>
+  <data name="Sync_Error_PassphraseTooShort" xml:space="preserve"><value>Passphrase must be at least 8 characters.</value></data>
+
+  <!-- ── Sync passphrase (x:Uid mapped) ──────────────────────── -->
+  <data name="Settings_SyncPassphraseInfo.Title" xml:space="preserve"><value>End-to-end encryption</value></data>
+  <data name="Settings_SyncPassphraseInfo.Message" xml:space="preserve"><value>Your tasks are encrypted on this device before upload — the server can never read them. Set a passphrase to start syncing, and use the same one on every device.</value></data>
+  <data name="Settings_SyncPassphraseCard.Header" xml:space="preserve"><value>Sync passphrase</value></data>
+  <data name="Settings_SyncPassphraseCard.Description" xml:space="preserve"><value>Never sent to the server. If you lose it, synced data cannot be recovered.</value></data>
+  <data name="Settings_SyncPassphraseSet.Content" xml:space="preserve"><value>Set passphrase</value></data>
 
   <!-- ── Settings (code-accessed) ────────────────────────────── -->
   <data name="Settings_NoFileSelected" xml:space="preserve"><value>(none selected)</value></data>

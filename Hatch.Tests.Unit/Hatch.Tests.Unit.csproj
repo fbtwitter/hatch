@@ -36,7 +36,13 @@
     <Compile Include="..\Helpers\TaskSearchMatcher.cs" Link="Source\Helpers\TaskSearchMatcher.cs" />
     <Compile Include="..\Helpers\TaskExportFormatter.cs" Link="Source\Helpers\TaskExportFormatter.cs" />
     <Compile Include="..\Services\TipEngine.cs" Link="Source\Services\TipEngine.cs" />
+    <Compile Include="..\Services\SyncCrypto.cs" Link="Source\Services\SyncCrypto.cs" />
+    <Compile Include="..\Services\SyncWire.cs" Link="Source\Services\SyncWire.cs" />
     <Compile Include="..\Services\SyncMerge.cs" Link="Source\Services\SyncMerge.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Fixtures\tasks-golden.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

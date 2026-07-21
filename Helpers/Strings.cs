@@ -118,6 +118,9 @@ internal static class Strings
     public static string Sync_JustNow            => Get("Sync_JustNow");
     public static string Sync_MinAgo(int minutes) => string.Format(Get("Sync_MinAgo"), minutes);
     public static string Sync_HrAgo(int hours)    => string.Format(Get("Sync_HrAgo"), hours);
+    public static string Sync_Error_NoPassphrase       => Get("Sync_Error_NoPassphrase");
+    public static string Sync_Error_WrongPassphrase    => Get("Sync_Error_WrongPassphrase");
+    public static string Sync_Error_PassphraseTooShort => Get("Sync_Error_PassphraseTooShort");
 
     // ── Settings ─────────────────────────────────────────────
     public static string Settings_NoFileSelected => Get("Settings_NoFileSelected");
