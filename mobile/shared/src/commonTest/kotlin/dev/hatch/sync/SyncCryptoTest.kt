@@ -59,6 +59,27 @@ class SyncCryptoTest {
         assertNull(SyncCrypto.tryDecrypt("HATCHE2E.v1.only.three.fields", passphrase))
     }
 
+    // ADR-0005 stores the derived key instead of the passphrase, so the two APIs must be
+    // interchangeable — otherwise a device that persisted its key could not read an
+    // envelope written by one that still had the passphrase.
+    @Test
+    fun key_based_api_interoperates_with_the_passphrase_api() {
+        val key = SyncCrypto.deriveKey(passphrase, salt)
+        val envelope = SyncCrypto.encryptWithKey(plaintext, key, salt)
+
+        assertEquals(plaintext, SyncCrypto.tryDecryptWithKey(envelope, key))
+        assertEquals(plaintext, SyncCrypto.tryDecrypt(envelope, passphrase))
+    }
+
+    @Test
+    fun a_key_derived_from_another_salt_cannot_decrypt() {
+        val key = SyncCrypto.deriveKey(passphrase, salt)
+        val otherKey = SyncCrypto.deriveKey(passphrase, ByteArray(16) { 0x42 })
+        val envelope = SyncCrypto.encryptWithKey(plaintext, key, salt)
+
+        assertNull(SyncCrypto.tryDecryptWithKey(envelope, otherKey))
+    }
+
     @Test
     fun detects_envelopes_and_ignores_legacy_plaintext() {
         assertTrue(SyncCrypto.isEncrypted(expectedEnvelope))
