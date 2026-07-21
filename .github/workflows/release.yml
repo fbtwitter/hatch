@@ -11,6 +11,12 @@ jobs:
     permissions:
       contents: write
 
+    # The WinUI app lives in windows/; every run step keeps its original relative paths.
+    # Steps using ${{ github.workspace }} stay repo-root-relative and are unaffected.
+    defaults:
+      run:
+        working-directory: windows
+
     steps:
       - uses: actions/checkout@v4
 
@@ -122,7 +128,8 @@ jobs:
           Write-Host "Using MakeAppx: $($makeAppx.FullName)"
 
           # Collect MSIX files (they live inside per-arch subdirectories)
-          $msixFiles = Get-ChildItem -Recurse -Filter "*.msix" -Path AppxPackages |
+          # Absolute: AppxPackageDir writes to the repo root, not the windows/ working dir.
+          $msixFiles = Get-ChildItem -Recurse -Filter "*.msix" -Path "${{ github.workspace }}\AppxPackages" |
             Where-Object { $_.FullName -notmatch "\\Dependencies\\" }
 
           Write-Host "Found MSIX files:"
