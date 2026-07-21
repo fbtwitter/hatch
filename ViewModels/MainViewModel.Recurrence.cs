@@ -39,7 +39,8 @@ public sealed partial class MainViewModel
             ListName   = task.ListName,
             IsStarred  = task.IsStarred,
             DueDate    = RecurrenceHelper.AdvanceDueDate(task.DueDate.Value, task.Recurrence),
-            Recurrence = task.Recurrence
+            Recurrence = task.Recurrence,
+            Priority   = task.Priority
         };
 
         AttachTaskPropertyChangedHandler(next);

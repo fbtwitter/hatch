@@ -191,13 +191,16 @@ public class TipEngineTests
     // My Day non-empty, nothing due/overdue/stale, no completions today.
     private static List<TodoItem> FallbackReachableTasks() => [Task(inMyDay: true)];
 
+    // Offsets are anchored to Morning, not DateTime.Now: these rules compare against the
+    // injected "now", so wall-clock-relative values silently change meaning with the time
+    // of day the suite runs.
     [TestMethod]
     public void FallbackGreeting_SuppressedWhenUserRecentlyActiveAndMeaningfulTipRecent()
     {
         var tip = Engine().GetTip(
             FallbackReachableTasks(),
-            lastMeaningfulTip: DateTime.Now.AddMinutes(-10),
-            lastActivity: DateTime.Now.AddMinutes(-1),
+            lastMeaningfulTip: Morning.AddMinutes(-10),
+            lastActivity: Morning.AddMinutes(-1),
             now: Morning);
 
         Assert.IsNull(tip);
@@ -208,8 +211,8 @@ public class TipEngineTests
     {
         var tip = Engine().GetTip(
             FallbackReachableTasks(),
-            lastMeaningfulTip: DateTime.Now.AddHours(-10),
-            lastActivity: DateTime.Now.AddMinutes(-10),
+            lastMeaningfulTip: Morning.AddHours(-10),
+            lastActivity: Morning.AddMinutes(-10),
             now: Morning);
 
         Assert.IsNotNull(tip);
