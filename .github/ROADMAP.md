@@ -62,7 +62,6 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 | Task Tags — chips, filter, details pane | ✅ Shipped (v0.9) |
 | Nav InfoBadge, list name chip, UX polish | ✅ Shipped (v0.10) |
 | My Day daily reset + suggestions | ✅ Shipped (v0.11) |
-| Appreciation purchase ($5, cosmetics only) | 📋 Planned |
 
 ---
 
@@ -79,12 +78,12 @@ Larger scope, lower priority. Depends on user feedback post-v1.0.
 | Feature | Notes | Complexity |
 |---------|-------|------------|
 | Task dependencies | Subtask nesting, dependency chain visualization | High |
-| Custom mascot skins | Cosmetic pack: Bumblebee, Cat, Paperclip variants; animated packs. Appreciation-tier. | Medium |
+| Custom mascot skins | Cosmetic pack: Bumblebee, Cat, Paperclip variants; animated packs. Free, like everything else. | Medium |
 | Custom animation packs | Idle bob/blink variants, wink, wave, thumbs-up reactions | Medium |
 | Time tracking | Per-task timer, daily log, weekly summary | Medium |
 | Recurring tasks | Daily, weekly, monthly repeat; smart due-date roll-forward | Medium |
 | Dark mode polish | Fine-tune colors, contrast, theme-aware Lottie animations | Low |
-| Mobile companion (iOS/Android) | Read-only companion app showing today's tasks; displays via local network (no cloud). | Very High |
+| Mobile companion (iOS/Android) | Companion client (see CONTEXT.md): Kotlin Multiplatform core, Compose on Android, SwiftUI on iOS, over the existing E2E Supabase sync — see docs/adr/0001-cross-platform-strategy.md. Capture + triage + tick off; never owns the data model. | Very High |
 
 ---
 
@@ -112,21 +111,10 @@ Features explicitly **not** on the roadmap:
 
 ---
 
-## Appreciation Purchase Path
+## Monetization
 
-One-time $5 cosmetics unlock (v1.0 late):
-
-**Tier 1: Cosmetics**
-- 3 mascot skins (Bee, Cat, Simple Paperclip)
-- 5 bubble themes (glass, gradient, colorful)
-- 10 idle animations
-- 3 sound packs
-
-**Tier 2: Productivity (future)**
-- Additional Focus Mode skins
-- Custom themes (if added)
-
-**Promise:** All *functionality* stays free. Cosmetics only.
+None. Hatch is free in full — there is no purchase, no tier, no cosmetic paywall.
+Skins, bubble themes, idle animations and sound packs ship free when they ship.
 
 ---
 
@@ -135,7 +123,7 @@ One-time $5 cosmetics unlock (v1.0 late):
 ```
 May–Jun 2026  v0.1–v0.11 shipped (mascot → tags → sync → My Day reset)
               ↓
-Q3 2026       v1.0 — appreciation purchase; final polish
+Q3 2026       v1.0 — final polish
               ↓
 Q4 2026       v1.1+ — post-v1.0 features (see Next above)
 ```
