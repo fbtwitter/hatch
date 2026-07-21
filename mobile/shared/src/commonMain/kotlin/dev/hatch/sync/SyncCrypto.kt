@@ -6,6 +6,7 @@ import dev.whyoleg.cryptography.DelicateCryptographyApi
 import dev.whyoleg.cryptography.algorithms.AES
 import dev.whyoleg.cryptography.algorithms.PBKDF2
 import dev.whyoleg.cryptography.algorithms.SHA256
+import dev.whyoleg.cryptography.random.CryptographyRandom
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
@@ -14,12 +15,29 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 @OptIn(ExperimentalEncodingApi::class, DelicateCryptographyApi::class)
 object SyncCrypto {
     private const val PREFIX = "HATCHE2E.v1."
+    private const val SALT_SIZE = 16
+    private const val NONCE_SIZE = 12
     private const val TAG_SIZE = 16
     private const val ITERATIONS = 600_000
 
     private val keyCache = mutableMapOf<Pair<String, String>, ByteArray>()
 
     fun isEncrypted(payload: String): Boolean = payload.startsWith(PREFIX)
+
+    fun createSalt(): ByteArray = CryptographyRandom.nextBytes(SALT_SIZE)
+
+    // Adopting the salt already in the row keeps one salt per account, so each device
+    // derives its key exactly once rather than once per other device's salt.
+    fun saltOf(envelope: String): ByteArray? {
+        if (!isEncrypted(envelope)) return null
+        val parts = envelope.removePrefix(PREFIX).split(".")
+        if (parts.size != 4) return null
+        return runCatching { Base64.decode(parts[0]) }.getOrNull()
+    }
+
+    // Production entry point: the nonce MUST be fresh for every envelope (§3).
+    fun encrypt(plaintext: String, passphrase: String, salt: ByteArray): String =
+        encrypt(plaintext, passphrase, salt, CryptographyRandom.nextBytes(NONCE_SIZE))
 
     // Nonce is a parameter rather than generated here so the protocol test vector is
     // reproducible; production callers must pass freshly random bytes every time.
@@ -58,12 +76,53 @@ object SyncCrypto {
         }
     }
 
-    private fun cipher(passphrase: String, salt: ByteArray) =
+    // --- Key-based API -------------------------------------------------------------------
+    // ADR-0005: companion clients persist the derived key rather than the passphrase, so
+    // these are the entry points used after first setup. The passphrase variants above
+    // exist for first entry and for the protocol test vector.
+
+    fun deriveKey(passphrase: String, salt: ByteArray): ByteArray = derivedKey(passphrase, salt)
+
+    fun encryptWithKey(plaintext: String, key: ByteArray, salt: ByteArray): String {
+        val nonce = CryptographyRandom.nextBytes(NONCE_SIZE)
+        val combined = cipherForKey(key).encryptWithIvBlocking(nonce, plaintext.encodeToByteArray())
+        val tagStart = combined.size - TAG_SIZE
+
+        return PREFIX +
+            Base64.encode(salt) + "." +
+            Base64.encode(nonce) + "." +
+            Base64.encode(combined.copyOfRange(0, tagStart)) + "." +
+            Base64.encode(combined.copyOfRange(tagStart, combined.size))
+    }
+
+    // Null when the key is wrong — including the case where it was derived against a
+    // different salt than this envelope carries. GCM's tag check catches both identically,
+    // so no salt comparison is needed.
+    fun tryDecryptWithKey(envelope: String, key: ByteArray): String? {
+        if (!isEncrypted(envelope)) return null
+        return try {
+            val parts = envelope.removePrefix(PREFIX).split(".")
+            if (parts.size != 4) return null
+
+            val nonce = Base64.decode(parts[1])
+            val ciphertext = Base64.decode(parts[2])
+            val tag = Base64.decode(parts[3])
+
+            cipherForKey(key).decryptWithIvBlocking(nonce, ciphertext + tag).decodeToString()
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    private fun cipherForKey(key: ByteArray) =
         CryptographyProvider.Default
             .get(AES.GCM)
             .keyDecoder()
-            .decodeFromByteArrayBlocking(AES.Key.Format.RAW, derivedKey(passphrase, salt))
+            .decodeFromByteArrayBlocking(AES.Key.Format.RAW, key)
             .cipher()
+
+    private fun cipher(passphrase: String, salt: ByteArray) =
+        cipherForKey(derivedKey(passphrase, salt))
 
     private fun derivedKey(passphrase: String, salt: ByteArray): ByteArray =
         keyCache.getOrPut(passphrase to Base64.encode(salt)) {
