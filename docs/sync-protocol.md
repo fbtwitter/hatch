@@ -2,7 +2,7 @@
 
 The wire contract every Hatch client (WinUI 3 today, Kotlin Multiplatform core later) must
 obey. The C# implementation is the reference; the golden fixtures in
-`Hatch.Tests.Unit/Fixtures/` plus the test vectors in this document are the executable
+`windows/Hatch.Tests.Unit/Fixtures/` plus the test vectors in this document are the executable
 contract — a client implementation is correct when it passes them, in either language.
 
 Changing anything in this document is a protocol version bump and requires a migration
@@ -121,7 +121,7 @@ Conventions (pinned by `Services/SyncWire.cs` and the golden fixture):
 | `CustomIcon`  | string or null        | emoji                             |
 | `UpdatedAt`   | ISO-8601 offset date-time | stamped on rename/recolor/pin/icon/reorder |
 
-Golden fixture: `Hatch.Tests.Unit/Fixtures/tasks-golden.json` — writers must produce a
+Golden fixture: `windows/Hatch.Tests.Unit/Fixtures/tasks-golden.json` — writers must produce a
 payload value-equal to it from the canonical objects in `SyncWireTests`; readers must
 restore every field from it.
 

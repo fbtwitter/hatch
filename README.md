@@ -73,7 +73,7 @@ Subsequent releases don't need the certificate step again.
 
 ```powershell
 git clone https://github.com/fbtwitter/hatch.git
-cd hatch
+cd hatch/windows
 dotnet build              # Debug
 dotnet build -c Release   # Release
 dotnet run                # Run (Windows only)

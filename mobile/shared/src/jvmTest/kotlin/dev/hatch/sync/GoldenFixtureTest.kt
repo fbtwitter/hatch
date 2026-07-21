@@ -14,7 +14,7 @@ import kotlin.test.fail
 // File I/O is platform-specific, so this lives in jvmTest rather than commonTest.
 class GoldenFixtureTest {
 
-    private val fixtureRelativePath = "Hatch.Tests.Unit/Fixtures/tasks-golden.json"
+    private val fixtureRelativePath = "windows/Hatch.Tests.Unit/Fixtures/tasks-golden.json"
 
     private fun fixture(): File {
         var dir: File? = File(System.getProperty("user.dir")).absoluteFile
