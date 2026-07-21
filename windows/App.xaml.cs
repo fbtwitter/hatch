@@ -25,6 +25,39 @@ public partial class App : Application
     {
         InitializeComponent();
         SettingsService.Load();
+        RegisterProtocolWhenUnpackaged();
+    }
+
+    // Debug builds are unpackaged on purpose (see hatch.csproj) so XAML Hot Reload works,
+    // which means Package.appxmanifest's hatch:// declaration does not apply and the OAuth
+    // callback has nowhere to land. Registering at runtime routes hatch:// through the same
+    // AppInstance activation path the packaged build uses, so OnAppActivated is unchanged.
+    private static void RegisterProtocolWhenUnpackaged()
+    {
+        if (IsPackaged()) return;
+        try
+        {
+            // Empty exePath means "this executable".
+            ActivationRegistrationManager.RegisterForProtocolActivation(
+                scheme: "hatch", logo: string.Empty, displayName: "Hatch", exePath: string.Empty);
+        }
+        catch
+        {
+            // Non-fatal: only OAuth sign-in depends on it, and the failure surfaces there.
+        }
+    }
+
+    private static bool IsPackaged()
+    {
+        try
+        {
+            _ = Windows.ApplicationModel.Package.Current.Id;
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private void OnAppActivated(object? sender, AppActivationArguments args)
