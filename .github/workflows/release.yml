@@ -4,6 +4,15 @@ on:
   push:
     tags:
       - "v*.*.*"
+  # Dry run: builds and signs exactly as a tagged release would, but publishes nothing.
+  # Without this the only way to exercise the release path — and the injected secrets — is
+  # to cut a real public release.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version for the dry-run build (no release is published)"
+        required: false
+        default: "0.0.0"
 
 jobs:
   build-and-release:
@@ -23,12 +32,31 @@ jobs:
       - name: Inject secrets
         shell: pwsh
         run: |
+          $url = "${{ secrets.SUPABASE_URL }}"
+          $key = "${{ secrets.SUPABASE_KEY }}"
+
+          # A malformed URL compiles fine and fails at runtime on a user's machine as an
+          # opaque "No API key found in request" — which is exactly how a stray /rest/v1/
+          # suffix shipped once already. The client appends its own path, so the secret must
+          # be the bare origin. Trailing whitespace survives a paste and is invisible.
+          if ($url -ne $url.Trim()) {
+            Write-Error "SUPABASE_URL has leading/trailing whitespace."; exit 1
+          }
+          if ($url -notmatch '^https://[a-z0-9]+\.supabase\.co$') {
+            Write-Error "SUPABASE_URL must be exactly https://<project-ref>.supabase.co — no trailing slash, no /rest/v1, and .co not .com. Got: '$url'"
+            exit 1
+          }
+          if ($key -ne $key.Trim() -or [string]::IsNullOrWhiteSpace($key)) {
+            Write-Error "SUPABASE_KEY is empty or has leading/trailing whitespace."; exit 1
+          }
+          Write-Host "SUPABASE_URL shape OK: $url"
+
           @"
           namespace Hatch.Services;
           internal static class Secrets
           {
-              public const string SupabaseUrl = "${{ secrets.SUPABASE_URL }}";
-              public const string SupabaseKey = "${{ secrets.SUPABASE_KEY }}";
+              public const string SupabaseUrl = "$url";
+              public const string SupabaseKey = "$key";
           }
           "@ | Set-Content Services/Secrets.cs -Encoding utf8NoBOM
 
@@ -47,7 +75,13 @@ jobs:
       - name: Set MSIX version from tag
         shell: pwsh
         run: |
-          $tag = "${{ github.ref_name }}"
+          # On workflow_dispatch github.ref_name is a branch, which would pad out to a
+          # nonsense MSIX version like "main.0.0.0".
+          $tag = if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            "${{ inputs.version }}"
+          } else {
+            "${{ github.ref_name }}"
+          }
           $parts = $tag.TrimStart('v').Split('.')
           while ($parts.Count -lt 4) { $parts += '0' }
           $msixVer = ($parts[0..3]) -join '.'
@@ -168,7 +202,9 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Write-Host "Bundle signed successfully"
 
+      # Tag pushes only. A manual run is a dry run — it must never publish a release.
       - name: Create GitHub release
+        if: github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
           name: Hatch ${{ github.ref_name }}
