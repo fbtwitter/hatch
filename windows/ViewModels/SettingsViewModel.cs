@@ -37,7 +37,10 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     public bool IsPassphraseSet => App.SyncService.HasPassphrase;
 
     // Drives the passphrase card + info bar: sync is paused in this state.
-    public bool IsSignedInWithoutPassphrase => IsSyncSignedIn && !IsPassphraseSet;
+    // The two-factor challenge takes precedence — it is about the session, and until it is
+    // satisfied nothing can reach the server for a passphrase to be checked against.
+    public bool IsSignedInWithoutPassphrase =>
+        IsSyncSignedIn && !IsPassphraseSet && !IsMfaChallengePending;
 
     public async Task SetSyncPassphraseAsync(string passphrase)
     {
@@ -154,11 +157,123 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             if (App.SyncService.LastAuthError is { } authError)
                 SyncError = authError;
 
+            OnPropertyChanged(nameof(IsMfaChallengePending));
+            OnPropertyChanged(nameof(IsMfaSettingsVisible));
+            OnPropertyChanged(nameof(ShowMfaOnInfo));
+            OnPropertyChanged(nameof(CanEnrollMfa));
+            if (isNowSignedIn) await RefreshMfaStateAsync();
+
             // Without a passphrase the server payload is unreadable — the conflict check
-            // is deferred until SetSyncPassphraseAsync provides one.
-            if (justSignedIn && IsPassphraseSet)
+            // is deferred until SetSyncPassphraseAsync provides one. An outstanding
+            // two-factor challenge defers it the same way (SubmitMfaChallengeAsync).
+            if (justSignedIn && IsPassphraseSet && !IsMfaChallengePending)
                 await CheckAndHandleConflictAsync();
         });
+    }
+
+    // --- Multi-factor authentication ---------------------------------------------------
+    // Protects sign-in only; the passphrase still protects the data. See docs/mfa-spec.md.
+
+    private MfaFactorInfo? _pendingFactor;
+    private bool _isMfaEnrolled;
+
+    public bool IsMfaEnrolled
+    {
+        get => _isMfaEnrolled;
+        private set
+        {
+            _isMfaEnrolled = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CanEnrollMfa));
+            OnPropertyChanged(nameof(ShowMfaOnInfo));
+        }
+    }
+
+    public bool IsMfaEnrolling => _pendingFactor != null;
+    public bool CanEnrollMfa => IsMfaSettingsVisible && !_isMfaEnrolled && _pendingFactor == null;
+
+    // A pending challenge hides the whole enrol/disable card: offering "Turn off" to a
+    // session that has not proved the second factor would make it trivially bypassable.
+    public bool IsMfaSettingsVisible => IsSyncSignedIn && !IsMfaChallengePending;
+    public bool ShowMfaOnInfo        => IsMfaEnrolled && !IsMfaChallengePending;
+
+    public bool IsMfaChallengePending => App.SyncService.IsMfaChallengePending;
+
+    public async Task SubmitMfaChallengeAsync(string code)
+    {
+        if (string.IsNullOrWhiteSpace(code)) return;
+        IsSyncing = true;
+        SyncError = null;
+        var error = await App.SyncService.SubmitMfaChallengeAsync(code.Trim());
+        IsSyncing = false;
+        if (error != null) { SyncError = error; return; }
+
+        // Sync was held closed while the challenge stood; this is the deferred resume.
+        if (IsPassphraseSet) await CheckAndHandleConflictAsync();
+    }
+
+    // Shown as selectable text alongside the QR: enrolling on the same device you would
+    // scan from is common, so manual entry has to be possible (docs/mfa-spec.md §4).
+    public string? MfaSecret => _pendingFactor?.Secret;
+
+    // Raw SVG markup from the enrolment response. The View turns it into an image; the
+    // ViewModel deliberately does not touch imaging types.
+    public string? MfaQrSvg => _pendingFactor?.QrSvg;
+
+    public async Task RefreshMfaStateAsync()
+    {
+        IsMfaEnrolled = await App.SyncService.GetVerifiedMfaFactorAsync() != null;
+    }
+
+    public async Task StartMfaEnrollmentAsync()
+    {
+        SyncError = null;
+        var (factor, error) = await App.SyncService.EnrollMfaAsync();
+        if (error != null) { SyncError = error; return; }
+
+        _pendingFactor = factor;
+        OnPropertyChanged(nameof(IsMfaEnrolling));
+        OnPropertyChanged(nameof(MfaSecret));
+        OnPropertyChanged(nameof(MfaQrSvg));
+        OnPropertyChanged(nameof(CanEnrollMfa));
+    }
+
+    public async Task ConfirmMfaEnrollmentAsync(string code)
+    {
+        if (_pendingFactor == null) return;
+        SyncError = null;
+
+        var error = await App.SyncService.VerifyMfaAsync(_pendingFactor.Id, code);
+        if (error != null) { SyncError = error; return; }
+
+        _pendingFactor = null;
+        OnPropertyChanged(nameof(IsMfaEnrolling));
+        OnPropertyChanged(nameof(MfaSecret));
+        OnPropertyChanged(nameof(MfaQrSvg));
+        await RefreshMfaStateAsync();
+    }
+
+    // Abandoning enrolment must remove the unverified factor, or it lingers server-side
+    // and blocks a clean retry.
+    public async Task CancelMfaEnrollmentAsync()
+    {
+        if (_pendingFactor == null) return;
+        await App.SyncService.UnenrollMfaAsync(_pendingFactor.Id);
+        _pendingFactor = null;
+        OnPropertyChanged(nameof(IsMfaEnrolling));
+        OnPropertyChanged(nameof(MfaSecret));
+        OnPropertyChanged(nameof(MfaQrSvg));
+        OnPropertyChanged(nameof(CanEnrollMfa));
+    }
+
+    public async Task DisableMfaAsync()
+    {
+        var factor = await App.SyncService.GetVerifiedMfaFactorAsync();
+        if (factor == null) return;
+
+        var error = await App.SyncService.UnenrollMfaAsync(factor.Id);
+        if (error != null) { SyncError = error; return; }
+        await RefreshMfaStateAsync();
     }
 
     private void ForgetPassphrase()
