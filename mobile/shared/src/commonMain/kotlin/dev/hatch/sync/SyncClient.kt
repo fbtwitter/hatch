@@ -11,10 +11,14 @@ import io.github.jan.supabase.auth.user.UserMfaFactor
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlin.time.Clock
 
 @Serializable
@@ -132,6 +136,21 @@ class SyncClient(supabaseUrl: String, supabaseKey: String) {
             client.auth.currentSessionOrNull() != null &&
                 client.auth.mfa.status.let { it.enabled && !it.active }
         }.getOrDefault(false)
+
+    // Redeeming turns two-factor OFF rather than granting a one-time pass: nothing outside
+    // GoTrue can mint an aal2 token, so removing the factor is the only way a session stuck
+    // at aal1 can regain access. Null on success, message on failure.
+    // Generation lives on Windows only — this client cannot enrol, so it cannot issue codes.
+    suspend fun redeemRecoveryCode(code: String): String? = try {
+        val accepted = client.postgrest.rpc(
+            "redeem_mfa_recovery_code",
+            buildJsonObject { put("code", code.trim()) },
+        ).decodeAs<Boolean>()
+        if (accepted) null
+        else "That recovery code was not recognised. Check for typos, or try another from your list."
+    } catch (t: Throwable) {
+        t.message ?: "Could not use that recovery code"
+    }
 
     // Null on success, message on failure. Promotes this session to aal2.
     suspend fun submitMfaChallenge(code: String): String? = try {
