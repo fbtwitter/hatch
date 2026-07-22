@@ -112,22 +112,63 @@ both succeed; `aal1` + no factor → allowed; helper returns `false` for a facto
 
 ## 6. Lockout and recovery
 
-Supabase does not issue TOTP recovery codes. A user who loses their authenticator needs
-admin intervention against the `auth.mfa_factors` table. For a product with no support desk
-that is effectively account loss.
+Supabase does not issue TOTP recovery codes. Before §4 landed, a lost authenticator was a
+client-side inconvenience; after it, the database itself refuses the row, and the only way
+back was admin intervention against `auth.mfa_factors`. For a product with no support desk
+that is account loss.
 
-Combined with the passphrase having no recovery either, an enrolled user now has **two**
-independent secrets, either of which can permanently cost them their data. This spec should
-not be implemented before the passphrase dead-end is designed.
+**Shipped 2026-07-22** as `supabase/migrations/20260722053823_add_mfa_recovery_codes.sql`.
+
+### The constraint that dictates the design
+
+Only GoTrue can mint an `aal2` token, and only in exchange for a valid TOTP code. Neither a
+client nor a database function can produce one. **A recovery code therefore cannot log you
+in.** The only thing it can do is *remove the factor*, returning the account to "no MFA
+enrolled", at which point `has_verified_mfa()` goes false and the existing `aal1` session
+regains access.
+
+So redeeming a code **turns two-factor off**. It is not a one-time bypass, and both clients
+say so in those words — the expectation otherwise is that it signs you in this once, and a
+user who believes that will not re-enrol.
+
+### Shape
+
+- 10 codes, 10 characters each from `23456789ABCDEFGHJKLMNPQRSTUVWXYZ` (no `0/O/1/I/L`,
+  because these get written on paper and typed back), formatted `XXXXX-XXXXX`. 50 bits, and
+  useless without the account password.
+- Only bcrypt hashes are stored. `mfa_recovery_codes` has RLS on with **no policies** and
+  privileges revoked from `authenticated`: the two `security definer` functions are the only
+  things that touch it.
+- `generate_mfa_recovery_codes()` **requires `aal2`**. This is load-bearing: without it an
+  `aal1` session could mint a fresh set and immediately redeem one to strip its own MFA — a
+  complete bypass of the factor blocking it.
+- `redeem_mfa_recovery_code(code)` is callable at `aal1` by design; a valid session already
+  proves the password. It returns a bare boolean and never reveals how many codes remain.
+- Redemption deletes every remaining code, since they protect a factor that no longer exists.
+
+Verified against the live database in rolled-back transactions: `aal1` generation refused;
+10 distinct well-formed codes with 10 hashes stored; redemption at `aal1` removes the
+factor, clears the codes, flips `has_verified_mfa()` to false and restores row access;
+lower-case and space-separated input accepted; wrong/empty/short/null codes rejected with
+the factor intact; another user's code rejected with the victim's factor intact.
+
+### Still unresolved
+
+The **sync passphrase** has no equivalent and remains the larger risk: recovery codes
+restore *account access*, not decryption. An enrolled user has two independent secrets and
+only one of them is now recoverable. The UI states this explicitly wherever codes appear,
+but stating it is not solving it.
+
+There is also no rate limit on redemption — Supabase has no per-RPC throttle, and the
+password requirement is currently carrying that weight.
 
 ## 7. Open questions
 
 - ~~Does the `aal2` policy apply to all accounts, or only those with a verified factor?~~
   Resolved 2026-07-22 — only those with a verified factor. See §5.
-- Should Hatch issue its own recovery codes (random, shown once, stored hashed) to
-  compensate for Supabase not providing any? **Now the top open risk**: with stage 4 live,
-  a lost authenticator means the server itself refuses the data, so this is no longer
-  recoverable by the client at all — only by an admin deleting the factor row.
+- ~~Should Hatch issue its own recovery codes (random, shown once, stored hashed) to
+  compensate for Supabase not providing any?~~ Resolved 2026-07-22 — yes, shipped. See §6.
+  The top open risk is now the **passphrase** dead-end, which recovery codes do not address.
 - Does MFA apply to the GitHub OAuth path, or only password sign-in? Supabase applies AAL
   uniformly, so OAuth users would also be challenged — which may surprise them.
 - Is MFA worth the lockout risk for a local-first app where the server holds only ciphertext

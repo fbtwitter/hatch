@@ -41,7 +41,9 @@ sealed interface SyncState {
     data object WrongPassphrase : SyncState
     // Signed in, but the account has a verified authenticator this session has not met.
     // Every sync path is refused until it is (docs/mfa-spec.md); local tasks are unaffected.
-    data class NeedsMfaCode(val error: String? = null) : SyncState
+    // `redeeming` swaps the prompt to the recovery-code form rather than being a separate
+    // state, so backing out cannot strand the user away from the challenge.
+    data class NeedsMfaCode(val error: String? = null, val redeeming: Boolean = false) : SyncState
     data class On(
         val email: String?,
         val serverUpdatedAt: String,
@@ -216,6 +218,26 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
             // 30 seconds, so a rejection usually just means "try the next one".
             if (error != null) setSync(SyncState.NeedsMfaCode(error = humanize(error)))
             else pull()
+        }
+    }
+
+    fun showRecoveryCodeEntry(show: Boolean) {
+        val current = _state.value.sync
+        if (current is SyncState.NeedsMfaCode) setSync(current.copy(error = null, redeeming = show))
+    }
+
+    // Turns two-factor OFF rather than granting a one-time pass — see SyncClient.
+    fun redeemRecoveryCode(code: String) {
+        setSync(SyncState.Working)
+        viewModelScope.launch {
+            val error = client.redeemRecoveryCode(code)
+            if (error != null) {
+                setSync(SyncState.NeedsMfaCode(error = error, redeeming = true))
+            } else {
+                // The factor is gone, so the aal1 session this app already holds is now
+                // sufficient — no re-authentication needed.
+                pull()
+            }
         }
     }
 

@@ -480,6 +480,33 @@
                                 Style="{ThemeResource AccentButtonStyle}"
                                 IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
                                 Click="MfaChallengeSubmit_Click"/>
+                        <Button x:Uid="Settings_MfaUseRecovery"
+                                AutomationProperties.AutomationId="Settings_MfaUseRecovery"
+                                Click="MfaUseRecovery_Click"/>
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
+                <!-- Recovery code redemption — the only route back from a lost authenticator -->
+                <toolkit:SettingsCard x:Uid="Settings_RecoveryRedeemCard"
+                    Visibility="{x:Bind ViewModel.IsRedeemingRecovery, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE785;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBox x:Name="RecoveryCodeBox"
+                                 AutomationProperties.AutomationId="Settings_RecoveryCode"
+                                 AutomationProperties.Name="Recovery code"
+                                 PlaceholderText="XXXXX-XXXXX"
+                                 FontFamily="Consolas"
+                                 Width="150"/>
+                        <Button x:Uid="Settings_RecoveryRedeem"
+                                AutomationProperties.AutomationId="Settings_RecoveryRedeem"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
+                                Click="RecoveryRedeem_Click"/>
+                        <Button x:Uid="Settings_RecoveryCancel"
+                                AutomationProperties.AutomationId="Settings_RecoveryCancel"
+                                Click="RecoveryCancel_Click"/>
                     </StackPanel>
                 </toolkit:SettingsCard>
 
@@ -507,6 +534,49 @@
                                 Click="SyncSetPassphrase_Click"/>
                     </StackPanel>
                 </toolkit:SettingsCard>
+
+                <!-- Sync recovery kit — the passphrase cannot be reset or recovered -->
+                <toolkit:SettingsCard x:Uid="Settings_RecoveryKitCard"
+                    Visibility="{x:Bind ViewModel.CanShowRecoveryKit, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE7BA;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <Button x:Uid="Settings_RecoveryKitShow"
+                            AutomationProperties.AutomationId="Settings_RecoveryKitShow"
+                            Click="RecoveryKitShow_Click"/>
+                </toolkit:SettingsCard>
+
+                <InfoBar x:Uid="Settings_RecoveryKitInfo"
+                         Severity="Warning"
+                         IsOpen="{x:Bind ViewModel.HasRecoveryKit, Mode=OneWay}"
+                         Visibility="{x:Bind ViewModel.HasRecoveryKit, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                         IsClosable="False">
+                    <InfoBar.Content>
+                        <StackPanel Spacing="10" Margin="0,10,0,14">
+                            <TextBox Text="{x:Bind ViewModel.RecoveryKitText, Mode=OneWay}"
+                                     AutomationProperties.AutomationId="Settings_RecoveryKitText"
+                                     AutomationProperties.Name="Sync recovery kit"
+                                     IsReadOnly="True"
+                                     AcceptsReturn="True"
+                                     TextWrapping="Wrap"
+                                     FontFamily="Consolas"
+                                     MaxHeight="220"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button x:Uid="Settings_RecoveryKitSave"
+                                        AutomationProperties.AutomationId="Settings_RecoveryKitSave"
+                                        Style="{ThemeResource AccentButtonStyle}"
+                                        Click="RecoveryKitSave_Click"/>
+                                <Button x:Uid="Settings_RecoveryKitCopy"
+                                        AutomationProperties.AutomationId="Settings_RecoveryKitCopy"
+                                        Click="RecoveryKitCopy_Click"/>
+                                <Button x:Uid="Settings_RecoveryKitDone"
+                                        AutomationProperties.AutomationId="Settings_RecoveryKitDone"
+                                        Click="RecoveryKitDone_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </InfoBar.Content>
+                </InfoBar>
 
                 <!-- Two-factor authentication (docs/mfa-spec.md) -->
                 <toolkit:SettingsCard x:Uid="Settings_MfaCard"
@@ -566,6 +636,44 @@
                                 Click="MfaCancel_Click"/>
                     </StackPanel>
                 </toolkit:SettingsCard>
+
+                <!-- Recovery codes, shown once. The server keeps only hashes. -->
+                <InfoBar x:Uid="Settings_RecoveryCodesInfo"
+                         Severity="Warning"
+                         IsOpen="{x:Bind ViewModel.HasRecoveryCodes, Mode=OneWay}"
+                         Visibility="{x:Bind ViewModel.HasRecoveryCodes, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                         IsClosable="False">
+                    <InfoBar.Content>
+                        <StackPanel Spacing="10" Margin="0,10,0,14">
+                            <TextBox Text="{x:Bind ViewModel.RecoveryCodesText, Mode=OneWay}"
+                                     AutomationProperties.AutomationId="Settings_RecoveryCodes"
+                                     AutomationProperties.Name="Recovery codes"
+                                     IsReadOnly="True"
+                                     AcceptsReturn="True"
+                                     FontFamily="Consolas"
+                                     MaxWidth="240"
+                                     HorizontalAlignment="Left"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button x:Uid="Settings_RecoveryCopy"
+                                        AutomationProperties.AutomationId="Settings_RecoveryCopy"
+                                        Click="RecoveryCopy_Click"/>
+                                <Button x:Uid="Settings_RecoveryDone"
+                                        AutomationProperties.AutomationId="Settings_RecoveryDone"
+                                        Style="{ThemeResource AccentButtonStyle}"
+                                        Click="RecoveryDone_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </InfoBar.Content>
+                </InfoBar>
+
+                <!-- Sync notice — non-error state changes worth surfacing (e.g. 2FA turned off) -->
+                <InfoBar Severity="Warning"
+                         IsOpen="{x:Bind ViewModel.HasSyncNotice, Mode=OneWay}"
+                         Visibility="{x:Bind ViewModel.HasSyncNotice, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                         Message="{x:Bind ViewModel.SyncNotice, Mode=OneWay}"
+                         AutomationProperties.AutomationId="Settings_SyncNotice"
+                         IsClosable="True"
+                         CloseButtonClick="SyncNotice_Close"/>
 
                 <!-- Sync error (shown when signed in and sync fails) -->
                 <InfoBar x:Name="SyncErrorBar"

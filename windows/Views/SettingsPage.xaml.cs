@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
 using Hatch.Models;
@@ -333,6 +334,61 @@ public sealed partial class SettingsPage : Page
         var code = MfaChallengeCodeBox.Text;
         MfaChallengeCodeBox.Text = string.Empty;
         await ViewModel.SubmitMfaChallengeAsync(code);
+    }
+
+    private void MfaUseRecovery_Click(object sender, RoutedEventArgs e)
+        => ViewModel.StartRecoveryCodeEntry();
+
+    private void RecoveryCancel_Click(object sender, RoutedEventArgs e)
+        => ViewModel.CancelRecoveryCodeEntry();
+
+    private async void RecoveryRedeem_Click(object sender, RoutedEventArgs e)
+    {
+        var code = RecoveryCodeBox.Text;
+        RecoveryCodeBox.Text = string.Empty;
+        await ViewModel.RedeemRecoveryCodeAsync(code);
+    }
+
+    private void RecoveryCopy_Click(object sender, RoutedEventArgs e)
+    {
+        var package = new DataPackage();
+        package.SetText(ViewModel.RecoveryCodesText);
+        Clipboard.SetContent(package);
+    }
+
+    private void RecoveryDone_Click(object sender, RoutedEventArgs e)
+        => ViewModel.DismissRecoveryCodes();
+
+    private void SyncNotice_Close(InfoBar sender, object args)
+        => ViewModel.DismissSyncNotice();
+
+    private void RecoveryKitShow_Click(object sender, RoutedEventArgs e)
+        => ViewModel.ShowRecoveryKit();
+
+    private void RecoveryKitDone_Click(object sender, RoutedEventArgs e)
+        => ViewModel.DismissRecoveryKit();
+
+    private void RecoveryKitCopy_Click(object sender, RoutedEventArgs e)
+    {
+        var package = new DataPackage();
+        package.SetText(ViewModel.RecoveryKitText ?? "");
+        Clipboard.SetContent(package);
+    }
+
+    private async void RecoveryKitSave_Click(object sender, RoutedEventArgs e)
+    {
+        var picker = new FileSavePicker();
+        WinRT.Interop.InitializeWithWindow.Initialize(
+            picker,
+            Win32Interop.GetWindowFromWindowId(App.MainWindowInstance!.AppWindow.Id));
+        picker.SuggestedStartLocation = PickerLocationId.Desktop;
+        picker.SuggestedFileName = ViewModel.RecoveryKitFileName;
+        picker.FileTypeChoices.Add("Text file", new List<string> { ".txt" });
+
+        var file = await picker.PickSaveFileAsync();
+        if (file == null) return;
+
+        await File.WriteAllTextAsync(file.Path, ViewModel.RecoveryKitText ?? "");
     }
 
     private async void SyncGitHubSignIn_Click(object sender, RoutedEventArgs e)

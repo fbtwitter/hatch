@@ -55,6 +55,10 @@ public sealed class SyncService
         StateChanged?.Invoke();
     }
 
+    // The stored passphrase, for building the recovery kit. Null when none is set.
+    // This is the only read path: nothing else needs the plaintext outside encryption.
+    public string? PassphraseForRecoveryKit => SyncPassphraseStore.Load().Passphrase;
+
     // Verify before storing: a passphrase that cannot open the existing row must be
     // rejected at the point of entry, not silently accepted and then discovered on every
     // subsequent sync. Without this the UI hides the entry card and leaves no way back.
@@ -394,6 +398,44 @@ public sealed class SyncService
         if (pending == IsMfaChallengePending) return;
         IsMfaChallengePending = pending;
         StateChanged?.Invoke();
+    }
+
+    // --- Recovery codes ---------------------------------------------------------------
+    // Supabase issues none of its own, and since the aal2 policy landed a lost authenticator
+    // means the server itself refuses the row. See docs/mfa-spec.md §6.
+
+    // Returns the plaintext codes once — the server keeps only hashes, so there is no
+    // second chance to read them.
+    public async Task<(string[]? Codes, string? Error)> GenerateRecoveryCodesAsync()
+    {
+        if (_client == null) return (null, Strings.Sync_Error_NotReady);
+        if (!IsSignedIn)    return (null, Strings.Sync_Error_NotSignedIn);
+        try
+        {
+            var codes = await _client.Rpc<string[]>("generate_mfa_recovery_codes", null);
+            return codes is { Length: > 0 } ? (codes, null) : (null, "Could not create recovery codes.");
+        }
+        catch (Exception ex) { return (null, ex.Message); }
+    }
+
+    // Redeeming turns two-factor OFF rather than granting a one-time pass: nothing outside
+    // GoTrue can mint an aal2 token, so removing the factor is the only way a session stuck
+    // at aal1 can regain access. Null on success, error message on failure.
+    public async Task<string?> RedeemRecoveryCodeAsync(string code)
+    {
+        if (_client == null) return Strings.Sync_Error_NotReady;
+        if (!IsSignedIn)    return Strings.Sync_Error_NotSignedIn;
+        try
+        {
+            var accepted = await _client.Rpc<bool>(
+                "redeem_mfa_recovery_code", new Dictionary<string, object> { ["code"] = code.Trim() });
+            if (!accepted) return Strings.Sync_Error_BadRecoveryCode;
+
+            await RefreshMfaChallengeStateAsync();
+            StateChanged?.Invoke();
+            return null;
+        }
+        catch (Exception ex) { return ex.Message; }
     }
 
     // Null on success, error message on failure. Promotes this session to aal2.
