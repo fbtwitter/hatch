@@ -37,19 +37,28 @@ using (auth.uid() = user_id)
 ```
 
 Anyone talking directly to PostgREST with an `aal1` access token would bypass the UI
-entirely. Enforcement requires the assurance level in the policy:
+entirely. Enforcement requires the assurance level in the policy.
+
+**Shipped 2026-07-22** as `supabase/migrations/20260722020510_require_aal2_when_mfa_enrolled.sql`,
+as a **restrictive** policy that ANDs with `own data only` rather than replacing it:
 
 ```sql
-alter policy "own data only" on public.user_data
-  using      (auth.uid() = user_id and (auth.jwt() ->> 'aal') = 'aal2')
-  with check (auth.uid() = user_id and (auth.jwt() ->> 'aal') = 'aal2');
+using      ((select auth.jwt() ->> 'aal') = 'aal2' or not public.has_verified_mfa())
+with check ((select auth.jwt() ->> 'aal') = 'aal2' or not public.has_verified_mfa())
 ```
 
-This must ship as a committed migration alongside the RLS policy itself, which is currently
-not in the repository at all (see the v1.0 sync-hardening list).
+Two things the obvious version got wrong, both found by testing against the live database:
 
-**Consequence:** the moment that policy lands, every client without MFA support is locked
-out of its own data. Ordering is not optional — see §5.
+- **The subquery on `auth.mfa_factors` cannot be inlined.** `authenticated` has no
+  privileges on that table and the policy fails with `permission denied`. Granting `SELECT`
+  is a trap: the table has RLS enabled with no policy for `authenticated`, so the count
+  comes back 0 and the gate silently never fires. Hence the `security definer` helper in
+  `20260722020416_add_has_verified_mfa_helper.sql`.
+- **`WITH CHECK` is required, not just `USING`.** Both clients upsert, and a `USING`-only
+  restrictive policy leaves the INSERT path ungated.
+
+**Consequence:** any client without the challenge step is now locked out of an enrolled
+account. Ordering was not optional — see §5.
 
 ## 3. Client flows
 
@@ -91,7 +100,15 @@ disable MFA.
    that have a verified factor. Requiring `aal2` for accounts with **no** factor would lock
    out everyone, so the policy needs care, or enrolment must become mandatory in one step.
 
-That last point is unresolved — see §7.
+**Resolved 2026-07-22:** conditional enforcement. The policy requires `aal2` only of
+accounts that have a verified factor; an account with none is unaffected. Universal
+enforcement was rejected outright — sync is opt-in on top of an app that needs no account
+at all, so MFA cannot become a precondition for using it.
+
+Verified against the live database before and after applying, all four paths:
+`aal1` + enrolled → 0 rows and writes rejected by name; `aal2` + enrolled → read and write
+both succeed; `aal1` + no factor → allowed; helper returns `false` for a factor-less user
+(i.e. it does not fail open).
 
 ## 6. Lockout and recovery
 
@@ -105,10 +122,12 @@ not be implemented before the passphrase dead-end is designed.
 
 ## 7. Open questions
 
-- Does the `aal2` policy apply to all accounts, or only those with a verified factor? The
-  latter is safer but the SQL is more involved and needs testing against a factor-less user.
+- ~~Does the `aal2` policy apply to all accounts, or only those with a verified factor?~~
+  Resolved 2026-07-22 — only those with a verified factor. See §5.
 - Should Hatch issue its own recovery codes (random, shown once, stored hashed) to
-  compensate for Supabase not providing any?
+  compensate for Supabase not providing any? **Now the top open risk**: with stage 4 live,
+  a lost authenticator means the server itself refuses the data, so this is no longer
+  recoverable by the client at all — only by an admin deleting the factor row.
 - Does MFA apply to the GitHub OAuth path, or only password sign-in? Supabase applies AAL
   uniformly, so OAuth users would also be challenged — which may surprise them.
 - Is MFA worth the lockout risk for a local-first app where the server holds only ciphertext
