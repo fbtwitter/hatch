@@ -28,6 +28,9 @@ import dev.hatch.sync.TodoItem
 // Mirrors the Windows minimum (SettingsViewModel.SetSyncPassphraseAsync).
 private const val MIN_PASSPHRASE = 8
 
+// TOTP is always 6 digits (docs/mfa-spec.md).
+private const val MFA_CODE_LENGTH = 6
+
 class MainActivity : ComponentActivity() {
 
     // Same instance the composables get from viewModel(), since both resolve against this
@@ -87,6 +90,7 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
             onSignUp = vm::signUp,
             onGithub = vm::signInWithGithub,
             onPassphrase = vm::submitPassphrase,
+            onMfaCode = vm::submitMfaCode,
             onRefresh = vm::refresh,
             onPush = vm::push,
             onSignOut = vm::signOut,
@@ -224,6 +228,7 @@ private fun SyncScreen(
     onSignUp: (String, String) -> Unit,
     onGithub: () -> Unit,
     onPassphrase: (String) -> Unit,
+    onMfaCode: (String) -> Unit,
     onRefresh: () -> Unit,
     onPush: () -> Unit,
     onSignOut: () -> Unit,
@@ -267,6 +272,11 @@ private fun SyncScreen(
                     onToggleMode = { creating = !creating },
                     onSubmit = { if (creating) onSignUp(email, password) else onSignIn(email, password) },
                     onGithub = onGithub,
+                )
+                is SyncState.NeedsMfaCode -> MfaCodeForm(
+                    error = sync.error,
+                    onSubmit = onMfaCode,
+                    onSignOut = onSignOut,
                 )
                 SyncState.NeedsPassphrase -> PassphraseForm(
                     "These tasks are end-to-end encrypted. Enter your sync passphrase to read them.",
@@ -454,6 +464,53 @@ private fun Banner(text: String, container: androidx.compose.ui.graphics.Color, 
             color = content,
             modifier = Modifier.padding(12.dp),
         )
+    }
+}
+
+@Composable
+private fun MfaCodeForm(error: String?, onSubmit: (String) -> Unit, onSignOut: () -> Unit) {
+    var value by remember { mutableStateOf("") }
+
+    Column {
+        Text("Two-factor code", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "This account uses an authenticator app. Enter the current 6-digit code to " +
+                "turn sync on. Your tasks on this phone are unaffected.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        if (error != null) {
+            Spacer(Modifier.height(16.dp))
+            Banner(error, MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)
+        }
+
+        Spacer(Modifier.height(20.dp))
+        OutlinedTextField(
+            value = value,
+            // Authenticators show digits only; filtering here stops a paste of "123 456"
+            // from being rejected by the server for a reason the user cannot see.
+            onValueChange = { value = it.filter(Char::isDigit).take(MFA_CODE_LENGTH) },
+            label = { Text("6-digit code") },
+            singleLine = true,
+            isError = error != null,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.NumberPassword,
+                imeAction = ImeAction.Done,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(20.dp))
+        Button(
+            onClick = { onSubmit(value) },
+            enabled = value.length == MFA_CODE_LENGTH,
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Verify") }
+        Spacer(Modifier.height(8.dp))
+        // The only way out of this state. Without it a lost authenticator strands the
+        // screen with no route back to the task list's sign-in.
+        OutlinedButton(onClick = onSignOut, Modifier.fillMaxWidth()) { Text("Sign out") }
     }
 }
 
