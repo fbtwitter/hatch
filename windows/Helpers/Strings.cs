@@ -121,6 +121,8 @@ internal static class Strings
     public static string Sync_Error_NoPassphrase       => Get("Sync_Error_NoPassphrase");
     public static string Sync_Error_WrongPassphrase    => Get("Sync_Error_WrongPassphrase");
     public static string Sync_Error_PassphraseTooShort => Get("Sync_Error_PassphraseTooShort");
+    public static string Sync_Error_MfaRequired        => Get("Sync_Error_MfaRequired");
+    public static string Sync_Error_NoMfaFactor        => Get("Sync_Error_NoMfaFactor");
 
     // ── Settings ─────────────────────────────────────────────
     public static string Settings_NoFileSelected => Get("Settings_NoFileSelected");

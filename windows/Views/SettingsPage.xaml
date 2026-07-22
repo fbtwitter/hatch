@@ -456,6 +456,33 @@
                             Command="{x:Bind ViewModel.SignOutCommand}"/>
                 </toolkit:SettingsCard>
 
+                <!-- Two-factor challenge — every sync path stays closed until it is met -->
+                <InfoBar x:Uid="Settings_MfaChallengeInfo"
+                         Severity="Warning"
+                         IsOpen="{x:Bind ViewModel.IsMfaChallengePending, Mode=OneWay}"
+                         Visibility="{x:Bind ViewModel.IsMfaChallengePending, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                         IsClosable="False"/>
+
+                <toolkit:SettingsCard x:Uid="Settings_MfaChallengeCard"
+                    Visibility="{x:Bind ViewModel.IsMfaChallengePending, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE928;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBox x:Name="MfaChallengeCodeBox"
+                                 AutomationProperties.AutomationId="Settings_MfaChallengeCode"
+                                 AutomationProperties.Name="Authenticator code"
+                                 PlaceholderText="000000"
+                                 MaxLength="6"
+                                 Width="90"/>
+                        <Button x:Uid="Settings_MfaChallengeSubmit"
+                                AutomationProperties.AutomationId="Settings_MfaChallengeSubmit"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
+                                Click="MfaChallengeSubmit_Click"/>
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
                 <!-- E2E passphrase — sync stays paused until one is set -->
                 <InfoBar x:Uid="Settings_SyncPassphraseInfo"
                          Severity="Informational"
@@ -478,6 +505,65 @@
                                 Style="{ThemeResource AccentButtonStyle}"
                                 IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
                                 Click="SyncSetPassphrase_Click"/>
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
+                <!-- Two-factor authentication (docs/mfa-spec.md) -->
+                <toolkit:SettingsCard x:Uid="Settings_MfaCard"
+                    Visibility="{x:Bind ViewModel.IsMfaSettingsVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE928;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Uid="Settings_MfaEnable"
+                                AutomationProperties.AutomationId="Settings_MfaEnable"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                Visibility="{x:Bind ViewModel.CanEnrollMfa, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                Click="MfaEnable_Click"/>
+                        <Button x:Uid="Settings_MfaDisable"
+                                AutomationProperties.AutomationId="Settings_MfaDisable"
+                                Visibility="{x:Bind ViewModel.IsMfaEnrolled, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                Click="MfaDisable_Click"/>
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
+                <InfoBar x:Uid="Settings_MfaOnInfo"
+                         Severity="Success"
+                         IsOpen="{x:Bind ViewModel.ShowMfaOnInfo, Mode=OneWay}"
+                         Visibility="{x:Bind ViewModel.ShowMfaOnInfo, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                         IsClosable="False"/>
+
+                <toolkit:SettingsCard x:Uid="Settings_MfaEnrollCard"
+                    Visibility="{x:Bind ViewModel.IsMfaEnrolling, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                        <Border x:Name="MfaQrPanel"
+                                Background="White"
+                                CornerRadius="4"
+                                Padding="6"
+                                Visibility="Collapsed">
+                            <Image x:Name="MfaQrImage"
+                                   Width="132" Height="132"
+                                   AutomationProperties.Name="Authenticator QR code"/>
+                        </Border>
+                        <TextBox Text="{x:Bind ViewModel.MfaSecret, Mode=OneWay}"
+                                 AutomationProperties.AutomationId="Settings_MfaSecret"
+                                 AutomationProperties.Name="Authenticator setup key"
+                                 IsReadOnly="True"
+                                 FontFamily="Consolas"
+                                 MinWidth="220"/>
+                        <TextBox x:Name="MfaCodeBox"
+                                 AutomationProperties.AutomationId="Settings_MfaCode"
+                                 AutomationProperties.Name="Authenticator code"
+                                 PlaceholderText="000000"
+                                 MaxLength="6"
+                                 Width="90"/>
+                        <Button x:Uid="Settings_MfaConfirm"
+                                AutomationProperties.AutomationId="Settings_MfaConfirm"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                Click="MfaConfirm_Click"/>
+                        <Button x:Uid="Settings_MfaCancel"
+                                AutomationProperties.AutomationId="Settings_MfaCancel"
+                                Click="MfaCancel_Click"/>
                     </StackPanel>
                 </toolkit:SettingsCard>
 

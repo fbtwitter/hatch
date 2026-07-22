@@ -6,6 +6,7 @@ using Supabase.Postgrest.Models;
 using SupabaseClient = Supabase.Client;
 using GotrueConstants = Supabase.Gotrue.Constants;
 using GotrueSignInOptions = Supabase.Gotrue.SignInOptions;
+using Supabase.Gotrue.Mfa;
 
 namespace Hatch.Services;
 
@@ -81,7 +82,7 @@ public sealed class SyncService
     public void StartAutoSync()
     {
         StopAutoSync();
-        if (!IsSignedIn || !HasPassphrase) return;
+        if (!IsSignedIn || !HasPassphrase || IsMfaChallengePending) return;
         _autoSyncCts = new CancellationTokenSource();
         _autoSyncTimer = new PeriodicTimer(TimeSpan.FromMinutes(5));
         _ = RunAutoSyncLoopAsync(_autoSyncCts.Token);
@@ -107,7 +108,7 @@ public sealed class SyncService
 
     public void SchedulePush(TasksFile data)
     {
-        if (!IsSignedIn) return;
+        if (!IsSignedIn || IsMfaChallengePending) return;
         _pushDebounce?.Cancel();
         _pushDebounce = new CancellationTokenSource();
         _ = PushAfterDelayAsync(data, _pushDebounce.Token);
@@ -138,6 +139,7 @@ public sealed class SyncService
         try
         {
             await _client!.Auth.SetSession(access, refresh);
+            await RefreshMfaChallengeStateAsync();
             StateChanged?.Invoke();
         }
         catch
@@ -156,6 +158,7 @@ public sealed class SyncService
             var session = await _client.Auth.SignIn(email, password);
             if (session?.AccessToken == null) return Strings.Sync_Error_SignInFailed;
             await PersistSessionAsync(session);
+            await RefreshMfaChallengeStateAsync();
             StateChanged?.Invoke();
             return null;
         }
@@ -185,6 +188,7 @@ public sealed class SyncService
     {
         try { await (_client?.Auth?.SignOut() ?? Task.CompletedTask); } catch { }
         StopAutoSync();
+        IsMfaChallengePending = false;
         SyncPassphraseStore.Clear();
         ClearTokens();
         await App.SettingsService.SaveAsync();
@@ -198,6 +202,7 @@ public sealed class SyncService
     {
         if (_client == null) return Strings.Sync_Error_NotReady;
         if (!IsSignedIn)    return Strings.Sync_Error_NotSignedIn;
+        if (IsMfaChallengePending) return Strings.Sync_Error_MfaRequired;
         var userId = _client.Auth.CurrentUser?.Id;
         if (string.IsNullOrEmpty(userId)) return Strings.Sync_Error_NoUserId;
         var (passphrase, salt) = SyncPassphraseStore.Load();
@@ -284,6 +289,126 @@ public sealed class SyncService
         catch (Exception ex) { return (null, ex.Message); }
     }
 
+    // --- Multi-factor authentication (TOTP) ------------------------------------------
+    // Protects sign-in only. It is not, and cannot be, a replacement for the sync
+    // passphrase: a TOTP secret is shared with the server in order to be verified, so it
+    // can never be encryption key material. See docs/mfa-spec.md.
+
+    public async Task<(MfaFactorInfo? Factor, string? Error)> EnrollMfaAsync()
+    {
+        if (_client == null) return (null, Strings.Sync_Error_NotReady);
+        if (!IsSignedIn)    return (null, Strings.Sync_Error_NotSignedIn);
+        try
+        {
+            var result = await _client.Auth.Enroll(new MfaEnrollParams
+            {
+                FactorType   = "totp",
+                Issuer       = "Hatch",
+                FriendlyName = $"Hatch {DateTime.Now:yyyy-MM-dd HH:mm}"
+            });
+
+            if (result?.Id == null || result.Totp == null)
+                return (null, "Could not start authenticator setup.");
+
+            // Secret is returned alongside the QR because enrolling from the same device
+            // that would scan it is common — see docs/mfa-spec.md §4.
+            return (new MfaFactorInfo(
+                result.Id, result.Totp.Secret, result.Totp.QrCode, result.Totp.Uri), null);
+        }
+        catch (Exception ex) { return (null, ex.Message); }
+    }
+
+    // Null on success, error message on failure. Also promotes the session to aal2.
+    public async Task<string?> VerifyMfaAsync(string factorId, string code)
+    {
+        if (_client == null) return Strings.Sync_Error_NotReady;
+        try
+        {
+            var session = await _client.Auth.ChallengeAndVerify(new MfaChallengeAndVerifyParams
+            {
+                FactorId = factorId,
+                Code     = code.Trim()
+            });
+            if (session == null) return "That code was not accepted.";
+
+            await PersistSessionAsync(session);
+            StateChanged?.Invoke();
+            return null;
+        }
+        catch (Exception ex) { return ex.Message; }
+    }
+
+    // An unverified factor is left behind when enrolment is abandoned; it blocks a clean
+    // retry, so callers remove it rather than leaving it dangling.
+    public async Task<string?> UnenrollMfaAsync(string factorId)
+    {
+        if (_client == null) return Strings.Sync_Error_NotReady;
+        try
+        {
+            await _client.Auth.Unenroll(new MfaUnenrollParams { FactorId = factorId });
+            await RefreshMfaChallengeStateAsync();
+            StateChanged?.Invoke();
+            return null;
+        }
+        catch (Exception ex) { return ex.Message; }
+    }
+
+    public async Task<MfaFactorInfo?> GetVerifiedMfaFactorAsync()
+    {
+        if (_client == null || !IsSignedIn) return null;
+        try
+        {
+            var factors = await _client.Auth.ListFactors();
+            var verified = factors?.Totp?.FirstOrDefault(f => f.Status == "verified");
+            return verified == null ? null : new MfaFactorInfo(verified.Id, null, null, null);
+        }
+        catch { return null; }
+    }
+
+    // True when the account has a verified factor that this session has not satisfied.
+    // Every sync path is held closed while it is set — otherwise a stolen password still
+    // reads and writes the whole account and the second factor protects nothing.
+    public bool IsMfaChallengePending { get; private set; }
+
+    public async Task RefreshMfaChallengeStateAsync()
+    {
+        bool pending = false;
+        if (_client != null && IsSignedIn)
+        {
+            try
+            {
+                // Reads the assurance claims out of the current JWT rather than the network.
+                // NextLevel is aal2 only once a verified factor exists, so this doubles as
+                // "does this account have MFA at all".
+                var aal = await _client.Auth.GetAuthenticatorAssuranceLevel();
+                pending = aal?.NextLevel  == AuthenticatorAssuranceLevel.aal2
+                       && aal.CurrentLevel != AuthenticatorAssuranceLevel.aal2;
+            }
+            catch
+            {
+                // Fail open: a failed local check must not lock a user out of their own
+                // tasks. Once RLS requires aal2 the server refuses the request regardless.
+            }
+        }
+
+        if (pending == IsMfaChallengePending) return;
+        IsMfaChallengePending = pending;
+        StateChanged?.Invoke();
+    }
+
+    // Null on success, error message on failure. Promotes this session to aal2.
+    public async Task<string?> SubmitMfaChallengeAsync(string code)
+    {
+        var factor = await GetVerifiedMfaFactorAsync();
+        if (factor == null) return Strings.Sync_Error_NoMfaFactor;
+
+        var error = await VerifyMfaAsync(factor.Id, code);
+        if (error != null) return error;
+
+        await RefreshMfaChallengeStateAsync();
+        return null;
+    }
+
     // Called when the app is activated via hatch://auth-callback after GitHub OAuth.
     public async Task HandleOAuthCallbackAsync(Uri callbackUri)
     {
@@ -324,7 +449,11 @@ public sealed class SyncService
             var session = await _client.Auth.ExchangeCodeForSession(_pkceVerifier, code);
             _pkceVerifier = null;
 
-            if (session != null) await PersistSessionAsync(session);
+            if (session != null)
+            {
+                await PersistSessionAsync(session);
+                await RefreshMfaChallengeStateAsync();
+            }
             else LastAuthError = "Could not exchange the sign-in code for a session.";
 
             StateChanged?.Invoke();
@@ -371,6 +500,7 @@ public sealed class SyncService
     public async Task<string?> PullIfNewerAsync(bool force = false)
     {
         if (!IsSignedIn || _client == null) return null;
+        if (IsMfaChallengePending) return Strings.Sync_Error_MfaRequired;
         try
         {
             var response = await _client.From<UserDataRow>().Get();
@@ -401,7 +531,7 @@ public sealed class SyncService
     // when the account is new/empty so existing tasks are backed up immediately.
     public async Task<SyncConflict?> CheckConflictAsync()
     {
-        if (!IsSignedIn || _client == null) return null;
+        if (!IsSignedIn || _client == null || IsMfaChallengePending) return null;
         try
         {
             var localData = await new TaskStorageService().LoadAsync();

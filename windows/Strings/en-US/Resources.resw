@@ -265,6 +265,8 @@
   <data name="Sync_Error_NoPassphrase" xml:space="preserve"><value>Set your sync passphrase to resume syncing.</value></data>
   <data name="Sync_Error_WrongPassphrase" xml:space="preserve"><value>Wrong sync passphrase — use the same passphrase you set on your other device.</value></data>
   <data name="Sync_Error_PassphraseTooShort" xml:space="preserve"><value>Passphrase must be at least 8 characters.</value></data>
+  <data name="Sync_Error_MfaRequired" xml:space="preserve"><value>Enter the code from your authenticator to resume syncing.</value></data>
+  <data name="Sync_Error_NoMfaFactor" xml:space="preserve"><value>No authenticator is set up for this account.</value></data>
 
   <!-- ── Sync passphrase (x:Uid mapped) ──────────────────────── -->
   <data name="Settings_SyncPassphraseInfo.Title" xml:space="preserve"><value>End-to-end encryption</value></data>
@@ -272,6 +274,23 @@
   <data name="Settings_SyncPassphraseCard.Header" xml:space="preserve"><value>Sync passphrase</value></data>
   <data name="Settings_SyncPassphraseCard.Description" xml:space="preserve"><value>Never sent to the server. If you lose it, synced data cannot be recovered.</value></data>
   <data name="Settings_SyncPassphraseSet.Content" xml:space="preserve"><value>Set passphrase</value></data>
+  <data name="Settings_MfaCard.Header" xml:space="preserve"><value>Two-factor authentication</value></data>
+  <data name="Settings_MfaCard.Description" xml:space="preserve"><value>Require a code from an authenticator app when signing in. This protects your account — your tasks are already protected by the sync passphrase.</value></data>
+  <data name="Settings_MfaEnable.Content" xml:space="preserve"><value>Set up</value></data>
+  <data name="Settings_MfaDisable.Content" xml:space="preserve"><value>Turn off</value></data>
+  <data name="Settings_MfaEnrollCard.Header" xml:space="preserve"><value>Add Hatch to your authenticator</value></data>
+  <data name="Settings_MfaEnrollCard.Description" xml:space="preserve"><value>Enter this setup key in Google Authenticator, Authy, 1Password or similar, then type the 6-digit code it shows.</value></data>
+  <data name="Settings_MfaConfirm.Content" xml:space="preserve"><value>Verify</value></data>
+  <data name="Settings_MfaCancel.Content" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Settings_MfaOnInfo.Title" xml:space="preserve"><value>Two-factor authentication is on</value></data>
+  <data name="Settings_MfaOnInfo.Message" xml:space="preserve"><value>You will be asked for a code from your authenticator when you sign in. If you lose the authenticator, you lose access to sync — there is no recovery code.</value></data>
+
+  <!-- ── Two-factor challenge on sign-in (x:Uid mapped) ───────── -->
+  <data name="Settings_MfaChallengeInfo.Title" xml:space="preserve"><value>Two-factor code required</value></data>
+  <data name="Settings_MfaChallengeInfo.Message" xml:space="preserve"><value>Syncing is paused until you enter the current code from your authenticator. Your tasks on this PC are unaffected.</value></data>
+  <data name="Settings_MfaChallengeCard.Header" xml:space="preserve"><value>Enter your authenticator code</value></data>
+  <data name="Settings_MfaChallengeCard.Description" xml:space="preserve"><value>Open the authenticator app you set up for Hatch and type the 6-digit code it shows.</value></data>
+  <data name="Settings_MfaChallengeSubmit.Content" xml:space="preserve"><value>Verify</value></data>
 
   <!-- ── Settings (code-accessed) ────────────────────────────── -->
   <data name="Settings_NoFileSelected" xml:space="preserve"><value>(none selected)</value></data>

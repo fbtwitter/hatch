@@ -2,7 +2,11 @@ using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Imaging;
+using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text;
 using Windows.Storage.Pickers;
+using Windows.Storage.Streams;
 using Hatch.Models;
 using Hatch.ViewModels;
 
@@ -259,6 +263,76 @@ public sealed partial class SettingsPage : Page
     {
         await _viewModel.SetSyncPassphraseAsync(SyncPassphraseBox.Password);
         SyncPassphraseBox.Password = "";
+    }
+
+    private async void MfaEnable_Click(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.StartMfaEnrollmentAsync();
+        await ShowMfaQrAsync(ViewModel.MfaQrSvg);
+    }
+
+    // Imaging is a View concern, so the SVG-to-image step lives here rather than in the
+    // ViewModel. The setup key stays visible either way: on a desktop you are usually
+    // enrolling from the machine you would otherwise be scanning with.
+    private async Task ShowMfaQrAsync(string? svg)
+    {
+        MfaQrPanel.Visibility = Visibility.Collapsed;
+        if (string.IsNullOrWhiteSpace(svg)) return;
+
+        // Supabase returns raw markup, but tolerate a data: URI wrapper.
+        var markup = svg.StartsWith("data:", StringComparison.OrdinalIgnoreCase)
+            ? DecodeDataUri(svg)
+            : svg;
+        if (markup == null || !markup.Contains("<svg", StringComparison.OrdinalIgnoreCase)) return;
+
+        try
+        {
+            using var stream = new InMemoryRandomAccessStream();
+            var bytes = Encoding.UTF8.GetBytes(markup);
+            await stream.WriteAsync(bytes.AsBuffer());
+            stream.Seek(0);
+
+            var source = new SvgImageSource();
+            var result = await source.SetSourceAsync(stream);
+            if (result != SvgImageSourceLoadStatus.Success) return;
+
+            MfaQrImage.Source = source;
+            MfaQrPanel.Visibility = Visibility.Visible;
+        }
+        catch
+        {
+            // Falling back to the setup key alone is a complete path, not a broken one.
+        }
+    }
+
+    private static string? DecodeDataUri(string uri)
+    {
+        var comma = uri.IndexOf(',');
+        if (comma < 0) return null;
+        var payload = uri[(comma + 1)..];
+        return uri[..comma].Contains("base64", StringComparison.OrdinalIgnoreCase)
+            ? Encoding.UTF8.GetString(Convert.FromBase64String(payload))
+            : Uri.UnescapeDataString(payload);
+    }
+
+    private async void MfaConfirm_Click(object sender, RoutedEventArgs e)
+    {
+        var code = MfaCodeBox.Text;
+        await ViewModel.ConfirmMfaEnrollmentAsync(code);
+        MfaCodeBox.Text = string.Empty;
+    }
+
+    private async void MfaCancel_Click(object sender, RoutedEventArgs e)
+        => await ViewModel.CancelMfaEnrollmentAsync();
+
+    private async void MfaDisable_Click(object sender, RoutedEventArgs e)
+        => await ViewModel.DisableMfaAsync();
+
+    private async void MfaChallengeSubmit_Click(object sender, RoutedEventArgs e)
+    {
+        var code = MfaChallengeCodeBox.Text;
+        MfaChallengeCodeBox.Text = string.Empty;
+        await ViewModel.SubmitMfaChallengeAsync(code);
     }
 
     private async void SyncGitHubSignIn_Click(object sender, RoutedEventArgs e)
