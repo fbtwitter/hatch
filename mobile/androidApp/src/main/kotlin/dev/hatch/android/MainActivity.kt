@@ -91,6 +91,8 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
             onGithub = vm::signInWithGithub,
             onPassphrase = vm::submitPassphrase,
             onMfaCode = vm::submitMfaCode,
+            onShowRecovery = vm::showRecoveryCodeEntry,
+            onRedeemRecovery = vm::redeemRecoveryCode,
             onRefresh = vm::refresh,
             onPush = vm::push,
             onSignOut = vm::signOut,
@@ -229,6 +231,8 @@ private fun SyncScreen(
     onGithub: () -> Unit,
     onPassphrase: (String) -> Unit,
     onMfaCode: (String) -> Unit,
+    onShowRecovery: (Boolean) -> Unit,
+    onRedeemRecovery: (String) -> Unit,
     onRefresh: () -> Unit,
     onPush: () -> Unit,
     onSignOut: () -> Unit,
@@ -273,11 +277,21 @@ private fun SyncScreen(
                     onSubmit = { if (creating) onSignUp(email, password) else onSignIn(email, password) },
                     onGithub = onGithub,
                 )
-                is SyncState.NeedsMfaCode -> MfaCodeForm(
-                    error = sync.error,
-                    onSubmit = onMfaCode,
-                    onSignOut = onSignOut,
-                )
+                is SyncState.NeedsMfaCode ->
+                    if (sync.redeeming) {
+                        RecoveryCodeForm(
+                            error = sync.error,
+                            onSubmit = onRedeemRecovery,
+                            onBack = { onShowRecovery(false) },
+                        )
+                    } else {
+                        MfaCodeForm(
+                            error = sync.error,
+                            onSubmit = onMfaCode,
+                            onUseRecovery = { onShowRecovery(true) },
+                            onSignOut = onSignOut,
+                        )
+                    }
                 SyncState.NeedsPassphrase -> PassphraseForm(
                     "These tasks are end-to-end encrypted. Enter your sync passphrase to read them.",
                     isError = false,
@@ -468,7 +482,55 @@ private fun Banner(text: String, container: androidx.compose.ui.graphics.Color, 
 }
 
 @Composable
-private fun MfaCodeForm(error: String?, onSubmit: (String) -> Unit, onSignOut: () -> Unit) {
+private fun RecoveryCodeForm(error: String?, onSubmit: (String) -> Unit, onBack: () -> Unit) {
+    var value by remember { mutableStateOf("") }
+
+    Column {
+        Text("Use a recovery code", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(8.dp))
+        // Stated plainly because it is not what most people expect a recovery code to do.
+        Text(
+            "This turns two-factor authentication OFF and discards your remaining codes — " +
+                "it is not a one-time sign-in. Set it up again afterwards on Windows.\n\n" +
+                "Your tasks and your sync passphrase are unaffected.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        if (error != null) {
+            Spacer(Modifier.height(16.dp))
+            Banner(error, MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)
+        }
+
+        Spacer(Modifier.height(20.dp))
+        OutlinedTextField(
+            value = value,
+            onValueChange = { value = it.uppercase() },
+            label = { Text("Recovery code") },
+            placeholder = { Text("XXXXX-XXXXX") },
+            singleLine = true,
+            isError = error != null,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(20.dp))
+        Button(
+            onClick = { onSubmit(value) },
+            enabled = value.isNotBlank(),
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Turn off two-factor and continue") }
+        Spacer(Modifier.height(8.dp))
+        OutlinedButton(onClick = onBack, Modifier.fillMaxWidth()) { Text("Back") }
+    }
+}
+
+@Composable
+private fun MfaCodeForm(
+    error: String?,
+    onSubmit: (String) -> Unit,
+    onUseRecovery: () -> Unit,
+    onSignOut: () -> Unit,
+) {
     var value by remember { mutableStateOf("") }
 
     Column {
@@ -508,8 +570,12 @@ private fun MfaCodeForm(error: String?, onSubmit: (String) -> Unit, onSignOut: (
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Verify") }
         Spacer(Modifier.height(8.dp))
-        // The only way out of this state. Without it a lost authenticator strands the
-        // screen with no route back to the task list's sign-in.
+        // The routes out of this state. Without them a lost authenticator strands the
+        // screen with no way back — and since the aal2 policy landed, signing out alone
+        // would not have helped either.
+        TextButton(onClick = onUseRecovery, Modifier.fillMaxWidth()) {
+            Text("Lost your authenticator? Use a recovery code")
+        }
         OutlinedButton(onClick = onSignOut, Modifier.fillMaxWidth()) { Text("Sign out") }
     }
 }

@@ -64,10 +64,78 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         App.SyncService.SetPassphrase(passphrase);
         OnPropertyChanged(nameof(IsPassphraseSet));
         OnPropertyChanged(nameof(IsSignedInWithoutPassphrase));
+        OnPropertyChanged(nameof(CanShowRecoveryKit));
+
+        // Offered at the one moment the user is thinking about this secret. A warning in a
+        // box has not been enough: the passphrase cannot be reset, recovered or reissued by
+        // anyone, so what they need is an artefact to keep, not more prose.
+        ShowRecoveryKit();
 
         // The conflict check deferred at sign-in runs now that server data is readable.
         await CheckAndHandleConflictAsync();
     }
+
+    // --- Sync recovery kit --------------------------------------------------------------
+    // Recovery codes restore account access; nothing restores the passphrase, because
+    // anything that could would mean the server can decrypt. See docs/mfa-spec.md §6.
+
+    private string? _recoveryKitText;
+    public string? RecoveryKitText
+    {
+        get => _recoveryKitText;
+        private set
+        {
+            _recoveryKitText = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasRecoveryKit));
+        }
+    }
+
+    public bool HasRecoveryKit => !string.IsNullOrEmpty(_recoveryKitText);
+
+    // Available whenever a passphrase is set, not only just after setting one: the kit is
+    // useless to someone who has already lost the passphrase, so it has to stay reachable
+    // while they still have it.
+    public bool CanShowRecoveryKit => IsSyncSignedIn && IsPassphraseSet;
+
+    public string RecoveryKitFileName => $"hatch-recovery-kit-{DateTime.Now:yyyy-MM-dd}";
+
+    public void ShowRecoveryKit()
+    {
+        var passphrase = App.SyncService.PassphraseForRecoveryKit;
+        if (passphrase == null) return;
+        RecoveryKitText = BuildRecoveryKit(passphrase, SyncUserEmail);
+    }
+
+    public void DismissRecoveryKit() => RecoveryKitText = null;
+
+    private static string BuildRecoveryKit(string passphrase, string email) =>
+        $"""
+        HATCH SYNC RECOVERY KIT
+        Created {DateTime.Now:yyyy-MM-dd HH:mm}
+
+        Account:    {email}
+        Passphrase: {passphrase}
+
+        WHAT THIS IS
+        Your Hatch tasks are encrypted on your own device before they are uploaded.
+        This passphrase is the only key. It is not stored on any server, so nobody --
+        not Hatch, not the sync provider, not an administrator -- can look it up,
+        reset it or recover it for you.
+
+        Lose this passphrase and every synced task becomes permanently unreadable.
+        There is no support route back. That is what "end-to-end encrypted" means.
+
+        WHAT THIS IS NOT
+        This is not your account password, and not a two-factor recovery code.
+        Those get you back into the account. This is what makes the contents readable
+        once you are in. You need both.
+
+        WHERE TO KEEP IT
+        Somewhere you will still have after this computer is gone: a password manager,
+        a printout, or a file on separate storage. Keeping it only on this PC defeats
+        the point -- that is the copy most likely to disappear with it.
+        """;
 
     public string SyncLastSyncedText
     {
@@ -151,6 +219,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(SyncLastSyncedText));
             OnPropertyChanged(nameof(IsPassphraseSet));
             OnPropertyChanged(nameof(IsSignedInWithoutPassphrase));
+            OnPropertyChanged(nameof(CanShowRecoveryKit));
 
             // Surface OAuth callback failures; without this the browser closes and the app
             // shows nothing at all.
@@ -251,7 +320,79 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(MfaSecret));
         OnPropertyChanged(nameof(MfaQrSvg));
         await RefreshMfaStateAsync();
+
+        // Generated immediately after verifying, never later: this is the one moment the
+        // session is known to be aal2 and the user is already thinking about lockout.
+        var (codes, codesError) = await App.SyncService.GenerateRecoveryCodesAsync();
+        if (codesError != null) { SyncError = codesError; return; }
+        RecoveryCodes = codes;
     }
+
+    // --- Recovery codes ----------------------------------------------------------------
+
+    private string[]? _recoveryCodes;
+
+    // Held only until the user dismisses the panel. The server stores hashes, so once this
+    // is cleared the plaintext is gone for good — which is the point of showing it loudly.
+    public string[]? RecoveryCodes
+    {
+        get => _recoveryCodes;
+        private set
+        {
+            _recoveryCodes = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasRecoveryCodes));
+            OnPropertyChanged(nameof(RecoveryCodesText));
+        }
+    }
+
+    public bool HasRecoveryCodes => _recoveryCodes is { Length: > 0 };
+
+    public string RecoveryCodesText => _recoveryCodes == null ? "" : string.Join("\n", _recoveryCodes);
+
+    public void DismissRecoveryCodes() => RecoveryCodes = null;
+
+    // Shown on the challenge card so a lost authenticator has a way out that does not
+    // involve an admin deleting rows.
+    private bool _isRedeemingRecovery;
+    public bool IsRedeemingRecovery
+    {
+        get => _isRedeemingRecovery;
+        private set { _isRedeemingRecovery = value; OnPropertyChanged(); }
+    }
+
+    public void StartRecoveryCodeEntry() => IsRedeemingRecovery = true;
+    public void CancelRecoveryCodeEntry() => IsRedeemingRecovery = false;
+
+    public async Task RedeemRecoveryCodeAsync(string code)
+    {
+        if (string.IsNullOrWhiteSpace(code)) return;
+        IsSyncing = true;
+        SyncError = null;
+        var error = await App.SyncService.RedeemRecoveryCodeAsync(code);
+        IsSyncing = false;
+        if (error != null) { SyncError = error; return; }
+
+        IsRedeemingRecovery = false;
+        await RefreshMfaStateAsync();
+        if (IsPassphraseSet) await CheckAndHandleConflictAsync();
+
+        // Set last and on its own channel: CheckAndHandleConflictAsync clears SyncError on
+        // entry and may set a real one. Two-factor is OFF now, not merely satisfied, and
+        // that must not be swallowed by whatever the resumed sync had to say.
+        SyncNotice = Strings.Sync_Info_RecoveryUsed;
+    }
+
+    private string? _syncNotice;
+    public string? SyncNotice
+    {
+        get => _syncNotice;
+        private set { _syncNotice = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasSyncNotice)); }
+    }
+
+    public bool HasSyncNotice => !string.IsNullOrEmpty(_syncNotice);
+
+    public void DismissSyncNotice() => SyncNotice = null;
 
     // Abandoning enrolment must remove the unverified factor, or it lingers server-side
     // and blocks a clean retry.

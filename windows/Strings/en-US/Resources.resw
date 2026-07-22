@@ -267,6 +267,8 @@
   <data name="Sync_Error_PassphraseTooShort" xml:space="preserve"><value>Passphrase must be at least 8 characters.</value></data>
   <data name="Sync_Error_MfaRequired" xml:space="preserve"><value>Enter the code from your authenticator to resume syncing.</value></data>
   <data name="Sync_Error_NoMfaFactor" xml:space="preserve"><value>No authenticator is set up for this account.</value></data>
+  <data name="Sync_Error_BadRecoveryCode" xml:space="preserve"><value>That recovery code was not recognised. Check for typos, or try another code from your list.</value></data>
+  <data name="Sync_Info_RecoveryUsed" xml:space="preserve"><value>Recovery code accepted. Two-factor authentication is now OFF and your remaining codes have been discarded — set it up again to re-protect your account.</value></data>
 
   <!-- ── Sync passphrase (x:Uid mapped) ──────────────────────── -->
   <data name="Settings_SyncPassphraseInfo.Title" xml:space="preserve"><value>End-to-end encryption</value></data>
@@ -274,6 +276,17 @@
   <data name="Settings_SyncPassphraseCard.Header" xml:space="preserve"><value>Sync passphrase</value></data>
   <data name="Settings_SyncPassphraseCard.Description" xml:space="preserve"><value>Never sent to the server. If you lose it, synced data cannot be recovered.</value></data>
   <data name="Settings_SyncPassphraseSet.Content" xml:space="preserve"><value>Set passphrase</value></data>
+
+  <!-- ── Sync recovery kit (x:Uid mapped) ─────────────────────── -->
+  <data name="Settings_RecoveryKitCard.Header" xml:space="preserve"><value>Sync recovery kit</value></data>
+  <data name="Settings_RecoveryKitCard.Description" xml:space="preserve"><value>Your passphrase cannot be reset or recovered by anyone. Save a copy somewhere you'll still have if this PC is lost.</value></data>
+  <data name="Settings_RecoveryKitShow.Content" xml:space="preserve"><value>Show recovery kit</value></data>
+  <data name="Settings_RecoveryKitInfo.Title" xml:space="preserve"><value>Save this somewhere safe</value></data>
+  <data name="Settings_RecoveryKitInfo.Message" xml:space="preserve"><value>This contains your sync passphrase in plain text. Keep it off this PC — a password manager, a printout, or separate storage.</value></data>
+  <data name="Settings_RecoveryKitSave.Content" xml:space="preserve"><value>Save to file…</value></data>
+  <data name="Settings_RecoveryKitCopy.Content" xml:space="preserve"><value>Copy</value></data>
+  <data name="Settings_RecoveryKitDone.Content" xml:space="preserve"><value>Hide</value></data>
+
   <data name="Settings_MfaCard.Header" xml:space="preserve"><value>Two-factor authentication</value></data>
   <data name="Settings_MfaCard.Description" xml:space="preserve"><value>Require a code from an authenticator app when signing in. This protects your account — your tasks are already protected by the sync passphrase.</value></data>
   <data name="Settings_MfaEnable.Content" xml:space="preserve"><value>Set up</value></data>
@@ -291,6 +304,17 @@
   <data name="Settings_MfaChallengeCard.Header" xml:space="preserve"><value>Enter your authenticator code</value></data>
   <data name="Settings_MfaChallengeCard.Description" xml:space="preserve"><value>Open the authenticator app you set up for Hatch and type the 6-digit code it shows.</value></data>
   <data name="Settings_MfaChallengeSubmit.Content" xml:space="preserve"><value>Verify</value></data>
+  <data name="Settings_MfaUseRecovery.Content" xml:space="preserve"><value>Use a recovery code</value></data>
+
+  <!-- ── Recovery codes (x:Uid mapped) ────────────────────────── -->
+  <data name="Settings_RecoveryCodesInfo.Title" xml:space="preserve"><value>Save your recovery codes now</value></data>
+  <data name="Settings_RecoveryCodesInfo.Message" xml:space="preserve"><value>These are shown once and cannot be retrieved again — only their hashes are stored. Keep them somewhere other than the device holding your authenticator. Each one can turn two-factor off if you lose it. They do not recover your sync passphrase: that remains separate and unrecoverable.</value></data>
+  <data name="Settings_RecoveryCopy.Content" xml:space="preserve"><value>Copy</value></data>
+  <data name="Settings_RecoveryDone.Content" xml:space="preserve"><value>I've saved them</value></data>
+  <data name="Settings_RecoveryRedeemCard.Header" xml:space="preserve"><value>Enter a recovery code</value></data>
+  <data name="Settings_RecoveryRedeemCard.Description" xml:space="preserve"><value>This turns two-factor authentication OFF and discards your remaining codes. Your tasks and your sync passphrase are unaffected. Set two-factor up again afterwards.</value></data>
+  <data name="Settings_RecoveryRedeem.Content" xml:space="preserve"><value>Use code</value></data>
+  <data name="Settings_RecoveryCancel.Content" xml:space="preserve"><value>Cancel</value></data>
 
   <!-- ── Settings (code-accessed) ────────────────────────────── -->
   <data name="Settings_NoFileSelected" xml:space="preserve"><value>(none selected)</value></data>

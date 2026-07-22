@@ -123,6 +123,8 @@ internal static class Strings
     public static string Sync_Error_PassphraseTooShort => Get("Sync_Error_PassphraseTooShort");
     public static string Sync_Error_MfaRequired        => Get("Sync_Error_MfaRequired");
     public static string Sync_Error_NoMfaFactor        => Get("Sync_Error_NoMfaFactor");
+    public static string Sync_Error_BadRecoveryCode    => Get("Sync_Error_BadRecoveryCode");
+    public static string Sync_Info_RecoveryUsed        => Get("Sync_Info_RecoveryUsed");
 
     // ── Settings ─────────────────────────────────────────────
     public static string Settings_NoFileSelected => Get("Settings_NoFileSelected");
