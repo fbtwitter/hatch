@@ -7,6 +7,7 @@ import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Github
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
+import io.github.jan.supabase.auth.user.UserMfaFactor
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
@@ -39,6 +40,7 @@ class SyncKey(val key: ByteArray, val salt: ByteArray)
 sealed interface PushResult {
     data class Success(val merged: TasksFile, val updatedAt: String) : PushResult
     data object NeedsPassphrase : PushResult
+    data object NeedsMfa : PushResult
     data object Unreadable : PushResult
     data class Failed(val message: String) : PushResult
 }
@@ -47,6 +49,7 @@ sealed interface PullResult {
     data class Success(val data: TasksFile, val updatedAt: String) : PullResult
     data object Empty : PullResult
     data object NeedsPassphrase : PullResult
+    data object NeedsMfa : PullResult
     data object Unreadable : PullResult
     data class Failed(val message: String) : PullResult
 }
@@ -113,17 +116,52 @@ class SyncClient(supabaseUrl: String, supabaseKey: String) {
         runCatching { client.auth.signOut() }
     }
 
-    // RLS scopes the table to auth.uid(), so this returns at most one row.
-    suspend fun pull(syncKey: SyncKey?): PullResult = try {
-        val row = client.from(TABLE).select().decodeSingleOrNull<UserDataRow>()
-        when {
-            row == null || row.tasksJson.isEmpty() -> PullResult.Empty
-            SyncCrypto.isEncrypted(row.tasksJson) -> decrypt(row, syncKey)
-            // Predates E2E encryption: parse as-is (§2 legacy plaintext).
-            else -> parse(row.tasksJson, row.updatedAt)
+    // True when the account has a verified factor that this session has not satisfied.
+    // Mirrors IsMfaChallengePending in windows/Services/SyncService.cs: `enabled` means a
+    // verified factor exists, `active` means this session reached aal2.
+    //
+    // runCatching is not defensive padding: supabase-kt derives `active` from the `aal`
+    // claim and throws IllegalStateException when the JWT carries none. Uncaught, that
+    // escapes pull() ahead of its try block and takes the coroutine down.
+    //
+    // Fails open, matching the Windows client. `enabled` is read from the cached user
+    // object rather than the network, so a sign-in path that returned no factor list would
+    // not challenge — stage 4 (aal2 in RLS) is what makes the server the authority.
+    val mfaChallengePending: Boolean
+        get() = runCatching {
+            client.auth.currentSessionOrNull() != null &&
+                client.auth.mfa.status.let { it.enabled && !it.active }
+        }.getOrDefault(false)
+
+    // Null on success, message on failure. Promotes this session to aal2.
+    suspend fun submitMfaChallenge(code: String): String? = try {
+        val factor = client.auth.mfa.retrieveFactorsForCurrentUser()
+            .firstOrNull(UserMfaFactor::isVerified)
+        if (factor == null) "No authenticator is set up for this account."
+        else {
+            client.auth.mfa.createChallengeAndVerify(factor.id, code.trim())
+            null
         }
     } catch (t: Throwable) {
-        PullResult.Failed(t.message ?: "Pull failed")
+        t.message ?: "That code was not accepted."
+    }
+
+    // RLS scopes the table to auth.uid(), so this returns at most one row.
+    suspend fun pull(syncKey: SyncKey?): PullResult {
+        // Gated before the request, not after: a session that has not met the second factor
+        // must not be able to read the row at all.
+        if (mfaChallengePending) return PullResult.NeedsMfa
+        return try {
+            val row = client.from(TABLE).select().decodeSingleOrNull<UserDataRow>()
+            when {
+                row == null || row.tasksJson.isEmpty() -> PullResult.Empty
+                SyncCrypto.isEncrypted(row.tasksJson) -> decrypt(row, syncKey)
+                // Predates E2E encryption: parse as-is (§2 legacy plaintext).
+                else -> parse(row.tasksJson, row.updatedAt)
+            }
+        } catch (t: Throwable) {
+            PullResult.Failed(t.message ?: "Pull failed")
+        }
     }
 
     // Merge-before-push, mirroring windows/Services/SyncService.cs. The row is whole-state,
@@ -132,6 +170,7 @@ class SyncClient(supabaseUrl: String, supabaseKey: String) {
     suspend fun pushMerged(local: TasksFile, syncKey: SyncKey?): PushResult {
         // §2: clients MUST refuse to push when no key is available.
         if (syncKey == null) return PushResult.NeedsPassphrase
+        if (mfaChallengePending) return PushResult.NeedsMfa
         return try {
             val userId = client.auth.currentUserOrNull()?.id
                 ?: return PushResult.Failed("Not signed in")

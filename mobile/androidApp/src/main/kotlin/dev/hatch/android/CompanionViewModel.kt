@@ -39,6 +39,9 @@ sealed interface SyncState {
     data object Working : SyncState
     data object NeedsPassphrase : SyncState
     data object WrongPassphrase : SyncState
+    // Signed in, but the account has a verified authenticator this session has not met.
+    // Every sync path is refused until it is (docs/mfa-spec.md); local tasks are unaffected.
+    data class NeedsMfaCode(val error: String? = null) : SyncState
     data class On(
         val email: String?,
         val serverUpdatedAt: String,
@@ -195,11 +198,24 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
                 "This account still needs confirming. Open the link in your email, then sign in."
             "user already registered" in text || "already been registered" in text ->
                 "That email already has an account. Sign in instead."
+            "totp" in text || "invalid_code" in text || "mfa" in text ->
+                "That code wasn't accepted. Codes expire every 30 seconds — wait for the next one and try again."
             "password should be" in text || "weak" in text ->
                 "That password is too short. Use at least 6 characters."
             "network" in text || "unable to resolve host" in text || "timeout" in text ->
                 "Can't reach the server. Check your connection — your tasks on this phone are unaffected."
             else -> raw
+        }
+    }
+
+    fun submitMfaCode(code: String) {
+        setSync(SyncState.Working)
+        viewModelScope.launch {
+            val error = client.submitMfaChallenge(code)
+            // Back to the prompt with the reason, not a dead end — the code rotates every
+            // 30 seconds, so a rejection usually just means "try the next one".
+            if (error != null) setSync(SyncState.NeedsMfaCode(error = humanize(error)))
+            else pull()
         }
     }
 
@@ -246,6 +262,7 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
             }
             PushResult.NeedsPassphrase ->
                 setSync(SyncState.On(client.signedInEmail, "", hasPassphrase = false))
+            PushResult.NeedsMfa -> setSync(SyncState.NeedsMfaCode())
             PushResult.Unreadable -> {
                 syncKey = null
                 keyStore.clear()
@@ -283,6 +300,7 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
                 if (manual) _pullCompleted.emit(_state.value.tasks.size)
             }
             PullResult.NeedsPassphrase -> setSync(SyncState.NeedsPassphrase)
+            PullResult.NeedsMfa -> setSync(SyncState.NeedsMfaCode())
             PullResult.Unreadable -> {
                 // Never treated as "no tasks", and local data is never touched
                 // (docs/sync-protocol.md §2 unreadable-row rule). The stored key cannot
