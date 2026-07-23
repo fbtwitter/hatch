@@ -98,44 +98,16 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     // while they still have it.
     public bool CanShowRecoveryKit => IsSyncSignedIn && IsPassphraseSet;
 
-    public string RecoveryKitFileName => $"hatch-recovery-kit-{DateTime.Now:yyyy-MM-dd}";
+    public string RecoveryKitFileName => RecoveryKit.FileName(DateTime.Now);
 
     public void ShowRecoveryKit()
     {
         var passphrase = App.SyncService.PassphraseForRecoveryKit;
         if (passphrase == null) return;
-        RecoveryKitText = BuildRecoveryKit(passphrase, SyncUserEmail);
+        RecoveryKitText = RecoveryKit.Build(passphrase, SyncUserEmail, DateTime.Now);
     }
 
     public void DismissRecoveryKit() => RecoveryKitText = null;
-
-    private static string BuildRecoveryKit(string passphrase, string email) =>
-        $"""
-        HATCH SYNC RECOVERY KIT
-        Created {DateTime.Now:yyyy-MM-dd HH:mm}
-
-        Account:    {email}
-        Passphrase: {passphrase}
-
-        WHAT THIS IS
-        Your Hatch tasks are encrypted on your own device before they are uploaded.
-        This passphrase is the only key. It is not stored on any server, so nobody --
-        not Hatch, not the sync provider, not an administrator -- can look it up,
-        reset it or recover it for you.
-
-        Lose this passphrase and every synced task becomes permanently unreadable.
-        There is no support route back. That is what "end-to-end encrypted" means.
-
-        WHAT THIS IS NOT
-        This is not your account password, and not a two-factor recovery code.
-        Those get you back into the account. This is what makes the contents readable
-        once you are in. You need both.
-
-        WHERE TO KEEP IT
-        Somewhere you will still have after this computer is gone: a password manager,
-        a printout, or a file on separate storage. Keeping it only on this PC defeats
-        the point -- that is the copy most likely to disappear with it.
-        """;
 
     public string SyncLastSyncedText
     {
@@ -678,6 +650,9 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         get => _settings.Current.HotkeyModifiers;
         set
         {
+            // Zero modifiers would register the bare key system-wide. The checkboxes already
+            // prevent it; this is the backstop for any other caller.
+            if (value == 0) return;
             if (_settings.Current.HotkeyModifiers == value) return;
             _settings.Current.HotkeyModifiers = value;
             ReRegisterHotKey();
@@ -687,6 +662,9 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(HotkeyCtrl));
             OnPropertyChanged(nameof(HotkeyShift));
             OnPropertyChanged(nameof(HotkeyAlt));
+            OnPropertyChanged(nameof(IsHotkeyCtrlEnabled));
+            OnPropertyChanged(nameof(IsHotkeyShiftEnabled));
+            OnPropertyChanged(nameof(IsHotkeyAltEnabled));
         }
     }
 
@@ -755,13 +733,44 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         _ => $"0x{vk:X2}"
     };
 
-    private static void ReRegisterHotKey()
+    private void ReRegisterHotKey()
     {
         var mascot = App.MascotWindowInstance;
         if (mascot is null) return;
         mascot.UnregisterHotKey();
-        mascot.RegisterHotKey();
+        IsHotkeyRegistered = mascot.RegisterHotKey();
     }
+
+    // Seeded from the mascot window rather than assumed true: the hotkey is registered at
+    // startup, so a conflict already exists by the time Settings is first opened.
+    private bool _isHotkeyRegistered = App.MascotWindowInstance?.IsHotkeyRegistered ?? true;
+
+    // Windows reports a taken combination only through RegisterHotKey's return value; the
+    // key then silently does nothing. Previously that result was discarded, so Settings
+    // showed a hotkey that had never actually been claimed.
+    public bool IsHotkeyRegistered
+    {
+        get => _isHotkeyRegistered;
+        private set
+        {
+            if (_isHotkeyRegistered == value) return;
+            _isHotkeyRegistered = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasHotkeyConflict));
+        }
+    }
+
+    public bool HasHotkeyConflict => !_isHotkeyRegistered;
+
+    private int HotkeyModifierCount =>
+        (HotkeyCtrl ? 1 : 0) + (HotkeyShift ? 1 : 0) + (HotkeyAlt ? 1 : 0);
+
+    // With no modifier, RegisterHotKey claims the bare key globally — press Space in any
+    // application and Hatch would swallow it. The last remaining modifier is locked rather
+    // than silently refused, so the constraint is visible instead of feeling broken.
+    public bool IsHotkeyCtrlEnabled  => !(HotkeyCtrl  && HotkeyModifierCount == 1);
+    public bool IsHotkeyShiftEnabled => !(HotkeyShift && HotkeyModifierCount == 1);
+    public bool IsHotkeyAltEnabled   => !(HotkeyAlt   && HotkeyModifierCount == 1);
 
     public ICommand OpenDataFolderCommand { get; } =
         new RelayCommand(_ =>

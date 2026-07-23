@@ -398,35 +398,57 @@
                 </toolkit:SettingsExpander>
 
                 <!-- Quick-add global hotkey -->
+                <!-- Description is static: the live combination is the collapsed-state
+                     content on the right. Binding both to HotkeyDescription printed the
+                     same string twice, inches apart. -->
                 <toolkit:SettingsExpander Header="Quick-Add Hotkey"
-                                          Description="{x:Bind ViewModel.HotkeyDescription, Mode=OneWay}">
+                                          Description="Opens quick-add from anywhere, even when Hatch is hidden">
                     <toolkit:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE92E;"/>
                     </toolkit:SettingsExpander.HeaderIcon>
-                    <TextBlock Text="{x:Bind ViewModel.HotkeyDescription, Mode=OneWay}"
-                               VerticalAlignment="Center"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <!-- Key-cap styling so the combination reads as something you press. -->
+                    <Border Background="{ThemeResource ControlFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{ThemeResource ControlCornerRadius}"
+                            Padding="10,4"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="{x:Bind ViewModel.HotkeyDescription, Mode=OneWay}"
+                                   AutomationProperties.AutomationId="Settings_HotkeyPreview"
+                                   FontFamily="Consolas"
+                                   Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
+                    </Border>
                     <toolkit:SettingsExpander.Items>
-                        <!-- Modifier keys -->
-                        <toolkit:SettingsCard Header="Modifiers">
-                            <StackPanel Orientation="Horizontal" Spacing="16">
+                        <!-- Modifier keys. Vertical: the description explains the
+                             at-least-one rule and needs the full width to say it, rather
+                             than wrapping to three words a line beside the checkboxes. -->
+                        <toolkit:SettingsCard Header="Modifiers"
+                                              ContentAlignment="Vertical"
+                                              Description="At least one is required — without a modifier the key would be captured system-wide">
+                            <StackPanel Orientation="Horizontal" Spacing="24">
                                 <CheckBox Content="Ctrl"
                                           AutomationProperties.AutomationId="Settings_HotkeyCtrl"
+                                          IsEnabled="{x:Bind ViewModel.IsHotkeyCtrlEnabled, Mode=OneWay}"
                                           IsChecked="{x:Bind ViewModel.HotkeyCtrl, Mode=TwoWay}"/>
                                 <CheckBox Content="Shift"
                                           AutomationProperties.AutomationId="Settings_HotkeyShift"
+                                          IsEnabled="{x:Bind ViewModel.IsHotkeyShiftEnabled, Mode=OneWay}"
                                           IsChecked="{x:Bind ViewModel.HotkeyShift, Mode=TwoWay}"/>
                                 <CheckBox Content="Alt"
                                           AutomationProperties.AutomationId="Settings_HotkeyAlt"
+                                          IsEnabled="{x:Bind ViewModel.IsHotkeyAltEnabled, Mode=OneWay}"
                                           IsChecked="{x:Bind ViewModel.HotkeyAlt, Mode=TwoWay}"/>
                             </StackPanel>
                         </toolkit:SettingsCard>
                         <!-- Key -->
-                        <toolkit:SettingsCard Header="Key">
+                        <toolkit:SettingsCard Header="Key"
+                                              ContentAlignment="Vertical"
+                                              Description="Pressed together with the modifiers above">
                             <ComboBox x:Name="HotkeyKeySelector"
                                       AutomationProperties.AutomationId="Settings_HotkeyKeyComboBox"
                                       AutomationProperties.Name="Hotkey key"
-                                      MinWidth="120"
+                                      MinWidth="160"
+                                      HorizontalAlignment="Left"
                                       SelectionChanged="HotkeyKeySelector_SelectionChanged">
                                 <ComboBoxItem Content="Space" Tag="32"/>
                                 <ComboBoxItem Content="A" Tag="65"/>
@@ -438,6 +460,18 @@
                         </toolkit:SettingsCard>
                     </toolkit:SettingsExpander.Items>
                 </toolkit:SettingsExpander>
+
+                <!-- Registration failure is otherwise invisible: the key just does nothing
+                     while Settings still shows it as configured. Sits outside the expander,
+                     matching the other InfoBars on this page, so it is seen without
+                     expanding anything. -->
+                <InfoBar Severity="Warning"
+                         IsOpen="{x:Bind ViewModel.HasHotkeyConflict, Mode=OneWay}"
+                         Visibility="{x:Bind ViewModel.HasHotkeyConflict, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                         IsClosable="False"
+                         AutomationProperties.AutomationId="Settings_HotkeyConflict"
+                         Title="That shortcut is already taken"
+                         Message="Another application registered it first, so it will not reach Hatch. Pick a different key or modifier below."/>
 
                 <!-- ── Sync ────────────────────────────────────────── -->
                 <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
@@ -464,49 +498,57 @@
                          IsClosable="False"/>
 
                 <toolkit:SettingsCard x:Uid="Settings_MfaChallengeCard"
+                    ContentAlignment="Vertical"
                     Visibility="{x:Bind ViewModel.IsMfaChallengePending, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE928;"/>
                     </toolkit:SettingsCard.HeaderIcon>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <TextBox x:Name="MfaChallengeCodeBox"
-                                 AutomationProperties.AutomationId="Settings_MfaChallengeCode"
-                                 AutomationProperties.Name="Authenticator code"
-                                 PlaceholderText="000000"
-                                 MaxLength="6"
-                                 Width="90"/>
-                        <Button x:Uid="Settings_MfaChallengeSubmit"
-                                AutomationProperties.AutomationId="Settings_MfaChallengeSubmit"
-                                Style="{ThemeResource AccentButtonStyle}"
-                                IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
-                                Click="MfaChallengeSubmit_Click"/>
-                        <Button x:Uid="Settings_MfaUseRecovery"
-                                AutomationProperties.AutomationId="Settings_MfaUseRecovery"
-                                Click="MfaUseRecovery_Click"/>
+                    <StackPanel Spacing="8">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBox x:Name="MfaChallengeCodeBox"
+                                     AutomationProperties.AutomationId="Settings_MfaChallengeCode"
+                                     AutomationProperties.Name="Authenticator code"
+                                     PlaceholderText="000000"
+                                     MaxLength="6"
+                                     Width="90"/>
+                            <Button x:Uid="Settings_MfaChallengeSubmit"
+                                    AutomationProperties.AutomationId="Settings_MfaChallengeSubmit"
+                                    Style="{ThemeResource AccentButtonStyle}"
+                                    IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
+                                    Click="MfaChallengeSubmit_Click"/>
+                        </StackPanel>
+                        <!-- On its own line: it is the escape hatch, not a peer of Verify. -->
+                        <HyperlinkButton x:Uid="Settings_MfaUseRecovery"
+                                         AutomationProperties.AutomationId="Settings_MfaUseRecovery"
+                                         Padding="0"
+                                         Click="MfaUseRecovery_Click"/>
                     </StackPanel>
                 </toolkit:SettingsCard>
 
                 <!-- Recovery code redemption — the only route back from a lost authenticator -->
                 <toolkit:SettingsCard x:Uid="Settings_RecoveryRedeemCard"
+                    ContentAlignment="Vertical"
                     Visibility="{x:Bind ViewModel.IsRedeemingRecovery, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE785;"/>
                     </toolkit:SettingsCard.HeaderIcon>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
+                    <StackPanel Spacing="8">
                         <TextBox x:Name="RecoveryCodeBox"
                                  AutomationProperties.AutomationId="Settings_RecoveryCode"
                                  AutomationProperties.Name="Recovery code"
                                  PlaceholderText="XXXXX-XXXXX"
                                  FontFamily="Consolas"
-                                 Width="150"/>
-                        <Button x:Uid="Settings_RecoveryRedeem"
-                                AutomationProperties.AutomationId="Settings_RecoveryRedeem"
-                                Style="{ThemeResource AccentButtonStyle}"
-                                IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
-                                Click="RecoveryRedeem_Click"/>
-                        <Button x:Uid="Settings_RecoveryCancel"
-                                AutomationProperties.AutomationId="Settings_RecoveryCancel"
-                                Click="RecoveryCancel_Click"/>
+                                 HorizontalAlignment="Stretch"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                            <Button x:Uid="Settings_RecoveryCancel"
+                                    AutomationProperties.AutomationId="Settings_RecoveryCancel"
+                                    Click="RecoveryCancel_Click"/>
+                            <Button x:Uid="Settings_RecoveryRedeem"
+                                    AutomationProperties.AutomationId="Settings_RecoveryRedeem"
+                                    Style="{ThemeResource AccentButtonStyle}"
+                                    IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
+                                    Click="RecoveryRedeem_Click"/>
+                        </StackPanel>
                     </StackPanel>
                 </toolkit:SettingsCard>
 
@@ -517,19 +559,24 @@
                          Visibility="{x:Bind ViewModel.IsSignedInWithoutPassphrase, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
                          IsClosable="False"/>
 
+                <!-- ContentAlignment=Vertical throughout the sync section: these cards carry
+                     an input plus one or more buttons, which at 620px wide would otherwise
+                     squeeze the header text to a couple of words per line. -->
                 <toolkit:SettingsCard x:Uid="Settings_SyncPassphraseCard"
+                    ContentAlignment="Vertical"
                     Visibility="{x:Bind ViewModel.IsSignedInWithoutPassphrase, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE72E;"/>
                     </toolkit:SettingsCard.HeaderIcon>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
+                    <StackPanel Spacing="8">
                         <PasswordBox x:Name="SyncPassphraseBox"
                                      AutomationProperties.AutomationId="Settings_SyncPassphrase"
                                      AutomationProperties.Name="Sync passphrase"
-                                     MinWidth="220"/>
+                                     HorizontalAlignment="Stretch"/>
                         <Button x:Uid="Settings_SyncPassphraseSet"
                                 AutomationProperties.AutomationId="Settings_SyncSetPassphrase"
                                 Style="{ThemeResource AccentButtonStyle}"
+                                HorizontalAlignment="Right"
                                 IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
                                 Click="SyncSetPassphrase_Click"/>
                     </StackPanel>
@@ -603,37 +650,48 @@
                          Visibility="{x:Bind ViewModel.ShowMfaOnInfo, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
                          IsClosable="False"/>
 
+                <!-- QR + setup key + code + two buttons never fit one row at 620px. Stacked
+                     in the order the task is actually performed: scan, or copy the key, then
+                     type what the authenticator shows. -->
                 <toolkit:SettingsCard x:Uid="Settings_MfaEnrollCard"
+                    ContentAlignment="Vertical"
                     Visibility="{x:Bind ViewModel.IsMfaEnrolling, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                    <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                    <StackPanel Spacing="12">
                         <Border x:Name="MfaQrPanel"
                                 Background="White"
                                 CornerRadius="4"
                                 Padding="6"
+                                HorizontalAlignment="Left"
                                 Visibility="Collapsed">
                             <Image x:Name="MfaQrImage"
                                    Width="132" Height="132"
                                    AutomationProperties.Name="Authenticator QR code"/>
                         </Border>
                         <TextBox Text="{x:Bind ViewModel.MfaSecret, Mode=OneWay}"
+                                 x:Uid="Settings_MfaSecretBox"
                                  AutomationProperties.AutomationId="Settings_MfaSecret"
                                  AutomationProperties.Name="Authenticator setup key"
                                  IsReadOnly="True"
                                  FontFamily="Consolas"
-                                 MinWidth="220"/>
-                        <TextBox x:Name="MfaCodeBox"
-                                 AutomationProperties.AutomationId="Settings_MfaCode"
-                                 AutomationProperties.Name="Authenticator code"
-                                 PlaceholderText="000000"
-                                 MaxLength="6"
-                                 Width="90"/>
-                        <Button x:Uid="Settings_MfaConfirm"
-                                AutomationProperties.AutomationId="Settings_MfaConfirm"
-                                Style="{ThemeResource AccentButtonStyle}"
-                                Click="MfaConfirm_Click"/>
-                        <Button x:Uid="Settings_MfaCancel"
-                                AutomationProperties.AutomationId="Settings_MfaCancel"
-                                Click="MfaCancel_Click"/>
+                                 HorizontalAlignment="Stretch"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBox x:Name="MfaCodeBox"
+                                     x:Uid="Settings_MfaCodeBox"
+                                     AutomationProperties.AutomationId="Settings_MfaCode"
+                                     AutomationProperties.Name="Authenticator code"
+                                     PlaceholderText="000000"
+                                     MaxLength="6"
+                                     Width="90"/>
+                            <Button x:Uid="Settings_MfaConfirm"
+                                    AutomationProperties.AutomationId="Settings_MfaConfirm"
+                                    Style="{ThemeResource AccentButtonStyle}"
+                                    VerticalAlignment="Bottom"
+                                    Click="MfaConfirm_Click"/>
+                            <Button x:Uid="Settings_MfaCancel"
+                                    AutomationProperties.AutomationId="Settings_MfaCancel"
+                                    VerticalAlignment="Bottom"
+                                    Click="MfaCancel_Click"/>
+                        </StackPanel>
                     </StackPanel>
                 </toolkit:SettingsCard>
 
