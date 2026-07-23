@@ -540,18 +540,34 @@ public sealed partial class MascotWindow : Window
         ((UIElement)sender).ReleasePointerCapture(e.Pointer);
     }
 
-    internal void RegisterHotKey()
+    // Survives the call so Settings can read it when the page is first opened: the usual
+    // case is the combination being taken at startup, long before anything is changed.
+    internal bool IsHotkeyRegistered { get; private set; } = true;
+
+    // False when the combination is already owned by another application. Windows gives no
+    // notification for this — the key simply does nothing — so the result has to travel back
+    // to Settings rather than being dropped.
+    internal bool RegisterHotKey()
     {
         var settings = App.Settings;
-        NativeMethods.RegisterHotKey(
+        bool registered = NativeMethods.RegisterHotKey(
             _hwnd,
             NativeMethods.HOTKEY_ID,
             settings.HotkeyModifiers | NativeMethods.MOD_NOREPEAT,
             settings.HotkeyVirtualKey);
 
-        // Install a native subclass to intercept WM_HOTKEY without polling
-        _subclassProc = SubclassProc;
-        NativeMethods.SetWindowSubclass(_hwnd, _subclassProc, 1, 0);
+        // Install a native subclass to intercept WM_HOTKEY without polling.
+        // Once only: `SubclassProc` allocates a fresh delegate each call, so a new function
+        // pointer would add a second subclass on every hotkey change rather than replace it,
+        // and WM_HOTKEY would then be handled twice.
+        if (_subclassProc is null)
+        {
+            _subclassProc = SubclassProc;
+            NativeMethods.SetWindowSubclass(_hwnd, _subclassProc, 1, 0);
+        }
+
+        IsHotkeyRegistered = registered;
+        return registered;
     }
 
     internal void UnregisterHotKey()

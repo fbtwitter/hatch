@@ -293,6 +293,8 @@
   <data name="Settings_MfaDisable.Content" xml:space="preserve"><value>Turn off</value></data>
   <data name="Settings_MfaEnrollCard.Header" xml:space="preserve"><value>Add Hatch to your authenticator</value></data>
   <data name="Settings_MfaEnrollCard.Description" xml:space="preserve"><value>Enter this setup key in Google Authenticator, Authy, 1Password or similar, then type the 6-digit code it shows.</value></data>
+  <data name="Settings_MfaSecretBox.Header" xml:space="preserve"><value>Setup key (if you can't scan)</value></data>
+  <data name="Settings_MfaCodeBox.Header" xml:space="preserve"><value>Code from your app</value></data>
   <data name="Settings_MfaConfirm.Content" xml:space="preserve"><value>Verify</value></data>
   <data name="Settings_MfaCancel.Content" xml:space="preserve"><value>Cancel</value></data>
   <data name="Settings_MfaOnInfo.Title" xml:space="preserve"><value>Two-factor authentication is on</value></data>
