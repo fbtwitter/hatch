@@ -46,6 +46,14 @@ kotlin {
     jvmToolchain(17)
 }
 
+// Without this the shared module's data classes are inferred unstable, so every visible
+// task row recomposes on any state change. See mobile/compose_stability.conf.
+composeCompiler {
+    stabilityConfigurationFiles.add(
+        rootProject.layout.projectDirectory.file("compose_stability.conf")
+    )
+}
+
 dependencies {
     implementation(project(":shared"))
 
@@ -53,6 +61,8 @@ dependencies {
     // aar-metadata requiring 37, which AGP 8.13.2 does not support.
     implementation(platform("androidx.compose:compose-bom:2025.12.01"))
     implementation("androidx.compose.material3:material3")
+    // Icons only — the material (M2) components themselves are deliberately not pulled in.
+    implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
