@@ -39,6 +39,8 @@
     <Compile Include="..\Services\SyncCrypto.cs" Link="Source\Services\SyncCrypto.cs" />
     <Compile Include="..\Services\SyncWire.cs" Link="Source\Services\SyncWire.cs" />
     <Compile Include="..\Services\SyncMerge.cs" Link="Source\Services\SyncMerge.cs" />
+    <Compile Include="..\Services\SyncDecisions.cs" Link="Source\Services\SyncDecisions.cs" />
+    <Compile Include="..\Helpers\RecoveryKit.cs" Link="Source\Helpers\RecoveryKit.cs" />
   </ItemGroup>
 
   <ItemGroup>
