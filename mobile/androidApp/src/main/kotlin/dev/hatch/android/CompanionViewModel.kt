@@ -26,6 +26,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
@@ -58,6 +60,12 @@ data class AppState(
     val tasks: List<TodoItem> = emptyList(),
     val lists: List<TaskList> = emptyList(),
     val sync: SyncState = SyncState.Off(),
+    // False until the on-disk list has been read. Gates the empty state (which would
+    // otherwise flash "Nothing yet" before the tasks arrive) and, more importantly, gates
+    // every mutation: persisting before the load lands would write a near-empty file over
+    // the real one.
+    val loaded: Boolean = false,
+    val themeMode: ThemeMode = ThemeMode.System,
 )
 
 // State lives here, on the platform — the shared module stays pure (ADR-0006).
@@ -72,11 +80,16 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
 
     private val keyStore = SyncKeyStore(app)
 
+    private val prefs = AppPrefs(app)
+
     // Keystore-backed (ADR-0005), so the passphrase is entered once per device rather than
     // once per launch, and the expensive PBKDF2 derivation happens exactly once.
-    private var syncKey: SyncKey? = keyStore.load()
+    // Populated by the init block off the main thread — the unwrap is a hardware-backed
+    // AES-GCM operation and does not belong in a constructor that runs during onCreate.
+    private var syncKey: SyncKey? = null
 
-    private val _state = MutableStateFlow(AppState())
+    // Theme is seeded synchronously so the very first frame paints in the chosen theme.
+    private val _state = MutableStateFlow(AppState(themeMode = prefs.themeMode))
     val state: StateFlow<AppState> = _state.asStateFlow()
 
     // One-shot, not state: "a manual pull just finished" is an event. Kept out of AppState
@@ -90,18 +103,30 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
     private var pushJob: Job? = null
 
     init {
-        val local = store.load()
-        _state.value = AppState(
-            tasks = local.tasks,
-            lists = local.lists,
-            sync = if (configured) SyncState.Off() else SyncState.NotConfigured,
-        )
-        if (configured) observeSession()
+        // Both of these used to run in the constructor, i.e. on the main thread during
+        // onCreate: a file read plus JSON parse, and a hardware-backed Keystore unwrap.
+        // Together they cost seconds on a mid-range device and logcat reported hundreds of
+        // skipped frames before the first paint.
+        viewModelScope.launch {
+            val local = withContext(Dispatchers.IO) { store.load() }
+            syncKey = withContext(Dispatchers.IO) { keyStore.load() }
+
+            _state.value = _state.value.copy(
+                tasks = local.tasks,
+                lists = local.lists,
+                sync = if (configured) SyncState.Off() else SyncState.NotConfigured,
+                loaded = true,
+            )
+            if (configured) observeSession()
+        }
     }
 
     // --- Local, works with no account and no network ------------------------------------
 
     fun addTask(title: String) {
+        // Guarded, not merely disabled in the UI: persisting before the load lands would
+        // write a one-task file over the real one.
+        if (!_state.value.loaded) return
         val trimmed = title.trim()
         if (trimmed.isEmpty()) return
         val now = isoNow()
@@ -117,6 +142,7 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun toggleComplete(task: TodoItem) {
+        if (!_state.value.loaded) return
         val now = isoNow()
         persist(
             _state.value.tasks.map {
@@ -130,9 +156,22 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
+    private val saveMutex = Mutex()
+
     private fun persist(tasks: List<TodoItem>, lists: List<TaskList> = _state.value.lists) {
-        store.save(TasksFile(tasks, lists))
+        // State first so the row redraws on this frame; the write follows off-thread.
+        // Ticking a checkbox previously blocked the main thread on a serialize + file write.
         _state.value = _state.value.copy(tasks = tasks, lists = lists)
+
+        viewModelScope.launch(Dispatchers.IO) {
+            // Serialized, and each writer re-reads current state under the lock: a write
+            // that arrives late then re-writes the newest snapshot rather than restoring a
+            // stale one, so ordering between launches cannot lose an edit.
+            saveMutex.withLock {
+                val snapshot = _state.value
+                store.save(TasksFile(snapshot.tasks, snapshot.lists))
+            }
+        }
         schedulePush()
     }
 
@@ -167,7 +206,11 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun observeSession() {
         viewModelScope.launch {
-            client.signedIn.collect { signedIn ->
+            // Touching `client` here is what first constructs it — createSupabaseClient plus
+            // an OkHttp engine — so the lazy is forced off the main thread rather than
+            // during the first composition.
+            val signedInFlow = withContext(Dispatchers.IO) { client.signedIn }
+            signedInFlow.collect { signedIn ->
                 // Only react to a sign-in that happened outside the email/password path;
                 // that path drives its own state transitions.
                 if (signedIn && _state.value.sync !is SyncState.On) pull()
@@ -219,6 +262,11 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
             if (error != null) setSync(SyncState.NeedsMfaCode(error = humanize(error)))
             else pull()
         }
+    }
+
+    fun setThemeMode(mode: ThemeMode) {
+        prefs.themeMode = mode
+        _state.value = _state.value.copy(themeMode = mode)
     }
 
     fun showRecoveryCodeEntry(show: Boolean) {

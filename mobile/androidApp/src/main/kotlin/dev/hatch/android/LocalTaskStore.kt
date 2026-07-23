@@ -15,7 +15,9 @@ import java.nio.file.StandardCopyOption
 // ADR-0006 keeps the shared module free of state and platform APIs.
 class LocalTaskStore(context: Context) {
 
-    private val file = File(context.filesDir, "tasks.json")
+    // Lazy for the same reason as SyncKeyStore.prefs: filesDir can hit the disk, and this
+    // is constructed in a ViewModel field initializer that runs during onCreate.
+    private val file by lazy { File(context.filesDir, "tasks.json") }
 
     // A missing file on first run is not an error — same contract as the Windows app.
     fun load(): TasksFile =

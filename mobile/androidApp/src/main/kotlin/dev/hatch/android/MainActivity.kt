@@ -1,24 +1,41 @@
 package dev.hatch.android
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -31,6 +48,11 @@ private const val MIN_PASSPHRASE = 8
 // TOTP is always 6 digits (docs/mfa-spec.md).
 private const val MFA_CODE_LENGTH = 6
 
+// Material's adaptive guidance caps line length for readability. Without this, a task title
+// on a 2340px landscape screen runs the full width and reads like a spreadsheet row; the
+// checkbox also ends up marooned from its label. Centred, so portrait is unaffected.
+private val ContentMaxWidth = 640.dp
+
 class MainActivity : ComponentActivity() {
 
     // Same instance the composables get from viewModel(), since both resolve against this
@@ -38,12 +60,14 @@ class MainActivity : ComponentActivity() {
     private val vm: CompanionViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Draws behind the system bars. Mandatory on Android 15+, and the reason Scaffold
+        // is left to apply its own insets rather than being given hardcoded padding.
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         vm.handleDeeplink(intent)
         setContent {
-            MaterialTheme(
-                colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme(),
-            ) {
+            val themeMode by vm.state.collectAsState()
+            HatchTheme(themeMode.themeMode) {
                 Surface(Modifier.fillMaxSize()) { HatchApp() }
             }
         }
@@ -55,6 +79,26 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         vm.handleDeeplink(intent)
     }
+}
+
+// Material You: on Android 12+ the palette is derived from the user's wallpaper, which is
+// what makes a Compose app look like it belongs on the device rather than merely running on
+// it. Below 12 there is no wallpaper palette, so the stock scheme is the correct fallback.
+@Composable
+private fun HatchTheme(mode: ThemeMode, content: @Composable () -> Unit) {
+    val dark = when (mode) {
+        ThemeMode.System -> isSystemInDarkTheme()
+        ThemeMode.Light -> false
+        ThemeMode.Dark -> true
+    }
+    val context = LocalContext.current
+    val scheme = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+            if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        dark -> darkColorScheme()
+        else -> lightColorScheme()
+    }
+    MaterialTheme(colorScheme = scheme, content = content)
 }
 
 @Composable
@@ -103,9 +147,12 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
         TaskScreen(
             tasks = state.tasks,
             lists = state.lists,
+            loaded = state.loaded,
+            themeMode = state.themeMode,
             snackbar = snackbar,
             onAdd = vm::addTask,
             onToggle = vm::toggleComplete,
+            onThemeMode = vm::setThemeMode,
             onOpenSync = { showSync = true },
         )
     }
@@ -116,28 +163,57 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
 private fun TaskScreen(
     tasks: List<TodoItem>,
     lists: List<TaskList>,
+    loaded: Boolean,
+    themeMode: ThemeMode,
     snackbar: SnackbarHostState,
     onAdd: (String) -> Unit,
     onToggle: (TodoItem) -> Unit,
+    onThemeMode: (ThemeMode) -> Unit,
     onOpenSync: () -> Unit,
 ) {
-    var draft by remember { mutableStateOf("") }
-    val open = tasks.filter { !it.isCompleted }
-    val done = tasks.filter { it.isCompleted }
-    val listNames = lists.associate { it.id to it.name }
+    var draft by rememberSaveable { mutableStateOf("") }
+    // Derived, not recomputed: without remember these three run on every recomposition —
+    // including every keystroke in the add field, which touches none of them.
+    val open = remember(tasks) { tasks.filter { !it.isCompleted } }
+    val done = remember(tasks) { tasks.filter { it.isCompleted } }
+    val listNames = remember(lists) { lists.associate { it.id to it.name } }
+
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
+    val submit = { if (draft.isNotBlank()) { onAdd(draft); draft = "" } }
 
     Scaffold(
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             TopAppBar(
-                title = { Text("Hatch") },
-                actions = { TextButton(onClick = onOpenSync) { Text("Sync") } },
+                title = { Text("Hatch", fontWeight = FontWeight.SemiBold) },
+                actions = {
+                    TextButton(onClick = onOpenSync) { Text("Sync") }
+                    ThemeMenu(themeMode, onThemeMode)
+                },
+                // The bar tints toward surfaceContainer as content scrolls under it —
+                // standard M3 behaviour that gives the list somewhere to go.
+                colors = TopAppBarDefaults.topAppBarColors(
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ),
+                scrollBehavior = scrollBehavior,
             )
         },
         bottomBar = {
-            Surface(tonalElevation = 3.dp) {
+            // surfaceContainer is the M3 token for a raised container, rather than picking
+            // a tonalElevation dp value by eye — it tracks the dynamic palette correctly in
+            // both light and dark.
+            Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
+              Box(Modifier.fillMaxWidth()) {
                 Row(
-                    Modifier.fillMaxWidth().padding(12.dp),
+                    Modifier
+                        // imePadding lifts the field above the keyboard; navigationBars
+                        // keeps it clear of the gesture bar under edge-to-edge.
+                        .imePadding()
+                        .navigationBarsPadding()
+                        .widthIn(max = ContentMaxWidth)
+                        .align(Alignment.TopCenter)
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     OutlinedTextField(
@@ -145,81 +221,192 @@ private fun TaskScreen(
                         onValueChange = { draft = it },
                         placeholder = { Text("Add a task") },
                         singleLine = true,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        shape = MaterialTheme.shapes.large,
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Sentences,
+                            imeAction = ImeAction.Done,
+                        ),
+                        // Capture in ≤4s is the product premise; reaching for the button
+                        // after typing is the slowest part of it.
+                        keyboardActions = KeyboardActions(onDone = { submit() }),
                         modifier = Modifier.weight(1f),
                     )
                     Spacer(Modifier.width(8.dp))
-                    Button(
-                        onClick = { onAdd(draft); draft = "" },
+                    FilledIconButton(
+                        onClick = submit,
                         enabled = draft.isNotBlank(),
-                    ) { Text("Add") }
+                        modifier = Modifier.size(52.dp),
+                    ) { Icon(Icons.Rounded.Add, contentDescription = "Add task") }
                 }
+              }
             }
         },
     ) { padding ->
+        // Nothing at all until the disk read lands: showing "Nothing yet" for one frame and
+        // then replacing it with the real list reads as a bug.
+        if (!loaded) return@Scaffold
+
         if (tasks.isEmpty()) {
             Column(
                 Modifier.fillMaxSize().padding(padding).padding(32.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                Icon(
+                    Icons.Rounded.CheckCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(56.dp),
+                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                )
+                Spacer(Modifier.height(16.dp))
                 Text("Nothing yet", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(6.dp))
                 Text(
                     "Add a task below. No account needed — Sync is optional.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
                 )
             }
             return@Scaffold
         }
 
-        LazyColumn(Modifier.fillMaxSize().padding(padding)) {
-            items(open, key = { it.id }) { TaskRow(it, listNames, onToggle) }
-            if (done.isNotEmpty()) {
-                item {
-                    Text(
-                        "Completed",
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 4.dp),
-                    )
+        Box(Modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .widthIn(max = ContentMaxWidth)
+                    .align(Alignment.TopCenter),
+                contentPadding = padding,
+            ) {
+                // contentType lets row composables be reused across both sections instead of
+                // being torn down and rebuilt when scrolling past the divider.
+                items(open, key = { it.id }, contentType = { "task" }) { task ->
+                    TaskRow(task, listNames, onToggle, Modifier.animateItem())
                 }
-                items(done, key = { it.id }) { TaskRow(it, listNames, onToggle) }
+                if (done.isNotEmpty()) {
+                    item(key = "completed-header", contentType = "header") {
+                        Text(
+                            "Completed · ${done.size}",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .animateItem()
+                                .padding(start = 20.dp, top = 24.dp, bottom = 8.dp),
+                        )
+                    }
+                    items(done, key = { it.id }, contentType = { "task" }) { task ->
+                        TaskRow(task, listNames, onToggle, Modifier.animateItem())
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Overflow menu is the M3 pattern for a secondary setting that does not deserve a screen of
+// its own. Mirrors the Windows Settings → Appearance → Theme options exactly.
+@Composable
+private fun ThemeMenu(current: ThemeMode, onSelect: (ThemeMode) -> Unit) {
+    var open by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(onClick = { open = true }) {
+            Icon(Icons.Rounded.MoreVert, contentDescription = "More options")
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            Text(
+                "Theme",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 12.dp, top = 8.dp, bottom = 4.dp),
+            )
+            ThemeMode.entries.forEach { mode ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            when (mode) {
+                                ThemeMode.System -> "System default"
+                                ThemeMode.Light -> "Light"
+                                ThemeMode.Dark -> "Dark"
+                            }
+                        )
+                    },
+                    // Leading check reserves the same space for every row, so the labels do
+                    // not shift as the selection moves.
+                    leadingIcon = {
+                        if (mode == current) {
+                            Icon(Icons.Rounded.Check, contentDescription = "Selected")
+                        } else {
+                            Spacer(Modifier.size(24.dp))
+                        }
+                    },
+                    onClick = { onSelect(mode); open = false },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun TaskRow(task: TodoItem, listNames: Map<String, String>, onToggle: (TodoItem) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Checkbox(checked = task.isCompleted, onCheckedChange = { onToggle(task) })
-        Column(Modifier.weight(1f).padding(vertical = 6.dp)) {
-            Text(
-                task.title,
-                style = MaterialTheme.typography.bodyLarge,
-                textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
-                color = if (task.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant
-                        else MaterialTheme.colorScheme.onSurface,
-            )
-            val meta = listOfNotNull(
-                listNames[task.listId],
-                task.dueDate?.take(10),
-                task.tags.takeIf { it.isNotEmpty() }?.joinToString(" ") { "#$it" },
-            )
-            if (meta.isNotEmpty()) {
-                Text(
-                    meta.joinToString("  ·  "),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+private fun TaskRow(
+    task: TodoItem,
+    listNames: Map<String, String>,
+    onToggle: (TodoItem) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val haptics = LocalHapticFeedback.current
+    val meta = remember(task.listId, task.dueDate, task.tags, listNames) {
+        listOfNotNull(
+            listNames[task.listId],
+            task.dueDate?.take(10),
+            task.tags.takeIf { it.isNotEmpty() }?.joinToString(" ") { "#$it" },
+        ).joinToString("  ·  ")
+    }
+    // Completing is the most-repeated action in the app; easing the colour change stops the
+    // row from snapping and makes the tap feel acknowledged. Only the two title colours are
+    // animated — animating the whole row would run a per-row animation while scrolling.
+    val titleColor by animateColorAsState(
+        if (task.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant
+        else MaterialTheme.colorScheme.onSurface,
+        label = "titleColor",
+    )
+
+    // remember: a fresh lambda each recomposition is a new instance, which defeats the
+    // skipping that the stability config just bought us.
+    val toggle = remember(task.id, task.isCompleted) {
+        {
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+            onToggle(task)
         }
     }
-    HorizontalDivider()
+
+    Column(modifier) {
+        ListItem(
+            // The whole row is the target, not just the checkbox — a 48dp checkbox is a
+            // hard aim one-handed.
+            modifier = Modifier.clickable(onClick = toggle),
+            leadingContent = {
+                Checkbox(checked = task.isCompleted, onCheckedChange = { toggle() })
+            },
+            headlineContent = {
+                Text(
+                    task.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
+                    color = titleColor,
+                )
+            },
+            supportingContent = if (meta.isEmpty()) null else {
+                { Text(meta, style = MaterialTheme.typography.bodySmall) }
+            },
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        )
+        HorizontalDivider(
+            modifier = Modifier.padding(start = 56.dp),
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
