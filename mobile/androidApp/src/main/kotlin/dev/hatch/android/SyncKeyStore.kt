@@ -22,7 +22,10 @@ import javax.crypto.spec.GCMParameterSpec
 // Not EncryptedSharedPreferences: Jetpack Security Crypto is deprecated and unmaintained.
 class SyncKeyStore(context: Context) {
 
-    private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    // Lazy so the backing XML is read on whichever thread first calls load()/save() — both
+    // of which are already off the main thread — rather than during construction, which
+    // happens in the ViewModel's field initializers during onCreate.
+    private val prefs by lazy { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE) }
 
     fun load(): SyncKey? {
         val wrapped = prefs.getString(WRAPPED_KEY, null) ?: return null
