@@ -26,7 +26,7 @@ internal sealed class UserDataRow : BaseModel
 
 public sealed class SyncService
 {
-    private const string SupabaseUrl = Secrets.SupabaseUrl;
+    private static readonly string SupabaseUrl = SyncDecisions.NormalizeSupabaseUrl(Secrets.SupabaseUrl);
     private const string SupabaseKey = Secrets.SupabaseKey;
 
     private SupabaseClient? _client;
@@ -251,8 +251,7 @@ public sealed class SyncService
         var row = response.Models.FirstOrDefault();
         if (string.IsNullOrEmpty(row?.TasksJson)) return (null, null);
 
-        if (App.Settings.LastSyncedAt.HasValue &&
-            row.UpdatedAt <= App.Settings.LastSyncedAt.Value)
+        if (!SyncDecisions.IsServerNewer(row.UpdatedAt, App.Settings.LastSyncedAt))
             return (null, null);
 
         var (server, readError) = ReadServerTasks(row);
@@ -385,8 +384,8 @@ public sealed class SyncService
                 // NextLevel is aal2 only once a verified factor exists, so this doubles as
                 // "does this account have MFA at all".
                 var aal = await _client.Auth.GetAuthenticatorAssuranceLevel();
-                pending = aal?.NextLevel  == AuthenticatorAssuranceLevel.aal2
-                       && aal.CurrentLevel != AuthenticatorAssuranceLevel.aal2;
+                pending = SyncDecisions.IsMfaChallengePending(
+                    aal?.CurrentLevel?.ToString(), aal?.NextLevel?.ToString());
             }
             catch
             {
@@ -511,31 +510,24 @@ public sealed class SyncService
     // read — callers must treat that as "server has data" and never overwrite it.
     // Plaintext rows predate E2E encryption; they parse as-is and get encrypted on the
     // next push.
+    // Adapter over SyncDecisions.ReadServerPayload: the decision is testable there, the
+    // localized wording belongs here.
     private static (TasksFile? Data, string? Error) ReadServerTasks(UserDataRow? row)
     {
-        if (string.IsNullOrEmpty(row?.TasksJson)) return (null, null);
+        var (passphrase, _) = SyncPassphraseStore.Load();
+        var result = SyncDecisions.ReadServerPayload(row?.TasksJson, passphrase);
 
-        string json = row.TasksJson;
-        if (SyncCrypto.IsEncrypted(json))
+        return result.Status switch
         {
-            var (passphrase, _) = SyncPassphraseStore.Load();
-            if (passphrase == null) return (null, Strings.Sync_Error_NoPassphrase);
-            var plain = SyncCrypto.TryDecrypt(json, passphrase);
-            if (plain == null) return (null, Strings.Sync_Error_WrongPassphrase);
-            json = plain;
-        }
-
-        try   { return (SyncWire.Deserialize(json), null); }
-        catch { return (null, Strings.Sync_Error_WrongPassphrase); }
+            ServerReadStatus.Ok              => (result.Data, null),
+            ServerReadStatus.Empty           => (null, null),
+            ServerReadStatus.NeedsPassphrase => (null, Strings.Sync_Error_NoPassphrase),
+            _                                => (null, Strings.Sync_Error_WrongPassphrase),
+        };
     }
 
     private static Dictionary<string, string> ParseQueryString(string query)
-        => query.Split('&', StringSplitOptions.RemoveEmptyEntries)
-                .Select(p => p.Split('=', 2))
-                .Where(p => p.Length == 2)
-                .ToDictionary(
-                    p => Uri.UnescapeDataString(p[0]),
-                    p => Uri.UnescapeDataString(p[1]));
+        => SyncDecisions.ParseQueryString(query);
 
     // Returns null on success/no-op, error message on failure.
     // force=true (user-triggered sync) bypasses the staleness check and always downloads.
@@ -549,9 +541,7 @@ public sealed class SyncService
             var row = response.Models.FirstOrDefault();
             if (row?.TasksJson == null) return null;
 
-            if (!force &&
-                App.Settings.LastSyncedAt.HasValue &&
-                row.UpdatedAt <= App.Settings.LastSyncedAt.Value)
+            if (!force && !SyncDecisions.IsServerNewer(row.UpdatedAt, App.Settings.LastSyncedAt))
                 return null;
 
             var (data, readError) = ReadServerTasks(row);
