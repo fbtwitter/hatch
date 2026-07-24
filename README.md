@@ -10,7 +10,7 @@ Your tasks, always one click away.
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=.net)
 ![WinUI 3](https://img.shields.io/badge/WinUI-3-0078D4?style=flat-square)
 ![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![v0.14.0](https://img.shields.io/badge/Version-v0.14.0-blue?style=flat-square)
+![v0.16.0](https://img.shields.io/badge/Version-v0.16.0-blue?style=flat-square)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?style=flat-square&logo=github-sponsors)](https://github.com/sponsors/fbtwitter)
 
 </div>
@@ -112,7 +112,8 @@ A: Yes. Hatch requires Windows 10 build 17763 (1809) or later. Mica backdrop is 
 A: Disable **Show shadows under windows** in Windows performance settings: search for *"Adjust the appearance and performance of Windows"* → uncheck **Show shadows under windows**. This cannot be suppressed per-app via any public Windows API.
 
 **Q: Will there be an Android/iOS version?**  
-A: Possibly as a read-only companion app (2027+). Desktop-first for now.
+A: Android companion is here — same encrypted sync, opens straight to your tasks with no
+sign-in required. iOS is a possible future companion; no timeline yet.
 
 **Q: How do I back up my tasks?**  
 A: Settings → Export my data. Two JSON files, yours to keep.
