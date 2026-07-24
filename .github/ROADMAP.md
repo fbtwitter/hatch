@@ -8,6 +8,20 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.16.0** | Jul 24, 2026 | End-to-end encrypted sync, PKCE OAuth, Kotlin Multiplatform Android companion, TOTP two-factor auth (`aal2` RLS), MFA + passphrase recovery, Windows App SDK 2.3.1 |
+| **v0.15.0** | Jul 14, 2026 | Show Mascot setting, mascot loading ring + entrance fade, mascot-only manual launch, Summary launchpad (tiles/rows navigate), PowerToys-style title-bar search sizing |
+| **v0.14.0** | Jul 10, 2026 | Summary page (KPI tiles, Today/Upcoming), Quick Snooze, task export (JSON/CSV/Markdown), dedicated Search page, non-destructive "Merge both" sync conflict option |
+| **v0.13.0** | Jul 10, 2026 | Task Search, Recurring Tasks, Priority Tiers, Proactive Tip Popup |
+| **v0.12.10** | Jun 19, 2026 | Expose `install-cert.cer` in GitHub releases; Store listed as primary install path |
+| **v0.12.9** | Jun 19, 2026 | Fix package DisplayName to match Partner Center reservation |
+| **v0.12.8** | Jun 19, 2026 | Store submission package identity, signing cert CN, msixbundle-only releases |
+| **v0.12.7** | Jun 17, 2026 | Fully automatic sync (debounced push, 5-min pull), conflict-choice dialog on fresh sign-in |
+| **v0.12.6** | Jun 17, 2026 | Fix list-name chip appearing without reload on new tasks in smart lists |
+| **v0.12.4–v0.12.5** | Jun 17, 2026 | Fix onboarding page content clipping on small displays |
+| **v0.12.3** | Jun 17, 2026 | Fix unsigned MSIX bundle install error |
+| **v0.12.2** | Jun 17, 2026 | Fix signing certificate CN/Publisher |
+| **v0.12.1** | Jun 17, 2026 | Bundle Windows App SDK runtime in MSIX |
+| **v0.12.0** | Jun 17, 2026 | Fix transparent mascot window white-border/flash on SDR displays |
 | **v0.11.1** | Jun 15, 2026 | Fix CS8602 null-dereference warning in SyncService |
 | **v0.11.0** | Jun 15, 2026 | My Day daily reset + suggestions, InfoBadge live updates, nav icon refresh, transparent taskbar icon, list name on new tasks |
 | **v0.10.0** | Jun 13, 2026 | List name chip in task rows, nav InfoBadge for open tasks, rename flyout in compact pane, bubble dismiss on unfocus, mascot tap shows main window, always-on-top ignores windowed fullscreen |
@@ -62,6 +76,18 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 | Task Tags — chips, filter, details pane | ✅ Shipped (v0.9) |
 | Nav InfoBadge, list name chip, UX polish | ✅ Shipped (v0.10) |
 | My Day daily reset + suggestions | ✅ Shipped (v0.11) |
+| Task search — title/notes/tags, dedicated Search page | ✅ Shipped (v0.13–v0.14) |
+| Recurring tasks — Daily/Weekdays/Weekly/Monthly | ✅ Shipped (v0.13) |
+| Priority tiers — None/Low/Medium/High, Important sorts by priority | ✅ Shipped (v0.13) |
+| Proactive tip popup — opt-in, once/day | ✅ Shipped (v0.13, TeachingTip rework v0.15) |
+| Summary page — KPI tiles, Today/Upcoming, launchpad navigation | ✅ Shipped (v0.14–v0.15) |
+| Task export — JSON, CSV, Markdown | ✅ Shipped (v0.14) |
+| Fully automatic sync — debounced push, periodic pull, conflict dialog with merge option | ✅ Shipped (v0.12.7, v0.14) |
+| End-to-end encrypted sync — `HATCHE2E.v1` envelope, PBKDF2 600k + AES-256-GCM | ✅ Shipped (v0.16) |
+| PKCE OAuth sign-in on Windows | ✅ Shipped (v0.16) |
+| Two-factor authentication — TOTP enrolment/challenge, `aal2` enforced in RLS | ✅ Shipped (v0.16) |
+| Recovery — MFA recovery codes, sync passphrase recovery kit | ✅ Shipped (v0.16) |
+| Android companion (Kotlin Multiplatform) — local-first, encrypted two-way sync | ✅ Shipped (v0.16) |
 
 ---
 
@@ -81,9 +107,8 @@ Larger scope, lower priority. Depends on user feedback post-v1.0.
 | Custom mascot skins | Cosmetic pack: Bumblebee, Cat, Paperclip variants; animated packs. Free, like everything else. | Medium |
 | Custom animation packs | Idle bob/blink variants, wink, wave, thumbs-up reactions | Medium |
 | Time tracking | Per-task timer, daily log, weekly summary | Medium |
-| Recurring tasks | Daily, weekly, monthly repeat; smart due-date roll-forward | Medium |
 | Dark mode polish | Fine-tune colors, contrast, theme-aware Lottie animations | Low |
-| Mobile companion (iOS/Android) | Companion client (see CONTEXT.md): Kotlin Multiplatform core, Compose on Android, SwiftUI on iOS, over the existing E2E Supabase sync — see docs/adr/0001-cross-platform-strategy.md. Capture + triage + tick off; never owns the data model. | Very High |
+| iOS companion | SwiftUI client over the existing E2E Supabase sync, mirroring the shipped Kotlin Multiplatform Android companion — see docs/adr/0001-cross-platform-strategy.md | Very High |
 
 ---
 
@@ -122,6 +147,10 @@ Skins, bubble themes, idle animations and sound packs ship free when they ship.
 
 ```
 May–Jun 2026  v0.1–v0.11 shipped (mascot → tags → sync → My Day reset)
+              ↓
+Jun–Jul 2026  v0.12–v0.15 shipped (Store submission, sync automation, search, recurring
+              tasks, priority tiers, Summary launchpad); E2E encryption, TOTP MFA, Android
+              companion, and recovery paths merged to main, not yet tagged
               ↓
 Q3 2026       v1.0 — final polish
               ↓
