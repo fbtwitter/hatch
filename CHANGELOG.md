@@ -6,6 +6,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+---
+
+## [0.16.0] - 2026-07-24
+
+### Added
+- End-to-end encrypted sync (`HATCHE2E.v1` envelope, PBKDF2-HMAC-SHA256 600k + AES-256-GCM)
+  — the server never sees plaintext task data
+- PKCE OAuth for GitHub sign-in on Windows, replacing the implicit flow (which would hand a
+  hijacked `hatch://` redirect live access and refresh tokens)
+- Verified passphrase entry — a passphrase that can't open the existing encrypted row is
+  rejected at entry instead of silently stored
+- Kotlin Multiplatform Android companion (`mobile/`) — local-first task list, opens straight
+  to your tasks with no sign-in required; encrypted two-way sync sharing the same merge
+  logic as Windows
+- Two-factor authentication (TOTP) — enrolment with QR code + setup key on Windows, sign-in
+  challenge on both Windows and Android, `aal2` enforced in Supabase RLS as a restrictive
+  policy for accounts with a verified factor
+- Recovery paths for both sync secrets: ten bcrypt-hashed MFA recovery codes (redeeming
+  turns two-factor off — the only way an account with a lost authenticator regains access),
+  and a saveable Sync Recovery Kit for the passphrase, which cannot be recovered by
+  construction
+- First database migrations committed to the repo (`supabase/migrations/`)
+
+### Changed
+- Windows App SDK upgraded 2.2.0 → 2.3.1
+- Repository restructured — the WinUI app moved from the root into `windows/`, alongside
+  the new `mobile/` companion
+- Release workflow validates the injected `SUPABASE_URL` secret shape and gained a
+  `workflow_dispatch` trigger for dry runs that build and sign but don't publish
+- Sync's read/merge/staleness/MFA-challenge decision logic extracted from `SyncService`
+  into a pure `SyncDecisions` class (and recovery-kit text into `RecoveryKit`), so the unit
+  test project can cover it directly without a WinUI reference — 79 new tests
+
+---
+
+## [0.15.0] - 2026-07-14
+
 ### Added
 - Show Mascot setting (Settings → Mascot) — turn the floating mascot off entirely;
   quick-add hotkey and tray keep working
@@ -55,6 +92,31 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.13.0] - 2026-07-10
+
+### Added
+- Task Search — `AutoSuggestBox` filters all tasks by title/notes/tags across every
+  list and completion state; flat results view with a "No matching tasks" empty state;
+  `Ctrl+F` focuses the box, `Escape` clears the query
+- Recurring Tasks — `TodoItem.Recurrence` (None/Daily/Weekdays/Weekly/Monthly);
+  completing a recurring task spawns the next occurrence with the due date advanced;
+  undo removes the spawned occurrence too
+- Priority Tiers — `TodoItem.Priority` (None/Low/Medium/High); details pane combo;
+  color-coded chip on the task row; the Important smart list sorts by priority first
+- Proactive Tip Popup — opt-in Settings toggle pops the contextual tip up above the
+  mascot once/day without a click, reusing the existing quick-add bubble in a tip-only
+  mode
+
+---
+
+## [0.12.10] - 2026-06-19
+
+### Added
+- `install-cert.cer` exposed in the GitHub release for sideload users; release notes
+  updated to reference the Store as the primary install path
+
+---
+
 ## [0.12.9] - 2026-06-19
 
 ### Fixed
@@ -70,14 +132,299 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 - GitHub releases now ship msixbundle only — Windows selects the right architecture automatically
 - README refreshed: title, features, and installation aligned with Store listing
 
-### Planned
-- Contextual tip engine — priority-based tips in quick-add bubble
-- Task list polish — star toggle, open/completed grouping, notes field
-- Details pane — slide-in panel for task editing
-- Real due-date picker — calendar flyout with presets
-- List CRUD — create, rename, recolor, delete custom lists
-- Settings polish — 6 accent hues, mascot controls
-- Privacy & onboarding — first-run screen with no-account messaging
+---
+
+## [0.12.7] - 2026-06-17
+
+### Added
+- Sync is now fully automatic: push to server 3s after each local save (debounced);
+  pull from server every 5 minutes via `PeriodicTimer`
+- On fresh sign-in, if both local and server have tasks, a `ContentDialog` shows task
+  count, list count, and last-updated date for each side so the user can choose which
+  to keep; if the account is new/empty, local data is pushed immediately
+
+### Removed
+- "Sync now" button — status and last-synced time now update automatically
+
+---
+
+## [0.12.6] - 2026-06-17
+
+### Fixed
+- `ListName` ("Task" chip) now set immediately on new tasks created from smart list
+  views (My Day, Important, Planned, All Tasks) — previously required a reload to appear
+
+---
+
+## [0.12.4] – [0.12.5] - 2026-06-17
+
+### Fixed
+- Onboarding page content clipping — `ScrollViewer` with a viewport-bound `MinHeight`
+  prevents text from being cut off on small displays
+
+---
+
+## [0.12.3] - 2026-06-17
+
+### Fixed
+- MSIX bundle signed after `MakeAppx` — the bundle was previously unsigned, causing
+  install error `0x800B010A`
+
+---
+
+## [0.12.2] - 2026-06-17
+
+### Fixed
+- Signing certificate CN and Publisher field updated to "Reza Fauzi Augusdi"
+
+---
+
+## [0.12.1] - 2026-06-17
+
+### Fixed
+- Windows App SDK runtime now bundled in the MSIX — resolves `0x8007007E` ("The
+  specified module could not be found") on sideload installs without the runtime
+  pre-installed
+
+---
+
+## [0.12.0] - 2026-06-17
+
+### Fixed
+- Transparent mascot window — eliminated the white border/flash artifact on SDR
+  displays; removed HDR-specific branching entirely, so there is no border and no
+  redirection bitmap on any display type
+
+---
+
+## [0.11.1] - 2026-06-15
+
+### Fixed
+- CS8602 nullable-dereference warnings in `SyncService` (`?.Auth?.` null-conditional
+  chain; `await` of a nullable `Task` guarded with `?? Task.CompletedTask`)
+
+---
+
+## [0.11.0] - 2026-06-15
+
+### Added
+- My Day daily reset — tasks not completed by end of day are cleared from My Day at
+  the next launch; `MyDayDate` (`DateOnly?`) added to `TodoItem`
+- Suggestions — all incomplete non-My-Day tasks surface in the My Day view; tappable
+  card opens the details pane; compact `+` button adds a suggestion to My Day
+- InfoBadge live updates — the nav badge count now updates on star toggle, due date
+  change, IsInMyDay toggle, task add, and task delete (previously only on complete/reload)
+- Transparent taskbar icon — generated `altform-unplated` assets so Windows no longer
+  applies a coloured backing plate
+
+### Changed
+- Nav icon refresh — sun (My Day), flag (Important), agenda (Planned), bulleted list
+  (All Tasks)
+- Default starting page changed to My Day
+- Custom list nav tooltips show the list name on hover, updating on rename
+- List name is set immediately on task creation (`AddTask()`/quick-add) without
+  requiring a reload
+
+---
+
+## [0.10.0] - 2026-06-13
+
+### Added
+- List name chip in task rows — "Task" for the default list, custom list names for
+  others; shown left of the due-date chip
+- Nav InfoBadge — numeric open-task count on My Day, Important, Planned, All Tasks,
+  and each custom list
+- Rename flyout in the compact pane — opening rename with the nav pane collapsed shows
+  a flyout instead of an invisible inline edit
+
+### Changed
+- Quick-add bubble now auto-dismisses on window unfocus (skipped when the cursor is
+  over the mascot, to avoid a race with the mascot tap)
+- A second mascot tap while the bubble is open now shows the main window instead of
+  toggling the bubble
+- Always-on-top now respects windowed fullscreen — hides only for exclusive D3D
+  fullscreen/presentation mode; windowed-fullscreen apps (browsers, media players) no
+  longer hide the mascot
+
+---
+
+## [0.9.2] - 2026-06-11
+
+### Changed
+- Windows App SDK upgraded to 2.2.0
+
+---
+
+## [0.9.1] - 2026-06-08
+
+### Fixed
+- Sync stale-data bug — "Sync now" always pulls the latest from the server; pull
+  errors now surface to the user instead of failing silently
+
+---
+
+## [0.9.0] - 2026-06-08
+
+### Added
+- Task Tags — free-form string tags per task; chips rendered in the task row (up to 2
+  visible + "+N" overflow)
+- Details pane tag input (Enter to add), chip row with individual remove buttons
+- Tag filter — clicking any chip filters the current list by that tag; a banner shows
+  the active filter and clears it
+
+### Changed
+- Project renamed: `todo-winui3.csproj`/`.sln` → `hatch.csproj`/`.sln`
+
+---
+
+## [0.8.1] - 2026-06-08
+
+### Fixed
+- Mascot window transparency — `WS_EX_NOREDIRECTIONBITMAP` + `DwmExtendFrameIntoClientArea`
+  eliminates the SDR white-border artifact around the mascot
+
+---
+
+## [0.8.0] - 2026-06-05
+
+### Added
+- Focus Mode — compact always-on-top popup above the mascot; enter via the task ⋯
+  menu → "Focus on this"; two icon buttons (mark done, exit focus); fade + slide-up
+  entrance animation; renders outside the mascot's 120×120 window via
+  `ShouldConstrainToRootBounds="False"`
+
+---
+
+## [0.7.0] - 2026-06-05
+
+### Added
+- Due-date toast notifications — two toasts per task (30-min warning at 8:30 AM + due
+  time at 9:00 AM); "Mark complete" action button completes the task without opening
+  the app; tapping the toast body opens Hatch with the task selected via the
+  `hatch://opentask` protocol
+
+### Changed
+- Nav rail tooltips (My Day, Important, Planned, All Tasks, New List, Settings) now
+  appear to the right
+
+---
+
+## [0.6.2] - 2026-06-04
+
+### Added
+- Bidirectional sync — auto-pull on startup (before windows are created), pull-then-push
+  on "Sync now"; `SyncService.TasksReceived` fires on a successful pull and
+  `MainViewModel.ReloadAsync()` reloads collections in response
+- `LastSyncedAt` now updates on pull as well as push
+
+---
+
+## [0.6.1] - 2026-06-04
+
+### Fixed
+- Single-instance redirect via `AppInstance.FindOrRegisterForKey("hatch-main")` — the
+  OAuth callback no longer opens a second window; protocol activation (`hatch://`) is
+  delivered to the already-running instance
+
+---
+
+## [0.6.0] - 2026-06-04
+
+### Added
+- Optional Supabase sync — email/password sign-up and GitHub OAuth; manual push/pull;
+  tokens persisted in `settings.json`
+- `hatch://` custom URI scheme registered for the OAuth callback
+- First-run onboarding page — "No account / local data / no telemetry" privacy
+  messaging, "Get started" navigates to the main page
+
+### Changed
+- Supabase credentials moved to gitignored `Services/Secrets.cs`; CI injects
+  `SUPABASE_URL`/`SUPABASE_KEY` from GitHub Actions secrets
+- Auto-push on every save removed — sync is manual only at this stage
+
+---
+
+## [0.5.1] - 2026-06-04
+
+### Added
+- `OsVersionHelper` — `IsWindows11OrGreater` (build ≥ 22000), `SupportsAcrylic` (build
+  ≥ 19041), and backdrop factory helpers
+
+### Changed
+- Mica backdrop falls back to `DesktopAcrylicBackdrop` on Windows 10 2004+; no backdrop
+  below that
+- DWM corner/border attribute calls guarded with `IsWindows11OrGreater` (introduced in
+  build 22000)
+
+---
+
+## [0.5.0] - 2026-06-03
+
+### Added
+- `Delete` deletes the selected task (guarded — no-op while typing)
+- `Ctrl+D` opens the due-date calendar picker in the details pane
+- `Ctrl+M` toggles My Day on the selected task
+- `↑`/`↓` moves selection through the task list with a live details pane
+- `Ctrl+Enter` exits the notes box and moves focus to the title
+- `Escape` in the pane returns focus to the page for immediate arrow navigation
+
+---
+
+## [0.4.1] - 2026-06-03
+
+### Added
+- List reordering — Move up / Move down in the right-click context menu, disabled at
+  section boundaries; cross-section move pins/unpins automatically
+
+### Fixed
+- `NavigationView.IsPaneOpen` `COMException` in Auto pane mode
+
+---
+
+## [0.4.0] - 2026-05-22
+
+### Added
+- Slide-in details pane (~280px) opens on task tap and stays open when switching tasks
+- Inline title edit (auto-focused on open), multiline notes, My Day toggle, due date
+  picker, created-at timestamp
+- Native `ListView` `SelectionMode="Single"` with a custom template: 3px accent left
+  border + subtle fill on the selected row
+
+### Changed
+- Window resized to 620×640; `NavigationView` adaptive (compact <720px, expanded ≥720px)
+
+### Fixed
+- Phantom selection on the Planned page from deferred `ICollectionView.CurrentItem`
+  auto-positioning
+
+---
+
+## [0.3.1] - 2026-05-15
+
+### Added
+- Open/completed tasks separated in My Day, Important, All Tasks via a collapsible
+  `Expander`, collapsed by default with a count header
+- Task moves into the completed group after a 250ms delay (strikethrough/fade
+  animates first); 4s undo snackbar reverses a completion
+- Congratulatory empty state when all tasks in a list are done
+
+### Fixed
+- Nav indicator now syncs when navigating programmatically (e.g. a tip action)
+
+---
+
+## [0.3.0] - 2026-05-12
+
+### Added
+- Contextual Tip Engine (`TipEngine.cs`) — priority-based tips: overdue → My Day empty
+  → progress milestone → time-based greeting → no tasks → fallback
+- Smart fallback suppression (skips filler tips when recently active or a meaningful
+  tip was shown < 4 hours ago) and adaptive silence (3 early dismissals → 3-day cooldown)
+- Rich `Tip` model — `Severity`, `DismissAfterMs`, `IsMeaningful`, optional actionable
+  `TipAction`; hover-pause on the countdown
+
+### Changed
+- Bubble window sizes dynamically to content instead of a fixed height
 
 ---
 
