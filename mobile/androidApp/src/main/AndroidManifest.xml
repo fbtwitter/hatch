@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="false"
+        android:label="Hatch"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Hatch">
+
+        <!-- singleTop so the OAuth redirect returns to the running instance via
+             onNewIntent instead of stacking a second copy of the activity. -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Kept as a separate filter from LAUNCHER on purpose: merging them makes the
+                 activity launchable by any VIEW intent matching the categories. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="hatch" android:host="auth-callback" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

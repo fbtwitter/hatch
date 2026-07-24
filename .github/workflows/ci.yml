@@ -10,10 +10,15 @@ jobs:
   build-and-test:
     runs-on: windows-2022
 
+    # The WinUI app lives in windows/; every step below keeps its original relative paths.
+    defaults:
+      run:
+        working-directory: windows
+
     steps:
       - uses: actions/checkout@v4
 
-      # Secrets.cs is gitignored (Services/Secrets.cs) — CI builds don't need real
+      # Secrets.cs is gitignored (windows/Services/Secrets.cs) — CI builds don't need real
       # Supabase access, just something for the compiler to reference.
       - name: Write dummy Secrets.cs
         shell: pwsh

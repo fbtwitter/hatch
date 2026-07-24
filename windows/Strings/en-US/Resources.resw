@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2"/>
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1"/>
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3"/>
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4"/>
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1"/>
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required"/>
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+
+  <!-- ── Navigation (x:Uid mapped — Content + ToolTip) ────────── -->
+  <data name="Nav_MyDay.Content" xml:space="preserve"><value>My Day</value></data>
+  <data name="Nav_MyDay.ToolTipService.ToolTip" xml:space="preserve"><value>My Day — tasks you've added to focus on today</value></data>
+  <data name="Nav_Important.Content" xml:space="preserve"><value>Important</value></data>
+  <data name="Nav_Important.ToolTipService.ToolTip" xml:space="preserve"><value>Important — tasks you've starred</value></data>
+  <data name="Nav_Planned.Content" xml:space="preserve"><value>Planned</value></data>
+  <data name="Nav_Planned.ToolTipService.ToolTip" xml:space="preserve"><value>Planned — tasks with a due date, grouped by when they're due</value></data>
+  <data name="Nav_AllTasks.Content" xml:space="preserve"><value>All Tasks</value></data>
+  <data name="Nav_AllTasks.ToolTipService.ToolTip" xml:space="preserve"><value>All Tasks — every task you've created</value></data>
+
+  <!-- ── Page headers ───────────────────────────────────────── -->
+  <data name="Header_MyDay" xml:space="preserve"><value>My Day</value></data>
+  <data name="Header_Important" xml:space="preserve"><value>Important</value></data>
+  <data name="Header_Planned" xml:space="preserve"><value>Planned</value></data>
+  <data name="Header_AllTasks" xml:space="preserve"><value>All Tasks</value></data>
+
+  <!-- ── Empty states ───────────────────────────────────────── -->
+  <data name="EmptyState_MyDay_Headline" xml:space="preserve"><value>Your day is clear</value></data>
+  <data name="EmptyState_MyDay_Subtext" xml:space="preserve"><value>Add tasks to My Day from All Tasks</value></data>
+  <data name="EmptyState_Important_Headline" xml:space="preserve"><value>No important tasks</value></data>
+  <data name="EmptyState_Important_Subtext" xml:space="preserve"><value>Star a task to see it here</value></data>
+  <data name="EmptyState_Planned_Headline" xml:space="preserve"><value>Nothing planned yet</value></data>
+  <data name="EmptyState_Planned_Subtext" xml:space="preserve"><value>Set a due date on a task to see it here</value></data>
+  <data name="EmptyState_AllTasks_Headline" xml:space="preserve"><value>No tasks yet</value></data>
+  <data name="EmptyState_AllTasks_Subtext" xml:space="preserve"><value>Add a task above to get started</value></data>
+  <data name="EmptyState_CustomList_Headline" xml:space="preserve"><value>This list is empty</value></data>
+  <data name="EmptyState_CustomList_Subtext" xml:space="preserve"><value>Add a task above to get started</value></data>
+
+  <!-- ── Task list row ──────────────────────────────────────── -->
+  <data name="Task_Tooltip_MarkComplete" xml:space="preserve"><value>Mark as complete</value></data>
+  <data name="Task_Tooltip_ChangeDueDate" xml:space="preserve"><value>Change due date</value></data>
+  <data name="Task_Tooltip_SetDueDate" xml:space="preserve"><value>Set a due date — makes this task appear in Planned</value></data>
+  <data name="Task_Chip_AddDate" xml:space="preserve"><value>Add date</value></data>
+  <data name="Task_Tooltip_Star_Add" xml:space="preserve"><value>Mark as important</value></data>
+  <data name="Task_Tooltip_Star_Remove" xml:space="preserve"><value>Remove from Important</value></data>
+  <data name="Task_Tooltip_Edit" xml:space="preserve"><value>Edit task</value></data>
+  <data name="Task_Tooltip_More" xml:space="preserve"><value>More options</value></data>
+  <data name="Task_Menu_Delete" xml:space="preserve"><value>Delete task</value></data>
+
+  <!-- ── New task input (x:Uid mapped) ────────────────────────── -->
+  <data name="NewTask_TextBox.PlaceholderText" xml:space="preserve"><value>What needs to be done?</value></data>
+  <data name="NewTask_AddButton.Content" xml:space="preserve"><value>Add</value></data>
+  <data name="NewTask_AddButton.ToolTipService.ToolTip" xml:space="preserve"><value>Add task (Enter)</value></data>
+
+  <!-- ── Undo snackbar (x:Uid mapped) ─────────────────────────── -->
+  <data name="UndoInfoBar.Message" xml:space="preserve"><value>Task completed</value></data>
+  <data name="UndoButton.Content" xml:space="preserve"><value>Undo</value></data>
+
+  <!-- ── Task row x:Uid mapped ──────────────────────────────── -->
+  <data name="Task_CheckBox.ToolTipService.ToolTip" xml:space="preserve"><value>Mark as complete</value></data>
+  <data name="Task_DateChipButton.ToolTipService.ToolTip" xml:space="preserve"><value>Change due date</value></data>
+  <data name="Task_AddDateButton.ToolTipService.ToolTip" xml:space="preserve"><value>Set a due date — makes this task appear in Planned</value></data>
+  <data name="Task_AddDateText.Text" xml:space="preserve"><value>Add date</value></data>
+  <data name="Task_EditButton.ToolTipService.ToolTip" xml:space="preserve"><value>Edit task</value></data>
+  <data name="Task_OverflowButton.ToolTipService.ToolTip" xml:space="preserve"><value>More options</value></data>
+  <data name="Task_DeleteMenuItem.Text" xml:space="preserve"><value>Delete task</value></data>
+
+  <!-- ── Due date chip labels ───────────────────────────────── -->
+  <data name="DueDate_Today" xml:space="preserve"><value>Due today</value></data>
+  <data name="DueDate_Tomorrow" xml:space="preserve"><value>Tomorrow</value></data>
+  <data name="DueDate_Overdue" xml:space="preserve"><value>Overdue ({0}d)</value><comment>{0} = number of days overdue</comment></data>
+
+  <!-- ── Planned group headers ──────────────────────────────── -->
+  <data name="PlannedGroup_Overdue" xml:space="preserve"><value>Overdue</value></data>
+  <data name="PlannedGroup_Today" xml:space="preserve"><value>Today</value></data>
+  <data name="PlannedGroup_Tomorrow" xml:space="preserve"><value>Tomorrow</value></data>
+  <data name="PlannedGroup_ThisWeek" xml:space="preserve"><value>This week</value></data>
+  <data name="PlannedGroup_Later" xml:space="preserve"><value>Later</value></data>
+
+  <!-- ── Edit task dialog ───────────────────────────────────── -->
+  <data name="EditTask_Title" xml:space="preserve"><value>Edit task</value></data>
+  <data name="EditTask_Section_Title" xml:space="preserve"><value>TITLE</value></data>
+  <data name="EditTask_Section_DueDate" xml:space="preserve"><value>DUE DATE</value></data>
+  <data name="EditTask_TitlePlaceholder" xml:space="preserve"><value>Task title</value></data>
+  <data name="EditTask_Save" xml:space="preserve"><value>Save</value></data>
+  <data name="EditTask_Cancel" xml:space="preserve"><value>Cancel</value></data>
+  <data name="EditTask_MarkImportant" xml:space="preserve"><value>Mark as important</value></data>
+  <data name="EditTask_ClearDate" xml:space="preserve"><value>Clear date</value></data>
+  <data name="EditTask_DatePlaceholder" xml:space="preserve"><value>Pick a custom date…</value></data>
+
+  <!-- ── Date presets (used in edit dialog and flyout) ─────── -->
+  <data name="DatePreset_Today" xml:space="preserve"><value>Today</value></data>
+  <data name="DatePreset_Tomorrow" xml:space="preserve"><value>Tomorrow</value></data>
+  <data name="DatePreset_Weekend" xml:space="preserve"><value>Weekend</value></data>
+  <data name="DatePreset_NextWeek" xml:space="preserve"><value>Next week</value></data>
+
+  <!-- ── Quick Add bubble window (x:Uid mapped) ──────────────── -->
+  <data name="QuickAdd_Header.Text" xml:space="preserve"><value>Add Task</value></data>
+  <data name="QuickAdd_ConfirmHeadline.Text" xml:space="preserve"><value>Task added!</value></data>
+  <data name="QuickAdd_ConfirmAddedTo" xml:space="preserve"><value>Added to &quot;{0}&quot;</value><comment>{0} = list name</comment></data>
+  <data name="QuickAdd_IntroTitle.Text" xml:space="preserve"><value>Welcome to Hatch</value></data>
+  <data name="QuickAdd_IntroBody.Text" xml:space="preserve"><value>Capture tasks from anywhere in seconds. Click the egg mascot anytime to add a quick task.</value></data>
+  <data name="QuickAdd_GotItButton.Content" xml:space="preserve"><value>Got it!</value></data>
+  <data name="QuickAdd_AddToLabel.Text" xml:space="preserve"><value>Add to:</value></data>
+  <data name="QuickAdd_DueDateLabel.Text" xml:space="preserve"><value>Due date:</value></data>
+  <data name="QuickAdd_TaskTitleBox.PlaceholderText" xml:space="preserve"><value>What needs to be done?</value></data>
+  <data name="QuickAdd_ListSelector.PlaceholderText" xml:space="preserve"><value>No lists yet</value></data>
+  <data name="QuickAdd_NoDateItem.Content" xml:space="preserve"><value>No date</value></data>
+  <data name="QuickAdd_TodayItem.Content" xml:space="preserve"><value>Today</value></data>
+  <data name="QuickAdd_TomorrowItem.Content" xml:space="preserve"><value>Tomorrow</value></data>
+  <data name="QuickAdd_WeekendItem.Content" xml:space="preserve"><value>This weekend</value></data>
+  <data name="QuickAdd_NextWeekItem.Content" xml:space="preserve"><value>Next week</value></data>
+  <data name="QuickAdd_AddButton.Content" xml:space="preserve"><value>Add Task</value></data>
+  <data name="QuickAdd_OpenMainButton.ToolTipService.ToolTip" xml:space="preserve"><value>Open main window</value></data>
+
+  <!-- ── Default list name ─────────────────────────────────── -->
+  <data name="List_AllTasks_Name" xml:space="preserve"><value>All Tasks</value></data>
+
+  <!-- ── Summary page ──────────────────────────────────────── -->
+  <data name="Stats_TitleText.Text" xml:space="preserve"><value>Summary</value></data>
+  <data name="Stats_TodayHeader.Text" xml:space="preserve"><value>Today</value></data>
+  <data name="Stats_UpcomingHeader.Text" xml:space="preserve"><value>Upcoming</value></data>
+  <data name="Stats_EmptyToday.Text" xml:space="preserve"><value>Nothing due today.</value></data>
+  <data name="Stats_EmptyUpcoming.Text" xml:space="preserve"><value>Nothing due soon.</value></data>
+  <data name="Stats_Tile_Overdue" xml:space="preserve"><value>Overdue</value></data>
+  <data name="Stats_Tile_CompletedToday" xml:space="preserve"><value>Completed today</value></data>
+  <data name="Stats_Tile_Open" xml:space="preserve"><value>Open</value></data>
+
+  <!-- ── Task row overflow menu (x:Uid mapped) ───────────────── -->
+  <data name="TaskRow_FocusMenuItem.Text" xml:space="preserve"><value>Focus on this</value></data>
+  <data name="TaskRow_SnoozeSubItem.Text" xml:space="preserve"><value>Snooze</value></data>
+  <data name="TaskRow_SnoozeTomorrowItem.Text" xml:space="preserve"><value>Tomorrow</value></data>
+  <data name="TaskRow_SnoozeNextWeekItem.Text" xml:space="preserve"><value>Next week</value></data>
+  <data name="Task_RepeatChip.ToolTipService.ToolTip" xml:space="preserve"><value>Repeats</value></data>
+
+  <!-- ── Tag filter banner + suggestions (x:Uid mapped) ──────── -->
+  <data name="TagFilter_ShowingText.Text" xml:space="preserve"><value>Showing:</value></data>
+  <data name="Suggestions_Header.Text" xml:space="preserve"><value>Suggested</value></data>
+  <data name="Suggestion_AddButton.ToolTipService.ToolTip" xml:space="preserve"><value>Add to My Day</value></data>
+  <data name="Suggestion_AddButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Add to My Day</value></data>
+
+  <!-- ── Details pane (x:Uid mapped) ─────────────────────────── -->
+  <data name="Pane_Header.Text" xml:space="preserve"><value>Details</value></data>
+  <data name="PaneCloseButton.ToolTipService.ToolTip" xml:space="preserve"><value>Close (Esc)</value></data>
+  <data name="PaneCloseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Close details</value></data>
+  <data name="PaneTitleBox.Header" xml:space="preserve"><value>Title</value></data>
+  <data name="PaneTitleBox.PlaceholderText" xml:space="preserve"><value>Task title</value></data>
+  <data name="PaneNotesBox.Header" xml:space="preserve"><value>Notes</value></data>
+  <data name="PaneNotesBox.PlaceholderText" xml:space="preserve"><value>Add a note…</value></data>
+  <data name="PaneMyDayToggle.Header" xml:space="preserve"><value>My Day</value></data>
+  <data name="PanePriorityCombo.Header" xml:space="preserve"><value>Priority</value></data>
+  <data name="PriorityItem_None.Content" xml:space="preserve"><value>None</value></data>
+  <data name="PriorityItem_Low.Content" xml:space="preserve"><value>Low</value></data>
+  <data name="PriorityItem_Medium.Content" xml:space="preserve"><value>Medium</value></data>
+  <data name="PriorityItem_High.Content" xml:space="preserve"><value>High</value></data>
+  <data name="PaneDueDatePicker.Header" xml:space="preserve"><value>Due date</value></data>
+  <data name="PaneDueDatePicker.PlaceholderText" xml:space="preserve"><value>No due date</value></data>
+  <data name="PaneRepeatCombo.Header" xml:space="preserve"><value>Repeat</value></data>
+  <data name="RepeatItem_None.Content" xml:space="preserve"><value>Doesn't repeat</value></data>
+  <data name="RepeatItem_Daily.Content" xml:space="preserve"><value>Daily</value></data>
+  <data name="RepeatItem_Weekdays.Content" xml:space="preserve"><value>Weekdays</value></data>
+  <data name="RepeatItem_Weekly.Content" xml:space="preserve"><value>Weekly</value></data>
+  <data name="RepeatItem_Monthly.Content" xml:space="preserve"><value>Monthly</value></data>
+  <data name="Pane_TagsLabel.Text" xml:space="preserve"><value>Tags</value></data>
+  <data name="PaneTagInput.PlaceholderText" xml:space="preserve"><value>Add a tag, press Enter</value></data>
+  <data name="PaneTagChipRemove.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Remove tag</value></data>
+  <data name="Pane_CreatedLabel.Text" xml:space="preserve"><value>Created</value></data>
+
+  <!-- ── Priority chip labels (code-accessed) ────────────────── -->
+  <data name="Priority_None" xml:space="preserve"><value>None</value></data>
+  <data name="Priority_Low" xml:space="preserve"><value>Low</value></data>
+  <data name="Priority_Medium" xml:space="preserve"><value>Medium</value></data>
+  <data name="Priority_High" xml:space="preserve"><value>High</value></data>
+
+  <!-- ── Mascot window (x:Uid mapped) ────────────────────────── -->
+  <data name="Mascot_MenuShowMain.Text" xml:space="preserve"><value>Show Main Window</value></data>
+  <data name="Mascot_MenuResetPosition.Text" xml:space="preserve"><value>Reset Position</value></data>
+  <data name="Mascot_MenuSettings.Text" xml:space="preserve"><value>Mascot Settings…</value></data>
+  <data name="Mascot_MenuHideFor.Text" xml:space="preserve"><value>Hide for...</value></data>
+  <data name="Mascot_MenuHide1Hour.Text" xml:space="preserve"><value>1 hour</value></data>
+  <data name="Mascot_MenuHide3Hours.Text" xml:space="preserve"><value>3 hours</value></data>
+  <data name="Mascot_MenuHideTomorrow.Text" xml:space="preserve"><value>Until tomorrow</value></data>
+  <data name="Mascot_MenuHideRestart.Text" xml:space="preserve"><value>Until restart</value></data>
+  <data name="Mascot_LoadingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Loading mascot</value></data>
+  <data name="FocusMode_MarkDoneButton.ToolTipService.ToolTip" xml:space="preserve"><value>Mark done</value></data>
+  <data name="FocusMode_MarkDoneButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mark done</value></data>
+  <data name="FocusMode_ExitButton.ToolTipService.ToolTip" xml:space="preserve"><value>Exit focus</value></data>
+  <data name="FocusMode_ExitButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Exit focus</value></data>
+
+  <!-- ── Tips ────────────────────────────────────────────────── -->
+  <data name="Tip_SampleTaskTitle" xml:space="preserve"><value>Example: Click to edit task name</value></data>
+  <data name="Tip_Overdue_One" xml:space="preserve"><value>You have 1 overdue task</value></data>
+  <data name="Tip_Overdue_Many" xml:space="preserve"><value>You have {0} overdue tasks</value><comment>{0} = overdue task count, always ≥ 2</comment></data>
+  <data name="Tip_Action_ViewOverdue" xml:space="preserve"><value>View overdue</value></data>
+  <data name="Tip_DueToday_One" xml:space="preserve"><value>1 task is due today</value></data>
+  <data name="Tip_DueToday_Many" xml:space="preserve"><value>{0} tasks are due today</value><comment>{0} = due-today task count, always ≥ 2</comment></data>
+  <data name="Tip_Action_ViewPlanned" xml:space="preserve"><value>View planned</value></data>
+  <data name="Tip_MyDayEmpty" xml:space="preserve"><value>Your My Day list is empty—ready to plan?</value></data>
+  <data name="Tip_Action_PlanMyDay" xml:space="preserve"><value>Plan My Day</value></data>
+  <data name="Tip_EveningWrapUp" xml:space="preserve"><value>My Day is clear. Plan tomorrow?</value></data>
+  <data name="Tip_Action_PlanTomorrow" xml:space="preserve"><value>Plan tomorrow</value></data>
+  <data name="Tip_CompletedToday" xml:space="preserve"><value>Great progress! {0} tasks done today.</value><comment>{0} = tasks completed today, always ≥ 5</comment></data>
+  <data name="Tip_StaleTask" xml:space="preserve"><value>“{0}” has been waiting {1} days</value><comment>{0} = task title, {1} = days since created</comment></data>
+  <data name="Tip_Action_TakeALook" xml:space="preserve"><value>Take a look</value></data>
+  <data name="Tip_EmptyList" xml:space="preserve"><value>Your task list is empty. Add one to get started.</value></data>
+  <data name="Tip_Action_AddSample" xml:space="preserve"><value>Add sample task</value></data>
+  <data name="Tip_Greeting_Morning_0" xml:space="preserve"><value>Good morning</value></data>
+  <data name="Tip_Greeting_Morning_1" xml:space="preserve"><value>What's the priority today?</value></data>
+  <data name="Tip_Greeting_Morning_2" xml:space="preserve"><value>Ready to plan your day?</value></data>
+  <data name="Tip_Greeting_Afternoon_0" xml:space="preserve"><value>Small steps count</value></data>
+  <data name="Tip_Greeting_Afternoon_1" xml:space="preserve"><value>Let's clear one thing first</value></data>
+  <data name="Tip_Greeting_Afternoon_2" xml:space="preserve"><value>How's the day going?</value></data>
+  <data name="Tip_Greeting_Afternoon_3" xml:space="preserve"><value>Keep the momentum</value></data>
+  <data name="Tip_Greeting_Evening_0" xml:space="preserve"><value>Great work today</value></data>
+  <data name="Tip_Greeting_Evening_1" xml:space="preserve"><value>Tomorrow's a new slate</value></data>
+  <data name="Tip_Greeting_Evening_2" xml:space="preserve"><value>You earned this</value></data>
+  <data name="Tip_Greeting_Evening_3" xml:space="preserve"><value>Wrap up strong</value></data>
+  <data name="Tip_Greeting_Anytime_0" xml:space="preserve"><value>You've got this</value></data>
+  <data name="Tip_Greeting_Anytime_1" xml:space="preserve"><value>One task at a time</value></data>
+  <data name="Tip_Greeting_Anytime_2" xml:space="preserve"><value>You're all caught up</value></data>
+  <data name="Tip_Greeting_Anytime_3" xml:space="preserve"><value>Every task counts</value></data>
+
+  <!-- ── Settings › Automatic tip time (x:Uid mapped) ────────── -->
+  <data name="Settings_TipTimeHeader.Text" xml:space="preserve"><value>Automatic Tip Time</value></data>
+  <data name="Settings_TipTimeDescription.Text" xml:space="preserve"><value>When the once-a-day automatic tip is allowed to appear</value></data>
+  <data name="Settings_TipTime_Anytime.Content" xml:space="preserve"><value>Any time</value></data>
+  <data name="Settings_TipTime_Morning.Content" xml:space="preserve"><value>Morning</value></data>
+  <data name="Settings_TipTime_Afternoon.Content" xml:space="preserve"><value>Afternoon</value></data>
+  <data name="Settings_TipTime_Evening.Content" xml:space="preserve"><value>Evening</value></data>
+
+  <!-- ── Sync (code-accessed) ────────────────────────────────── -->
+  <data name="Sync_Error_NotReady" xml:space="preserve"><value>Sync service not ready.</value></data>
+  <data name="Sync_Error_SignInFailed" xml:space="preserve"><value>Sign-in failed — check your credentials.</value></data>
+  <data name="Sync_Info_ConfirmEmail" xml:space="preserve"><value>Account created. Check your email to confirm before signing in.</value></data>
+  <data name="Sync_Error_NotSignedIn" xml:space="preserve"><value>Not signed in.</value></data>
+  <data name="Sync_Error_NoUserId" xml:space="preserve"><value>Could not read user ID.</value></data>
+  <data name="Sync_NeverSynced" xml:space="preserve"><value>Never synced</value></data>
+  <data name="Sync_JustNow" xml:space="preserve"><value>Just now</value></data>
+  <data name="Sync_MinAgo" xml:space="preserve"><value>{0} min ago</value><comment>{0} = whole minutes</comment></data>
+  <data name="Sync_HrAgo" xml:space="preserve"><value>{0} hr ago</value><comment>{0} = whole hours</comment></data>
+  <data name="Sync_Error_NoPassphrase" xml:space="preserve"><value>Set your sync passphrase to resume syncing.</value></data>
+  <data name="Sync_Error_WrongPassphrase" xml:space="preserve"><value>Wrong sync passphrase — use the same passphrase you set on your other device.</value></data>
+  <data name="Sync_Error_PassphraseTooShort" xml:space="preserve"><value>Passphrase must be at least 8 characters.</value></data>
+  <data name="Sync_Error_MfaRequired" xml:space="preserve"><value>Enter the code from your authenticator to resume syncing.</value></data>
+  <data name="Sync_Error_NoMfaFactor" xml:space="preserve"><value>No authenticator is set up for this account.</value></data>
+  <data name="Sync_Error_BadRecoveryCode" xml:space="preserve"><value>That recovery code was not recognised. Check for typos, or try another code from your list.</value></data>
+  <data name="Sync_Info_RecoveryUsed" xml:space="preserve"><value>Recovery code accepted. Two-factor authentication is now OFF and your remaining codes have been discarded — set it up again to re-protect your account.</value></data>
+
+  <!-- ── Sync passphrase (x:Uid mapped) ──────────────────────── -->
+  <data name="Settings_SyncPassphraseInfo.Title" xml:space="preserve"><value>End-to-end encryption</value></data>
+  <data name="Settings_SyncPassphraseInfo.Message" xml:space="preserve"><value>Your tasks are encrypted on this device before upload — the server can never read them. Set a passphrase to start syncing, and use the same one on every device.</value></data>
+  <data name="Settings_SyncPassphraseCard.Header" xml:space="preserve"><value>Sync passphrase</value></data>
+  <data name="Settings_SyncPassphraseCard.Description" xml:space="preserve"><value>Never sent to the server. If you lose it, synced data cannot be recovered.</value></data>
+  <data name="Settings_SyncPassphraseSet.Content" xml:space="preserve"><value>Set passphrase</value></data>
+
+  <!-- ── Sync recovery kit (x:Uid mapped) ─────────────────────── -->
+  <data name="Settings_RecoveryKitCard.Header" xml:space="preserve"><value>Sync recovery kit</value></data>
+  <data name="Settings_RecoveryKitCard.Description" xml:space="preserve"><value>Your passphrase cannot be reset or recovered by anyone. Save a copy somewhere you'll still have if this PC is lost.</value></data>
+  <data name="Settings_RecoveryKitShow.Content" xml:space="preserve"><value>Show recovery kit</value></data>
+  <data name="Settings_RecoveryKitInfo.Title" xml:space="preserve"><value>Save this somewhere safe</value></data>
+  <data name="Settings_RecoveryKitInfo.Message" xml:space="preserve"><value>This contains your sync passphrase in plain text. Keep it off this PC — a password manager, a printout, or separate storage.</value></data>
+  <data name="Settings_RecoveryKitSave.Content" xml:space="preserve"><value>Save to file…</value></data>
+  <data name="Settings_RecoveryKitCopy.Content" xml:space="preserve"><value>Copy</value></data>
+  <data name="Settings_RecoveryKitDone.Content" xml:space="preserve"><value>Hide</value></data>
+
+  <data name="Settings_MfaCard.Header" xml:space="preserve"><value>Two-factor authentication</value></data>
+  <data name="Settings_MfaCard.Description" xml:space="preserve"><value>Require a code from an authenticator app when signing in. This protects your account — your tasks are already protected by the sync passphrase.</value></data>
+  <data name="Settings_MfaEnable.Content" xml:space="preserve"><value>Set up</value></data>
+  <data name="Settings_MfaDisable.Content" xml:space="preserve"><value>Turn off</value></data>
+  <data name="Settings_MfaEnrollCard.Header" xml:space="preserve"><value>Add Hatch to your authenticator</value></data>
+  <data name="Settings_MfaEnrollCard.Description" xml:space="preserve"><value>Enter this setup key in Google Authenticator, Authy, 1Password or similar, then type the 6-digit code it shows.</value></data>
+  <data name="Settings_MfaSecretBox.Header" xml:space="preserve"><value>Setup key (if you can't scan)</value></data>
+  <data name="Settings_MfaCodeBox.Header" xml:space="preserve"><value>Code from your app</value></data>
+  <data name="Settings_MfaConfirm.Content" xml:space="preserve"><value>Verify</value></data>
+  <data name="Settings_MfaCancel.Content" xml:space="preserve"><value>Cancel</value></data>
+  <data name="Settings_MfaOnInfo.Title" xml:space="preserve"><value>Two-factor authentication is on</value></data>
+  <data name="Settings_MfaOnInfo.Message" xml:space="preserve"><value>You will be asked for a code from your authenticator when you sign in. If you lose the authenticator, you lose access to sync — there is no recovery code.</value></data>
+
+  <!-- ── Two-factor challenge on sign-in (x:Uid mapped) ───────── -->
+  <data name="Settings_MfaChallengeInfo.Title" xml:space="preserve"><value>Two-factor code required</value></data>
+  <data name="Settings_MfaChallengeInfo.Message" xml:space="preserve"><value>Syncing is paused until you enter the current code from your authenticator. Your tasks on this PC are unaffected.</value></data>
+  <data name="Settings_MfaChallengeCard.Header" xml:space="preserve"><value>Enter your authenticator code</value></data>
+  <data name="Settings_MfaChallengeCard.Description" xml:space="preserve"><value>Open the authenticator app you set up for Hatch and type the 6-digit code it shows.</value></data>
+  <data name="Settings_MfaChallengeSubmit.Content" xml:space="preserve"><value>Verify</value></data>
+  <data name="Settings_MfaUseRecovery.Content" xml:space="preserve"><value>Use a recovery code</value></data>
+
+  <!-- ── Recovery codes (x:Uid mapped) ────────────────────────── -->
+  <data name="Settings_RecoveryCodesInfo.Title" xml:space="preserve"><value>Save your recovery codes now</value></data>
+  <data name="Settings_RecoveryCodesInfo.Message" xml:space="preserve"><value>These are shown once and cannot be retrieved again — only their hashes are stored. Keep them somewhere other than the device holding your authenticator. Each one can turn two-factor off if you lose it. They do not recover your sync passphrase: that remains separate and unrecoverable.</value></data>
+  <data name="Settings_RecoveryCopy.Content" xml:space="preserve"><value>Copy</value></data>
+  <data name="Settings_RecoveryDone.Content" xml:space="preserve"><value>I've saved them</value></data>
+  <data name="Settings_RecoveryRedeemCard.Header" xml:space="preserve"><value>Enter a recovery code</value></data>
+  <data name="Settings_RecoveryRedeemCard.Description" xml:space="preserve"><value>This turns two-factor authentication OFF and discards your remaining codes. Your tasks and your sync passphrase are unaffected. Set two-factor up again afterwards.</value></data>
+  <data name="Settings_RecoveryRedeem.Content" xml:space="preserve"><value>Use code</value></data>
+  <data name="Settings_RecoveryCancel.Content" xml:space="preserve"><value>Cancel</value></data>
+
+  <!-- ── Settings (code-accessed) ────────────────────────────── -->
+  <data name="Settings_NoFileSelected" xml:space="preserve"><value>(none selected)</value></data>
+</root>
