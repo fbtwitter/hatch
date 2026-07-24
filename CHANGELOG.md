@@ -78,7 +78,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 - List CRUD — create, rename, recolor, delete custom lists
 - Settings polish — 6 accent hues, mascot controls
 - Privacy & onboarding — first-run screen with no-account messaging
-- Appreciation purchase — $5 one-time cosmetics (skins, sounds, themes)
 
 ---
 
