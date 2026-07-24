@@ -1,0 +1,883 @@
+<Page
+    x:Class="Hatch.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:toolkit="using:CommunityToolkit.WinUI.Controls"
+    xmlns:converters="using:Hatch.Converters"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Page.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
+        <x:Double x:Key="SettingsCardSpacing">8</x:Double>
+        <Style
+            x:Key="SettingsSectionHeaderTextBlockStyle"
+            BasedOn="{StaticResource BodyStrongTextBlockStyle}"
+            TargetType="TextBlock">
+            <Style.Setters>
+                <Setter Property="Margin" Value="0,24,0,8"/>
+            </Style.Setters>
+        </Style>
+
+        <!--
+            Toggle card: flexible left column so the toggle always stays on the right.
+            SettingsCard's built-in responsive wrap moves content below at narrow widths,
+            so toggle-only rows use this custom layout instead.
+        -->
+        <Style x:Key="ToggleCardBorderStyle" TargetType="Border">
+            <Style.Setters>
+                <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}"/>
+                <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Padding" Value="16,0"/>
+                <Setter Property="MinHeight" Value="64"/>
+            </Style.Setters>
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header -->
+        <TextBlock Grid.Row="0" Padding="16,24,16,8" x:Name="HeaderText" Text="Settings"
+                   Style="{ThemeResource TitleLargeTextBlockStyle}"
+                   VerticalAlignment="Center"/>
+
+        <!-- Settings list -->
+        <ScrollViewer Grid.Row="1" Padding="24,0,24,24" VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+
+                <!-- ── Appearance & behavior ────────────────────────── -->
+                <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                           Text="Appearance &amp; behavior"/>
+
+                <!-- Minimize to Tray — custom toggle card -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE8BD;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock Text="Minimize to System Tray"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Keep running in the background when closed"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="2"
+                                      AutomationProperties.AutomationId="Settings_MinimizeToTray"
+                                      AutomationProperties.Name="Minimize to System Tray"
+                                      IsOn="{x:Bind ViewModel.MinimizeToTray, Mode=TwoWay}"
+                                      OnContent="On" OffContent="Off" MinWidth="80"
+                                      VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Run at Startup — custom toggle card -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE896;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock Text="Run at startup"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Hatch will launch automatically"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="2"
+                                      AutomationProperties.AutomationId="Settings_RunAtStartup"
+                                      AutomationProperties.Name="Run at startup"
+                                      IsOn="{x:Bind ViewModel.RunAtStartup, Mode=TwoWay}"
+                                      OnContent="On" OffContent="Off" MinWidth="80"
+                                      VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- App Theme -->
+                <toolkit:SettingsCard
+                    Header="App Theme"
+                    Description="Choose your preferred color scheme">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE790;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <ComboBox AutomationProperties.AutomationId="Settings_ThemeComboBox"
+                              AutomationProperties.Name="App Theme"
+                              SelectedIndex="{x:Bind ViewModel.ThemeIndex, Mode=TwoWay}" MinWidth="155">
+                        <ComboBoxItem Content="System Default"/>
+                        <ComboBoxItem Content="Light"/>
+                        <ComboBoxItem Content="Dark"/>
+                    </ComboBox>
+                </toolkit:SettingsCard>
+
+                <!-- Window Backdrop -->
+                <toolkit:SettingsCard
+                    Header="Window Backdrop"
+                    Description="Background material effect for the main window">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE771;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <ComboBox AutomationProperties.AutomationId="Settings_BackdropComboBox"
+                              AutomationProperties.Name="Window Backdrop"
+                              SelectedIndex="{x:Bind ViewModel.BackdropIndex, Mode=TwoWay}" MinWidth="165">
+                        <ComboBoxItem Content="None"/>
+                        <ComboBoxItem Content="Mica"/>
+                        <ComboBoxItem Content="Mica Alt"/>
+                        <ComboBoxItem Content="Desktop Acrylic"/>
+                    </ComboBox>
+                </toolkit:SettingsCard>
+
+                <!-- ── Mascot ───────────────────────────────────────── -->
+                <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                           Text="Mascot"/>
+
+                <!-- Show Mascot — custom toggle card -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE7B3;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock Text="Show Mascot"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Display the floating mascot on your desktop. Quick-add hotkey and tray keep working when off"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="2"
+                                      AutomationProperties.AutomationId="Settings_ShowMascot"
+                                      AutomationProperties.Name="Show mascot"
+                                      IsOn="{x:Bind ViewModel.ShowMascot, Mode=TwoWay}"
+                                      OnContent="On" OffContent="Off" MinWidth="80"
+                                      VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Lock Position — custom toggle card -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE72E;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock Text="Lock Position"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Prevent the mascot from being dragged"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="2"
+                                      AutomationProperties.AutomationId="Settings_LockPosition"
+                                      AutomationProperties.Name="Lock mascot position"
+                                      IsOn="{x:Bind ViewModel.LockMascotPosition, Mode=TwoWay}"
+                                      OnContent="On" OffContent="Off" MinWidth="80"
+                                      VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Mute Animation — custom toggle card -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE74F;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock Text="Mute Animation"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Pause the mascot idle animation"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="2"
+                                      AutomationProperties.AutomationId="Settings_MuteAnimation"
+                                      AutomationProperties.Name="Mute mascot animation"
+                                      IsOn="{x:Bind ViewModel.MuteAnimation, Mode=TwoWay}"
+                                      OnContent="On" OffContent="Off" MinWidth="80"
+                                      VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Always on Top — custom toggle card -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE89F;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock Text="Always on Top"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Keep the mascot above all other windows"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="2"
+                                      AutomationProperties.AutomationId="Settings_AlwaysOnTop"
+                                      AutomationProperties.Name="Mascot always on top"
+                                      IsOn="{x:Bind ViewModel.MascotAlwaysOnTop, Mode=TwoWay}"
+                                      OnContent="On" OffContent="Off" MinWidth="80"
+                                      VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Hide When Fullscreen — custom toggle card -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE92C;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock Text="Hide During Fullscreen &amp; Games"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Automatically hide when a fullscreen app, game, or presentation is active"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="2"
+                                      AutomationProperties.AutomationId="Settings_HideFullscreen"
+                                      AutomationProperties.Name="Hide during fullscreen"
+                                      IsOn="{x:Bind ViewModel.HideWhenFullscreen, Mode=TwoWay}"
+                                      OnContent="On" OffContent="Off" MinWidth="80"
+                                      VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Show Tips Automatically — custom toggle card -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE946;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock Text="Show Tips Automatically"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Pop up tips above the mascot on their own, instead of waiting for a click"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="2"
+                                      AutomationProperties.AutomationId="Settings_ShowTipsAutomatically"
+                                      AutomationProperties.Name="Show tips automatically"
+                                      IsOn="{x:Bind ViewModel.ShowTipsAutomatically, Mode=TwoWay}"
+                                      OnContent="On" OffContent="Off" MinWidth="80"
+                                      VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Automatic tip time window — only meaningful while the toggle above is on -->
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE823;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock x:Uid="Settings_TipTimeHeader"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock x:Uid="Settings_TipTimeDescription"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
+                        </StackPanel>
+                        <!-- Item order maps 1:1 onto TipTimePreference (Anytime=0, Morning=1,
+                             Afternoon=2, Evening=3) — keep in sync with the enum. -->
+                        <ComboBox Grid.Column="2" MinWidth="140" VerticalAlignment="Center"
+                                  AutomationProperties.AutomationId="Settings_TipTime"
+                                  AutomationProperties.Name="Automatic tip time"
+                                  IsEnabled="{x:Bind ViewModel.ShowTipsAutomatically, Mode=OneWay}"
+                                  SelectedIndex="{x:Bind ViewModel.ProactiveTipTimeIndex, Mode=TwoWay}">
+                            <ComboBoxItem x:Uid="Settings_TipTime_Anytime"/>
+                            <ComboBoxItem x:Uid="Settings_TipTime_Morning"/>
+                            <ComboBoxItem x:Uid="Settings_TipTime_Afternoon"/>
+                            <ComboBoxItem x:Uid="Settings_TipTime_Evening"/>
+                        </ComboBox>
+                    </Grid>
+                </Border>
+
+                <!-- Lottie Animation File -->
+                <toolkit:SettingsCard
+                    Header="Lottie Animation File"
+                    Description="{x:Bind ViewModel.LottieFileDisplay, Mode=OneWay}">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE8A5;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Browse"
+                                AutomationProperties.AutomationId="Settings_BrowseLottie"
+                                Click="BrowseLottieButton_Click"/>
+                        <Button Content="Clear"
+                                AutomationProperties.AutomationId="Settings_ClearLottie"
+                                Click="ClearLottieButton_Click"
+                                IsEnabled="{x:Bind ViewModel.HasLottieFile, Mode=OneWay}"/>
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
+                <!-- Mascot Size -->
+                <toolkit:SettingsExpander Header="Mascot Size"
+                                          Description="Choose how large the mascot appears on screen">
+                    <toolkit:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xE744;"/>
+                    </toolkit:SettingsExpander.HeaderIcon>
+                    <TextBlock x:Name="MascotSizeHeaderLabel"
+                               VerticalAlignment="Center"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                    <toolkit:SettingsExpander.Items>
+                        <toolkit:SettingsCard Header="Presets">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="Small"  AutomationProperties.AutomationId="Settings_SizeSmall"  Tag="80"  Click="MascotSizePreset_Click" MinWidth="72"/>
+                                <Button Content="Medium" AutomationProperties.AutomationId="Settings_SizeMedium" Tag="120" Click="MascotSizePreset_Click" MinWidth="72"/>
+                                <Button Content="Large"  AutomationProperties.AutomationId="Settings_SizeLarge"  Tag="160" Click="MascotSizePreset_Click" MinWidth="72"/>
+                            </StackPanel>
+                        </toolkit:SettingsCard>
+                        <toolkit:SettingsCard Header="Custom">
+                            <Slider x:Name="MascotSizeSlider"
+                                    AutomationProperties.AutomationId="Settings_SizeSlider"
+                                    AutomationProperties.Name="Mascot size"
+                                    Minimum="60" Maximum="200"
+                                    StepFrequency="1" TickFrequency="20"
+                                    TickPlacement="Outside"
+                                    Width="200"
+                                    ValueChanged="MascotSizeSlider_ValueChanged"/>
+                        </toolkit:SettingsCard>
+                    </toolkit:SettingsExpander.Items>
+                </toolkit:SettingsExpander>
+
+                <!-- Quick-add global hotkey -->
+                <!-- Description is static: the live combination is the collapsed-state
+                     content on the right. Binding both to HotkeyDescription printed the
+                     same string twice, inches apart. -->
+                <toolkit:SettingsExpander Header="Quick-Add Hotkey"
+                                          Description="Opens quick-add from anywhere, even when Hatch is hidden">
+                    <toolkit:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xE92E;"/>
+                    </toolkit:SettingsExpander.HeaderIcon>
+                    <!-- Key-cap styling so the combination reads as something you press. -->
+                    <Border Background="{ThemeResource ControlFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{ThemeResource ControlCornerRadius}"
+                            Padding="10,4"
+                            VerticalAlignment="Center">
+                        <TextBlock Text="{x:Bind ViewModel.HotkeyDescription, Mode=OneWay}"
+                                   AutomationProperties.AutomationId="Settings_HotkeyPreview"
+                                   FontFamily="Consolas"
+                                   Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
+                    </Border>
+                    <toolkit:SettingsExpander.Items>
+                        <!-- Modifier keys. Vertical: the description explains the
+                             at-least-one rule and needs the full width to say it, rather
+                             than wrapping to three words a line beside the checkboxes. -->
+                        <toolkit:SettingsCard Header="Modifiers"
+                                              ContentAlignment="Vertical"
+                                              Description="At least one is required — without a modifier the key would be captured system-wide">
+                            <StackPanel Orientation="Horizontal" Spacing="24">
+                                <CheckBox Content="Ctrl"
+                                          AutomationProperties.AutomationId="Settings_HotkeyCtrl"
+                                          IsEnabled="{x:Bind ViewModel.IsHotkeyCtrlEnabled, Mode=OneWay}"
+                                          IsChecked="{x:Bind ViewModel.HotkeyCtrl, Mode=TwoWay}"/>
+                                <CheckBox Content="Shift"
+                                          AutomationProperties.AutomationId="Settings_HotkeyShift"
+                                          IsEnabled="{x:Bind ViewModel.IsHotkeyShiftEnabled, Mode=OneWay}"
+                                          IsChecked="{x:Bind ViewModel.HotkeyShift, Mode=TwoWay}"/>
+                                <CheckBox Content="Alt"
+                                          AutomationProperties.AutomationId="Settings_HotkeyAlt"
+                                          IsEnabled="{x:Bind ViewModel.IsHotkeyAltEnabled, Mode=OneWay}"
+                                          IsChecked="{x:Bind ViewModel.HotkeyAlt, Mode=TwoWay}"/>
+                            </StackPanel>
+                        </toolkit:SettingsCard>
+                        <!-- Key -->
+                        <toolkit:SettingsCard Header="Key"
+                                              ContentAlignment="Vertical"
+                                              Description="Pressed together with the modifiers above">
+                            <ComboBox x:Name="HotkeyKeySelector"
+                                      AutomationProperties.AutomationId="Settings_HotkeyKeyComboBox"
+                                      AutomationProperties.Name="Hotkey key"
+                                      MinWidth="160"
+                                      HorizontalAlignment="Left"
+                                      SelectionChanged="HotkeyKeySelector_SelectionChanged">
+                                <ComboBoxItem Content="Space" Tag="32"/>
+                                <ComboBoxItem Content="A" Tag="65"/>
+                                <ComboBoxItem Content="Q" Tag="81"/>
+                                <ComboBoxItem Content="T" Tag="84"/>
+                                <ComboBoxItem Content="N" Tag="78"/>
+                                <ComboBoxItem Content="+" Tag="187"/>
+                            </ComboBox>
+                        </toolkit:SettingsCard>
+                    </toolkit:SettingsExpander.Items>
+                </toolkit:SettingsExpander>
+
+                <!-- Registration failure is otherwise invisible: the key just does nothing
+                     while Settings still shows it as configured. Sits outside the expander,
+                     matching the other InfoBars on this page, so it is seen without
+                     expanding anything. -->
+                <InfoBar Severity="Warning"
+                         IsOpen="{x:Bind ViewModel.HasHotkeyConflict, Mode=OneWay}"
+                         Visibility="{x:Bind ViewModel.HasHotkeyConflict, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                         IsClosable="False"
+                         AutomationProperties.AutomationId="Settings_HotkeyConflict"
+                         Title="That shortcut is already taken"
+                         Message="Another application registered it first, so it will not reach Hatch. Pick a different key or modifier below."/>
+
+                <!-- ── Sync ────────────────────────────────────────── -->
+                <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                           Text="Sync"/>
+
+                <!-- Signed-in state -->
+                <toolkit:SettingsCard
+                    Visibility="{x:Bind ViewModel.IsSyncSignedIn, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                    Header="{x:Bind ViewModel.SyncUserEmail, Mode=OneWay}"
+                    Description="{x:Bind ViewModel.SyncLastSyncedText, Mode=OneWay}">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE77B;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <Button Content="Sign out"
+                            AutomationProperties.AutomationId="Settings_SyncSignOut"
+                            Command="{x:Bind ViewModel.SignOutCommand}"/>
+                </toolkit:SettingsCard>
+
+                <!-- Two-factor challenge — every sync path stays closed until it is met -->
+                <InfoBar x:Uid="Settings_MfaChallengeInfo"
+                         Severity="Warning"
+                         IsOpen="{x:Bind ViewModel.IsMfaChallengePending, Mode=OneWay}"
+                         Visibility="{x:Bind ViewModel.IsMfaChallengePending, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                         IsClosable="False"/>
+
+                <toolkit:SettingsCard x:Uid="Settings_MfaChallengeCard"
+                    ContentAlignment="Vertical"
+                    Visibility="{x:Bind ViewModel.IsMfaChallengePending, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE928;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel Spacing="8">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBox x:Name="MfaChallengeCodeBox"
+                                     AutomationProperties.AutomationId="Settings_MfaChallengeCode"
+                                     AutomationProperties.Name="Authenticator code"
+                                     PlaceholderText="000000"
+                                     MaxLength="6"
+                                     Width="90"/>
+                            <Button x:Uid="Settings_MfaChallengeSubmit"
+                                    AutomationProperties.AutomationId="Settings_MfaChallengeSubmit"
+                                    Style="{ThemeResource AccentButtonStyle}"
+                                    IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
+                                    Click="MfaChallengeSubmit_Click"/>
+                        </StackPanel>
+                        <!-- On its own line: it is the escape hatch, not a peer of Verify. -->
+                        <HyperlinkButton x:Uid="Settings_MfaUseRecovery"
+                                         AutomationProperties.AutomationId="Settings_MfaUseRecovery"
+                                         Padding="0"
+                                         Click="MfaUseRecovery_Click"/>
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
+                <!-- Recovery code redemption — the only route back from a lost authenticator -->
+                <toolkit:SettingsCard x:Uid="Settings_RecoveryRedeemCard"
+                    ContentAlignment="Vertical"
+                    Visibility="{x:Bind ViewModel.IsRedeemingRecovery, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE785;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel Spacing="8">
+                        <TextBox x:Name="RecoveryCodeBox"
+                                 AutomationProperties.AutomationId="Settings_RecoveryCode"
+                                 AutomationProperties.Name="Recovery code"
+                                 PlaceholderText="XXXXX-XXXXX"
+                                 FontFamily="Consolas"
+                                 HorizontalAlignment="Stretch"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                            <Button x:Uid="Settings_RecoveryCancel"
+                                    AutomationProperties.AutomationId="Settings_RecoveryCancel"
+                                    Click="RecoveryCancel_Click"/>
+                            <Button x:Uid="Settings_RecoveryRedeem"
+                                    AutomationProperties.AutomationId="Settings_RecoveryRedeem"
+                                    Style="{ThemeResource AccentButtonStyle}"
+                                    IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
+                                    Click="RecoveryRedeem_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
+                <!-- E2E passphrase — sync stays paused until one is set -->
+                <InfoBar x:Uid="Settings_SyncPassphraseInfo"
+                         Severity="Informational"
+                         IsOpen="{x:Bind ViewModel.IsSignedInWithoutPassphrase, Mode=OneWay}"
+                         Visibility="{x:Bind ViewModel.IsSignedInWithoutPassphrase, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                         IsClosable="False"/>
+
+                <!-- ContentAlignment=Vertical throughout the sync section: these cards carry
+                     an input plus one or more buttons, which at 620px wide would otherwise
+                     squeeze the header text to a couple of words per line. -->
+                <toolkit:SettingsCard x:Uid="Settings_SyncPassphraseCard"
+                    ContentAlignment="Vertical"
+                    Visibility="{x:Bind ViewModel.IsSignedInWithoutPassphrase, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE72E;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel Spacing="8">
+                        <PasswordBox x:Name="SyncPassphraseBox"
+                                     AutomationProperties.AutomationId="Settings_SyncPassphrase"
+                                     AutomationProperties.Name="Sync passphrase"
+                                     HorizontalAlignment="Stretch"/>
+                        <Button x:Uid="Settings_SyncPassphraseSet"
+                                AutomationProperties.AutomationId="Settings_SyncSetPassphrase"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                HorizontalAlignment="Right"
+                                IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
+                                Click="SyncSetPassphrase_Click"/>
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
+                <!-- Sync recovery kit — the passphrase cannot be reset or recovered -->
+                <toolkit:SettingsCard x:Uid="Settings_RecoveryKitCard"
+                    Visibility="{x:Bind ViewModel.CanShowRecoveryKit, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE7BA;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <Button x:Uid="Settings_RecoveryKitShow"
+                            AutomationProperties.AutomationId="Settings_RecoveryKitShow"
+                            Click="RecoveryKitShow_Click"/>
+                </toolkit:SettingsCard>
+
+                <InfoBar x:Uid="Settings_RecoveryKitInfo"
+                         Severity="Warning"
+                         IsOpen="{x:Bind ViewModel.HasRecoveryKit, Mode=OneWay}"
+                         Visibility="{x:Bind ViewModel.HasRecoveryKit, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                         IsClosable="False">
+                    <InfoBar.Content>
+                        <StackPanel Spacing="10" Margin="0,10,0,14">
+                            <TextBox Text="{x:Bind ViewModel.RecoveryKitText, Mode=OneWay}"
+                                     AutomationProperties.AutomationId="Settings_RecoveryKitText"
+                                     AutomationProperties.Name="Sync recovery kit"
+                                     IsReadOnly="True"
+                                     AcceptsReturn="True"
+                                     TextWrapping="Wrap"
+                                     FontFamily="Consolas"
+                                     MaxHeight="220"
+                                     ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button x:Uid="Settings_RecoveryKitSave"
+                                        AutomationProperties.AutomationId="Settings_RecoveryKitSave"
+                                        Style="{ThemeResource AccentButtonStyle}"
+                                        Click="RecoveryKitSave_Click"/>
+                                <Button x:Uid="Settings_RecoveryKitCopy"
+                                        AutomationProperties.AutomationId="Settings_RecoveryKitCopy"
+                                        Click="RecoveryKitCopy_Click"/>
+                                <Button x:Uid="Settings_RecoveryKitDone"
+                                        AutomationProperties.AutomationId="Settings_RecoveryKitDone"
+                                        Click="RecoveryKitDone_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </InfoBar.Content>
+                </InfoBar>
+
+                <!-- Two-factor authentication (docs/mfa-spec.md) -->
+                <toolkit:SettingsCard x:Uid="Settings_MfaCard"
+                    Visibility="{x:Bind ViewModel.IsMfaSettingsVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE928;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Uid="Settings_MfaEnable"
+                                AutomationProperties.AutomationId="Settings_MfaEnable"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                Visibility="{x:Bind ViewModel.CanEnrollMfa, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                Click="MfaEnable_Click"/>
+                        <Button x:Uid="Settings_MfaDisable"
+                                AutomationProperties.AutomationId="Settings_MfaDisable"
+                                Visibility="{x:Bind ViewModel.IsMfaEnrolled, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                Click="MfaDisable_Click"/>
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
+                <InfoBar x:Uid="Settings_MfaOnInfo"
+                         Severity="Success"
+                         IsOpen="{x:Bind ViewModel.ShowMfaOnInfo, Mode=OneWay}"
+                         Visibility="{x:Bind ViewModel.ShowMfaOnInfo, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                         IsClosable="False"/>
+
+                <!-- QR + setup key + code + two buttons never fit one row at 620px. Stacked
+                     in the order the task is actually performed: scan, or copy the key, then
+                     type what the authenticator shows. -->
+                <toolkit:SettingsCard x:Uid="Settings_MfaEnrollCard"
+                    ContentAlignment="Vertical"
+                    Visibility="{x:Bind ViewModel.IsMfaEnrolling, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <StackPanel Spacing="12">
+                        <Border x:Name="MfaQrPanel"
+                                Background="White"
+                                CornerRadius="4"
+                                Padding="6"
+                                HorizontalAlignment="Left"
+                                Visibility="Collapsed">
+                            <Image x:Name="MfaQrImage"
+                                   Width="132" Height="132"
+                                   AutomationProperties.Name="Authenticator QR code"/>
+                        </Border>
+                        <TextBox Text="{x:Bind ViewModel.MfaSecret, Mode=OneWay}"
+                                 x:Uid="Settings_MfaSecretBox"
+                                 AutomationProperties.AutomationId="Settings_MfaSecret"
+                                 AutomationProperties.Name="Authenticator setup key"
+                                 IsReadOnly="True"
+                                 FontFamily="Consolas"
+                                 HorizontalAlignment="Stretch"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBox x:Name="MfaCodeBox"
+                                     x:Uid="Settings_MfaCodeBox"
+                                     AutomationProperties.AutomationId="Settings_MfaCode"
+                                     AutomationProperties.Name="Authenticator code"
+                                     PlaceholderText="000000"
+                                     MaxLength="6"
+                                     Width="90"/>
+                            <Button x:Uid="Settings_MfaConfirm"
+                                    AutomationProperties.AutomationId="Settings_MfaConfirm"
+                                    Style="{ThemeResource AccentButtonStyle}"
+                                    VerticalAlignment="Bottom"
+                                    Click="MfaConfirm_Click"/>
+                            <Button x:Uid="Settings_MfaCancel"
+                                    AutomationProperties.AutomationId="Settings_MfaCancel"
+                                    VerticalAlignment="Bottom"
+                                    Click="MfaCancel_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
+                <!-- Recovery codes, shown once. The server keeps only hashes. -->
+                <InfoBar x:Uid="Settings_RecoveryCodesInfo"
+                         Severity="Warning"
+                         IsOpen="{x:Bind ViewModel.HasRecoveryCodes, Mode=OneWay}"
+                         Visibility="{x:Bind ViewModel.HasRecoveryCodes, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                         IsClosable="False">
+                    <InfoBar.Content>
+                        <StackPanel Spacing="10" Margin="0,10,0,14">
+                            <TextBox Text="{x:Bind ViewModel.RecoveryCodesText, Mode=OneWay}"
+                                     AutomationProperties.AutomationId="Settings_RecoveryCodes"
+                                     AutomationProperties.Name="Recovery codes"
+                                     IsReadOnly="True"
+                                     AcceptsReturn="True"
+                                     FontFamily="Consolas"
+                                     MaxWidth="240"
+                                     HorizontalAlignment="Left"/>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button x:Uid="Settings_RecoveryCopy"
+                                        AutomationProperties.AutomationId="Settings_RecoveryCopy"
+                                        Click="RecoveryCopy_Click"/>
+                                <Button x:Uid="Settings_RecoveryDone"
+                                        AutomationProperties.AutomationId="Settings_RecoveryDone"
+                                        Style="{ThemeResource AccentButtonStyle}"
+                                        Click="RecoveryDone_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </InfoBar.Content>
+                </InfoBar>
+
+                <!-- Sync notice — non-error state changes worth surfacing (e.g. 2FA turned off) -->
+                <InfoBar Severity="Warning"
+                         IsOpen="{x:Bind ViewModel.HasSyncNotice, Mode=OneWay}"
+                         Visibility="{x:Bind ViewModel.HasSyncNotice, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                         Message="{x:Bind ViewModel.SyncNotice, Mode=OneWay}"
+                         AutomationProperties.AutomationId="Settings_SyncNotice"
+                         IsClosable="True"
+                         CloseButtonClick="SyncNotice_Close"/>
+
+                <!-- Sync error (shown when signed in and sync fails) -->
+                <InfoBar x:Name="SyncErrorBar"
+                         Severity="Error"
+                         IsOpen="{x:Bind ViewModel.HasSyncError, Mode=OneWay}"
+                         Visibility="{x:Bind ViewModel.IsSyncSignedIn, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                         Message="{x:Bind ViewModel.SyncError, Mode=OneWay}"
+                         IsClosable="False"/>
+
+                <!-- Sign-in form -->
+                <toolkit:SettingsExpander
+                    Visibility="{x:Bind ViewModel.IsSyncNotSignedIn, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                    Header="Sync across devices"
+                    Description="Sign in to keep your tasks in sync across PCs">
+                    <toolkit:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xE895;"/>
+                    </toolkit:SettingsExpander.HeaderIcon>
+                    <toolkit:SettingsExpander.Items>
+                        <toolkit:SettingsCard Header="Email">
+                            <TextBox x:Name="SyncEmailBox"
+                                     AutomationProperties.AutomationId="Settings_SyncEmail"
+                                     AutomationProperties.Name="Email"
+                                     Text="{x:Bind ViewModel.SyncEmail, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     MinWidth="220"
+                                     InputScope="EmailNameOrAddress"/>
+                        </toolkit:SettingsCard>
+                        <toolkit:SettingsCard Header="Password">
+                            <PasswordBox x:Name="SyncPasswordBox"
+                                         AutomationProperties.AutomationId="Settings_SyncPassword"
+                                         AutomationProperties.Name="Password"
+                                         MinWidth="220"/>
+                        </toolkit:SettingsCard>
+                        <toolkit:SettingsCard>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button Content="Sign in"
+                                        AutomationProperties.AutomationId="Settings_SyncSignIn"
+                                        Style="{ThemeResource AccentButtonStyle}"
+                                        IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
+                                        Click="SyncSignIn_Click"/>
+                                <Button Content="Create account"
+                                        AutomationProperties.AutomationId="Settings_SyncSignUp"
+                                        IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
+                                        Click="SyncSignUp_Click"/>
+                            </StackPanel>
+                        </toolkit:SettingsCard>
+                        <toolkit:SettingsCard Header="Or continue with">
+                            <Button Content="Sign in with GitHub"
+                                    AutomationProperties.AutomationId="Settings_SyncGitHub"
+                                    IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
+                                    Click="SyncGitHubSignIn_Click"/>
+                        </toolkit:SettingsCard>
+                        <toolkit:SettingsCard
+                            Visibility="{x:Bind ViewModel.HasSyncError, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                            <TextBlock Text="{x:Bind ViewModel.SyncError, Mode=OneWay}"
+                                       Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                       TextWrapping="Wrap"/>
+                        </toolkit:SettingsCard>
+                    </toolkit:SettingsExpander.Items>
+                </toolkit:SettingsExpander>
+
+                <!-- ── Data ─────────────────────────────────────────── -->
+                <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                           Text="Data"/>
+
+                <toolkit:SettingsCard
+                    Header="Open data folder"
+                    Description="Browse or back up your tasks.json and settings.json files">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE8B7;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <Button Content="Open folder"
+                            AutomationProperties.AutomationId="Settings_OpenDataFolder"
+                            Command="{x:Bind ViewModel.OpenDataFolderCommand}"/>
+                </toolkit:SettingsCard>
+
+                <toolkit:SettingsCard
+                    Header="Export tasks"
+                    Description="Save your tasks as a file you choose where to put — JSON for a full backup, CSV for a spreadsheet, Markdown for a checklist you can paste into a status update">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE898;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="JSON" Tag="json"
+                                AutomationProperties.AutomationId="Settings_ExportJson"
+                                Click="ExportButton_Click"/>
+                        <Button Content="CSV" Tag="csv"
+                                AutomationProperties.AutomationId="Settings_ExportCsv"
+                                Click="ExportButton_Click"/>
+                        <Button Content="Markdown" Tag="markdown"
+                                AutomationProperties.AutomationId="Settings_ExportMarkdown"
+                                Click="ExportButton_Click"/>
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
+                <toolkit:SettingsCard
+                    Visibility="{x:Bind ViewModel.HasExportError, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <TextBlock Text="{x:Bind ViewModel.ExportError, Mode=OneWay}"
+                               Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                               TextWrapping="Wrap"/>
+                </toolkit:SettingsCard>
+
+                <!-- ── About ────────────────────────────────────────── -->
+                <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
+                           Text="About"/>
+
+                <toolkit:SettingsExpander
+                    Margin="0,0,0,24"
+                    Header="Hatch"
+                    Description="Local-first task manager for Windows">
+                    <toolkit:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xE946;"/>
+                    </toolkit:SettingsExpander.HeaderIcon>
+                    <TextBlock Text="v0.14.0"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               VerticalAlignment="Center"/>
+                    <toolkit:SettingsExpander.Items>
+                        <toolkit:SettingsCard Header="Privacy">
+                            <toolkit:SettingsCard.Description>
+                                <TextBlock
+                                    Text="No account · No cloud · No telemetry. All data is stored locally in %LocalAppData%\Hatch\ and never leaves your device."
+                                    TextWrapping="Wrap"/>
+                            </toolkit:SettingsCard.Description>
+                        </toolkit:SettingsCard>
+
+                        <toolkit:SettingsCard Header="Author"
+                                              Description="Reza Fauzi Augusdi">
+                        </toolkit:SettingsCard>
+
+                        <toolkit:SettingsCard Header="Source code"
+                                              Description="github.com/fbtwitter/hatch">
+                            <Button Content="Open on GitHub"
+                                    AutomationProperties.AutomationId="Settings_OpenGitHub"
+                                    Command="{x:Bind ViewModel.OpenGitHubCommand}"/>
+                        </toolkit:SettingsCard>
+
+                        <toolkit:SettingsCard Header="Report an issue"
+                                              Description="Found a bug or have a suggestion?">
+                            <Button Content="Open issues"
+                                    AutomationProperties.AutomationId="Settings_OpenGitHubIssues"
+                                    Command="{x:Bind ViewModel.OpenGitHubIssuesCommand}"/>
+                        </toolkit:SettingsCard>
+                    </toolkit:SettingsExpander.Items>
+                </toolkit:SettingsExpander>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</Page>
+

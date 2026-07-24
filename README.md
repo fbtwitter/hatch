@@ -29,6 +29,9 @@ Your tasks, always one click away.
 **Due dates & reminders** — Calendar flyout with quick presets; toast notifications with Mark Complete action  
 **Tags & filtering** — Free-form tags per task; click any chip to filter instantly across lists  
 **Contextual tips** — Nudges based on your actual task state, never random  
+**Optional encrypted sync** — Off until you sign in; tasks are encrypted on your device with a passphrase the server never sees  
+**Android companion** — Your list on your phone, same encryption; opens straight to your tasks, no sign-in required  
+**Two-factor authentication** — Optional TOTP on your sync account, with recovery codes  
 **Feels right at home** — WinUI 3, Mica (Win11), Acrylic (Win10), Segoe UI Variable, system accent color  
 **Private by design** — No mandatory account, no telemetry, no silent cloud  
 
@@ -73,7 +76,7 @@ Subsequent releases don't need the certificate step again.
 
 ```powershell
 git clone https://github.com/fbtwitter/hatch.git
-cd hatch
+cd hatch/windows
 dotnet build              # Debug
 dotnet build -c Release   # Release
 dotnet run                # Run (Windows only)
