@@ -6,6 +6,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.hatch.sync.PullResult
 import dev.hatch.sync.PushResult
+import dev.hatch.sync.Recurrence
+import dev.hatch.sync.RecurrenceHelper
 import dev.hatch.sync.SignUpResult
 import dev.hatch.sync.SyncClient
 import dev.hatch.sync.SyncCrypto
@@ -28,29 +30,29 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 
+// Guid.Empty on Windows (§4) — the default list, shown as "Tasks".
+internal const val DEFAULT_LIST_ID = "00000000-0000-0000-0000-000000000000"
+
 sealed interface SyncState {
-    // The credentials form keeps its own text; `error` and `notice` are shown inline on it
-    // so a failure never discards what was typed.
+    // Shown inline on the credentials form, so a failure never discards what was typed.
     data class Off(val error: String? = null, val notice: String? = null) : SyncState
     data object NotConfigured : SyncState
     data object Working : SyncState
     data object NeedsPassphrase : SyncState
     data object WrongPassphrase : SyncState
-    // Signed in, but the account has a verified authenticator this session has not met.
-    // Every sync path is refused until it is (docs/mfa-spec.md); local tasks are unaffected.
-    // `redeeming` swaps the prompt to the recovery-code form rather than being a separate
-    // state, so backing out cannot strand the user away from the challenge.
+    // Every sync path is refused until the challenge is met (docs/mfa-spec.md). `redeeming`
+    // is a flag rather than its own state so backing out cannot strand the user.
     data class NeedsMfaCode(val error: String? = null, val redeeming: Boolean = false) : SyncState
     data class On(
         val email: String?,
         val serverUpdatedAt: String,
-        // Pushing is refused without one (docs/sync-protocol.md §2), so the UI has to be
-        // able to ask for it even when the current row is readable legacy plaintext.
+        // Pushing is refused without one (§2), even when the row is readable plaintext.
         val hasPassphrase: Boolean,
     ) : SyncState
     data class Failed(val message: String) : SyncState
@@ -60,16 +62,31 @@ data class AppState(
     val tasks: List<TodoItem> = emptyList(),
     val lists: List<TaskList> = emptyList(),
     val sync: SyncState = SyncState.Off(),
-    // False until the on-disk list has been read. Gates the empty state (which would
-    // otherwise flash "Nothing yet" before the tasks arrive) and, more importantly, gates
-    // every mutation: persisting before the load lands would write a near-empty file over
-    // the real one.
+    // Gates the empty state, and every mutation: persisting before the load lands would
+    // write a near-empty file over the real one.
     val loaded: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.System,
+    // Same vocabulary as MainViewModel.ActiveNavItem: a smart-list key, or a list GUID.
+    val activeNav: String = NAV_ALL_TASKS,
+    val searchQuery: String = "",
+)
+
+const val NAV_MY_DAY = "myday"
+const val NAV_IMPORTANT = "important"
+const val NAV_PLANNED = "planned"
+const val NAV_ALL_TASKS = "alltasks"
+
+// First entry matches MainViewModel.AddList; the rest exist only here, because the WinUI
+// app has no recolour code at all despite project-overview.md claiming 8 hues.
+val ListPalette = listOf(
+    "#0078D4", "#107C10", "#C239B3", "#D13438",
+    "#CA5010", "#8764B8", "#00838C", "#7A7574",
 )
 
 // State lives here, on the platform — the shared module stays pure (ADR-0006).
 class CompanionViewModel(app: Application) : AndroidViewModel(app) {
+
+    private val appContext = app.applicationContext
 
     private val store = LocalTaskStore(app)
 
@@ -82,18 +99,15 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
 
     private val prefs = AppPrefs(app)
 
-    // Keystore-backed (ADR-0005), so the passphrase is entered once per device rather than
-    // once per launch, and the expensive PBKDF2 derivation happens exactly once.
-    // Populated by the init block off the main thread — the unwrap is a hardware-backed
-    // AES-GCM operation and does not belong in a constructor that runs during onCreate.
+    // Keystore-backed (ADR-0005): entered once per device, derived once. Loaded in init
+    // rather than here — the unwrap is too slow for onCreate.
     private var syncKey: SyncKey? = null
 
-    // Theme is seeded synchronously so the very first frame paints in the chosen theme.
+    // Seeded synchronously so the first frame paints in the chosen theme.
     private val _state = MutableStateFlow(AppState(themeMode = prefs.themeMode))
     val state: StateFlow<AppState> = _state.asStateFlow()
 
-    // One-shot, not state: "a manual pull just finished" is an event. Kept out of AppState
-    // so reopening the Sync screen cannot replay a stale "Pulled — 17 tasks".
+    // An event, not state: in AppState, reopening Sync would replay a stale "Pulled — 17".
     private val _pullCompleted = MutableSharedFlow<Int>(extraBufferCapacity = 1)
     val pullCompleted: SharedFlow<Int> = _pullCompleted.asSharedFlow()
 
@@ -102,75 +116,240 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
 
     private var pushJob: Job? = null
 
+    // Tombstones — outside AppState, but rejoin the file on every save and push (§5).
+    private var deletedTasks: List<TodoItem> = emptyList()
+    private var deletedLists: List<TaskList> = emptyList()
+
+    private fun wholeState(
+        tasks: List<TodoItem> = _state.value.tasks,
+        lists: List<TaskList> = _state.value.lists,
+    ) = TasksFile(tasks + deletedTasks, lists + deletedLists)
+
+    private fun applyMerged(merged: TasksFile) {
+        // A task deleted on another device arrives here as a freshly-pulled tombstone —
+        // same reminder-leak reason as deleteTask/deleteList: persist() only reschedules
+        // over the live list it's given, so anything that drops out of that list between
+        // one merge and the next needs its own alarm cancelled explicitly, or a task
+        // deleted elsewhere keeps reminding on this phone.
+        val previouslyLive = _state.value.tasks.map { it.id }.toSet()
+        deletedTasks = merged.tasks.filter { it.isDeleted }
+        deletedLists = merged.lists.filter { it.isDeleted }
+        val liveTasks = merged.tasks.filterNot { it.isDeleted }
+        persist(
+            tasks = liveTasks,
+            lists = merged.lists.filterNot { it.isDeleted },
+        )
+        val newlyGone = previouslyLive - liveTasks.map { it.id }.toSet()
+        newlyGone.forEach { cancelReminder(appContext, it) }
+    }
+
     init {
-        // Both of these used to run in the constructor, i.e. on the main thread during
-        // onCreate: a file read plus JSON parse, and a hardware-backed Keystore unwrap.
-        // Together they cost seconds on a mid-range device and logcat reported hundreds of
-        // skipped frames before the first paint.
+        // Off the main thread: a file read plus JSON parse and a Keystore unwrap cost
+        // seconds on a mid-range device, and hundreds of skipped frames before first paint.
         viewModelScope.launch {
             val local = withContext(Dispatchers.IO) { store.load() }
             syncKey = withContext(Dispatchers.IO) { keyStore.load() }
 
+            deletedTasks = local.tasks.filter { it.isDeleted }
+            deletedLists = local.lists.filter { it.isDeleted }
+
+            // "IsInMyDay: cleared client-side each new day" (sync-protocol.md §4). Mirrors
+            // TaskStorageService.LoadAsync on Windows: silent and local-only — myDayDate is
+            // left untouched and updatedAt is not stamped, so this day-boundary reset can
+            // never shadow a genuinely newer edit from another device on the next merge.
+            // Without it a task starred into My Day on the phone stayed there forever; this
+            // ViewModel had no equivalent of Windows's reset at all.
+            val today = today()
+            var myDayReset = false
+            val liveTasks = local.tasks.filterNot { it.isDeleted }.map { t ->
+                val myDayDate = t.myDayDate
+                if (t.isInMyDay && myDayDate != null && myDayDate < today) {
+                    myDayReset = true
+                    t.copy(isInMyDay = false)
+                } else t
+            }
+
             _state.value = _state.value.copy(
-                tasks = local.tasks,
-                lists = local.lists,
+                tasks = liveTasks,
+                lists = local.lists.filterNot { it.isDeleted },
                 sync = if (configured) SyncState.Off() else SyncState.NotConfigured,
                 loaded = true,
             )
+            // Persisted so a second load the same day is a no-op, but off the push path —
+            // this reset is not a sync-worthy edit.
+            if (myDayReset) withContext(Dispatchers.IO) { store.save(wholeState()) }
             if (configured) observeSession()
         }
     }
 
     // --- Local, works with no account and no network ------------------------------------
 
-    fun addTask(title: String) {
-        // Guarded, not merely disabled in the UI: persisting before the load lands would
-        // write a one-task file over the real one.
-        if (!_state.value.loaded) return
+    // Returns the new id so the list can scroll to it; null when nothing was added.
+    fun addTask(title: String): String? {
+        if (!_state.value.loaded) return null
         val trimmed = title.trim()
-        if (trimmed.isEmpty()) return
+        if (trimmed.isEmpty()) return null
         val now = isoNow()
+        val nav = _state.value.activeNav
+        // Picks up the property the open smart list is defined by, or it vanishes on create.
         val task = TodoItem(
             id = UUID.randomUUID().toString(),
             title = trimmed,
-            listId = DEFAULT_LIST_ID,
+            listId = listIdForNav(nav),
+            isInMyDay = nav == NAV_MY_DAY,
+            myDayDate = if (nav == NAV_MY_DAY) today() else null,
+            isStarred = nav == NAV_IMPORTANT,
+            dueDate = if (nav == NAV_PLANNED) dueDateIsoOf(LocalDate.now()) else null,
             createdAt = now,
             updatedAt = now,
         )
-        // Newest-first, matching the Windows app's insert-at-zero ordering.
         persist(_state.value.tasks.toMutableList().apply { add(0, task) })
+        return task.id
     }
 
     fun toggleComplete(task: TodoItem) {
         if (!_state.value.loaded) return
         val now = isoNow()
-        persist(
-            _state.value.tasks.map {
-                if (it.id != task.id) it
-                else it.copy(
-                    isCompleted = !it.isCompleted,
-                    completedAt = if (!it.isCompleted) now else null,
-                    updatedAt = now,
-                )
-            }
+        val completing = !task.isCompleted
+
+        val updated = _state.value.tasks.map {
+            if (it.id != task.id) it
+            else it.copy(
+                isCompleted = completing,
+                completedAt = if (completing) now else null,
+                updatedAt = now,
+            )
+        }
+
+        // Mirrors MainViewModel.TrySpawnNextRecurrence.
+        val spawned = if (completing) spawnNextRecurrence(task, now) else null
+        persist(if (spawned == null) updated else listOf(spawned) + updated)
+    }
+
+    private fun spawnNextRecurrence(task: TodoItem, now: String): TodoItem? {
+        if (task.recurrence == Recurrence.NONE) return null
+        val due = task.dueDate ?: return null
+        // Unparseable: skip rather than invent an occurrence on a date nobody chose.
+        val nextDue = RecurrenceHelper.advanceDueDate(due, task.recurrence) ?: return null
+
+        return task.copy(
+            id = UUID.randomUUID().toString(),
+            isCompleted = false,
+            completedAt = null,
+            isInMyDay = false,
+            myDayDate = null,
+            dueDate = nextDue,
+            createdAt = now,
+            updatedAt = now,
         )
+    }
+
+    fun setActiveNav(nav: String) {
+        _state.value = _state.value.copy(activeNav = nav)
+    }
+
+    fun setSearchQuery(query: String) {
+        _state.value = _state.value.copy(searchQuery = query)
+    }
+
+    // Stamped here, not per call site: an edit without a fresh UpdatedAt loses the merge.
+    fun saveTask(updated: TodoItem) {
+        if (!_state.value.loaded) return
+        val stamped = updated.copy(updatedAt = isoNow())
+        persist(_state.value.tasks.map { if (it.id == stamped.id) stamped else it })
+    }
+
+    fun toggleStar(task: TodoItem) = saveTask(task.copy(isStarred = !task.isStarred))
+
+    // Mirrors TodoItem.SetMyDay: membership and date are one rule, never set independently.
+    fun setMyDay(task: TodoItem, on: Boolean) = saveTask(
+        task.copy(isInMyDay = on, myDayDate = if (on) today() else null)
+    )
+
+    fun deleteTask(task: TodoItem) {
+        if (!_state.value.loaded) return
+        // Fields kept, not blanked, so restoreTask puts back exactly what was there.
+        deletedTasks = deletedTasks + task.copy(isDeleted = true, updatedAt = isoNow())
+        persist(_state.value.tasks.filterNot { it.id == task.id })
+        // persist() reschedules only over the list just passed to it, which no longer
+        // contains this task — its own alarm needs cancelling explicitly, or it fires
+        // a reminder for a task that's gone. restoreTask needs no undo of this: the
+        // restored task re-enters the live list, so the next persist() reschedules it.
+        cancelReminder(appContext, task.id)
+    }
+
+    // The fresh UpdatedAt is what beats a tombstone another device may already hold.
+    fun restoreTask(task: TodoItem) {
+        if (!_state.value.loaded) return
+        deletedTasks = deletedTasks.filterNot { it.id == task.id }
+        val restored = task.copy(isDeleted = false, updatedAt = isoNow())
+        persist(_state.value.tasks.toMutableList().apply { add(0, restored) })
+    }
+
+    // --- Lists ---------------------------------------------------------------------------
+
+    fun createList(name: String) {
+        if (!_state.value.loaded) return
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        val now = isoNow()
+        val list = TaskList(
+            id = UUID.randomUUID().toString(),
+            name = trimmed,
+            accentColor = ListPalette.first(),
+            sortOrder = _state.value.lists.size,
+            updatedAt = now,
+        )
+        persist(_state.value.tasks, _state.value.lists + list)
+    }
+
+    fun renameList(list: TaskList, name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        saveList(list.copy(name = trimmed))
+    }
+
+    fun togglePinList(list: TaskList) = saveList(list.copy(isPinned = !list.isPinned))
+
+    private fun saveList(updated: TaskList) {
+        if (!_state.value.loaded) return
+        val stamped = updated.copy(updatedAt = isoNow())
+        persist(_state.value.tasks, _state.value.lists.map { if (it.id == stamped.id) stamped else it })
+    }
+
+    // Tombstones the list and every task in it, mirroring MainViewModel.DeleteList.
+    fun deleteList(list: TaskList) {
+        if (!_state.value.loaded) return
+        val now = isoNow()
+        val orphaned = _state.value.tasks.filter { it.listId == list.id }
+
+        deletedTasks = deletedTasks + orphaned.map { it.copy(isDeleted = true, updatedAt = now) }
+        deletedLists = deletedLists + list.copy(isDeleted = true, updatedAt = now)
+
+        if (_state.value.activeNav == list.id) setActiveNav(NAV_ALL_TASKS)
+
+        persist(
+            tasks = _state.value.tasks.filterNot { it.listId == list.id },
+            lists = _state.value.lists.filterNot { it.id == list.id },
+        )
+        // Same reason as deleteTask: every orphaned task just left the list persist()
+        // reschedules over, so each one needs its own alarm cancelled explicitly.
+        orphaned.forEach { cancelReminder(appContext, it.id) }
     }
 
     private val saveMutex = Mutex()
 
     private fun persist(tasks: List<TodoItem>, lists: List<TaskList> = _state.value.lists) {
-        // State first so the row redraws on this frame; the write follows off-thread.
-        // Ticking a checkbox previously blocked the main thread on a serialize + file write.
+        // State first so the row redraws this frame; the write follows off-thread.
         _state.value = _state.value.copy(tasks = tasks, lists = lists)
 
         viewModelScope.launch(Dispatchers.IO) {
-            // Serialized, and each writer re-reads current state under the lock: a write
-            // that arrives late then re-writes the newest snapshot rather than restoring a
-            // stale one, so ordering between launches cannot lose an edit.
+            // Each writer re-reads state under the lock, so a late write cannot restore a
+            // stale snapshot over a newer one.
             saveMutex.withLock {
-                val snapshot = _state.value
-                store.save(TasksFile(snapshot.tasks, snapshot.lists))
+                store.save(wholeState())
             }
+            rescheduleReminders(appContext, tasks)
         }
         schedulePush()
     }
@@ -182,7 +361,7 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
         setSync(SyncState.Working)
         viewModelScope.launch {
             val error = client.signIn(email.trim(), password)
-            // Back to the form, not a dead-end screen: the text is still there to correct.
+            // Back to the form, not a dead end: the text is still there to correct.
             if (error != null) setSync(SyncState.Off(error = humanize(error))) else pull()
         }
     }
@@ -192,8 +371,7 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
         setSync(SyncState.Working)
         viewModelScope.launch {
             val error = client.signInWithGithub()
-            // Success is not signalled here — the browser redirects back into the activity
-            // and the session arrives through handleDeeplink/observeSession.
+            // Success arrives via handleDeeplink/observeSession, not from here.
             if (error != null) setSync(SyncState.Off(error = humanize(error)))
         }
     }
@@ -206,13 +384,10 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun observeSession() {
         viewModelScope.launch {
-            // Touching `client` here is what first constructs it — createSupabaseClient plus
-            // an OkHttp engine — so the lazy is forced off the main thread rather than
-            // during the first composition.
+            // Touching `client` constructs it, so force the lazy off the main thread.
             val signedInFlow = withContext(Dispatchers.IO) { client.signedIn }
             signedInFlow.collect { signedIn ->
-                // Only react to a sign-in that happened outside the email/password path;
-                // that path drives its own state transitions.
+                // Only for sign-ins outside the email/password path, which drives its own.
                 if (signedIn && _state.value.sync !is SyncState.On) pull()
             }
         }
@@ -232,8 +407,8 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    // Supabase deliberately does not distinguish "no such user" from "wrong password", so
-    // the message has to cover both without implying which.
+    // Supabase does not distinguish "no such user" from "wrong password", so the message
+    // has to cover both without implying which.
     private fun humanize(raw: String): String {
         val text = raw.lowercase()
         return when {
@@ -257,8 +432,7 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
         setSync(SyncState.Working)
         viewModelScope.launch {
             val error = client.submitMfaChallenge(code)
-            // Back to the prompt with the reason, not a dead end — the code rotates every
-            // 30 seconds, so a rejection usually just means "try the next one".
+            // Back to the prompt: codes rotate, so a rejection usually means "try the next".
             if (error != null) setSync(SyncState.NeedsMfaCode(error = humanize(error)))
             else pull()
         }
@@ -282,8 +456,7 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
             if (error != null) {
                 setSync(SyncState.NeedsMfaCode(error = error, redeeming = true))
             } else {
-                // The factor is gone, so the aal1 session this app already holds is now
-                // sufficient — no re-authentication needed.
+                // The factor is gone, so the existing aal1 session is now sufficient.
                 pull()
             }
         }
@@ -292,8 +465,7 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
     fun submitPassphrase(value: String) {
         setSync(SyncState.Working)
         viewModelScope.launch {
-            // Derive against the account's existing salt when there is one, so every device
-            // converges on a single salt (§3) and derives its key exactly once.
+            // The account's existing salt, so every device converges on one (§3).
             val salt = client.serverSalt() ?: SyncCrypto.createSalt()
             // 600k PBKDF2 iterations — seconds of CPU. Never on the main thread.
             val derived = withContext(Dispatchers.Default) { SyncCrypto.deriveKey(value, salt) }
@@ -311,8 +483,7 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { pushNow(manual = true) }
     }
 
-    // Mirrors SchedulePush in windows/Services/SyncService.cs: local edits go up on a short
-    // debounce rather than one request per keystroke-level change.
+    // Mirrors SchedulePush in windows/Services/SyncService.cs.
     private fun schedulePush() {
         if (_state.value.sync !is SyncState.On || syncKey == null) return
         pushJob?.cancel()
@@ -323,12 +494,11 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private suspend fun pushNow(manual: Boolean) {
-        val local = TasksFile(_state.value.tasks, _state.value.lists)
-        when (val result = client.pushMerged(local, syncKey)) {
+        when (val result = client.pushMerged(wholeState(), syncKey)) {
             is PushResult.Success -> {
-                persist(result.merged.tasks, result.merged.lists)
+                applyMerged(result.merged)
                 setSync(SyncState.On(client.signedInEmail, result.updatedAt, true))
-                if (manual) _pushCompleted.emit(result.merged.tasks.size)
+                if (manual) _pushCompleted.emit(result.merged.tasks.count { !it.isDeleted })
             }
             PushResult.NeedsPassphrase ->
                 setSync(SyncState.On(client.signedInEmail, "", hasPassphrase = false))
@@ -348,8 +518,40 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { pull(manual = true) }
     }
 
+    private var autoPullJob: Job? = null
+
+    // Matches StartAutoSync's PeriodicTimer on Windows, scoped to the foreground.
+    fun startAutoPull() {
+        autoPullJob?.cancel()
+        autoPullJob = viewModelScope.launch {
+            while (true) {
+                pullQuietly()
+                delay(AUTO_PULL_INTERVAL_MS)
+            }
+        }
+    }
+
+    fun stopAutoPull() {
+        autoPullJob?.cancel()
+        autoPullJob = null
+    }
+
+    // Silent by design: an automatic pull must never take the screen with a spinner or a
+    // passphrase prompt. Anything needing an answer waits for the manual path.
+    private suspend fun pullQuietly() {
+        if (_state.value.sync !is SyncState.On) return
+        when (val result = client.pull(syncKey)) {
+            is PullResult.Success -> {
+                applyServer(result.data)
+                setSync(SyncState.On(client.signedInEmail, result.updatedAt, syncKey != null))
+            }
+            else -> Unit
+        }
+    }
+
+
     fun signOut() {
-        // Cleared on explicit sign-out, matching SyncPassphraseStore.Clear() on Windows.
+        // Matches SyncPassphraseStore.Clear() on Windows.
         syncKey = null
         keyStore.clear()
         viewModelScope.launch {
@@ -372,9 +574,8 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
             PullResult.NeedsPassphrase -> setSync(SyncState.NeedsPassphrase)
             PullResult.NeedsMfa -> setSync(SyncState.NeedsMfaCode())
             PullResult.Unreadable -> {
-                // Never treated as "no tasks", and local data is never touched
-                // (docs/sync-protocol.md §2 unreadable-row rule). The stored key cannot
-                // open this row, so discard it rather than failing on every launch.
+                // Never "no tasks", and local data is untouched (§2 unreadable-row rule).
+                // The stored key cannot open this row, so discard it.
                 syncKey = null
                 keyStore.clear()
                 setSync(SyncState.WrongPassphrase)
@@ -386,19 +587,26 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
     // Proper §5 merge now that SyncMerge is ported: last-write-wins by UpdatedAt, local
     // wins ties, nothing dropped. This replaces the interim "server always wins" rule, so
     // a task completed on this phone no longer reverts on the next pull.
+    // wholeState(), not the live half: an unpushed local delete must take part in the merge.
     private fun applyServer(server: TasksFile) {
-        val merged = SyncMerge.merge(TasksFile(_state.value.tasks, _state.value.lists), server)
-        persist(tasks = merged.tasks, lists = merged.lists)
+        applyMerged(SyncMerge.merge(wholeState(), server))
     }
 
     private fun setSync(sync: SyncState) {
+        // Background sync follows the opt-in: never enqueued until sync actually works.
+        if (sync is SyncState.On) schedulePeriodicSync(appContext)
+        else if (sync is SyncState.Off) cancelPeriodicSync(appContext)
+
         _state.value = _state.value.copy(sync = sync)
     }
 
     private companion object {
-        const val DEFAULT_LIST_ID = "00000000-0000-0000-0000-000000000000"
         const val PUSH_DEBOUNCE_MS = 3_000L
+        const val AUTO_PULL_INTERVAL_MS = 5 * 60 * 1_000L
         fun isoNow(): String =
             OffsetDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+
+        // Local day deliberately: "added to My Day today" means today where the user is.
+        fun today(): String = LocalDate.now().toString()
     }
 }
