@@ -8,6 +8,7 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.17.0** | Jul 28, 2026 | Sync protocol v2 (tombstone deletes), Android companion authoring parity (task detail editing, lists, search, recurrence), Android background sync + on-device due-date reminders |
 | **v0.16.0** | Jul 24, 2026 | End-to-end encrypted sync, PKCE OAuth, Kotlin Multiplatform Android companion, TOTP two-factor auth (`aal2` RLS), MFA + passphrase recovery, Windows App SDK 2.3.1 |
 | **v0.15.0** | Jul 14, 2026 | Show Mascot setting, mascot loading ring + entrance fade, mascot-only manual launch, Summary launchpad (tiles/rows navigate), PowerToys-style title-bar search sizing |
 | **v0.14.0** | Jul 10, 2026 | Summary page (KPI tiles, Today/Upcoming), Quick Snooze, task export (JSON/CSV/Markdown), dedicated Search page, non-destructive "Merge both" sync conflict option |
@@ -88,9 +89,9 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 | Two-factor authentication — TOTP enrolment/challenge, `aal2` enforced in RLS | ✅ Shipped (v0.16) |
 | Recovery — MFA recovery codes, sync passphrase recovery kit | ✅ Shipped (v0.16) |
 | Android companion (Kotlin Multiplatform) — local-first, encrypted two-way sync | ✅ Shipped (v0.16) |
-| Sync protocol v2 — deletions propagate via tombstones | 🔨 Built, not yet committed |
-| Android authoring parity — task detail editing, lists, search, recurrence | 🔨 Built, not yet committed |
-| Android background sync + on-device due-date reminders | 🔨 Built, not yet committed |
+| Sync protocol v2 — deletions propagate via tombstones | ✅ Shipped (v0.17) |
+| Android authoring parity — task detail editing, lists, search, recurrence | ✅ Shipped (v0.17) |
+| Android background sync + on-device due-date reminders | ✅ Shipped (v0.17) |
 
 ---
 
@@ -151,9 +152,10 @@ Skins, bubble themes, idle animations and sound packs ship free when they ship.
 ```
 May–Jun 2026  v0.1–v0.11 shipped (mascot → tags → sync → My Day reset)
               ↓
-Jun–Jul 2026  v0.12–v0.15 shipped (Store submission, sync automation, search, recurring
-              tasks, priority tiers, Summary launchpad); E2E encryption, TOTP MFA, Android
-              companion, and recovery paths merged to main, not yet tagged
+Jun–Jul 2026  v0.12–v0.17 shipped (Store submission, sync automation, search, recurring
+              tasks, priority tiers, Summary launchpad, E2E encryption, TOTP MFA, Android
+              companion, MFA/passphrase recovery, sync protocol v2 tombstone deletes,
+              Android authoring parity)
               ↓
 Q3 2026       v1.0 — final polish
               ↓

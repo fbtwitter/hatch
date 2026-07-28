@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+---
+
+## [0.17.0] - 2026-07-28
+
 ### Added
 - **Sync protocol v2 — deletions now sync.** Deleting a task or list writes a tombstone
   (`IsDeleted`) instead of dropping the record, so a delete on one device sticks everywhere
@@ -19,6 +23,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 - Android pulls on foreground and every 5 minutes while open, syncs hourly in the background
   via WorkManager once signed in, and raises on-device due-date reminders (`docs/adr/0002`)
 - Completing a repeating task on Android spawns its next occurrence, matching Windows
+
+### Fixed
+- A family of `ToLocalTime().Date` timezone bugs on Windows affecting due-date display,
+  reminders, and stats (found while auditing both clients against the sync protocol)
+- `CreatedAt` compared as text instead of an instant, misordering newest-first sorts across
+  Windows/Android clock offsets
 
 ---
 
