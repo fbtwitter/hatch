@@ -64,7 +64,7 @@ public sealed partial class MainViewModel
         if (IsSearchActive)
         {
             var query = _searchQuery.Trim();
-            foreach (var task in Tasks.Where(t => TaskSearchMatcher.Matches(t, query)).OrderByDescending(t => t.CreatedAt))
+            foreach (var task in TaskSorting.NewestFirst(Tasks.Where(t => TaskSearchMatcher.Matches(t, query))))
                 SearchResults.Add(task);
         }
         OnPropertyChanged(nameof(IsSearchEmpty));

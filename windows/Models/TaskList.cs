@@ -9,6 +9,9 @@ public sealed class TaskList
     public int SortOrder { get; set; } = 0;
     public string? CustomIcon { get; set; } = null;
 
+    // Tombstone — see TodoItem.IsDeleted.
+    public bool IsDeleted { get; set; }
+
     // Stamped explicitly by MainViewModel on rename/recolor/pin/icon/reorder.
     // Used by SyncMerge to resolve which side wins when the same list changed on both.
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;

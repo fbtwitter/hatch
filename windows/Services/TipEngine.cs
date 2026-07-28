@@ -59,9 +59,11 @@ public sealed class TipEngine
         var current = now ?? DateTime.Now;
         var today = current.Date;
 
+        // Due dates are calendar days read as written (stored midnight +00:00, or local
+        // midnight from a preset) — a time-zone conversion shifts the day west of UTC.
         var overdueTasks = tasks.Count(t =>
             !t.IsCompleted && t.DueDate.HasValue &&
-            t.DueDate.Value.ToLocalTime().Date < today);
+            t.DueDate.Value.Date < today);
 
         if (overdueTasks >= 1)
             return new Tip
@@ -77,7 +79,7 @@ public sealed class TipEngine
 
         var dueToday = tasks.Count(t =>
             !t.IsCompleted && t.DueDate.HasValue &&
-            t.DueDate.Value.ToLocalTime().Date == today);
+            t.DueDate.Value.Date == today);
 
         if (dueToday >= 1)
             return new Tip

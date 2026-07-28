@@ -39,4 +39,32 @@ public class TaskSortingTests
 
         CollectionAssert.AreEqual(new[] { newer, older }, ordered);
     }
+
+    // This app stamps CreatedAt local, the Android companion stamps it UTC. Raw ticks put
+    // the phone's task hours behind one created after it on the desktop.
+    [TestMethod]
+    public void NewestFirst_ComparesInstantsNotTicksAcrossKinds()
+    {
+        var utcNoon = new DateTime(2026, 7, 26, 12, 0, 0, DateTimeKind.Utc);
+        var fromPhone = MakeTask("from phone", TaskPriority.None, utcNoon);
+        var fromDesktop = MakeTask(
+            "from desktop", TaskPriority.None, utcNoon.AddMinutes(-10).ToLocalTime());
+
+        var ordered = TaskSorting.NewestFirst([fromDesktop, fromPhone]).ToList();
+
+        CollectionAssert.AreEqual(new[] { fromPhone, fromDesktop }, ordered);
+    }
+
+    [TestMethod]
+    public void ForImportant_BreaksTiesByInstantAcrossKinds()
+    {
+        var utcNoon = new DateTime(2026, 7, 26, 12, 0, 0, DateTimeKind.Utc);
+        var fromPhone = MakeTask("from phone", TaskPriority.High, utcNoon);
+        var fromDesktop = MakeTask(
+            "from desktop", TaskPriority.High, utcNoon.AddMinutes(-10).ToLocalTime());
+
+        var ordered = TaskSorting.ForImportant([fromDesktop, fromPhone]).ToList();
+
+        CollectionAssert.AreEqual(new[] { fromPhone, fromDesktop }, ordered);
+    }
 }

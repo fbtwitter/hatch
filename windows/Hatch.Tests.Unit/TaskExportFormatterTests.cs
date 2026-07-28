@@ -50,6 +50,22 @@ public class TaskExportFormatterTests
     }
 
     [TestMethod]
+    public void ToCsv_DueDate_IsTheDateAsWritten()
+    {
+        // 20:00 +00:00 exported through ToLocalTime became the next day east of UTC.
+        var data = new TasksFile
+        {
+            Tasks = [new TodoItem
+            {
+                Title = "t",
+                DueDate = new DateTimeOffset(2026, 7, 15, 20, 0, 0, TimeSpan.Zero)
+            }]
+        };
+
+        Assert.IsTrue(TaskExportFormatter.ToCsv(data).Contains("2026-07-15"));
+    }
+
+    [TestMethod]
     public void ToCsv_QuotesFieldsContainingCommas()
     {
         var data = new TasksFile { Tasks = [new TodoItem { Title = "Buy milk, eggs, bread" }] };

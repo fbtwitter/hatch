@@ -248,8 +248,11 @@ public sealed partial class TaskListPage : Page
         PaneNotesBox.Text = task.Notes ?? string.Empty;
         PaneMyDayToggle.IsOn = task.IsInMyDay;
         PanePriorityCombo.SelectedIndex = (int)task.Priority;
+        // The day as written, never through ToLocalTime (see TipEngine): converting here
+        // showed the previous day in the picker west of UTC, and re-picking that visible
+        // day silently committed the shifted date.
         PaneDueDatePicker.Date = task.DueDate.HasValue
-            ? (DateTimeOffset?)new DateTimeOffset(task.DueDate.Value.ToLocalTime().Date, TimeSpan.Zero)
+            ? (DateTimeOffset?)new DateTimeOffset(task.DueDate.Value.Date, TimeSpan.Zero)
             : null;
         PaneRepeatCombo.SelectedIndex = (int)task.Recurrence;
         PaneRepeatCombo.IsEnabled = task.DueDate.HasValue;
@@ -617,13 +620,13 @@ public sealed partial class TaskListPage : Page
     private void SnoozeTomorrow_Click(object sender, RoutedEventArgs e)
     {
         var task = (TodoItem)((MenuFlyoutItem)sender).Tag;
-        ViewModel.UpdateTaskDueDate(task, new DateTimeOffset(DueDatePresets.GetTomorrow(DateTime.Today)));
+        ViewModel.UpdateTaskDueDate(task, new DateTimeOffset(DueDatePresets.GetTomorrow(DateTime.Today), TimeSpan.Zero));
     }
 
     private void SnoozeNextWeek_Click(object sender, RoutedEventArgs e)
     {
         var task = (TodoItem)((MenuFlyoutItem)sender).Tag;
-        ViewModel.UpdateTaskDueDate(task, new DateTimeOffset(DueDatePresets.GetNextWeek(DateTime.Today)));
+        ViewModel.UpdateTaskDueDate(task, new DateTimeOffset(DueDatePresets.GetNextWeek(DateTime.Today), TimeSpan.Zero));
     }
 
     private void UndoInfoBar_Closed(InfoBar sender, InfoBarClosedEventArgs args)
@@ -724,10 +727,12 @@ public sealed partial class TaskListPage : Page
             btn.Click += (_, _) =>
             {
                 var date = capturedGetDate();
-                if (_flyoutTask?.DueDate?.ToLocalTime().Date == date)
+                if (_flyoutTask?.DueDate?.Date == date)
                     FlyoutCommitAndClose(null);
                 else
-                    FlyoutCommitAndClose(new DateTimeOffset(date));
+                    // TimeSpan.Zero: the documented midnight-+00:00 spelling — the
+                    // offsetless ctor stamped the machine's own offset instead.
+                    FlyoutCommitAndClose(new DateTimeOffset(date, TimeSpan.Zero));
             };
 
             _flyoutPresetBtns[i] = btn;
@@ -745,7 +750,7 @@ public sealed partial class TaskListPage : Page
     {
         var accentStyle  = ThemeResourceHelper.GetStyle("AccentButtonStyle");
         var defaultStyle = ThemeResourceHelper.GetStyle("DefaultButtonStyle");
-        var selected     = dueDate?.ToLocalTime().Date;
+        var selected     = dueDate?.Date;
 
         var presetGetters = new Func<DateTime>[]
         {
@@ -762,7 +767,7 @@ public sealed partial class TaskListPage : Page
 
         _updatingFlyout = true;
         _flyoutCalendar!.Date = dueDate.HasValue
-            ? (DateTimeOffset?)new DateTimeOffset(dueDate.Value.ToLocalTime().Date, TimeSpan.Zero)
+            ? (DateTimeOffset?)new DateTimeOffset(dueDate.Value.Date, TimeSpan.Zero)
             : null;
         _updatingFlyout = false;
     }
@@ -776,7 +781,7 @@ public sealed partial class TaskListPage : Page
         {
             _updatingPane = true;
             PaneDueDatePicker.Date = date.HasValue
-                ? (DateTimeOffset?)new DateTimeOffset(date.Value.ToLocalTime().Date, TimeSpan.Zero)
+                ? (DateTimeOffset?)new DateTimeOffset(date.Value.Date, TimeSpan.Zero)
                 : null;
             _updatingPane = false;
         }
