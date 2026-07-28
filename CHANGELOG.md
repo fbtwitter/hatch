@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+### Added
+- **Sync protocol v2 — deletions now sync.** Deleting a task or list writes a tombstone
+  (`IsDeleted`) instead of dropping the record, so a delete on one device sticks everywhere
+  instead of reappearing after the next merge. No envelope change and no server migration;
+  older clients read v2 payloads fine, they just revive tombstones until updated
+  (`docs/adr/0007`)
+- Android companion is now a full authoring client: task detail sheet (title, notes, due
+  date, Important, My Day, priority, repeat, list, tags), swipe-to-delete with undo,
+  navigation drawer with the smart lists and custom-list management, and search across every
+  list
+- Android pulls on foreground and every 5 minutes while open, syncs hourly in the background
+  via WorkManager once signed in, and raises on-device due-date reminders (`docs/adr/0002`)
+- Completing a repeating task on Android spawns its next occurrence, matching Windows
+
 ---
 
 ## [0.16.0] - 2026-07-24
