@@ -11,20 +11,12 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
-// ADR-0005: persists the 32-byte derived key, never the passphrase. The passphrase is
-// user-chosen and probably reused elsewhere; the derived key unlocks exactly one account's
-// task payload and nothing else, so holding it is a strict reduction in blast radius.
-//
-// AndroidKeyStore keys are non-exportable and SyncCrypto needs raw bytes, so this uses the
-// standard wrap pattern: a hardware-backed AES key inside the Keystore encrypts our derived
-// key, and only the wrapped blob is written to disk.
-//
-// Not EncryptedSharedPreferences: Jetpack Security Crypto is deprecated and unmaintained.
+// ADR-0005: persists the derived key, never the passphrase. Keystore keys are
+// non-exportable and SyncCrypto needs raw bytes, hence the wrap pattern. Not
+// EncryptedSharedPreferences — Jetpack Security Crypto is deprecated.
 class SyncKeyStore(context: Context) {
 
-    // Lazy so the backing XML is read on whichever thread first calls load()/save() — both
-    // of which are already off the main thread — rather than during construction, which
-    // happens in the ViewModel's field initializers during onCreate.
+    // Lazy: keeps the XML read off onCreate, where this is constructed.
     private val prefs by lazy { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE) }
 
     fun load(): SyncKey? {
@@ -73,9 +65,8 @@ class SyncKeyStore(context: Context) {
                     .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
                     .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
                     .setKeySize(256)
-                    // setUserAuthenticationRequired(true) would add a biometric gate here.
-                    // Left off for now: it needs a BiometricPrompt flow, and locking the key
-                    // behind one before background sync exists would strand the key.
+                    // No setUserAuthenticationRequired: a biometric gate would strand the
+                    // key in background sync.
                     .build()
             )
         }.generateKey()

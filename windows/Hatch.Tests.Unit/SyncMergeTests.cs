@@ -93,4 +93,76 @@ public class SyncMergeTests
 
         Assert.AreEqual(1, merged.Tasks.Count);
     }
+
+    // Tombstones need no merge code of their own; these pin that.
+    private static TodoItem Tombstone(Guid id, string title, DateTimeOffset updatedAt) => new()
+    {
+        Id = id,
+        Title = title,
+        UpdatedAt = updatedAt,
+        IsDeleted = true
+    };
+
+    [TestMethod]
+    public void Merge_DeleteBeatsOlderLiveCopy()
+    {
+        var id = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+        var local = new TasksFile { Tasks = [Tombstone(id, "deleted on this device", now)] };
+        var server = new TasksFile { Tasks = [Task(id, "still alive on the server", now.AddMinutes(-5))] };
+
+        var merged = SyncMerge.Merge(local, server);
+
+        Assert.AreEqual(1, merged.Tasks.Count);
+        Assert.IsTrue(merged.Tasks[0].IsDeleted);
+    }
+
+    [TestMethod]
+    public void Merge_EditAfterDeleteRevivesTheTask()
+    {
+        // Deliberate: the later edit wins, as it would for any other field.
+        var id = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+        var local = new TasksFile { Tasks = [Task(id, "edited just now", now)] };
+        var server = new TasksFile { Tasks = [Tombstone(id, "deleted earlier elsewhere", now.AddMinutes(-5))] };
+
+        var merged = SyncMerge.Merge(local, server);
+
+        Assert.AreEqual(1, merged.Tasks.Count);
+        Assert.IsFalse(merged.Tasks[0].IsDeleted);
+        Assert.AreEqual("edited just now", merged.Tasks[0].Title);
+    }
+
+    [TestMethod]
+    public void Merge_TombstoneSurvivesWhenTheOtherSideNeverSawTheTask()
+    {
+        var id = Guid.NewGuid();
+        var local = new TasksFile { Tasks = [Tombstone(id, "gone", DateTimeOffset.UtcNow)] };
+        var server = new TasksFile();
+
+        var merged = SyncMerge.Merge(local, server);
+
+        Assert.AreEqual(1, merged.Tasks.Count);
+        Assert.IsTrue(merged.Tasks[0].IsDeleted);
+    }
+
+    [TestMethod]
+    public void Merge_DeletedListBeatsOlderLiveCopy()
+    {
+        var id = Guid.NewGuid();
+        var now = DateTimeOffset.UtcNow;
+        var local = new TasksFile
+        {
+            Lists = [new TaskList { Id = id, Name = "Groceries", UpdatedAt = now, IsDeleted = true }]
+        };
+        var server = new TasksFile
+        {
+            Lists = [new TaskList { Id = id, Name = "Groceries", UpdatedAt = now.AddHours(-1) }]
+        };
+
+        var merged = SyncMerge.Merge(local, server);
+
+        Assert.AreEqual(1, merged.Lists.Count);
+        Assert.IsTrue(merged.Lists[0].IsDeleted);
+    }
 }

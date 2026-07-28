@@ -13,4 +13,14 @@
     <style name="Theme.Hatch" parent="android:Theme.Material.Light.NoActionBar">
         <item name="android:forceDarkAllowed" tools:targetApi="29">false</item>
     </style>
+
+    <!-- The Android-12 icon splash, backported: below 12 core-splashscreen draws it, on 12+
+         the system reads the same values. Background matches BrandLight.surface in Theme.kt
+         so the splash dissolves into the first frame instead of flashing. -->
+    <style name="Theme.Hatch.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#FDFCFF</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Hatch</item>
+        <item name="android:forceDarkAllowed" tools:targetApi="29">false</item>
+    </style>
 </resources>

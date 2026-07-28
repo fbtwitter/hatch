@@ -4,8 +4,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-// Mirrors windows/Hatch.Tests.Unit/SyncMergeTests.cs case for case. If these two suites
-// ever disagree, the two clients will resolve the same conflict differently.
+// Mirrors windows/Hatch.Tests.Unit/SyncMergeTests.cs case for case. If these disagree, the
+// two clients resolve the same conflict differently.
 class SyncMergeTest {
 
     private fun task(id: String, title: String, updatedAt: String) = TodoItem(
@@ -64,15 +64,14 @@ class SyncMergeTest {
         assertEquals("local", SyncMerge.merge(local, server).tasks.single().title)
     }
 
-    // The formats differ but the instants are identical — a lexicographic comparison would
-    // get this wrong, which is why UpdatedAt is parsed.
+    // Why UpdatedAt is parsed: a lexicographic comparison gets this wrong.
     @Test
     fun compares_instants_not_strings_across_z_and_offset_forms() {
         val id = "11111111-1111-1111-1111-111111111111"
         val local = TasksFile(tasks = listOf(task(id, "local", "2026-07-21T12:00:00Z")))
         val server = TasksFile(tasks = listOf(task(id, "server", "2026-07-21T13:00:00+02:00")))
 
-        // 13:00+02:00 is 11:00Z, so the local copy is genuinely newer.
+        // 13:00+02:00 is 11:00Z, so local is genuinely newer.
         assertEquals("local", SyncMerge.merge(local, server).tasks.single().title)
     }
 
@@ -100,5 +99,57 @@ class SyncMergeTest {
         val local = TasksFile(tasks = listOf(task("11111111-1111-1111-1111-111111111111", "only task", now)))
 
         assertEquals(1, SyncMerge.merge(local, TasksFile()).tasks.size)
+    }
+
+    // Tombstones need no merge code of their own; these pin that.
+    private fun tombstone(id: String, title: String, updatedAt: String) =
+        task(id, title, updatedAt).copy(isDeleted = true)
+
+    @Test
+    fun delete_beats_older_live_copy() {
+        val id = "11111111-1111-1111-1111-111111111111"
+        val local = TasksFile(tasks = listOf(tombstone(id, "deleted on this device", now)))
+        val server = TasksFile(tasks = listOf(task(id, "still alive on the server", fiveMinutesAgo)))
+
+        val merged = SyncMerge.merge(local, server)
+
+        assertEquals(1, merged.tasks.size)
+        assertTrue(merged.tasks[0].isDeleted)
+    }
+
+    @Test
+    fun edit_after_delete_revives_the_task() {
+        val id = "11111111-1111-1111-1111-111111111111"
+        val local = TasksFile(tasks = listOf(task(id, "edited just now", now)))
+        val server = TasksFile(tasks = listOf(tombstone(id, "deleted earlier elsewhere", fiveMinutesAgo)))
+
+        val merged = SyncMerge.merge(local, server)
+
+        assertEquals(1, merged.tasks.size)
+        assertEquals(false, merged.tasks[0].isDeleted)
+        assertEquals("edited just now", merged.tasks[0].title)
+    }
+
+    @Test
+    fun tombstone_survives_when_the_other_side_never_saw_the_task() {
+        val local = TasksFile(tasks = listOf(tombstone("11111111-1111-1111-1111-111111111111", "gone", now)))
+
+        val merged = SyncMerge.merge(local, TasksFile())
+
+        assertEquals(1, merged.tasks.size)
+        assertTrue(merged.tasks[0].isDeleted)
+    }
+
+    @Test
+    fun deleted_list_beats_older_live_copy() {
+        val id = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+        val live = TaskList(id = id, name = "Groceries", accentColor = "#0078D4", updatedAt = fiveMinutesAgo)
+        val local = TasksFile(lists = listOf(live.copy(updatedAt = now, isDeleted = true)))
+        val server = TasksFile(lists = listOf(live))
+
+        val merged = SyncMerge.merge(local, server)
+
+        assertEquals(1, merged.lists.size)
+        assertTrue(merged.lists[0].isDeleted)
     }
 }

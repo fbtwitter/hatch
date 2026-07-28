@@ -575,8 +575,14 @@ public sealed class SyncService
             // an empty account — pushing here would overwrite it.
             if (readError != null) return null;
 
-            bool localHasData  = localData.Tasks.Count > 0;
-            bool serverHasData = (serverData?.Tasks.Count ?? 0) > 0;
+            // Live records only — an account holding nothing but tombstones is empty here.
+            int localTasks   = localData.Tasks.Count(t => !t.IsDeleted);
+            int localLists   = localData.Lists.Count(l => !l.IsDeleted);
+            int serverTasks  = serverData?.Tasks.Count(t => !t.IsDeleted) ?? 0;
+            int serverLists  = serverData?.Lists.Count(l => !l.IsDeleted) ?? 0;
+
+            bool localHasData  = localTasks > 0;
+            bool serverHasData = serverTasks > 0;
 
             if (localHasData && serverHasData)
             {
@@ -588,11 +594,11 @@ public sealed class SyncService
                     : DateTime.MinValue;
 
                 return new SyncConflict(
-                    localData.Tasks.Count,
-                    localData.Lists.Count,
+                    localTasks,
+                    localLists,
                     localLastMod,
-                    serverData!.Tasks.Count,
-                    serverData.Lists.Count,
+                    serverTasks,
+                    serverLists,
                     row!.UpdatedAt);
             }
 
