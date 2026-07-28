@@ -36,6 +36,20 @@ android {
         buildConfig = true
     }
 
+    buildTypes {
+        release {
+            // The libraries in use (kotlinx-serialization, supabase-kt, Ktor, OkHttp) all
+            // ship consumer keep rules, so proguard-rules.pro stays near-empty — add to it
+            // only from R8's own missing-rules output, never speculatively.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -68,7 +82,22 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     implementation("androidx.activity:activity-compose:1.12.4")
+    // Android-12-style icon splash on API 26–31, and keep-on-screen until the first disk
+    // read lands — without it those releases cold-start on a bare white window.
+    implementation("androidx.core:core-splashscreen:1.2.0")
+    // Compose AARs carry baseline profiles, but a sideloaded install — the only way this
+    // app is installed — never AOT-compiles them unless this installer is present.
+    implementation("androidx.profileinstaller:profileinstaller:1.4.1")
+    // WindowCompat, for making the system-bar icons follow the in-app theme rather than
+    // the system one. Already arrives transitively; declared because Theme.kt uses it.
+    implementation("androidx.core:core-ktx:1.16.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
+    // LifecycleResumeEffect — foreground/background is what gates the auto-pull loop, and
+    // a raw Activity callback cannot be observed from a composable.
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
+
+    // Background sync + due-date reminders (ADR-0002: scheduled on-device, never pushed).
+    implementation("androidx.work:work-runtime-ktx:2.10.5")
 
     // supabase-kt needs an explicit Ktor engine per platform.
     implementation("io.ktor:ktor-client-okhttp:3.2.0")
