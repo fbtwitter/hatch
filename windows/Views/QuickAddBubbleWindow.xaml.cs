@@ -320,12 +320,15 @@ public sealed partial class QuickAddBubbleWindow : Window
             ListName = selectedList?.Name ?? mainVm.Lists.FirstOrDefault(l => l.Id == selectedListId)?.Name
         };
 
+        // TimeSpan.Zero: due dates are calendar days stored at midnight +00:00 — the
+        // offsetless ctor stamped the machine's own offset, a second spelling every
+        // reader then had to survive.
         task.DueDate = (DatePresetSelector.SelectedIndex) switch
         {
-            1 => new DateTimeOffset(DueDatePresets.GetToday(DateTime.Today)),
-            2 => new DateTimeOffset(DueDatePresets.GetTomorrow(DateTime.Today)),
-            3 => new DateTimeOffset(DueDatePresets.GetThisWeekend(DateTime.Today)),
-            4 => new DateTimeOffset(DueDatePresets.GetNextWeek(DateTime.Today)),
+            1 => new DateTimeOffset(DueDatePresets.GetToday(DateTime.Today), TimeSpan.Zero),
+            2 => new DateTimeOffset(DueDatePresets.GetTomorrow(DateTime.Today), TimeSpan.Zero),
+            3 => new DateTimeOffset(DueDatePresets.GetThisWeekend(DateTime.Today), TimeSpan.Zero),
+            4 => new DateTimeOffset(DueDatePresets.GetNextWeek(DateTime.Today), TimeSpan.Zero),
             _ => (DateTimeOffset?)null
         };
 

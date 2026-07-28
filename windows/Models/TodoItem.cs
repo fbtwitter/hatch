@@ -35,6 +35,9 @@ public sealed class TodoItem : INotifyPropertyChanged
 
     public DateTimeOffset? CompletedAt { get; set; }
 
+    // Tombstone (docs/sync-protocol.md §5) — never present in MainViewModel.Tasks.
+    public bool IsDeleted { get; set; }
+
     public bool IsStarred
     {
         get => _isStarred;

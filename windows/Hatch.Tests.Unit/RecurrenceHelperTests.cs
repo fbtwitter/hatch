@@ -65,4 +65,15 @@ public class RecurrenceHelperTests
         var next = RecurrenceHelper.AdvanceDueDate(due, TaskRecurrence.Daily);
         Assert.AreEqual(TimeSpan.Zero, next.Offset);
     }
+
+    [TestMethod]
+    public void LegacyDueDate_WithTimeComponent_AdvancesByCalendarDateAsWritten()
+    {
+        // Mirrors the Kotlin suite's legacy-time-component case. 23:00 -05:00 is already
+        // the next day in UTC and later zones — advancing must start from the day as
+        // written, or the machine's own zone changes which day the task lands on.
+        var due = new DateTimeOffset(2026, 7, 10, 23, 0, 0, TimeSpan.FromHours(-5));
+        var next = RecurrenceHelper.AdvanceDueDate(due, TaskRecurrence.Daily);
+        Assert.AreEqual(Utc(2026, 7, 11), next);
+    }
 }
