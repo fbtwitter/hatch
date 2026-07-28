@@ -88,6 +88,9 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 | Two-factor authentication — TOTP enrolment/challenge, `aal2` enforced in RLS | ✅ Shipped (v0.16) |
 | Recovery — MFA recovery codes, sync passphrase recovery kit | ✅ Shipped (v0.16) |
 | Android companion (Kotlin Multiplatform) — local-first, encrypted two-way sync | ✅ Shipped (v0.16) |
+| Sync protocol v2 — deletions propagate via tombstones | 🔨 Built, not yet committed |
+| Android authoring parity — task detail editing, lists, search, recurrence | 🔨 Built, not yet committed |
+| Android background sync + on-device due-date reminders | 🔨 Built, not yet committed |
 
 ---
 
