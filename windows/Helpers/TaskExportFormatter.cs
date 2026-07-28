@@ -21,7 +21,7 @@ public static class TaskExportFormatter
             sb.AppendLine(string.Join(",",
                 CsvField(t.Title),
                 CsvField(ListNameFor(t, listNames)),
-                CsvField(t.DueDate?.ToLocalTime().ToString("yyyy-MM-dd") ?? ""),
+                CsvField(t.DueDate?.ToString("yyyy-MM-dd") ?? ""),
                 CsvField(t.HasPriority ? t.Priority.ToString() : ""),
                 CsvField(t.IsCompleted ? "Yes" : "No"),
                 CsvField(string.Join("; ", t.Tags)),
@@ -44,11 +44,11 @@ public static class TaskExportFormatter
         {
             sb.AppendLine($"## {group.Key}");
 
-            foreach (var t in group.OrderBy(t => t.IsCompleted).ThenByDescending(t => t.CreatedAt))
+            foreach (var t in group.OrderBy(t => t.IsCompleted).ThenByDescending(TaskSorting.CreatedInstant))
             {
                 var box = t.IsCompleted ? "[x]" : "[ ]";
                 var meta = new List<string>();
-                if (t.DueDate is { } due) meta.Add($"due {due.ToLocalTime():MMM d}");
+                if (t.DueDate is { } due) meta.Add($"due {due:MMM d}");
                 if (t.HasPriority) meta.Add(t.Priority.ToString());
                 if (t.Tags.Count > 0) meta.Add(string.Join(" ", t.Tags.Select(tag => $"#{tag}")));
                 var suffix = meta.Count > 0 ? $" ({string.Join(", ", meta)})" : "";

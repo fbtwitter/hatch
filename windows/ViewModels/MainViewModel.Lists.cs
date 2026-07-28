@@ -123,9 +123,11 @@ public sealed partial class MainViewModel
         {
             task.PropertyChanged -= TaskPropertyChanged;
             App.NotificationScheduler.UnscheduleForTask(task.Id);
+            Tombstone(task);
             Tasks.Remove(task);
         }
 
+        TombstoneList(list);
         CustomLists.Remove(list);
         SaveAsync();
     }

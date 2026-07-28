@@ -44,6 +44,16 @@ public class SyncWireTests
         };
         completed.CompletedAt = new DateTimeOffset(2026, 1, 10, 8, 0, 0, TimeSpan.Zero);
 
+        // Fields are retained rather than blanked, so undo restores the task exactly.
+        var deleted = new TodoItem
+        {
+            Id = Guid.Parse("44444444-4444-4444-4444-444444444444"),
+            Title = "Cancel the gym membership",
+            IsDeleted = true,
+            CreatedAt = new DateTime(2026, 1, 3, 0, 0, 0, DateTimeKind.Utc),
+            UpdatedAt = new DateTimeOffset(2026, 1, 12, 9, 30, 0, TimeSpan.Zero)
+        };
+
         var list = new TaskList
         {
             Id = Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
@@ -55,7 +65,7 @@ public class SyncWireTests
             UpdatedAt = new DateTimeOffset(2026, 1, 5, 12, 0, 0, TimeSpan.Zero)
         };
 
-        return new TasksFile { Tasks = [full, completed], Lists = [list] };
+        return new TasksFile { Tasks = [full, completed, deleted], Lists = [list] };
     }
 
     [TestMethod]
@@ -73,7 +83,7 @@ public class SyncWireTests
     {
         var data = SyncWire.Deserialize(GoldenJson)!;
 
-        Assert.AreEqual(2, data.Tasks.Count);
+        Assert.AreEqual(3, data.Tasks.Count);
         Assert.AreEqual(1, data.Lists.Count);
 
         var full = data.Tasks[0];
@@ -100,11 +110,37 @@ public class SyncWireTests
         Assert.AreEqual(0, completed.Tags.Count);
         Assert.IsNull(completed.Notes);
 
+        var deleted = data.Tasks[2];
+        Assert.IsTrue(deleted.IsDeleted);
+        Assert.AreEqual("Cancel the gym membership", deleted.Title);
+        Assert.AreEqual(new DateTimeOffset(2026, 1, 12, 9, 30, 0, TimeSpan.Zero), deleted.UpdatedAt);
+
+        Assert.IsFalse(full.IsDeleted);
+        Assert.IsFalse(completed.IsDeleted);
+
         var list = data.Lists[0];
         Assert.AreEqual("Home", list.Name);
         Assert.AreEqual("#0078D4", list.AccentColor);
         Assert.IsTrue(list.IsPinned);
         Assert.AreEqual("🌿", list.CustomIcon);
+        Assert.IsFalse(list.IsDeleted);
+    }
+
+    [TestMethod]
+    public void Deserialize_V1PayloadWithoutIsDeleted_TreatsEveryRecordAsLive()
+    {
+        var json = """
+            {"Tasks":[{"Id":"55555555-5555-5555-5555-555555555555","Title":"from v1",
+            "IsCompleted":false,"Tags":[],"ListId":"00000000-0000-0000-0000-000000000000",
+            "CreatedAt":"2026-01-01T00:00:00Z","UpdatedAt":"2026-01-01T00:00:00+00:00"}],
+            "Lists":[{"Id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","Name":"Old",
+            "AccentColor":"#0078D4","UpdatedAt":"2026-01-01T00:00:00+00:00"}]}
+            """;
+
+        var data = SyncWire.Deserialize(json)!;
+
+        Assert.IsFalse(data.Tasks[0].IsDeleted);
+        Assert.IsFalse(data.Lists[0].IsDeleted);
     }
 
     [TestMethod]

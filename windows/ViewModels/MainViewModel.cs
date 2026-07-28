@@ -3,6 +3,7 @@ using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using Hatch.Helpers;
 using Hatch.Models;
 using Hatch.Services;
 using Microsoft.UI.Dispatching;
@@ -24,6 +25,10 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
 
     public ObservableCollection<TodoItem> Tasks { get; } = [];
     public ObservableCollection<TodoItem> ActiveTasks { get; } = [];
+
+    // Tombstones — out of the bound collections, but written back on every save.
+    private readonly List<TodoItem> _deletedTasks = [];
+    private readonly List<TaskList> _deletedLists = [];
 
     public string NewTaskText
     {
@@ -162,8 +167,14 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         try
         {
             var data = await _storage.LoadAsync();
+
+            _deletedTasks.Clear();
+            _deletedTasks.AddRange(data.Tasks.Where(t => t.IsDeleted));
+            _deletedLists.Clear();
+            _deletedLists.AddRange(data.Lists.Where(l => l.IsDeleted));
+
             _isBulkLoading = true;
-            foreach (var task in data.Tasks.OrderByDescending(t => t.CreatedAt))
+            foreach (var task in TaskSorting.NewestFirst(data.Tasks.Where(t => !t.IsDeleted)))
             {
                 AttachTaskPropertyChangedHandler(task);
                 Tasks.Add(task);
@@ -171,7 +182,8 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             _isBulkLoading = false;
 
             // Load lists sorted: pinned first, then ascending SortOrder
-            foreach (var list in data.Lists.OrderByDescending(l => l.IsPinned).ThenBy(l => l.SortOrder))
+            foreach (var list in data.Lists.Where(l => !l.IsDeleted)
+                                           .OrderByDescending(l => l.IsPinned).ThenBy(l => l.SortOrder))
                 CustomLists.Add(list);
 
             RefreshListNames();
@@ -439,8 +451,24 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     {
         task.PropertyChanged -= TaskPropertyChanged;
         App.NotificationScheduler.UnscheduleForTask(task.Id);
+        Tombstone(task);
         Tasks.Remove(task);
         SaveAsync();
+    }
+
+    // UpdatedAt decides the delete against a concurrent edit on another device.
+    private void Tombstone(TodoItem task)
+    {
+        task.IsDeleted = true;
+        task.UpdatedAt = DateTimeOffset.UtcNow;
+        _deletedTasks.Add(task);
+    }
+
+    private void TombstoneList(TaskList list)
+    {
+        list.IsDeleted = true;
+        list.UpdatedAt = DateTimeOffset.UtcNow;
+        _deletedLists.Add(list);
     }
 
     public void UpdateTask(TodoItem task, string newTitle, DateTimeOffset? newDueDate, bool newStarred)
@@ -510,7 +538,11 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         try
         {
             await Task.Delay(500, ct);
-            var data = new TasksFile { Tasks = [.. Tasks], Lists = [.. CustomLists] };
+            var data = new TasksFile
+            {
+                Tasks = [.. Tasks, .. _deletedTasks],
+                Lists = [.. CustomLists, .. _deletedLists]
+            };
             await _storage.SaveAsync(data);
             App.SyncService.SchedulePush(data);
         }

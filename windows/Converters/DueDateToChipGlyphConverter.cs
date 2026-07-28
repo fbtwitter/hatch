@@ -12,7 +12,7 @@ public sealed class DueDateToChipGlyphConverter : IValueConverter
         if (value is not DateTimeOffset dto)
             return CalendarGlyph;
 
-        var diff = (DateTimeOffset.Now.Date - dto.ToLocalTime().Date).Days;
+        var diff = (DateTimeOffset.Now.Date - dto.Date).Days;
         return diff >= 7 ? WarningGlyph : CalendarGlyph;
     }
 

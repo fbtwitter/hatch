@@ -5,10 +5,8 @@ import android.content.Context
 // Mirrors the Windows app's Settings → Appearance → Theme (light / dark / system default).
 enum class ThemeMode { System, Light, Dark }
 
-// Deliberately NOT loaded off the main thread, unlike LocalTaskStore and SyncKeyStore.
-// Those were moved to Dispatchers.IO because they cost seconds; this is one key in a file
-// of its own, and reading it late would repaint the whole app in the wrong theme first —
-// a flash the user sees on every launch. Milliseconds here buy that away.
+// Deliberately on the main thread, unlike LocalTaskStore and SyncKeyStore: one key, and
+// reading it late would flash the wrong theme on every launch.
 class AppPrefs(context: Context) {
 
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
