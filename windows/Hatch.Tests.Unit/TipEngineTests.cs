@@ -50,6 +50,21 @@ public class TipEngineTests
     }
 
     [TestMethod]
+    public void EveningUtcDueDate_CountsOnItsWrittenDay()
+    {
+        // A legacy due with a time component: 20:00 +00:00 today. Reading it through
+        // ToLocalTime pushed it to tomorrow on any machine east of UTC, so the task
+        // produced no due-today tip. The written day is the task's day in every zone.
+        var today = DateTime.Today;
+        var due = new DateTimeOffset(today.Year, today.Month, today.Day, 20, 0, 0, TimeSpan.Zero);
+        var tasks = new List<TodoItem> { Task(dueDate: due) };
+
+        var tip = Engine().GetTip(tasks, now: Morning);
+
+        Assert.AreEqual("Tip_DueToday_One", tip?.Message);
+    }
+
+    [TestMethod]
     public void MultipleOverdueTasks_UsePluralKey()
     {
         var tasks = new List<TodoItem>

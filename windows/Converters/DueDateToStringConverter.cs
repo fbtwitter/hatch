@@ -11,7 +11,8 @@ public sealed class DueDateToStringConverter : IValueConverter
             return string.Empty;
 
         var today = DateTimeOffset.Now.Date;
-        var dueDate = dto.ToLocalTime().Date;
+        // The day as written, never through ToLocalTime — see TipEngine.
+        var dueDate = dto.Date;
         var diff = (today - dueDate).Days;
 
         if (diff == 0)  return Strings.DueDate_Today;

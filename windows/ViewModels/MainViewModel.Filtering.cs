@@ -119,11 +119,11 @@ public sealed partial class MainViewModel
         {
             "myday" => Tasks
                 .Where(t => t.IsInMyDay)
-                .OrderByDescending(t => t.CreatedAt)
+                .OrderByDescending(TaskSorting.CreatedInstant)
                 .ThenBy(t => t.IsCompleted),
             "important" => TaskSorting.ForImportant(Tasks.Where(t => t.IsStarred)),
             "planned"   => Tasks.Where(t => t.DueDate != null && !t.IsCompleted).OrderBy(t => t.DueDate),
-            _           => Tasks.Where(MatchesFilter).OrderByDescending(t => t.CreatedAt)
+            _           => TaskSorting.NewestFirst(Tasks.Where(MatchesFilter))
         };
 
         foreach (var task in filtered)
@@ -178,7 +178,8 @@ public sealed partial class MainViewModel
 
         var tasksWithDue = Tasks.Where(t => t.DueDate != null && !t.IsCompleted).GroupBy(t =>
         {
-            var dueDate = t.DueDate!.Value.ToLocalTime().Date;
+            // The day as written, never through ToLocalTime — see TipEngine.
+            var dueDate = t.DueDate!.Value.Date;
             if (dueDate < today)     return Strings.PlannedGroup_Overdue;
             if (dueDate == today)    return Strings.PlannedGroup_Today;
             if (dueDate == tomorrow) return Strings.PlannedGroup_Tomorrow;
