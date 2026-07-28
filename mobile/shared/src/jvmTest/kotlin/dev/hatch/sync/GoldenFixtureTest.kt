@@ -7,11 +7,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.test.fail
 
-// Reads the C# golden fixture in place, by relative path — never a copy. Per ADR-0003 the
-// shared fixture is the anti-drift mechanism: copying it into mobile/ would reintroduce
-// exactly the drift the monorepo exists to prevent.
-//
-// File I/O is platform-specific, so this lives in jvmTest rather than commonTest.
+// Reads the C# golden fixture in place, never a copy — per ADR-0003 that is the anti-drift
+// mechanism. In jvmTest rather than commonTest because file I/O is platform-specific.
 class GoldenFixtureTest {
 
     private val fixtureRelativePath = "windows/Hatch.Tests.Unit/Fixtures/tasks-golden.json"
@@ -40,7 +37,7 @@ class GoldenFixtureTest {
     fun restores_every_field_from_the_golden_fixture() {
         val data = SyncWire.deserialize(fixture().readText())
 
-        assertEquals(2, data.tasks.size)
+        assertEquals(3, data.tasks.size)
         assertEquals(1, data.lists.size)
 
         val plants = data.tasks[0]
@@ -70,13 +67,42 @@ class GoldenFixtureTest {
         assertEquals(null, ship.dueDate)
         assertEquals(null, ship.myDayDate)
 
+        val gym = data.tasks[2]
+        assertEquals("44444444-4444-4444-4444-444444444444", gym.id)
+        assertEquals("Cancel the gym membership", gym.title)
+        assertEquals(true, gym.isDeleted)
+        assertEquals("2026-01-12T09:30:00+00:00", gym.updatedAt)
+
+        assertEquals(false, plants.isDeleted)
+        assertEquals(false, ship.isDeleted)
+
         val home = data.lists[0]
         assertEquals("Home", home.name)
         assertEquals("#0078D4", home.accentColor)
         assertEquals(true, home.isPinned)
         assertEquals(0, home.sortOrder)
         assertEquals("🌿", home.customIcon)
+        assertEquals(false, home.isDeleted)
         assertEquals("2026-01-05T12:00:00+00:00", home.updatedAt)
+    }
+
+    @Test
+    fun a_v1_payload_without_is_deleted_reads_as_entirely_live() {
+        val v1 = """
+            {"Tasks":[{"Id":"55555555-5555-5555-5555-555555555555","Title":"from v1",
+            "IsCompleted":false,"CompletedAt":null,"IsStarred":false,"IsInMyDay":false,
+            "MyDayDate":null,"DueDate":null,"ListId":"00000000-0000-0000-0000-000000000000",
+            "Recurrence":0,"Priority":0,"Tags":[],"CreatedAt":"2026-01-01T00:00:00Z",
+            "UpdatedAt":"2026-01-01T00:00:00+00:00","Notes":null}],
+            "Lists":[{"Id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","Name":"Old",
+            "AccentColor":"#0078D4","IsPinned":false,"SortOrder":0,"CustomIcon":null,
+            "UpdatedAt":"2026-01-01T00:00:00+00:00"}]}
+        """.trimIndent()
+
+        val data = SyncWire.deserialize(v1)
+
+        assertEquals(false, data.tasks.single().isDeleted)
+        assertEquals(false, data.lists.single().isDeleted)
     }
 
     @Test
@@ -84,8 +110,7 @@ class GoldenFixtureTest {
         val original = fixture().readText()
         val reserialized = SyncWire.serialize(SyncWire.deserialize(original))
 
-        // Value-equality, not text-equality: the fixture is pretty-printed and the writer is
-        // not. §4 pins the shape, not the whitespace.
+        // Value-equality: §4 pins the shape, not the whitespace.
         assertEquals(
             Json.parseToJsonElement(original),
             Json.parseToJsonElement(reserialized),
