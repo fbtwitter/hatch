@@ -28,17 +28,15 @@ data class UserDataRow(
     @SerialName("updated_at") val updatedAt: String,
 )
 
-// Mirrors the outcomes of ReadServerTasks in windows/Services/SyncService.cs. Unreadable is
-// deliberately distinct from Empty: docs/sync-protocol.md §2 requires a row that will not
-// decrypt to be treated as "data I cannot read", never as an empty account.
+// Mirrors ReadServerTasks in windows/Services/SyncService.cs. Unreadable is distinct from
+// Empty by contract (§2): a row that will not decrypt is never an empty account.
 sealed interface SignUpResult {
     data object SignedIn : SignUpResult
     data object ConfirmEmail : SignUpResult
     data class Failed(val message: String) : SignUpResult
 }
 
-// The derived key plus the salt it was derived against. Persisted by the platform
-// (ADR-0005) so the passphrase is entered once per device rather than once per launch.
+// Persisted by the platform (ADR-0005), so the passphrase is entered once per device.
 class SyncKey(val key: ByteArray, val salt: ByteArray)
 
 sealed interface PushResult {
@@ -65,25 +63,30 @@ class SyncClient(supabaseUrl: String, supabaseKey: String) {
         supabaseKey = supabaseKey,
     ) {
         install(Auth) {
-            // Matches the redirect registered for the Windows client (docs/sync-protocol.md §1).
+            // Matches the redirect registered for the Windows client (§1).
             scheme = "hatch"
             host = "auth-callback"
-            // PKCE, not implicit: a custom scheme is not exclusive to one app, so an
-            // implicit redirect would hand a hijacker live access and refresh tokens.
+            // PKCE: a custom scheme is not exclusive to one app, so an implicit redirect
+            // would hand a hijacker live tokens.
             flowType = FlowType.PKCE
         }
         install(Postgrest)
     }
 
-    // internal, not public: supabase-kt stays an implementation detail of this module.
-    // The Android deeplink glue lives in androidMain (SyncClientAndroid.kt) so consumers
-    // never need supabase types on their classpath.
+    // internal: supabase-kt stays an implementation detail, so consumers never need its
+    // types on their classpath. Deeplink glue lives in androidMain.
     internal val supabase: SupabaseClient get() = client
 
     val signedInEmail: String? get() = client.auth.currentUserOrNull()?.email
 
     val signedIn: Flow<Boolean>
         get() = client.auth.sessionStatus.map { it is SessionStatus.Authenticated }
+
+    // Session restore is async; a background worker would otherwise ask before it lands.
+    suspend fun awaitSession(): Boolean {
+        client.auth.awaitInitialization()
+        return client.auth.currentSessionOrNull() != null
+    }
 
     // Opens a Custom Tab; the result arrives as a deeplink, not as a return value.
     suspend fun signInWithGithub(): String? = try {
@@ -120,27 +123,20 @@ class SyncClient(supabaseUrl: String, supabaseKey: String) {
         runCatching { client.auth.signOut() }
     }
 
-    // True when the account has a verified factor that this session has not satisfied.
-    // Mirrors IsMfaChallengePending in windows/Services/SyncService.cs: `enabled` means a
-    // verified factor exists, `active` means this session reached aal2.
+    // Mirrors IsMfaChallengePending in windows/Services/SyncService.cs.
     //
-    // runCatching is not defensive padding: supabase-kt derives `active` from the `aal`
-    // claim and throws IllegalStateException when the JWT carries none. Uncaught, that
-    // escapes pull() ahead of its try block and takes the coroutine down.
+    // runCatching is load-bearing: supabase-kt throws IllegalStateException when the JWT
+    // carries no `aal` claim, which would escape pull() ahead of its try block.
     //
-    // Fails open, matching the Windows client. `enabled` is read from the cached user
-    // object rather than the network, so a sign-in path that returned no factor list would
-    // not challenge — stage 4 (aal2 in RLS) is what makes the server the authority.
+    // Fails open, like the Windows client — aal2 in RLS is what makes the server authority.
     val mfaChallengePending: Boolean
         get() = runCatching {
             client.auth.currentSessionOrNull() != null &&
                 client.auth.mfa.status.let { it.enabled && !it.active }
         }.getOrDefault(false)
 
-    // Redeeming turns two-factor OFF rather than granting a one-time pass: nothing outside
-    // GoTrue can mint an aal2 token, so removing the factor is the only way a session stuck
-    // at aal1 can regain access. Null on success, message on failure.
-    // Generation lives on Windows only — this client cannot enrol, so it cannot issue codes.
+    // Turns two-factor OFF rather than granting a one-time pass: nothing outside GoTrue can
+    // mint an aal2 token, so removing the factor is the only way out of an aal1 session.
     suspend fun redeemRecoveryCode(code: String): String? = try {
         val accepted = client.postgrest.rpc(
             "redeem_mfa_recovery_code",
@@ -167,8 +163,7 @@ class SyncClient(supabaseUrl: String, supabaseKey: String) {
 
     // RLS scopes the table to auth.uid(), so this returns at most one row.
     suspend fun pull(syncKey: SyncKey?): PullResult {
-        // Gated before the request, not after: a session that has not met the second factor
-        // must not be able to read the row at all.
+        // Before the request: an unchallenged session must not read the row at all.
         if (mfaChallengePending) return PullResult.NeedsMfa
         return try {
             val row = client.from(TABLE).select().decodeSingleOrNull<UserDataRow>()
@@ -183,9 +178,8 @@ class SyncClient(supabaseUrl: String, supabaseKey: String) {
         }
     }
 
-    // Merge-before-push, mirroring windows/Services/SyncService.cs. The row is whole-state,
-    // not a delta, so pushing local state blind would replace anything this device has not
-    // seen. Always: read → merge (§5) → upload the union.
+    // Read → merge (§5) → upload, mirroring windows/Services/SyncService.cs. The row is
+    // whole-state, so a blind push would replace whatever this device has not seen.
     suspend fun pushMerged(local: TasksFile, syncKey: SyncKey?): PushResult {
         // §2: clients MUST refuse to push when no key is available.
         if (syncKey == null) return PushResult.NeedsPassphrase
@@ -220,8 +214,7 @@ class SyncClient(supabaseUrl: String, supabaseKey: String) {
         }
     }
 
-    // The salt already on the server, so a new device derives its key against the account's
-    // salt rather than minting a second one (§3, per-account salt).
+    // So a new device derives against the account's salt rather than minting a second (§3).
     suspend fun serverSalt(): ByteArray? = runCatching {
         client.from(TABLE).select().decodeSingleOrNull<UserDataRow>()
             ?.tasksJson?.let { SyncCrypto.saltOf(it) }
@@ -243,7 +236,7 @@ class SyncClient(supabaseUrl: String, supabaseKey: String) {
     companion object {
         private const val TABLE = "user_data"
 
-        // The Windows Secrets.cs value ends in /rest/v1/, which supabase-kt appends itself.
+        // Secrets.cs ends in /rest/v1/, which supabase-kt appends itself.
         internal fun normalizeUrl(url: String): String =
             url.trim().removeSuffix("/").removeSuffix("/rest/v1").removeSuffix("/")
     }
