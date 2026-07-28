@@ -59,10 +59,16 @@ public sealed class NotificationSchedulerService
     // Date-only due dates (midnight) default to 9 AM on that day; timed due dates use their own hour.
     private static DateTimeOffset GetDueTime(DateTimeOffset dueDate)
     {
-        var local = dueDate.ToLocalTime();
-        if (local.Hour == 0 && local.Minute == 0)
-            return new DateTimeOffset(local.Date.AddHours(DueHour), local.Offset);
-        return local;
+        // Midnight is detected on the value as written: converting through ToLocalTime
+        // first made Hour non-zero on any non-UTC machine, so a stored midnight-+00:00 due
+        // was treated as "timed" and the reminder fired at the raw converted hour — 7 AM
+        // on a +07:00 machine, the previous evening west of UTC — never the 9 AM default.
+        if (dueDate.Hour == 0 && dueDate.Minute == 0)
+        {
+            var delivery = dueDate.Date.AddHours(DueHour);
+            return new DateTimeOffset(delivery, TimeZoneInfo.Local.GetUtcOffset(delivery));
+        }
+        return dueDate;
     }
 
     private static ScheduledToastNotification BuildToast(

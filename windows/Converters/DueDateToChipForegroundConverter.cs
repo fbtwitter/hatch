@@ -22,7 +22,7 @@ public sealed class DueDateToChipForegroundConverter : IValueConverter
         if (value is not DateTimeOffset dto)
             return dark ? _noneFgDark : _noneFgLight;
 
-        var diff = (DateTimeOffset.Now.Date - dto.ToLocalTime().Date).Days;
+        var diff = (DateTimeOffset.Now.Date - dto.Date).Days;
 
         return diff switch
         {

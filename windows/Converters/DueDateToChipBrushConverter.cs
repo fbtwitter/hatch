@@ -20,7 +20,7 @@ public sealed class DueDateToChipBrushConverter : IValueConverter
         if (value is not DateTimeOffset dto)
             return dark ? _upcomingBgDark : _upcomingBgLight;
 
-        var diff = (DateTimeOffset.Now.Date - dto.ToLocalTime().Date).Days;
+        var diff = (DateTimeOffset.Now.Date - dto.Date).Days;
 
         return diff switch
         {

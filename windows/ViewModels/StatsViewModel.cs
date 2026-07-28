@@ -53,8 +53,10 @@ public sealed class StatsViewModel : INotifyPropertyChanged
         var today = DateTime.Today;
 
         int open = tasks.Count(t => !t.IsCompleted);
+        // Due dates: the day as written, never through ToLocalTime — see TipEngine.
+        // CompletedAt below is a real instant, so local conversion is correct there.
         int overdue = tasks.Count(t =>
-            !t.IsCompleted && t.DueDate != null && t.DueDate.Value.ToLocalTime().Date < today);
+            !t.IsCompleted && t.DueDate != null && t.DueDate.Value.Date < today);
         int completedToday = tasks.Count(t =>
             t.CompletedAt.HasValue && t.CompletedAt.Value.ToLocalTime().Date == today);
 
@@ -70,8 +72,8 @@ public sealed class StatsViewModel : INotifyPropertyChanged
         // and "Upcoming" (strictly future, forward-planning). Deliberately not a calendar
         // view — reuses the due-date data already on hand instead of duplicating Planned.
         var dueToday = tasks
-            .Where(t => !t.IsCompleted && t.DueDate != null && t.DueDate.Value.ToLocalTime().Date == today)
-            .OrderBy(t => t.CreatedAt);
+            .Where(t => !t.IsCompleted && t.DueDate != null && t.DueDate.Value.Date == today)
+            .OrderBy(TaskSorting.CreatedInstant);
 
         TodayTasks.Clear();
         foreach (var task in dueToday)
@@ -79,14 +81,14 @@ public sealed class StatsViewModel : INotifyPropertyChanged
         HasTodayTasks = TodayTasks.Count > 0;
 
         var upcoming = tasks
-            .Where(t => !t.IsCompleted && t.DueDate != null && t.DueDate.Value.ToLocalTime().Date > today)
+            .Where(t => !t.IsCompleted && t.DueDate != null && t.DueDate.Value.Date > today)
             .OrderBy(t => t.DueDate)
             .Take(5);
 
         UpcomingTasks.Clear();
         foreach (var task in upcoming)
         {
-            var dueDate = task.DueDate!.Value.ToLocalTime().Date;
+            var dueDate = task.DueDate!.Value.Date;
             var dueLabel = dueDate == tomorrow ? Strings.DueDate_Tomorrow : _dueLabelFormatter.Format(dueDate);
             UpcomingTasks.Add(new UpcomingTaskInfo(task, task.Title, dueLabel));
         }

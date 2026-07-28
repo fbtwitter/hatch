@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
+using Hatch.Helpers;
 using Hatch.Models;
 
 namespace Hatch.ViewModels;
@@ -16,9 +17,8 @@ public sealed partial class MainViewModel
 
     private void RefreshSuggestions()
     {
-        var candidates = Tasks
-            .Where(t => !t.IsCompleted && !t.IsInMyDay)
-            .OrderByDescending(t => t.CreatedAt)
+        var candidates = TaskSorting
+            .NewestFirst(Tasks.Where(t => !t.IsCompleted && !t.IsInMyDay))
             .ToList();
 
         MySuggestions.Clear();

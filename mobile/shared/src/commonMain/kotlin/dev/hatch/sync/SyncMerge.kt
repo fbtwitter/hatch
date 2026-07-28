@@ -2,10 +2,8 @@ package dev.hatch.sync
 
 import kotlin.time.Instant
 
-// Kotlin transcription of windows/Services/SyncMerge.cs and docs/sync-protocol.md §5.
-// Record-level (not field-level) last-write-wins union keyed by Id: an item on one side
-// only is kept; an item on both keeps whichever has the later UpdatedAt, and on an exact
-// tie the local copy wins. Nothing is ever dropped.
+// Transcription of windows/Services/SyncMerge.cs and docs/sync-protocol.md §5.
+// Record-level last-write-wins union keyed by Id; local wins an exact tie.
 object SyncMerge {
 
     fun merge(local: TasksFile, server: TasksFile): TasksFile = TasksFile(
@@ -32,8 +30,7 @@ object SyncMerge {
         return merged.values.toList()
     }
 
-    // An unparseable timestamp must lose rather than win: treating it as "now" would let
-    // malformed data silently overwrite good data.
+    // Unparseable must lose: treating it as "now" would let bad data overwrite good.
     private fun instantOf(text: String): Instant =
         runCatching { Instant.parse(text) }.getOrElse { Instant.DISTANT_PAST }
 }

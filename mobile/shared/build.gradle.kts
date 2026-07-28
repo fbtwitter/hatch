@@ -15,6 +15,9 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
+            // Calendar-date arithmetic for RecurrenceHelper. kotlin.time has instants but no
+            // LocalDate, and "the same day next month" is not expressible in instants.
+            api("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
             // BOM-pinned: supabase-kt pulls cryptography 0.6.0 transitively, and a version
             // skew between the compile and runtime classpaths surfaces as NoSuchMethodError.
             implementation(project.dependencies.platform("dev.whyoleg.cryptography:cryptography-bom:0.6.0"))

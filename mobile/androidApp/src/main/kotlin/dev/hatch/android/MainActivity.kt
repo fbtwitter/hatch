@@ -1,36 +1,58 @@
 package dev.hatch.android
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -38,9 +60,14 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.hatch.sync.TaskList
 import dev.hatch.sync.TodoItem
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 
 // Mirrors the Windows minimum (SettingsViewModel.SetSyncPassphraseAsync).
 private const val MIN_PASSPHRASE = 8
@@ -48,10 +75,9 @@ private const val MIN_PASSPHRASE = 8
 // TOTP is always 6 digits (docs/mfa-spec.md).
 private const val MFA_CODE_LENGTH = 6
 
-// Material's adaptive guidance caps line length for readability. Without this, a task title
-// on a 2340px landscape screen runs the full width and reads like a spreadsheet row; the
-// checkbox also ends up marooned from its label. Centred, so portrait is unaffected.
-private val ContentMaxWidth = 640.dp
+// Caps line length on wide screens, where a full-width title reads like a spreadsheet row
+// and strands the checkbox from its label. Centred, so portrait is unaffected.
+internal val ContentMaxWidth = 640.dp
 
 class MainActivity : ComponentActivity() {
 
@@ -60,11 +86,24 @@ class MainActivity : ComponentActivity() {
     private val vm: CompanionViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Draws behind the system bars. Mandatory on Android 15+, and the reason Scaffold
-        // is left to apply its own insets rather than being given hardcoded padding.
+        // Must precede super.onCreate. Below Android 12 this draws the icon splash the
+        // system only gained in 12; on 12+ it re-themes the one the system already shows.
+        val splash = installSplashScreen()
+        // Mandatory on Android 15+, and why Scaffold applies its own insets.
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        // Holds the splash over the frames the Scaffold would otherwise paint blank while
+        // the first disk read is in flight. One small file — never long enough to ANR.
+        splash.setKeepOnScreenCondition { !vm.state.value.loaded }
         vm.handleDeeplink(intent)
+        ensureNotificationChannel(this)
+
+        // Asked once, never insisted upon: a refusal costs reminders and nothing else.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)
+        }
         setContent {
             val themeMode by vm.state.collectAsState()
             HatchTheme(themeMode.themeMode) {
@@ -81,81 +120,175 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Material You: on Android 12+ the palette is derived from the user's wallpaper, which is
-// what makes a Compose app look like it belongs on the device rather than merely running on
-// it. Below 12 there is no wallpaper palette, so the stock scheme is the correct fallback.
-@Composable
-private fun HatchTheme(mode: ThemeMode, content: @Composable () -> Unit) {
-    val dark = when (mode) {
-        ThemeMode.System -> isSystemInDarkTheme()
-        ThemeMode.Light -> false
-        ThemeMode.Dark -> true
-    }
-    val context = LocalContext.current
-    val scheme = when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
-            if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        dark -> darkColorScheme()
-        else -> lightColorScheme()
-    }
-    MaterialTheme(colorScheme = scheme, content = content)
-}
+// Three destinations and no library: a nav graph for two leaves would cost a dependency and
+// an extra indirection for a phone app whose whole job is one list.
+private enum class Screen { Tasks, Settings, Sync }
 
 @Composable
 private fun HatchApp(vm: CompanionViewModel = viewModel()) {
     val state by vm.state.collectAsState()
-    // The app opens on the task list and never asks who you are. Sync is reached only from
-    // the overflow menu — see the HARD STOP quoted in context/current-feature.md.
-    var showSync by rememberSaveable { mutableStateOf(false) }
+    // The app opens on the task list and never asks who you are — sync is opt-in.
+    var screen by rememberSaveable { mutableStateOf(Screen.Tasks) }
     val snackbar = remember { SnackbarHostState() }
 
-    // "Pull now" is a fetch, not a setting: on success, get out of the way and show the
-    // tasks it fetched. Failures and passphrase prompts deliberately keep you on the Sync
-    // screen, because those need an answer.
+    // Stopped on pause so a backgrounded app holds no timer.
+    LifecycleResumeEffect(Unit) {
+        vm.startAutoPull()
+        onPauseOrDispose { vm.stopAutoPull() }
+    }
+
+    // A fetch, not a setting: on success get out of the way. Failures and prompts keep you
+    // on the Sync screen, because those need an answer.
     LaunchedEffect(Unit) {
         vm.pullCompleted.collect { count ->
-            showSync = false
+            screen = Screen.Tasks
             snackbar.showSnackbar("Pulled — $count task${if (count == 1) "" else "s"}")
         }
     }
 
-    // Push deliberately does NOT navigate away: nothing on the task list changes as a
-    // result, and you are usually mid-flow on the Sync screen when you press it.
+    // Push does not navigate away: nothing on the task list changes as a result.
     LaunchedEffect(Unit) {
         vm.pushCompleted.collect { count ->
             snackbar.showSnackbar("Pushed — $count task${if (count == 1) "" else "s"} encrypted and sent")
         }
     }
 
-    if (showSync) {
-        SyncScreen(
-            sync = state.sync,
-            onSignIn = vm::signIn,
-            onSignUp = vm::signUp,
-            onGithub = vm::signInWithGithub,
-            onPassphrase = vm::submitPassphrase,
-            onMfaCode = vm::submitMfaCode,
-            onShowRecovery = vm::showRecoveryCodeEntry,
-            onRedeemRecovery = vm::redeemRecoveryCode,
-            onRefresh = vm::refresh,
-            onPush = vm::push,
-            onSignOut = vm::signOut,
-            onBack = { showSync = false },
-            snackbar = snackbar,
-        )
-    } else {
-        TaskScreen(
-            tasks = state.tasks,
-            lists = state.lists,
-            loaded = state.loaded,
-            themeMode = state.themeMode,
-            snackbar = snackbar,
-            onAdd = vm::addTask,
-            onToggle = vm::toggleComplete,
-            onThemeMode = vm::setThemeMode,
-            onOpenSync = { showSync = true },
-        )
+    // A pull-to-refresh that ends badly would otherwise just stop its spinner with no
+    // explanation. Gated on the previous state being Working so only a deliberate
+    // operation reports here — a failed background push (previous state On) stays silent,
+    // or a flaky network would raise a snackbar on every edit made offline.
+    LaunchedEffect(Unit) {
+        var previous: SyncState? = null
+        snapshotFlow { state.sync }.collect { sync ->
+            val wasWorking = previous is SyncState.Working
+            previous = sync
+            if (!wasWorking || screen != Screen.Tasks) return@collect
+            when (sync) {
+                is SyncState.Failed -> snackbar.showSnackbar(sync.message)
+                SyncState.NeedsPassphrase, SyncState.WrongPassphrase, is SyncState.NeedsMfaCode ->
+                    snackbar.showSnackbar("Sync needs your attention — open Settings → Sync")
+                else -> Unit
+            }
+        }
     }
+
+    // Back left a secondary screen by leaving the app entirely, because nothing was
+    // listening. Same target as each screen's own up arrow.
+    BackHandler(enabled = screen != Screen.Tasks) {
+        screen = if (screen == Screen.Sync) Screen.Settings else Screen.Tasks
+    }
+
+    // Shared-axis X between the three destinations. Direction comes from the enum order, so
+    // going in slides one way and coming back slides the other without tracking history.
+    AnimatedContent(
+        targetState = screen,
+        transitionSpec = { screenTransition(forward = targetState.ordinal > initialState.ordinal) },
+        label = "screen",
+    ) { current ->
+        when (current) {
+            Screen.Sync -> SyncScreen(
+                sync = state.sync,
+                onSignIn = vm::signIn,
+                onSignUp = vm::signUp,
+                onGithub = vm::signInWithGithub,
+                onPassphrase = vm::submitPassphrase,
+                onMfaCode = vm::submitMfaCode,
+                onShowRecovery = vm::showRecoveryCodeEntry,
+                onRedeemRecovery = vm::redeemRecoveryCode,
+                onRefresh = vm::refresh,
+                onPush = vm::push,
+                onSignOut = vm::signOut,
+                onBack = { screen = Screen.Settings },
+                snackbar = snackbar,
+            )
+
+            Screen.Settings -> SettingsScreen(
+                themeMode = state.themeMode,
+                sync = state.sync,
+                onThemeMode = vm::setThemeMode,
+                onOpenSync = { screen = Screen.Sync },
+                onBack = { screen = Screen.Tasks },
+            )
+
+            Screen.Tasks -> {
+                // By id, not by value: a save replaces the instance in the list.
+                var editingId by rememberSaveable { mutableStateOf<String?>(null) }
+                val editing = state.tasks.firstOrNull { it.id == editingId }
+                val scope = rememberCoroutineScope()
+
+                // A nullable TaskList alone could not tell "closed" from "creating".
+                var listDialog by remember { mutableStateOf<ListDialog?>(null) }
+
+                // One deletion path for the swipe and the sheet's Delete button. The sheet
+                // used to call the ViewModel directly, so the most deliberate delete in the
+                // app — the one that propagates to every synced device — was the only one
+                // with no way back.
+                val deleteWithUndo: (TodoItem) -> Unit = { task ->
+                    vm.deleteTask(task)
+                    scope.launch {
+                        // Long, not Short: four seconds to notice a destructive action and
+                        // reach the button is not enough, and the delete now propagates to
+                        // every synced device.
+                        val result = snackbar.showSnackbar(
+                            message = "Deleted \"${task.title.take(30)}\"",
+                            actionLabel = "Undo",
+                            duration = SnackbarDuration.Long,
+                        )
+                        if (result == SnackbarResult.ActionPerformed) vm.restoreTask(task)
+                    }
+                }
+
+                TaskScreen(
+                    tasks = state.tasks,
+                    lists = state.lists,
+                    loaded = state.loaded,
+                    activeNav = state.activeNav,
+                    searchQuery = state.searchQuery,
+                    // Working included so the box stays mounted for the pull it is
+                    // spinning for — On alone would unmount it the moment a pull began.
+                    refreshEnabled = state.sync is SyncState.On || state.sync is SyncState.Working,
+                    refreshing = state.sync is SyncState.Working,
+                    snackbar = snackbar,
+                    onNavigate = vm::setActiveNav,
+                    onSearch = vm::setSearchQuery,
+                    onRefresh = vm::refresh,
+                    onCreateList = { listDialog = ListDialog.New },
+                    onEditList = { listDialog = ListDialog.Edit(it) },
+                    onAdd = vm::addTask,
+                    onToggle = vm::toggleComplete,
+                    onOpen = { editingId = it.id },
+                    onDelete = deleteWithUndo,
+                    onOpenSettings = { screen = Screen.Settings },
+                )
+
+                if (editing != null) {
+                    TaskDetailSheet(
+                        task = editing,
+                        lists = state.lists,
+                        onSave = vm::saveTask,
+                        onDelete = deleteWithUndo,
+                        onDismiss = { editingId = null },
+                    )
+                }
+
+                listDialog?.let { dialog ->
+                    ListEditorDialog(
+                        existing = (dialog as? ListDialog.Edit)?.list,
+                        onCreate = vm::createList,
+                        onRename = vm::renameList,
+                        onTogglePin = vm::togglePinList,
+                        onDelete = vm::deleteList,
+                        onDismiss = { listDialog = null },
+                    )
+                }
+            }
+        }
+    }
+}
+
+private sealed interface ListDialog {
+    data object New : ListDialog
+    data class Edit(val list: TaskList) : ListDialog
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -164,216 +297,434 @@ private fun TaskScreen(
     tasks: List<TodoItem>,
     lists: List<TaskList>,
     loaded: Boolean,
-    themeMode: ThemeMode,
+    activeNav: String,
+    searchQuery: String,
+    refreshEnabled: Boolean,
+    refreshing: Boolean,
     snackbar: SnackbarHostState,
-    onAdd: (String) -> Unit,
+    onNavigate: (String) -> Unit,
+    onSearch: (String) -> Unit,
+    onRefresh: () -> Unit,
+    onCreateList: () -> Unit,
+    onEditList: (TaskList) -> Unit,
+    onAdd: (String) -> String?,
     onToggle: (TodoItem) -> Unit,
-    onThemeMode: (ThemeMode) -> Unit,
-    onOpenSync: () -> Unit,
+    onOpen: (TodoItem) -> Unit,
+    onDelete: (TodoItem) -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
-    var draft by rememberSaveable { mutableStateOf("") }
-    // Derived, not recomputed: without remember these three run on every recomposition —
-    // including every keystroke in the add field, which touches none of them.
-    val open = remember(tasks) { tasks.filter { !it.isCompleted } }
-    val done = remember(tasks) { tasks.filter { it.isCompleted } }
+    val searching = searchQuery.isNotEmpty()
+
+    // Derived, not recomputed: without remember these run whenever anything on the screen
+    // changes, and none of them depend on most of it.
+    val visible = remember(tasks, activeNav, searchQuery) {
+        if (searching) searchResults(tasks, searchQuery) else tasksForNav(tasks, activeNav)
+    }
+    val open = remember(visible) { visible.filter { !it.isCompleted } }
+    val done = remember(visible) { visible.filter { it.isCompleted } }
     val listNames = remember(lists) { lists.associate { it.id to it.name } }
 
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-    val submit = { if (draft.isNotBlank()) { onAdd(draft); draft = "" } }
+    // The flexible bar's second line. Open-only, matching the drawer badges.
+    val countLabel = remember(open.size, done.size) {
+        when {
+            open.isEmpty() && done.isEmpty() -> "Nothing here"
+            open.isEmpty() -> "All done"
+            else -> "${open.size} open" + if (done.isEmpty()) "" else " · ${done.size} done"
+        }
+    }
 
+    // exitUntilCollapsed, not enterAlways: a two-row flexible bar has a large title to give
+    // back, and enterAlways would slam it open on the smallest upward flick.
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val listState = rememberLazyListState()
+    var pendingScrollId by remember { mutableStateOf<String?>(null) }
+
+    // The add field is at the bottom, so a task added while scrolled down otherwise lands
+    // off-screen and reads as nothing having happened. By id rather than index 0 because
+    // Important and Planned do not put the newest task first.
+    LaunchedEffect(pendingScrollId, open) {
+        val id = pendingScrollId ?: return@LaunchedEffect
+        val index = open.indexOfFirst { it.id == id }
+        if (index >= 0) listState.animateScrollToItem(index)
+        pendingScrollId = null
+    }
+
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    // The search bar does not take the scroll behavior, so anything it collapsed while the
+    // flexible bar was mounted would still be collapsed on the way back.
+    LaunchedEffect(searching) { scrollBehavior.state.heightOffset = 0f }
+
+    // Search was the one overlay state back did not unwind — it left the app instead.
+    // The drawer and the detail sheet need nothing here: material3 1.4.0 registers its own
+    // predictive-back callbacks for both (DrawerPredictiveBackHandler and the sheet dialog's
+    // PredictiveBackOnBackPressedCallback), and those are composed deeper, so they take
+    // priority over this one whenever they are open.
+    BackHandler(enabled = searching) { onSearch("") }
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ListsDrawerSheet(
+                tasks = tasks,
+                lists = lists,
+                activeNav = activeNav,
+                onNavigate = { onNavigate(it); scope.launch { drawerState.close() } },
+                onCreateList = { onCreateList(); scope.launch { drawerState.close() } },
+                onEditList = { onEditList(it); scope.launch { drawerState.close() } },
+                onOpenSettings = { onOpenSettings(); scope.launch { drawerState.close() } },
+            )
+        },
+    ) {
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
-            TopAppBar(
-                title = { Text("Hatch", fontWeight = FontWeight.SemiBold) },
-                actions = {
-                    TextButton(onClick = onOpenSync) { Text("Sync") }
-                    ThemeMenu(themeMode, onThemeMode)
-                },
-                // The bar tints toward surfaceContainer as content scrolls under it —
-                // standard M3 behaviour that gives the list somewhere to go.
-                colors = TopAppBarDefaults.topAppBarColors(
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                ),
-                scrollBehavior = scrollBehavior,
-            )
-        },
-        bottomBar = {
-            // surfaceContainer is the M3 token for a raised container, rather than picking
-            // a tonalElevation dp value by eye — it tracks the dynamic palette correctly in
-            // both light and dark.
-            Surface(color = MaterialTheme.colorScheme.surfaceContainer) {
-              Box(Modifier.fillMaxWidth()) {
-                Row(
-                    Modifier
-                        // imePadding lifts the field above the keyboard; navigationBars
-                        // keeps it clear of the gesture bar under edge-to-edge.
-                        .imePadding()
-                        .navigationBarsPadding()
-                        .widthIn(max = ContentMaxWidth)
-                        .align(Alignment.TopCenter)
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    OutlinedTextField(
-                        value = draft,
-                        onValueChange = { draft = it },
-                        placeholder = { Text("Add a task") },
-                        singleLine = true,
-                        shape = MaterialTheme.shapes.large,
-                        keyboardOptions = KeyboardOptions(
-                            capitalization = KeyboardCapitalization.Sentences,
-                            imeAction = ImeAction.Done,
-                        ),
-                        // Capture in ≤4s is the product premise; reaching for the button
-                        // after typing is the slowest part of it.
-                        keyboardActions = KeyboardActions(onDone = { submit() }),
-                        modifier = Modifier.weight(1f),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    FilledIconButton(
-                        onClick = submit,
-                        enabled = draft.isNotBlank(),
-                        modifier = Modifier.size(52.dp),
-                    ) { Icon(Icons.Rounded.Add, contentDescription = "Add task") }
-                }
-              }
+            if (searching) {
+                SearchTopBar(searchQuery, onSearch)
+            } else {
+                // The two-row collapsing bar Material uses for a screen's primary title.
+                // The count rides in the title slot because the stable MediumTopAppBar has
+                // no subtitle parameter — that arrived with the Flexible bars.
+                MediumTopAppBar(
+                    title = {
+                        Column {
+                            Text(navTitle(activeNav, lists))
+                            Text(
+                                countLabel,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Rounded.Menu, contentDescription = "Lists")
+                        }
+                    },
+                    // Search only. Settings is a preference, not an action on this list, so
+                    // it lives in the drawer footer rather than beside the list's own verbs.
+                    actions = {
+                        // A space, not "": search is active when the query is non-empty.
+                        // searchResults trims, so it still matches nothing.
+                        IconButton(onClick = { onSearch(" ") }) {
+                            Icon(Icons.Rounded.Search, contentDescription = "Search")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    ),
+                    scrollBehavior = scrollBehavior,
+                )
             }
         },
+        bottomBar = { AddTaskBar(onSubmit = { title -> pendingScrollId = onAdd(title) }) },
     ) { padding ->
         // Nothing at all until the disk read lands: showing "Nothing yet" for one frame and
         // then replacing it with the real list reads as a bug.
         if (!loaded) return@Scaffold
 
-        if (tasks.isEmpty()) {
-            Column(
-                Modifier.fillMaxSize().padding(padding).padding(32.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                Icon(
-                    Icons.Rounded.CheckCircle,
-                    contentDescription = null,
-                    modifier = Modifier.size(56.dp),
-                    tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
-                )
-                Spacer(Modifier.height(16.dp))
-                Text("Nothing yet", style = MaterialTheme.typography.titleMedium)
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    "Add a task below. No account needed — Sync is optional.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                )
-            }
-            return@Scaffold
-        }
-
-        Box(Modifier.fillMaxSize()) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .widthIn(max = ContentMaxWidth)
-                    .align(Alignment.TopCenter),
-                contentPadding = padding,
-            ) {
-                // contentType lets row composables be reused across both sections instead of
-                // being torn down and rebuilt when scrolling past the divider.
-                items(open, key = { it.id }, contentType = { "task" }) { task ->
-                    TaskRow(task, listNames, onToggle, Modifier.animateItem())
-                }
-                if (done.isNotEmpty()) {
-                    item(key = "completed-header", contentType = "header") {
-                        Text(
-                            "Completed · ${done.size}",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        // Completing or deleting the last task used to swap the list for the empty state
+        // between two frames. A fade only — nothing has moved, so nothing should slide.
+        val body: @Composable () -> Unit = {
+            AnimatedContent(
+                targetState = visible.isEmpty(),
+                transitionSpec = { contentFade() },
+                label = "body",
+            ) { empty ->
+                if (empty) {
+                    EmptyState(
+                        searching = searching,
+                        activeNav = activeNav,
+                        anyTasks = tasks.isNotEmpty(),
+                        modifier = Modifier.padding(padding),
+                    )
+                } else {
+                    Box(Modifier.fillMaxSize()) {
+                        LazyColumn(
+                            state = listState,
                             modifier = Modifier
-                                .animateItem()
-                                .padding(start = 20.dp, top = 24.dp, bottom = 8.dp),
-                        )
-                    }
-                    items(done, key = { it.id }, contentType = { "task" }) { task ->
-                        TaskRow(task, listNames, onToggle, Modifier.animateItem())
+                                .fillMaxHeight()
+                                .widthIn(max = ContentMaxWidth)
+                                .align(Alignment.TopCenter),
+                            contentPadding = padding,
+                            verticalArrangement = Arrangement.spacedBy(GroupGap),
+                        ) {
+                            // contentType lets rows be reused across both sections rather than rebuilt.
+                            itemsIndexed(open, key = { _, t -> t.id }, contentType = { _, _ -> "task" }) { i, task ->
+                                TaskRow(
+                                    task, listNames, groupedShape(i, open.size),
+                                    onToggle, onOpen, onDelete, Modifier.animateItem(),
+                                )
+                            }
+                            if (done.isNotEmpty()) {
+                                item(key = "completed-header", contentType = "header") {
+                                    Text(
+                                        "Completed · ${done.size}",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier
+                                            .animateItem()
+                                            .padding(start = 28.dp, top = 24.dp, bottom = 8.dp),
+                                    )
+                                }
+                                itemsIndexed(done, key = { _, t -> t.id }, contentType = { _, _ -> "task" }) { i, task ->
+                                    TaskRow(
+                                        task, listNames, groupedShape(i, done.size),
+                                        onToggle, onOpen, onDelete, Modifier.animateItem(),
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
+
+        // Composed only while signed in (or mid-pull): signed out gets no gesture and no
+        // spinner at all — sync is opt-in, and a spring-back pull would advertise it.
+        if (refreshEnabled) {
+            val pullState = rememberPullToRefreshState()
+            PullToRefreshBox(
+                isRefreshing = refreshing,
+                onRefresh = onRefresh,
+                state = pullState,
+                // The default slot pins the spinner to the box's own top edge, which sits
+                // behind the app bar — the scaffold hands insets down as padding rather
+                // than shrinking its content area.
+                indicator = {
+                    PullToRefreshDefaults.Indicator(
+                        state = pullState,
+                        isRefreshing = refreshing,
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = padding.calculateTopPadding()),
+                    )
+                },
+            ) { body() }
+        } else {
+            body()
+        }
+    }
     }
 }
 
-// Overflow menu is the M3 pattern for a secondary setting that does not deserve a screen of
-// its own. Mirrors the Windows Settings → Appearance → Theme options exactly.
+// The draft lives here rather than in TaskScreen. Hoisted one level up, every character typed
+// invalidated TaskScreen itself, so each keystroke re-ran the app bar, the drawer content and
+// the whole list emit before the letter could appear — the single biggest contributor to
+// typing feeling heavy, and worst in a debug build where composition is not optimised.
 @Composable
-private fun ThemeMenu(current: ThemeMode, onSelect: (ThemeMode) -> Unit) {
-    var open by remember { mutableStateOf(false) }
+private fun AddTaskBar(onSubmit: (String) -> Unit) {
+    var draft by rememberSaveable { mutableStateOf("") }
 
-    Box {
-        IconButton(onClick = { open = true }) {
-            Icon(Icons.Rounded.MoreVert, contentDescription = "More options")
+    val submit = {
+        if (draft.isNotBlank()) {
+            onSubmit(draft)
+            draft = ""
         }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-            Text(
-                "Theme",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 12.dp, top = 8.dp, bottom = 4.dp),
-            )
-            ThemeMode.entries.forEach { mode ->
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            when (mode) {
-                                ThemeMode.System -> "System default"
-                                ThemeMode.Light -> "Light"
-                                ThemeMode.Dark -> "Dark"
-                            }
-                        )
-                    },
-                    // Leading check reserves the same space for every row, so the labels do
-                    // not shift as the selection moves.
-                    leadingIcon = {
-                        if (mode == current) {
-                            Icon(Icons.Rounded.Check, contentDescription = "Selected")
-                        } else {
-                            Spacer(Modifier.size(24.dp))
-                        }
-                    },
-                    onClick = { onSelect(mode); open = false },
+    }
+
+    // Insets on the Box and centring via contentAlignment, not Modifier.align on the Row: the
+    // previous form measured as 1px tall while drawing full height, which left the Scaffold
+    // placing the snackbar over an area that could not be touched.
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .imePadding()
+            .navigationBarsPadding()
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        // Floats over the list rather than sitting in a full-width bar, which is where
+        // Material put persistent actions once bottom bars stopped being a wall. Keeps the
+        // field always visible — ≤4s capture is the product premise.
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            shape = MaterialTheme.shapes.extraLarge,
+            shadowElevation = 6.dp,
+            modifier = Modifier.widthIn(max = ContentMaxWidth),
+        ) {
+            Row(
+                Modifier.padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Borderless: the Surface is already the container, so an outline here would
+                // draw a box inside a box.
+                TextField(
+                    value = draft,
+                    onValueChange = { draft = it },
+                    placeholder = { Text("Add a task") },
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                    ),
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { submit() }),
+                    modifier = Modifier.weight(1f),
                 )
+                Spacer(Modifier.width(8.dp))
+                // Grows as the field becomes submittable. A disabled-to-enabled colour flip
+                // alone is easy to miss with a thumb over the button.
+                val addScale by animateFloatAsState(
+                    targetValue = if (draft.isNotBlank()) 1f else 0.88f,
+                    animationSpec = tween(MotionShort, easing = EmphasizedDecelerate),
+                    label = "addScale",
+                )
+                FilledIconButton(
+                    onClick = submit,
+                    enabled = draft.isNotBlank(),
+                    modifier = Modifier
+                        .size(52.dp)
+                        .graphicsLayer { scaleX = addScale; scaleY = addScale },
+                ) { Icon(Icons.Rounded.Add, contentDescription = "Add task") }
             }
         }
     }
 }
 
+@Composable
+private fun EmptyState(
+    searching: Boolean,
+    activeNav: String,
+    anyTasks: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val (headline, subtext) = when {
+        searching -> "No matches" to
+            "Nothing in any list matches that — including completed tasks."
+        activeNav == NAV_MY_DAY -> "My Day is clear" to
+            "Add a task here, or open one and add it to My Day."
+        activeNav == NAV_IMPORTANT -> "Nothing marked Important" to
+            "Star a task to keep it here."
+        activeNav == NAV_PLANNED -> "Nothing planned" to
+            "Tasks with a due date show up here, soonest first."
+        !anyTasks -> "Nothing yet" to
+            "Add a task below. No account needed — Sync is optional."
+        else -> "This list is empty" to "Add a task below."
+    }
+
+    Column(
+        // Scrollable despite never overflowing: pull-to-refresh triggers off nested scroll,
+        // and an empty list is exactly the state most worth refreshing.
+        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(32.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(
+            Icons.Rounded.CheckCircle,
+            contentDescription = null,
+            modifier = Modifier.size(56.dp),
+            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+        )
+        Spacer(Modifier.height(16.dp))
+        Text(headline, style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(6.dp))
+        Text(
+            subtext,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+// A single-row bar while searching: the field is the subject, and a collapsing two-row bar
+// would fight the keyboard for height.
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SearchTopBar(searchQuery: String, onSearch: (String) -> Unit) {
+    val focusRequester = remember { FocusRequester() }
+
+    // Opening search used to leave the field unfocused, so the first tap on the icon did
+    // nothing visible and the second one — on the field — is what started the search.
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+
+    TopAppBar(
+        title = {
+            TextField(
+                value = searchQuery,
+                onValueChange = onSearch,
+                placeholder = { Text("Search all tasks") },
+                singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                ),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
+            )
+        },
+        navigationIcon = {
+            IconButton(onClick = { onSearch("") }) {
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Leave search")
+            }
+        },
+        actions = {
+            // Nothing to clear when the query is the placeholder space, and an inert
+            // button reads as a broken one.
+            if (searchQuery.isNotBlank()) {
+                IconButton(onClick = { onSearch(" ") }) {
+                    Icon(Icons.Rounded.Close, contentDescription = "Clear search")
+                }
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        ),
+    )
+}
+
+// Rows are one grouped container per section, the shape rounding only where the group
+// actually ends — the pattern Pixel's own apps use in place of full-width dividers. Shared
+// with the settings rows, so both screens speak the same shape language.
+internal val GroupGap = 2.dp
+private val GroupOuterCorner = 20.dp
+private val GroupInnerCorner = 6.dp
+
+internal fun groupedShape(index: Int, count: Int) = RoundedCornerShape(
+    topStart = if (index == 0) GroupOuterCorner else GroupInnerCorner,
+    topEnd = if (index == 0) GroupOuterCorner else GroupInnerCorner,
+    bottomStart = if (index == count - 1) GroupOuterCorner else GroupInnerCorner,
+    bottomEnd = if (index == count - 1) GroupOuterCorner else GroupInnerCorner,
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TaskRow(
     task: TodoItem,
     listNames: Map<String, String>,
+    shape: RoundedCornerShape,
     onToggle: (TodoItem) -> Unit,
+    onOpen: (TodoItem) -> Unit,
+    onDelete: (TodoItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val haptics = LocalHapticFeedback.current
-    val meta = remember(task.listId, task.dueDate, task.tags, listNames) {
+    val meta = remember(task.listId, task.dueDate, task.tags, task.priority, listNames) {
         listOfNotNull(
             listNames[task.listId],
-            task.dueDate?.take(10),
+            dueDateLabel(task.dueDate),
+            PriorityMetaLabels.getOrNull(task.priority)?.takeIf { it.isNotEmpty() },
             task.tags.takeIf { it.isNotEmpty() }?.joinToString(" ") { "#$it" },
         ).joinToString("  ·  ")
     }
-    // Completing is the most-repeated action in the app; easing the colour change stops the
-    // row from snapping and makes the tap feel acknowledged. Only the two title colours are
-    // animated — animating the whole row would run a per-row animation while scrolling.
+    // Title colour only: animating the whole row would run a per-row animation on scroll.
     val titleColor by animateColorAsState(
         if (task.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant
         else MaterialTheme.colorScheme.onSurface,
         label = "titleColor",
     )
 
-    // remember: a fresh lambda each recomposition is a new instance, which defeats the
-    // skipping that the stability config just bought us.
+    // A fresh lambda each recomposition would defeat the stability config's skipping.
     val toggle = remember(task.id, task.isCompleted) {
         {
             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -381,31 +732,123 @@ private fun TaskRow(
         }
     }
 
-    Column(modifier) {
-        ListItem(
-            // The whole row is the target, not just the checkbox — a 48dp checkbox is a
-            // hard aim one-handed.
-            modifier = Modifier.clickable(onClick = toggle),
-            leadingContent = {
-                Checkbox(checked = task.isCompleted, onCheckedChange = { toggle() })
-            },
-            headlineContent = {
-                Text(
-                    task.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
-                    color = titleColor,
+    val dismissState = rememberSwipeToDismissBoxState()
+
+    // The felt counterpart to the visual arming below: targetValue flips exactly when the
+    // swipe crosses the commit threshold, and again if it retreats. Arming only — the
+    // release already gets the LongPress in the delete collector.
+    LaunchedEffect(dismissState) {
+        snapshotFlow { dismissState.targetValue }
+            .drop(1)
+            .filter { it == SwipeToDismissBoxValue.EndToStart }
+            .collect { haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate) }
+    }
+
+    // Keyed on the state object rather than on its value: the body below changes
+    // currentValue, and keying on that cancelled this coroutine in the middle of its own work.
+    LaunchedEffect(dismissState) {
+        snapshotFlow { dismissState.currentValue }
+            // The value the box already holds is not a gesture. LazyColumn saves each item's
+            // state under its key, which is the task id, so a task restored by Undo came back
+            // carrying the dismissed box it left with — and that alone re-ran the delete on
+            // the next frame. That is why Undo looked like it did nothing.
+            .drop(1)
+            .filter { it == SwipeToDismissBoxValue.EndToStart }
+            .collect {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                // snapTo, not reset(): reset animates to Settled, and the row leaves the list
+                // within a frame or two, cancelling that animation and saving a dismissed box
+                // under the task id. Snapping first is instant, so the state that gets saved
+                // is always upright.
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+                onDelete(task)
+            }
+    }
+
+    Box(modifier.padding(horizontal = 12.dp).clip(shape)) {
+        SwipeToDismissBox(
+            state = dismissState,
+            // One direction only: two-way makes an accidental delete far too easy.
+            enableDismissFromStartToEnd = false,
+            backgroundContent = {
+                // Composed only while a swipe is actually under way. backgroundContent runs
+                // for every row on screen, so animating unconditionally put three animation
+                // objects behind each row for a gesture almost never in progress.
+                if (dismissState.dismissDirection == SwipeToDismissBoxValue.Settled) {
+                    return@SwipeToDismissBox
+                }
+                // Past the threshold the background commits to the stronger error colour and
+                // the icon grows, so a swipe that will delete looks different from one that
+                // will spring back — the only warning there is before the snackbar.
+                val armed = dismissState.targetValue == SwipeToDismissBoxValue.EndToStart
+                val container by animateColorAsState(
+                    if (armed) MaterialTheme.colorScheme.error
+                    else MaterialTheme.colorScheme.errorContainer,
+                    tween(MotionShort),
+                    label = "swipeContainer",
                 )
+                val iconTint by animateColorAsState(
+                    if (armed) MaterialTheme.colorScheme.onError
+                    else MaterialTheme.colorScheme.onErrorContainer,
+                    tween(MotionShort),
+                    label = "swipeIcon",
+                )
+                val iconScale by animateFloatAsState(
+                    if (armed) 1.15f else 0.85f,
+                    tween(MotionShort, easing = EmphasizedDecelerate),
+                    label = "swipeIconScale",
+                )
+                Row(
+                    Modifier
+                        .fillMaxSize()
+                        .background(container)
+                        .padding(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Rounded.Delete,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.graphicsLayer { scaleX = iconScale; scaleY = iconScale },
+                    )
+                }
             },
-            supportingContent = if (meta.isEmpty()) null else {
-                { Text(meta, style = MaterialTheme.typography.bodySmall) }
-            },
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        )
-        HorizontalDivider(
-            modifier = Modifier.padding(start = 56.dp),
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-        )
+        ) {
+            ListItem(
+                // Body opens, checkbox completes: with editable fields there has to be a way
+                // in that is not "complete it".
+                modifier = Modifier.clickable { onOpen(task) },
+                leadingContent = {
+                    Checkbox(checked = task.isCompleted, onCheckedChange = { toggle() })
+                },
+                headlineContent = {
+                    Text(
+                        task.title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
+                        color = titleColor,
+                    )
+                },
+                supportingContent = if (meta.isEmpty()) null else {
+                    { Text(meta, style = MaterialTheme.typography.bodySmall) }
+                },
+                trailingContent = if (!task.isStarred) null else {
+                    {
+                        Icon(
+                            Icons.Rounded.Star,
+                            contentDescription = "Important",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                },
+                colors = ListItemDefaults.colors(
+                    containerColor = if (task.isCompleted)
+                        MaterialTheme.colorScheme.surfaceContainerLow
+                    else MaterialTheme.colorScheme.surfaceContainer,
+                ),
+            )
+        }
     }
 }
 
@@ -426,9 +869,8 @@ private fun SyncScreen(
     onBack: () -> Unit,
     snackbar: SnackbarHostState,
 ) {
-    // Hoisted above the `when` deliberately: the Working branch removes the form from
-    // composition, so state remembered inside it would be discarded on every attempt and
-    // the user would have to retype after each failure.
+    // Hoisted above the `when`: the Working branch removes the form from composition, so
+    // state remembered inside it would force a retype after every failure.
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
     var creating by rememberSaveable { mutableStateOf(false) }
@@ -439,128 +881,149 @@ private fun SyncScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Sync") },
-                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                    }
+                },
             )
         },
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding).padding(24.dp)) {
-            when (sync) {
-                SyncState.NotConfigured -> Info(
-                    "Not configured",
-                    "Add supabase.url and supabase.key to mobile/local.properties, then rebuild.",
-                )
-                SyncState.Working -> Box(Modifier.fillMaxSize(), Alignment.Center) {
-                    CircularProgressIndicator()
-                }
-                is SyncState.Off -> CredentialsForm(
-                    email = email,
-                    password = password,
-                    creating = creating,
-                    error = sync.error,
-                    notice = sync.notice,
-                    onEmail = { email = it },
-                    onPassword = { password = it },
-                    onToggleMode = { creating = !creating },
-                    onSubmit = { if (creating) onSignUp(email, password) else onSignIn(email, password) },
-                    onGithub = onGithub,
-                )
-                is SyncState.NeedsMfaCode ->
-                    if (sync.redeeming) {
-                        RecoveryCodeForm(
-                            error = sync.error,
-                            onSubmit = onRedeemRecovery,
-                            onBack = { onShowRecovery(false) },
-                        )
-                    } else {
-                        MfaCodeForm(
-                            error = sync.error,
-                            onSubmit = onMfaCode,
-                            onUseRecovery = { onShowRecovery(true) },
-                            onSignOut = onSignOut,
-                        )
-                    }
-                SyncState.NeedsPassphrase -> PassphraseForm(
-                    "These tasks are end-to-end encrypted. Enter your sync passphrase to read them.",
-                    isError = false,
-                    onSubmit = onPassphrase,
-                )
-                SyncState.WrongPassphrase -> PassphraseForm(
-                    "That passphrase can't decrypt this account's data. Nothing has been changed or lost.",
-                    isError = true,
-                    onSubmit = onPassphrase,
-                )
-                is SyncState.On -> Column {
-                    Text("Sync is on", style = MaterialTheme.typography.titleMedium)
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        sync.email ?: "signed in",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    if (sync.serverUpdatedAt.isNotEmpty()) {
-                        Text(
-                            // Trimmed from the raw ISO stamp: seconds and microseconds are
-                            // noise to a person deciding whether their data is current.
-                            "Server copy: " + sync.serverUpdatedAt.take(16).replace('T', ' ') + " UTC",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+        // The spinner owns the whole screen, so it stays outside the scroll container —
+        // fillMaxSize means nothing under an unbounded height constraint.
+        if (sync is SyncState.Working) {
+            Box(Modifier.fillMaxSize().padding(padding), Alignment.Center) {
+                CircularProgressIndicator()
+            }
+            return@Scaffold
+        }
 
-                    if (!sync.hasPassphrase) {
-                        Spacer(Modifier.height(16.dp))
-                        Banner(
-                            "Set a passphrase to send changes up. Your tasks are encrypted on " +
-                                "this phone before they leave it, so nobody with server access " +
-                                "can read them — not even us. There is no way to recover it.",
-                            MaterialTheme.colorScheme.secondaryContainer,
-                            MaterialTheme.colorScheme.onSecondaryContainer,
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        OutlinedTextField(
-                            value = passphrase,
-                            onValueChange = { passphrase = it },
-                            label = { Text("Passphrase") },
-                            singleLine = true,
-                            visualTransformation = PasswordVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Password,
-                                imeAction = ImeAction.Done,
-                            ),
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+        // Scrollable because the MFA and passphrase forms put their submit button under the
+        // keyboard on a short screen, with no way to reach it.
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .imePadding(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Column(Modifier.widthIn(max = ContentMaxWidth).padding(24.dp)) {
+                when (sync) {
+                    SyncState.NotConfigured -> Info(
+                        "Not configured",
+                        "Add supabase.url and supabase.key to mobile/local.properties, then rebuild.",
+                    )
+                    // Handled above, before the scroll container.
+                    SyncState.Working -> Unit
+                    is SyncState.Off -> CredentialsForm(
+                        email = email,
+                        password = password,
+                        creating = creating,
+                        error = sync.error,
+                        notice = sync.notice,
+                        onEmail = { email = it },
+                        onPassword = { password = it },
+                        onToggleMode = { creating = !creating },
+                        onSubmit = { if (creating) onSignUp(email, password) else onSignIn(email, password) },
+                        onGithub = onGithub,
+                    )
+                    is SyncState.NeedsMfaCode ->
+                        if (sync.redeeming) {
+                            RecoveryCodeForm(
+                                error = sync.error,
+                                onSubmit = onRedeemRecovery,
+                                onBack = { onShowRecovery(false) },
+                            )
+                        } else {
+                            MfaCodeForm(
+                                error = sync.error,
+                                onSubmit = onMfaCode,
+                                onUseRecovery = { onShowRecovery(true) },
+                                onSignOut = onSignOut,
+                            )
+                        }
+                    SyncState.NeedsPassphrase -> PassphraseForm(
+                        "These tasks are end-to-end encrypted. Enter your sync passphrase to read them.",
+                        isError = false,
+                        onSubmit = onPassphrase,
+                    )
+                    SyncState.WrongPassphrase -> PassphraseForm(
+                        "That passphrase can't decrypt this account's data. Nothing has been changed or lost.",
+                        isError = true,
+                        onSubmit = onPassphrase,
+                    )
+                    is SyncState.On -> Column {
+                        Text("Sync is on", style = MaterialTheme.typography.titleMedium)
+                        Spacer(Modifier.height(4.dp))
                         Text(
-                            "At least $MIN_PASSPHRASE characters.",
-                            style = MaterialTheme.typography.bodySmall,
+                            sync.email ?: "signed in",
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp),
                         )
+                        if (sync.serverUpdatedAt.isNotEmpty()) {
+                            Text(
+                                // Trimmed: seconds and microseconds are noise here.
+                                "Server copy: " + sync.serverUpdatedAt.take(16).replace('T', ' ') + " UTC",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+
+                        if (!sync.hasPassphrase) {
+                            Spacer(Modifier.height(16.dp))
+                            Banner(
+                                "Set a passphrase to send changes up. Your tasks are encrypted on " +
+                                    "this phone before they leave it, so nobody with server access " +
+                                    "can read them — not even us. There is no way to recover it.",
+                                MaterialTheme.colorScheme.secondaryContainer,
+                                MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                            Spacer(Modifier.height(12.dp))
+                            OutlinedTextField(
+                                value = passphrase,
+                                onValueChange = { passphrase = it },
+                                label = { Text("Passphrase") },
+                                singleLine = true,
+                                visualTransformation = PasswordVisualTransformation(),
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Password,
+                                    imeAction = ImeAction.Done,
+                                ),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Text(
+                                "At least $MIN_PASSPHRASE characters.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Button(
+                                onClick = { onPassphrase(passphrase) },
+                                // Must match Windows exactly: a shorter passphrase set here
+                                // would be rejected there, and the clients would diverge.
+                                enabled = passphrase.length >= MIN_PASSPHRASE,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) { Text("Set passphrase") }
+                        }
+
+                        Spacer(Modifier.height(20.dp))
+                        Button(onClick = onRefresh, Modifier.fillMaxWidth()) { Text("Pull now") }
                         Spacer(Modifier.height(8.dp))
                         Button(
-                            onClick = { onPassphrase(passphrase) },
-                            // Must match the Windows minimum exactly. A shorter passphrase
-                            // set here would be impossible to type on Windows, which
-                            // rejects under 8 — the two clients would silently diverge.
-                            enabled = passphrase.length >= MIN_PASSPHRASE,
+                            onClick = onPush,
+                            enabled = sync.hasPassphrase,
                             modifier = Modifier.fillMaxWidth(),
-                        ) { Text("Set passphrase") }
+                        ) { Text("Push now") }
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedButton(onClick = onSignOut, Modifier.fillMaxWidth()) { Text("Sign out") }
                     }
-
-                    Spacer(Modifier.height(20.dp))
-                    Button(onClick = onRefresh, Modifier.fillMaxWidth()) { Text("Pull now") }
-                    Spacer(Modifier.height(8.dp))
-                    Button(
-                        onClick = onPush,
-                        enabled = sync.hasPassphrase,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text("Push now") }
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedButton(onClick = onSignOut, Modifier.fillMaxWidth()) { Text("Sign out") }
-                }
-                is SyncState.Failed -> Column {
-                    Info("Sync failed", sync.message)
-                    Spacer(Modifier.height(20.dp))
-                    Button(onClick = onRefresh, Modifier.fillMaxWidth()) { Text("Try again") }
+                    is SyncState.Failed -> Column {
+                        Info("Sync failed", sync.message)
+                        Spacer(Modifier.height(20.dp))
+                        Button(onClick = onRefresh, Modifier.fillMaxWidth()) { Text("Try again") }
+                    }
                 }
             }
         }
@@ -612,7 +1075,12 @@ private fun CredentialsForm(
                 keyboardType = KeyboardType.Email,
                 imeAction = ImeAction.Next,
             ),
-            modifier = Modifier.fillMaxWidth(),
+            // Without content types password managers cannot see this form at all. The
+            // passphrase and MFA fields deliberately carry none: a manager offering to
+            // save the passphrase as "the password" would teach exactly the wrong thing.
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentType = ContentType.EmailAddress + ContentType.Username },
         )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
@@ -626,7 +1094,11 @@ private fun CredentialsForm(
                 keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Done,
             ),
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics {
+                    contentType = if (creating) ContentType.NewPassword else ContentType.Password
+                },
         )
         Spacer(Modifier.height(20.dp))
         Button(
@@ -658,12 +1130,12 @@ private fun CredentialsForm(
 
 @Composable
 private fun Banner(text: String, container: androidx.compose.ui.graphics.Color, content: androidx.compose.ui.graphics.Color) {
-    Surface(color = container, shape = MaterialTheme.shapes.small, modifier = Modifier.fillMaxWidth()) {
+    Surface(color = container, shape = MaterialTheme.shapes.large, modifier = Modifier.fillMaxWidth()) {
         Text(
             text,
             style = MaterialTheme.typography.bodyMedium,
             color = content,
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(16.dp),
         )
     }
 }
@@ -675,7 +1147,7 @@ private fun RecoveryCodeForm(error: String?, onSubmit: (String) -> Unit, onBack:
     Column {
         Text("Use a recovery code", style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
-        // Stated plainly because it is not what most people expect a recovery code to do.
+        // Stated plainly: this is not what most people expect a recovery code to do.
         Text(
             "This turns two-factor authentication OFF and discards your remaining codes — " +
                 "it is not a one-time sign-in. Set it up again afterwards on Windows.\n\n" +
@@ -738,8 +1210,7 @@ private fun MfaCodeForm(
         Spacer(Modifier.height(20.dp))
         OutlinedTextField(
             value = value,
-            // Authenticators show digits only; filtering here stops a paste of "123 456"
-            // from being rejected by the server for a reason the user cannot see.
+            // Stops a paste of "123 456" being rejected for a reason the user cannot see.
             onValueChange = { value = it.filter(Char::isDigit).take(MFA_CODE_LENGTH) },
             label = { Text("6-digit code") },
             singleLine = true,
@@ -757,9 +1228,8 @@ private fun MfaCodeForm(
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Verify") }
         Spacer(Modifier.height(8.dp))
-        // The routes out of this state. Without them a lost authenticator strands the
-        // screen with no way back — and since the aal2 policy landed, signing out alone
-        // would not have helped either.
+        // The routes out: without them a lost authenticator strands this screen, and since
+        // the aal2 policy landed, signing out alone would not help either.
         TextButton(onClick = onUseRecovery, Modifier.fillMaxWidth()) {
             Text("Lost your authenticator? Use a recovery code")
         }
@@ -797,9 +1267,8 @@ private fun PassphraseForm(prompt: String, isError: Boolean, onSubmit: (String) 
         Spacer(Modifier.height(20.dp))
         Button(
             onClick = { onSubmit(value) },
-            // Deliberately NOT the minimum: this unlocks an existing row. The minimum
-            // constrains choosing a new passphrase, and applying it here would lock a user
-            // out of data they encrypted before the rule existed.
+            // Deliberately not the minimum: this unlocks an existing row, and enforcing it
+            // would lock out data encrypted before the rule existed.
             enabled = value.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Unlock") }
@@ -809,7 +1278,7 @@ private fun PassphraseForm(prompt: String, isError: Boolean, onSubmit: (String) 
 @Composable
 private fun Info(title: String, body: String) {
     Column {
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(title, style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
         Text(
             body,
