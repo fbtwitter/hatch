@@ -119,126 +119,134 @@
                                        VerticalAlignment="Center" />
                         </Border>
 
-                        <!-- · separator between list name and date -->
-                        <TextBlock Text="·"
-                                   Visibility="{x:Bind HasListNameToDateSeparator, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                   Style="{ThemeResource CaptionTextBlockStyle}"
-                                   VerticalAlignment="Center" />
+                        <!--
+                            Everything below is extra context that only matters for an open
+                            task — a completed row keeps just the list name chip above.
+                        -->
+                        <StackPanel Orientation="Horizontal" Spacing="4"
+                                    Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
 
-                        <!-- Date chip — clicking opens the date flyout -->
-                        <Button Tag="{x:Bind}"
-                                AutomationProperties.AutomationId="Task_DateChipButton"
-                                Click="ChipDateButton_Click"
-                                Visibility="{x:Bind DueDate, Converter={StaticResource DueDateToChipVisibility}, Mode=OneWay}"
-                                Background="{x:Bind DueDate, Converter={StaticResource DueDateToChipBrush}, Mode=OneWay}"
-                                Style="{StaticResource ChipButtonStyle}"
-                                VerticalAlignment="Center"
-                                x:Uid="Task_DateChipButton">
-                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                <FontIcon Glyph="{x:Bind DueDate, Converter={StaticResource DueDateToChipGlyph}, Mode=OneWay}"
-                                          FontSize="11"
-                                          Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
-                                          VerticalAlignment="Center" />
-                                <TextBlock Text="{x:Bind DueDate, Converter={StaticResource DueDateToString}, Mode=OneWay}"
-                                           Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
-                                           Style="{ThemeResource CaptionTextBlockStyle}"
-                                           VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Button>
-
-                        <!-- Repeat chip — only when the task has an active recurrence -->
-                        <Border x:Uid="Task_RepeatChip"
-                                Background="{ThemeResource SubtleFillColorSecondaryBrush}"
-                                CornerRadius="4"
-                                Padding="6,2"
-                                VerticalAlignment="Center"
-                                Visibility="{x:Bind HasRecurrence, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                            <FontIcon Glyph="&#xE895;"
-                                      FontSize="10"
-                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        </Border>
-
-                        <!-- Priority chip — only when a priority tier is set; color-coded by tier -->
-                        <Border Background="{x:Bind Priority, Converter={StaticResource PriorityToBrush}, Mode=OneWay}"
-                                CornerRadius="4"
-                                Padding="6,2"
-                                VerticalAlignment="Center"
-                                ToolTipService.ToolTip="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, Mode=OneWay}"
-                                Visibility="{x:Bind HasPriority, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                <FontIcon Glyph="&#xE7C1;"
-                                          FontSize="10"
-                                          Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
-                                <TextBlock Text="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, Mode=OneWay}"
-                                           Style="{ThemeResource CaptionTextBlockStyle}"
-                                           Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
-                            </StackPanel>
-                        </Border>
-
-                        <!-- Add-date ghost — only when not completed and no date -->
-                        <Button Tag="{x:Bind}"
-                                AutomationProperties.AutomationId="Task_AddDateButton"
-                                Click="ChipDateButton_Click"
-                                Visibility="{x:Bind ShowAddDateHint, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                Padding="6,2" MinWidth="0" MinHeight="0"
-                                Background="Transparent" BorderThickness="0"
-                                VerticalAlignment="Center"
-                                IsTabStop="False"
-                                x:Uid="Task_AddDateButton">
-                            <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                <FontIcon Glyph="&#xE787;" FontSize="11"
-                                          Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                          VerticalAlignment="Center" />
-                                <TextBlock x:Uid="Task_AddDateText"
-                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                           Style="{ThemeResource CaptionTextBlockStyle}"
-                                           VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Button>
-
-                        <!-- · separator — only when both date and tags are present -->
-                        <TextBlock Text="·"
-                                   Visibility="{x:Bind HasMetaSeparator, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                   Style="{ThemeResource CaptionTextBlockStyle}"
-                                   VerticalAlignment="Center" />
-
-                        <!-- Tag chips: first 2 -->
-                        <ItemsRepeater ItemsSource="{x:Bind Tags, Converter={StaticResource TagsPreview}, Mode=OneWay}"
-                                       Visibility="{x:Bind Tags, Converter={StaticResource TagsToVisibility}, Mode=OneWay}"
-                                       VerticalAlignment="Center">
-                            <ItemsRepeater.Layout>
-                                <StackLayout Orientation="Horizontal" Spacing="4" />
-                            </ItemsRepeater.Layout>
-                            <ItemsRepeater.ItemTemplate>
-                                <DataTemplate x:DataType="x:String">
-                                    <Button Tag="{x:Bind}"
-                                            Click="TagChipInRow_Click"
-                                            Background="{ThemeResource SubtleFillColorSecondaryBrush}"
-                                            Style="{StaticResource ChipButtonStyle}"
-                                            Padding="6,1">
-                                        <TextBlock Text="{x:Bind}"
-                                                   Style="{ThemeResource CaptionTextBlockStyle}"
-                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                    </Button>
-                                </DataTemplate>
-                            </ItemsRepeater.ItemTemplate>
-                        </ItemsRepeater>
-
-                        <!-- +N overflow → tapping opens details pane to show all tags -->
-                        <Button Tag="{x:Bind}"
-                                Click="TagOverflowButton_Click"
-                                Visibility="{x:Bind Tags, Converter={StaticResource TagsOverflowVisibility}, Mode=OneWay}"
-                                Background="{ThemeResource SubtleFillColorSecondaryBrush}"
-                                Style="{StaticResource ChipButtonStyle}"
-                                VerticalAlignment="Center"
-                                Padding="6,1">
-                            <TextBlock Text="{x:Bind Tags, Converter={StaticResource TagsOverflowCount}, Mode=OneWay}"
+                            <!-- · separator between list name and date -->
+                            <TextBlock Text="·"
+                                       Visibility="{x:Bind HasListNameToDateSeparator, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                        Style="{ThemeResource CaptionTextBlockStyle}"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        </Button>
+                                       VerticalAlignment="Center" />
 
+                            <!-- Date chip — clicking opens the date flyout -->
+                            <Button Tag="{x:Bind}"
+                                    AutomationProperties.AutomationId="Task_DateChipButton"
+                                    Click="ChipDateButton_Click"
+                                    Visibility="{x:Bind DueDate, Converter={StaticResource DueDateToChipVisibility}, Mode=OneWay}"
+                                    Background="{x:Bind DueDate, Converter={StaticResource DueDateToChipBrush}, Mode=OneWay}"
+                                    Style="{StaticResource ChipButtonStyle}"
+                                    VerticalAlignment="Center"
+                                    x:Uid="Task_DateChipButton">
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <FontIcon Glyph="{x:Bind DueDate, Converter={StaticResource DueDateToChipGlyph}, Mode=OneWay}"
+                                              FontSize="11"
+                                              Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
+                                              VerticalAlignment="Center" />
+                                    <TextBlock Text="{x:Bind DueDate, Converter={StaticResource DueDateToString}, Mode=OneWay}"
+                                               Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
+                                               Style="{ThemeResource CaptionTextBlockStyle}"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- Repeat chip — only when the task has an active recurrence -->
+                            <Border x:Uid="Task_RepeatChip"
+                                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                    CornerRadius="4"
+                                    Padding="6,2"
+                                    VerticalAlignment="Center"
+                                    Visibility="{x:Bind HasRecurrence, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                                <FontIcon Glyph="&#xE895;"
+                                          FontSize="10"
+                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </Border>
+
+                            <!-- Priority chip — only when a priority tier is set; color-coded by tier -->
+                            <Border Background="{x:Bind Priority, Converter={StaticResource PriorityToBrush}, Mode=OneWay}"
+                                    CornerRadius="4"
+                                    Padding="6,2"
+                                    VerticalAlignment="Center"
+                                    ToolTipService.ToolTip="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, Mode=OneWay}"
+                                    Visibility="{x:Bind HasPriority, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <FontIcon Glyph="&#xE7C1;"
+                                              FontSize="10"
+                                              Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
+                                    <TextBlock Text="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, Mode=OneWay}"
+                                               Style="{ThemeResource CaptionTextBlockStyle}"
+                                               Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Add-date ghost — only when not completed and no date -->
+                            <Button Tag="{x:Bind}"
+                                    AutomationProperties.AutomationId="Task_AddDateButton"
+                                    Click="ChipDateButton_Click"
+                                    Visibility="{x:Bind ShowAddDateHint, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                    Padding="6,2" MinWidth="0" MinHeight="0"
+                                    Background="Transparent" BorderThickness="0"
+                                    VerticalAlignment="Center"
+                                    IsTabStop="False"
+                                    x:Uid="Task_AddDateButton">
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <FontIcon Glyph="&#xE787;" FontSize="11"
+                                              Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                              VerticalAlignment="Center" />
+                                    <TextBlock x:Uid="Task_AddDateText"
+                                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                               Style="{ThemeResource CaptionTextBlockStyle}"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- · separator — only when both date and tags are present -->
+                            <TextBlock Text="·"
+                                       Visibility="{x:Bind HasMetaSeparator, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       VerticalAlignment="Center" />
+
+                            <!-- Tag chips: first 2 -->
+                            <ItemsRepeater ItemsSource="{x:Bind Tags, Converter={StaticResource TagsPreview}, Mode=OneWay}"
+                                           Visibility="{x:Bind Tags, Converter={StaticResource TagsToVisibility}, Mode=OneWay}"
+                                           VerticalAlignment="Center">
+                                <ItemsRepeater.Layout>
+                                    <StackLayout Orientation="Horizontal" Spacing="4" />
+                                </ItemsRepeater.Layout>
+                                <ItemsRepeater.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <Button Tag="{x:Bind}"
+                                                Click="TagChipInRow_Click"
+                                                Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                                Style="{StaticResource ChipButtonStyle}"
+                                                Padding="6,1">
+                                            <TextBlock Text="{x:Bind}"
+                                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </Button>
+                                    </DataTemplate>
+                                </ItemsRepeater.ItemTemplate>
+                            </ItemsRepeater>
+
+                            <!-- +N overflow → tapping opens details pane to show all tags -->
+                            <Button Tag="{x:Bind}"
+                                    Click="TagOverflowButton_Click"
+                                    Visibility="{x:Bind Tags, Converter={StaticResource TagsOverflowVisibility}, Mode=OneWay}"
+                                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                    Style="{StaticResource ChipButtonStyle}"
+                                    VerticalAlignment="Center"
+                                    Padding="6,1">
+                                <TextBlock Text="{x:Bind Tags, Converter={StaticResource TagsOverflowCount}, Mode=OneWay}"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </Button>
+
+                        </StackPanel>
                     </StackPanel>
                 </StackPanel>
 
@@ -257,6 +265,7 @@
                             Click="StarButton_Click"
                             ToolTipService.ToolTip="{x:Bind IsStarred, Converter={StaticResource BoolToStarTooltip}, Mode=OneWay}"
                             Style="{ThemeResource SubtleButtonStyle}"
+                            Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}"
                             Padding="8,6" MinWidth="0">
                         <FontIcon Glyph="{x:Bind IsStarred, Converter={StaticResource BoolToStarGlyph}, Mode=OneWay}"
                                   FontSize="14"
@@ -277,13 +286,15 @@
                                 <MenuFlyoutItem Tag="{x:Bind}"
                                                 x:Uid="TaskRow_FocusMenuItem"
                                                 Text="Focus on this"
-                                                Click="FocusMenuItem_Click">
+                                                Click="FocusMenuItem_Click"
+                                                Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon Glyph="&#xE8B0;"/>
                                     </MenuFlyoutItem.Icon>
                                 </MenuFlyoutItem>
-                                <MenuFlyoutSeparator/>
-                                <MenuFlyoutSubItem x:Uid="TaskRow_SnoozeSubItem" Text="Snooze">
+                                <MenuFlyoutSeparator Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}"/>
+                                <MenuFlyoutSubItem x:Uid="TaskRow_SnoozeSubItem" Text="Snooze"
+                                                    Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
                                     <MenuFlyoutSubItem.Icon>
                                         <FontIcon Glyph="&#xE121;"/>
                                     </MenuFlyoutSubItem.Icon>
@@ -296,7 +307,7 @@
                                                     Text="Next week"
                                                     Click="SnoozeNextWeek_Click"/>
                                 </MenuFlyoutSubItem>
-                                <MenuFlyoutSeparator/>
+                                <MenuFlyoutSeparator Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}"/>
                                 <MenuFlyoutItem Tag="{x:Bind}"
                                                 x:Uid="Task_DeleteMenuItem"
                                                 Click="DeleteButton_Click">
@@ -504,7 +515,8 @@
                 <ScrollViewer Grid.Row="0" x:Name="FlatListView"
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel>
-                        <ItemsControl ItemsSource="{x:Bind ViewModel.FlatGroupedTasks, Mode=OneWay}"
+                        <ItemsControl x:Name="FlatGroupsItemsControl"
+                                      ItemsSource="{x:Bind ViewModel.FlatGroupedTasks, Mode=OneWay}"
                                       HorizontalAlignment="Stretch"
                                       Padding="24,0,24,8">
                             <ItemsControl.ItemContainerStyle>
@@ -515,13 +527,17 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate x:DataType="models:CompletedTaskGroup">
                                     <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+
+                                        <!-- Collapsible variant: used whenever a Completed group can appear
+                                             alongside this one (My Day, All Tasks, custom lists) — the
+                                             header lets you fold Open away to make room for Completed. -->
                                         <Expander IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
                                                   HorizontalAlignment="Stretch"
                                                   HorizontalContentAlignment="Stretch"
                                                   Padding="0"
                                                   Margin="16,4"
                                                   CornerRadius="{ThemeResource ControlCornerRadius}"
-                                                  Visibility="{x:Bind HasItems, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                                                  Visibility="{x:Bind ShowExpander, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                                             <Expander.Resources>
                                                 <StaticResource x:Key="ExpanderHeaderBackground"
                                                                 ResourceKey="SubtleFillColorSecondaryBrush" />
@@ -555,6 +571,23 @@
                                                 </ListView.ItemContainerTransitions>
                                             </ListView>
                                         </Expander>
+
+                                        <!-- Flat variant: Important's Open group — there's no Completed
+                                             counterpart to fold this away for, so no header, no chevron. -->
+                                        <ListView ItemsSource="{x:Bind Items, Mode=OneWay}"
+                                                  ItemTemplate="{StaticResource TaskItemTemplate}"
+                                                  ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
+                                                  SelectionMode="Single"
+                                                  SelectionChanged="TaskListView_SelectionChanged"
+                                                  IsTabStop="False"
+                                                  Margin="16,4"
+                                                  Visibility="{x:Bind ShowFlatList, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                            <ListView.ItemContainerTransitions>
+                                                <TransitionCollection />
+                                            </ListView.ItemContainerTransitions>
+                                        </ListView>
                                     </StackPanel>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -643,9 +676,9 @@
                 <!-- Undo snackbar -->
                 <InfoBar Grid.Row="1"
                          x:Name="UndoInfoBar"
-                         x:Uid="UndoInfoBar"
                          AutomationProperties.AutomationId="UndoInfoBar"
                          IsOpen="{x:Bind ViewModel.IsUndoBarVisible, Mode=OneWay}"
+                         Message="{x:Bind ViewModel.UndoMessage, Mode=OneWay}"
                          IsClosable="True"
                          Severity="Informational"
                          Margin="16,8,16,12"
@@ -653,7 +686,7 @@
                     <InfoBar.ActionButton>
                         <Button x:Uid="UndoButton"
                                 AutomationProperties.AutomationId="UndoButton"
-                                Command="{x:Bind ViewModel.UndoLastCompletionCommand}"
+                                Command="{x:Bind ViewModel.UndoLastActionCommand}"
                                 Style="{ThemeResource AccentButtonStyle}" />
                     </InfoBar.ActionButton>
                 </InfoBar>

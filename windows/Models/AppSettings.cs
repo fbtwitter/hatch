@@ -4,6 +4,15 @@ public enum AppTheme { SystemDefault = 0, Light = 1, Dark = 2 }
 public enum TipTimePreference { Anytime = 0, Morning = 1, Afternoon = 2, Evening = 3 }
 public enum AppBackdrop { None = 0, Mica = 1, MicaAlt = 2, DesktopAcrylic = 3 }
 
+// How freely the mascot may show non-actionable messages. Actionable tips (overdue,
+// due today) ignore this entirely — they are shown at every level.
+public enum MascotChattiness
+{
+    Quiet = 0,     // actionable tips only
+    Balanced = 1,  // existing silence rule + one daily inspiration slot
+    Chatty = 2     // skip the silence rule
+}
+
 public sealed class AppSettings
 {
     public AppTheme Theme { get; set; } = AppTheme.SystemDefault;
@@ -41,6 +50,13 @@ public sealed class AppSettings
     // Tip Engine — smart fallback suppression (avoid filler)
     public DateTime? LastMeaningfulTipTime { get; set; } = null;      // overdue, My Day, progress
     public DateTime? LastUserActivityTime { get; set; } = null;       // bubble open, app activation
+
+    // Mascot engagement — how freely non-actionable messages may appear, and the user's
+    // own message pool. CustomTips are merged with the built-in lines, so adding more of
+    // your own makes them come up more often.
+    public MascotChattiness MascotChattiness { get; set; } = MascotChattiness.Balanced;
+    public List<string> CustomTips { get; set; } = [];
+    public DateTime? LastInspirationDate { get; set; } = null;        // daily QOTD slot
 
     // Optional sync — null when not signed in.
     // Tokens now live in the Credential Locker (SyncTokenStore); these two properties

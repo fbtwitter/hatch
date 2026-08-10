@@ -11,6 +11,10 @@
     <UseWinUI>true</UseWinUI>
     <EnableXamlDiagnostics>false</EnableXamlDiagnostics>
     <Platforms>x64;x86;arm64</Platforms>
+    <!-- Keep in sync with Package.appxmanifest's Identity Version and the release tag.
+         Packaged builds read the manifest; unpackaged Debug builds have no package
+         identity and fall back to this via SettingsViewModel.AppVersion. -->
+    <Version>0.18.0</Version>
     <!-- Signing and package generation are handled by CI; disabled locally -->
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
     <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>

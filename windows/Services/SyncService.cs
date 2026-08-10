@@ -149,7 +149,7 @@ public sealed class SyncService
         catch
         {
             ClearTokens();
-            _ = App.SettingsService.SaveAsync();
+            App.SettingsService.SaveDebounced();
         }
     }
 
@@ -233,7 +233,7 @@ public sealed class SyncService
                 UpdatedAt = DateTime.UtcNow
             });
             App.Settings.LastSyncedAt = DateTime.UtcNow;
-            _ = App.SettingsService.SaveAsync();
+            App.SettingsService.SaveDebounced();
             StateChanged?.Invoke();
             return null;
         }
@@ -550,7 +550,7 @@ public sealed class SyncService
 
             await new TaskStorageService().SaveAsync(data);
             App.Settings.LastSyncedAt = row.UpdatedAt;
-            _ = App.SettingsService.SaveAsync();
+            App.SettingsService.SaveDebounced();
             TasksReceived?.Invoke();
             return null;
         }
