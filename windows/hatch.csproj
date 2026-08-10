@@ -69,9 +69,12 @@
     <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.3.2" />
   </ItemGroup>
 
-  <!-- Auto-generate PNG assets from logo.svg on first build if missing -->
+  <!-- Auto-generate PNG assets from ../assets/logo.svg on first build if missing.
+       logo.svg lives at the repo root (shared with mobile/ and README.md), not under
+       windows/ — everything else this target touches (AssetGen.csproj, the Assets
+       output dir) stays windows-local. -->
   <Target Name="EnsureAssets" BeforeTargets="PrepareForBuild" Condition="!Exists('$(MSBuildProjectDirectory)\Assets\Hatch.ico')">
-    <Exec Command="dotnet run --project &quot;$(MSBuildProjectDirectory)\scripts\AssetGen\AssetGen.csproj&quot; -- &quot;$(MSBuildProjectDirectory)\logo.svg&quot; &quot;$(MSBuildProjectDirectory)\Assets&quot;" WorkingDirectory="$(MSBuildProjectDirectory)" />
+    <Exec Command="dotnet run --project &quot;$(MSBuildProjectDirectory)\scripts\AssetGen\AssetGen.csproj&quot; -- &quot;$(MSBuildProjectDirectory)\..\assets\logo.svg&quot; &quot;$(MSBuildProjectDirectory)\Assets&quot;" WorkingDirectory="$(MSBuildProjectDirectory)" />
   </Target>
 
   <ItemGroup>
