@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -26,6 +27,9 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         _wasSignedIn = App.SyncService.IsSignedIn;
         App.SyncService.StateChanged += OnSyncStateChanged;
+
+        foreach (var line in _settings.Current.CustomTips)
+            CustomTips.Add(line);
     }
 
     // ── Sync ─────────────────────────────────────────────────────────────────
@@ -467,7 +471,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             if (_settings.Current.MinimizeToTray == value) return;
             _settings.Current.MinimizeToTray = value;
             App.MainWindowInstance?.UpdateTrayBehavior(value);
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -482,7 +486,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             App.MainWindowInstance?.ApplyTheme(_settings.Current.Theme);
             App.MainWindowInstance?.ViewModel.NotifyThemeChanged();
             App.BubbleWindowInstance?.ApplyCurrentTheme();
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -495,7 +499,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             if ((int)_settings.Current.Backdrop == value) return;
             _settings.Current.Backdrop = (AppBackdrop)value;
             App.MainWindowInstance?.ApplyBackdrop(_settings.Current.Backdrop);
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -507,7 +511,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (_settings.Current.ShowMascot == value) return;
             _settings.Current.ShowMascot = value;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             App.MascotWindowInstance?.ViewModel.ApplyShowMascotChanged();
             OnPropertyChanged();
         }
@@ -520,7 +524,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (_settings.Current.MuteAnimation == value) return;
             _settings.Current.MuteAnimation = value;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             App.MascotWindowInstance?.ViewModel.RaiseMuteChanged();
             OnPropertyChanged();
         }
@@ -533,7 +537,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (_settings.Current.LockMascotPosition == value) return;
             _settings.Current.LockMascotPosition = value;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             App.MascotWindowInstance?.ViewModel.RaiseLockPositionChanged();
             OnPropertyChanged();
         }
@@ -546,7 +550,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (_settings.Current.LottieFilePath == value) return;
             _settings.Current.LottieFilePath = value;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
             OnPropertyChanged(nameof(LottieFileDisplay));
             OnPropertyChanged(nameof(HasLottieFile));
@@ -574,7 +578,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (_settings.Current.ShowTipsAutomatically == value) return;
             _settings.Current.ShowTipsAutomatically = value;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -588,9 +592,71 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (value < 0 || (int)_settings.Current.ProactiveTipTime == value) return;
             _settings.Current.ProactiveTipTime = (TipTimePreference)value;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
         }
+    }
+
+    // Read at runtime rather than hardcoded in XAML: the About card had drifted to
+    // v0.14.0 while the app shipped 0.17.0, because nothing tied the two together.
+    // Packaged builds carry the manifest version; unpackaged Debug builds have no
+    // package identity, so they fall back to the assembly version from the csproj.
+    public string AppVersion
+    {
+        get
+        {
+            try
+            {
+                var v = Windows.ApplicationModel.Package.Current.Id.Version;
+                return $"v{v.Major}.{v.Minor}.{v.Build}";
+            }
+            catch
+            {
+                var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                return v is null ? "v0.0.0" : $"v{v.Major}.{v.Minor}.{v.Build}";
+            }
+        }
+    }
+
+    // Maps 1:1 onto MascotChattiness (Quiet=0, Balanced=1, Chatty=2).
+    public int MascotChattinessIndex
+    {
+        get => (int)_settings.Current.MascotChattiness;
+        set
+        {
+            if (value < 0 || (int)_settings.Current.MascotChattiness == value) return;
+            _settings.Current.MascotChattiness = (MascotChattiness)value;
+            _settings.SaveDebounced();
+            OnPropertyChanged();
+        }
+    }
+
+    // The user's own message pool, merged with the built-in lines by TipEngine.
+    public ObservableCollection<string> CustomTips { get; } = [];
+
+    public bool HasCustomTips => CustomTips.Count > 0;
+
+    public void AddCustomTip(string text)
+    {
+        var trimmed = text.Trim();
+        if (trimmed.Length == 0) return;
+        if (CustomTips.Contains(trimmed, StringComparer.OrdinalIgnoreCase)) return;
+
+        CustomTips.Add(trimmed);
+        PersistCustomTips();
+    }
+
+    public void RemoveCustomTip(string text)
+    {
+        if (!CustomTips.Remove(text)) return;
+        PersistCustomTips();
+    }
+
+    private void PersistCustomTips()
+    {
+        _settings.Current.CustomTips = [.. CustomTips];
+        _settings.SaveDebounced();
+        OnPropertyChanged(nameof(HasCustomTips));
     }
 
     public bool HideWhenFullscreen
@@ -600,7 +666,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (_settings.Current.HideWhenFullscreen == value) return;
             _settings.Current.HideWhenFullscreen = value;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -613,7 +679,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             if (_settings.Current.RunAtStartup == value) return;
             _settings.Current.RunAtStartup = value;
             _startupRegistry.SetStartupEnabled(value);
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -626,7 +692,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             var clamped = Math.Clamp(value, 60, 200);
             if (_settings.Current.MascotSize == clamped) return;
             _settings.Current.MascotSize = clamped;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             App.MascotWindowInstance?.ViewModel.RaiseWindowSizeChanged();
             OnPropertyChanged();
         }
@@ -639,7 +705,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (_settings.Current.MascotAlwaysOnTop == value) return;
             _settings.Current.MascotAlwaysOnTop = value;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             App.MascotWindowInstance?.ApplyAlwaysOnTop(value);
             OnPropertyChanged();
         }
@@ -656,7 +722,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             if (_settings.Current.HotkeyModifiers == value) return;
             _settings.Current.HotkeyModifiers = value;
             ReRegisterHotKey();
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
             OnPropertyChanged(nameof(HotkeyDescription));
             OnPropertyChanged(nameof(HotkeyCtrl));
@@ -700,7 +766,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             if (_settings.Current.HotkeyVirtualKey == value) return;
             _settings.Current.HotkeyVirtualKey = value;
             ReRegisterHotKey();
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
             OnPropertyChanged(nameof(HotkeyDescription));
         }

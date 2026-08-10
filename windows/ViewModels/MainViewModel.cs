@@ -83,7 +83,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             _ => AddTask(),
             _ => !string.IsNullOrWhiteSpace(NewTaskText));
 
-        UndoLastCompletionCommand = new RelayCommand(_ => UndoLastCompletion());
+        UndoLastActionCommand = new RelayCommand(_ => UndoLastAction());
         ClearTagFilterCommand = new RelayCommand(_ => ActiveTagFilter = null);
         AddSuggestionToMyDayCommand = new RelayCommand(param =>
         {
@@ -295,17 +295,24 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     // container destruction and the resulting checkbox blink / access violation.
     private void ApplyCompletedChange(TodoItem task)
     {
-        if (task.IsCompleted)
-            TrySpawnNextRecurrence(task);
+        var spawned = task.IsCompleted ? TrySpawnNextRecurrence(task) : null;
 
         switch (_activeNavItem)
         {
             case "planned":
                 // Planned filters out completed tasks entirely.
                 if (task.IsCompleted)
+                {
                     ActiveTasks.Remove(task);
-                else if (!ActiveTasks.Contains(task) && task.DueDate != null)
-                    ActiveTasks.Add(task);   // unchecked: re-insert (order refresh below)
+                    App.NotificationScheduler.UnscheduleForTask(task.Id);
+                    ShowCompletionUndoBar(task, spawned);
+                }
+                else
+                {
+                    App.NotificationScheduler.ScheduleForTask(task);
+                    if (!ActiveTasks.Contains(task) && task.DueDate != null)
+                        ActiveTasks.Add(task);   // unchecked: re-insert (order refresh below)
+                }
                 NotifyPlannedGroupsChanged();
                 OnPropertyChanged(nameof(IsPlannedEmpty));
                 OnPropertyChanged(nameof(IsTaskListEmpty));
@@ -314,15 +321,36 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
                 OnPropertyChanged(nameof(BadgeVersion));
                 break;
 
-            case "myday":
             case "important":
+                // Important filters out completed tasks entirely, like Planned — a
+                // done task isn't something to act on anymore, even if still starred.
+                if (task.IsCompleted)
+                {
+                    ActiveTasks.Remove(task);
+                    _openGroup.Items.Remove(task);
+                    App.NotificationScheduler.UnscheduleForTask(task.Id);
+                    ShowCompletionUndoBar(task, spawned);
+                }
+                else
+                {
+                    App.NotificationScheduler.ScheduleForTask(task);
+                    if (!ActiveTasks.Contains(task) && task.IsStarred)
+                    {
+                        ActiveTasks.Add(task);
+                        _openGroup.Items.Insert(0, task);
+                    }
+                }
+                OnPropertyChanged(nameof(IsTaskListEmpty));
+                OnPropertyChanged(nameof(ShowEmptyState));
+                BadgeVersion++;
+                OnPropertyChanged(nameof(BadgeVersion));
+                break;
+
+            case "myday":
             case "alltasks":
             default:
                 // Delay the group move so the strikethrough/fade animation is visible
                 // before the task moves between groups.
-                if (task.IsCompleted)
-                    _lastCompletedTask = task;
-
                 var timer = _dispatcherQueue.CreateTimer();
                 timer.Interval = TimeSpan.FromMilliseconds(250);
                 timer.IsRepeating = false;
@@ -342,7 +370,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
                     if (task.IsCompleted && Tasks.Contains(task))
                     {
                         App.NotificationScheduler.UnscheduleForTask(task.Id);
-                        ShowUndoBar();
+                        ShowCompletionUndoBar(task, spawned);
                     }
                     else
                     {
@@ -399,13 +427,19 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         switch (_activeNavItem)
         {
             case "important":
-                // Important view only shows starred tasks — add or remove accordingly.
-                bool shouldBeInImportant = task.IsStarred;
+                // Important view only shows starred, uncompleted tasks — add or remove accordingly.
+                bool shouldBeInImportant = task.IsStarred && !task.IsCompleted;
                 bool isInImportant = ActiveTasks.Contains(task);
                 if (shouldBeInImportant && !isInImportant)
+                {
                     ActiveTasks.Insert(0, task);
+                    _openGroup.Items.Insert(0, task);
+                }
                 else if (!shouldBeInImportant && isInImportant)
+                {
                     ActiveTasks.Remove(task);
+                    _openGroup.Items.Remove(task);
+                }
                 OnPropertyChanged(nameof(IsTaskListEmpty));
                 OnPropertyChanged(nameof(ShowEmptyState));
                 break;
@@ -449,10 +483,30 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
 
     public void DeleteTask(TodoItem task)
     {
+        TombstoneTask(task);
+        ShowUndoBar(Strings.UndoMessage_TaskDeleted, () => RestoreTask(task));
+    }
+
+    // The mechanics of removal, with no undo bar — used both by the user-facing
+    // DeleteTask above and by ShowCompletionUndoBar's cleanup of a spawned
+    // recurrence, which must not open a second, unrelated undo bar of its own.
+    private void TombstoneTask(TodoItem task)
+    {
         task.PropertyChanged -= TaskPropertyChanged;
         App.NotificationScheduler.UnscheduleForTask(task.Id);
         Tombstone(task);
         Tasks.Remove(task);
+        SaveAsync();
+    }
+
+    private void RestoreTask(TodoItem task)
+    {
+        task.IsDeleted = false;
+        task.UpdatedAt = DateTimeOffset.UtcNow;
+        _deletedTasks.Remove(task);
+        AttachTaskPropertyChangedHandler(task);
+        Tasks.Insert(0, task);
+        App.NotificationScheduler.ScheduleForTask(task);
         SaveAsync();
     }
 
@@ -528,9 +582,11 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
 
     public void SaveAsync()
     {
-        _saveCancelToken?.Cancel();
+        var previous = _saveCancelToken;
+        previous?.Cancel();
         _saveCancelToken = new CancellationTokenSource();
         _ = DoSaveAsync(_saveCancelToken.Token);
+        previous?.Dispose();
     }
 
     private async Task DoSaveAsync(CancellationToken ct)

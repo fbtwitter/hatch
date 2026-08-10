@@ -209,6 +209,9 @@ public class TipEngineTests
     // Offsets are anchored to Morning, not DateTime.Now: these rules compare against the
     // injected "now", so wall-clock-relative values silently change meaning with the time
     // of day the suite runs.
+    // lastInspiration: Morning marks today's inspiration slot already spent. Without it
+    // the daily slot outranks the greeting tier (and bypasses suppression by design),
+    // so these two would be exercising the inspiration rule rather than the greeting one.
     [TestMethod]
     public void FallbackGreeting_SuppressedWhenUserRecentlyActiveAndMeaningfulTipRecent()
     {
@@ -216,7 +219,8 @@ public class TipEngineTests
             FallbackReachableTasks(),
             lastMeaningfulTip: Morning.AddMinutes(-10),
             lastActivity: Morning.AddMinutes(-1),
-            now: Morning);
+            now: Morning,
+            lastInspiration: Morning);
 
         Assert.IsNull(tip);
     }
@@ -228,11 +232,130 @@ public class TipEngineTests
             FallbackReachableTasks(),
             lastMeaningfulTip: Morning.AddHours(-10),
             lastActivity: Morning.AddMinutes(-10),
-            now: Morning);
+            now: Morning,
+            lastInspiration: Morning);
 
         Assert.IsNotNull(tip);
         Assert.IsFalse(tip!.IsMeaningful);
         StringAssert.StartsWith(tip.Message, "Tip_Greeting_Morning_");
+    }
+
+    // ── Mascot engagement ───────────────────────────────────────────────────────
+
+    [TestMethod]
+    public void Inspiration_ShownOncePerDay_AndBypassesTheSilenceRule()
+    {
+        // Same inputs that suppress the greeting above — the daily slot still fires.
+        var tip = Engine().GetTip(
+            FallbackReachableTasks(),
+            lastMeaningfulTip: Morning.AddMinutes(-10),
+            lastActivity: Morning.AddMinutes(-1),
+            now: Morning,
+            lastInspiration: Morning.AddDays(-1));
+
+        Assert.IsNotNull(tip);
+        Assert.IsTrue(tip!.IsInspiration);
+        StringAssert.StartsWith(tip.Message, "Tip_Inspiration_");
+    }
+
+    [TestMethod]
+    public void Inspiration_IsStableAcrossTheSameDay_NotReRolledPerCall()
+    {
+        var engine = Engine();
+        var a = engine.GetTip(FallbackReachableTasks(), now: Morning, lastInspiration: Morning.AddDays(-1));
+        var b = engine.GetTip(FallbackReachableTasks(), now: Morning.AddHours(6), lastInspiration: Morning.AddDays(-1));
+
+        Assert.IsNotNull(a); Assert.IsNotNull(b);
+        Assert.AreEqual(a!.Message, b!.Message);
+    }
+
+    [TestMethod]
+    public void Inspiration_ChangesFromOneDayToTheNext()
+    {
+        var engine = Engine();
+        var today = engine.GetTip(FallbackReachableTasks(), now: Morning, lastInspiration: Morning.AddDays(-1));
+        var tomorrow = engine.GetTip(FallbackReachableTasks(), now: Morning.AddDays(1), lastInspiration: Morning);
+
+        Assert.AreNotEqual(today!.Message, tomorrow!.Message);
+    }
+
+    [TestMethod]
+    public void CustomTips_JoinTheInspirationPool()
+    {
+        // Enough custom lines to outnumber the built-ins, so the date-seeded index lands
+        // on one of them regardless of which day the suite runs.
+        var mine = Enumerable.Range(0, 60).Select(i => $"mine-{i}").ToList();
+
+        var tip = Engine().GetTip(
+            FallbackReachableTasks(),
+            now: Morning,
+            customTips: mine,
+            lastInspiration: Morning.AddDays(-1));
+
+        Assert.IsNotNull(tip);
+        StringAssert.StartsWith(tip!.Message, "mine-");
+    }
+
+    [TestMethod]
+    public void Quiet_SuppressesEveryNonActionableTip()
+    {
+        var tip = Engine().GetTip(
+            FallbackReachableTasks(),
+            now: Morning,
+            chattiness: MascotChattiness.Quiet,
+            lastInspiration: Morning.AddDays(-1));
+
+        Assert.IsNull(tip);
+    }
+
+    [TestMethod]
+    public void Quiet_StillShowsActionableTips()
+    {
+        var overdue = new List<TodoItem> { Task(dueDate: Morning.AddDays(-2)) };
+
+        var tip = Engine().GetTip(overdue, now: Morning, chattiness: MascotChattiness.Quiet);
+
+        Assert.IsNotNull(tip);
+        Assert.AreEqual("Tip_Overdue_One", tip!.Message);
+    }
+
+    [TestMethod]
+    public void Chatty_SkipsTheSilenceRule()
+    {
+        // Slot already spent, and the silence rule would normally suppress this.
+        var tip = Engine().GetTip(
+            FallbackReachableTasks(),
+            lastMeaningfulTip: Morning.AddMinutes(-10),
+            lastActivity: Morning.AddMinutes(-1),
+            now: Morning,
+            chattiness: MascotChattiness.Chatty,
+            lastInspiration: Morning);
+
+        Assert.IsNotNull(tip);
+        StringAssert.StartsWith(tip!.Message, "Tip_Greeting_Morning_");
+    }
+
+    [TestMethod]
+    public void UndatedBacklog_OutranksTheFallbackTier_AndCountsAsMeaningful()
+    {
+        var tasks = Enumerable.Range(0, 5).Select(_ => Task(inMyDay: true)).ToList();
+
+        var tip = Engine().GetTip(tasks, now: Morning, lastInspiration: Morning.AddDays(-1));
+
+        Assert.IsNotNull(tip);
+        Assert.IsTrue(tip!.IsMeaningful);
+        Assert.IsFalse(tip.IsInspiration);
+        StringAssert.Contains(tip.Message, "Tip_UndatedBacklog");
+        Assert.AreEqual(TipActionType.OpenMainWindow, tip.Action!.Type);
+    }
+
+    [TestMethod]
+    public void EmptyList_OutranksInspiration_SoOnboardingIsNotReplacedByAQuote()
+    {
+        var tip = Engine().GetTip([], now: Morning, lastInspiration: Morning.AddDays(-1));
+
+        Assert.IsNotNull(tip);
+        Assert.AreEqual("Tip_EmptyList", tip!.Message);
     }
 
     [TestMethod]
