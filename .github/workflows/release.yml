@@ -202,6 +202,45 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           Write-Host "Bundle signed successfully"
 
+      - name: Generate App Installer file
+        shell: pwsh
+        run: |
+          # The bundle is pinned to this tag rather than /releases/latest/download/,
+          # so the URL in a given .appinstaller always resolves to the exact build it
+          # was generated for, even after the next release ships.
+          $bundleUrl = "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/${{ env.BUNDLE_NAME }}"
+          $out = "${{ github.workspace }}\Hatch.appinstaller"
+          (Get-Content Hatch.appinstaller.template -Raw) `
+            -replace '\{VERSION\}', "${{ env.MSIX_VERSION }}" `
+            -replace '\{BUNDLE_URL\}', $bundleUrl |
+            Set-Content $out -Encoding utf8NoBOM
+          "APPINSTALLER_PATH=$out" | Out-File $env:GITHUB_ENV -Append
+          Write-Host "--- Hatch.appinstaller ---"
+          Get-Content $out
+
+      # Publishing to Pages is what actually makes updates reachable — the copy
+      # attached to the release below is only for a first manual install.
+      - name: Publish App Installer to GitHub Pages
+        if: github.event_name == 'push'
+        shell: pwsh
+        run: |
+          $pages = "${{ github.workspace }}\gh-pages"
+          git clone --depth 1 --branch gh-pages `
+            "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" $pages
+          Copy-Item "${{ env.APPINSTALLER_PATH }}" "$pages\Hatch.appinstaller" -Force
+          Push-Location $pages
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Hatch.appinstaller
+          if (git status --porcelain) {
+            git commit -m "chore: publish App Installer for ${{ github.ref_name }}"
+            git push origin gh-pages
+            Write-Host "Published to GitHub Pages"
+          } else {
+            Write-Host "No change to publish"
+          }
+          Pop-Location
+
       # Tag pushes only. A manual run is a dry run — it must never publish a release.
       - name: Create GitHub release
         if: github.event_name == 'push'
@@ -214,11 +253,24 @@ jobs:
 
             **[Get Hatch on the Microsoft Store](#)** — recommended, no setup required.
 
-            Or download directly:
+            Or install directly, and get future updates automatically:
             1. **First time only** — download `install-cert.cer`, double-click → Install Certificate → Local Machine → Trusted People → Finish
-            2. Download `${{ env.BUNDLE_NAME }}` and double-click — Windows picks the right architecture (x64, ARM64, or x86) automatically
+            2. Open **<https://fbtwitter.github.io/hatch/Hatch.appinstaller>** and choose Install
+
+            Installing that way registers Hatch with Windows App Installer, which
+            checks for new versions daily and updates in the background — no need to
+            come back here for the next release.
+
+            <details>
+            <summary>One-off install without auto-updates</summary>
+
+            Download `${{ env.BUNDLE_NAME }}` and double-click it — Windows picks the
+            right architecture (x64, ARM64 or x86) automatically. Installs done this
+            way will not update themselves.
+            </details>
 
             ---
           files: |
             ${{ env.BUNDLE_PATH }}
+            ${{ env.APPINSTALLER_PATH }}
             install-cert.cer

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Template for the App Installer file that drives auto-updates.
+  The release workflow fills in the version and bundle placeholders below and
+  publishes the result to GitHub Pages, which is the only piece of GitHub
+  infrastructure that serves this extension with the Content-Type App Installer requires
+  (measured 2026-08-10: application/appinstaller, no redirect, correct
+  Content-Length). Release asset URLs 302-redirect and answer
+  application/octet-stream, so the .appinstaller itself must not be served
+  from there.
+
+  Name and Publisher MUST match Package.appxmanifest's Identity exactly, or
+  Windows treats the update as a different app and refuses it.
+-->
+<AppInstaller
+    xmlns="http://schemas.microsoft.com/appx/appinstaller/2021"
+    Version="{VERSION}"
+    Uri="https://fbtwitter.github.io/hatch/Hatch.appinstaller">
+
+  <MainBundle
+      Name="RezaFauziAugusdi.HatchAlways-OnTo-Do"
+      Publisher="CN=9D1F8C40-115A-44D9-94E5-BA0ECC194C4C"
+      Version="{VERSION}"
+      Uri="{BUNDLE_URL}" />
+
+  <UpdateSettings>
+    <!-- Windows performs these checks, not Hatch: the app itself still makes no
+         outbound calls outside the opt-in sync path (see project-overview.md).
+         24h is the schema default and the least chatty option. -->
+    <OnLaunch HoursBetweenUpdateChecks="24" />
+    <!-- The mascot often runs for days without a relaunch, so an on-launch-only
+         check could go stale indefinitely. -->
+    <AutomaticBackgroundTask />
+  </UpdateSettings>
+
+</AppInstaller>
