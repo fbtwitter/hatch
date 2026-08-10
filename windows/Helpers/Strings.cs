@@ -46,6 +46,10 @@ internal static class Strings
     public static string Task_Tooltip_More          => Get("Task_Tooltip_More");
     public static string Task_Menu_Delete           => Get("Task_Menu_Delete");
 
+    // ── Undo snackbar ────────────────────────────────────────
+    public static string UndoMessage_TaskCompleted => Get("UndoMessage_TaskCompleted");
+    public static string UndoMessage_TaskDeleted   => Get("UndoMessage_TaskDeleted");
+
     // ── New task ─────────────────────────────────────────────
     // PlaceholderText and tooltip are set via x:Uid in XAML.
 
