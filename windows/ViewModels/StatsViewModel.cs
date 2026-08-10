@@ -66,12 +66,15 @@ public sealed class StatsViewModel : INotifyPropertyChanged
         var tasks = Tasks.ToList();
         var today = DateTime.Today;
 
-        // Completing a task does not clear IsInMyDay (only the daily reset does), so a
-        // finished task stays in the denominator — which is what makes this a progress
-        // ratio rather than a shrinking backlog count.
+        // completed/total, not remaining/total: the percentage beneath it measures
+        // completion, so the fraction has to agree — remaining/total would render an
+        // untouched day as "2 / 2" against "0%". Completing a task does not clear
+        // IsInMyDay (only the daily reset does), so finished tasks stay in the
+        // denominator, which is what makes this a progress ratio at all.
         int myDayTotal     = tasks.Count(t => t.IsInMyDay);
         int myDayCompleted = tasks.Count(t => t.IsInMyDay && t.IsCompleted);
         int myDayPercent   = myDayTotal > 0 ? (int)Math.Round(myDayCompleted * 100.0 / myDayTotal) : 0;
+        bool myDayPlanned  = myDayTotal > 0;
 
         // Due dates: the day as written, never through ToLocalTime — see TipEngine.
         int dueToday = tasks.Count(t =>
@@ -86,11 +89,18 @@ public sealed class StatsViewModel : INotifyPropertyChanged
         int starred = tasks.Count(t => t.IsStarred && !t.IsCompleted);
 
         Tiles.Clear();
+        // An empty My Day has no ratio to report: "0 / 0" against "0%" in success-green
+        // reads as failure when the truth is that nothing has been planned yet. Drop to a
+        // plain count, neutral colours, and a description that says so.
         Tiles.Add(new StatTileInfo(
             "Stats_MyDay", Strings.Stats_Tile_MyDay_Title,
-            $"{myDayCompleted} / {myDayTotal}", $"{myDayPercent}%",
-            Strings.Stats_Tile_MyDay_Description,
-            MyDayGlyph, successFg, successBg, "myday"));
+            myDayPlanned ? $"{myDayCompleted} / {myDayTotal}" : "0",
+            myDayPlanned ? $"{myDayPercent}%" : null,
+            myDayPlanned ? Strings.Stats_Tile_MyDay_Description : Strings.Stats_Tile_MyDay_Description_Empty,
+            MyDayGlyph,
+            myDayPlanned ? successFg : neutralFg,
+            myDayPlanned ? successBg : neutralBg,
+            "myday"));
         Tiles.Add(new StatTileInfo(
             "Stats_DueToday", Strings.Stats_Tile_DueToday_Title,
             dueToday.ToString(), null,
