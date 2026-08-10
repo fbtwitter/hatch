@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.19.1] - 2026-08-10
+
+### Fixed
+- An empty My Day no longer reports "0 / 0" at 0% in success green — it now shows a
+  plain count and "Nothing planned yet" until the day has something in it
+
+---
+
 ## [0.19.0] - 2026-08-10
 
 ### Added
