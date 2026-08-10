@@ -61,6 +61,7 @@ internal static class Strings
     // ── Summary page tiles ────────────────────────────────────
     public static string Stats_Tile_MyDay_Title                => Get("Stats_Tile_MyDay_Title");
     public static string Stats_Tile_MyDay_Description          => Get("Stats_Tile_MyDay_Description");
+    public static string Stats_Tile_MyDay_Description_Empty    => Get("Stats_Tile_MyDay_Description_Empty");
     public static string Stats_Tile_DueToday_Title             => Get("Stats_Tile_DueToday_Title");
     public static string Stats_Tile_DueToday_Description       => Get("Stats_Tile_DueToday_Description");
     public static string Stats_Tile_Overdue_Title              => Get("Stats_Tile_Overdue_Title");

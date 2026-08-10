@@ -150,6 +150,7 @@
   <data name="Stats_EmptyUpcoming.Text" xml:space="preserve"><value>Nothing due soon.</value></data>
   <data name="Stats_Tile_MyDay_Title" xml:space="preserve"><value>My Day</value></data>
   <data name="Stats_Tile_MyDay_Description" xml:space="preserve"><value>complete today</value></data>
+  <data name="Stats_Tile_MyDay_Description_Empty" xml:space="preserve"><value>Nothing planned yet</value></data>
   <data name="Stats_Tile_DueToday_Title" xml:space="preserve"><value>Due today</value></data>
   <data name="Stats_Tile_DueToday_Description" xml:space="preserve"><value>tasks on the docket</value></data>
   <data name="Stats_Tile_Overdue_Title" xml:space="preserve"><value>Overdue</value></data>
