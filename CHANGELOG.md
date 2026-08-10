@@ -6,12 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+---
+
+## [0.19.0] - 2026-08-10
+
 ### Added
 - **Automatic updates for sideloaded installs.** Releases now publish a
   `.appinstaller` to GitHub Pages; installing from it registers Hatch with Windows
   App Installer, which checks daily and updates in the background. Windows performs
   the checks — the app itself still makes no outbound calls outside opt-in sync.
   Existing manual installs must be reinstalled once from the link to join the channel
+- **Summary tiles rebuilt around today.** My Day now shows completed/total with a
+  percentage, Due today surfaces what's actually due now, and Starred counts what's
+  starred and still open. Overdue stays, with its wording switching between
+  "Nothing slipping" and "Catch up when you can". Every tile opens the list it
+  describes
+
+### Changed
+- All desktop dependencies moved to their latest stable releases, including MSTest
+  and the .NET test SDK (both a major version behind) and Supabase
+- `logo.svg` moved to a root `assets/` folder so the Windows app, the mobile
+  companion and the README all share one source file
 
 ---
 
