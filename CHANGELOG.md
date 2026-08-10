@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+### Added
+- **Automatic updates for sideloaded installs.** Releases now publish a
+  `.appinstaller` to GitHub Pages; installing from it registers Hatch with Windows
+  App Installer, which checks daily and updates in the background. Windows performs
+  the checks — the app itself still makes no outbound calls outside opt-in sync.
+  Existing manual installs must be reinstalled once from the link to join the channel
+
 ---
 
 ## [0.18.0] - 2026-08-10

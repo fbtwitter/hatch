@@ -62,13 +62,25 @@ Your tasks, always one click away.
 
 No certificate setup needed — get it directly from the Store.
 
-### Direct download *(sideload)*
+### Direct download *(sideload, with automatic updates)*
 
 1. Download `install-cert.cer` from [Releases](../../releases) → double-click → **Install Certificate** → **Local Machine** → **Trusted People** → **Finish** *(first time only)*
-2. Download `Hatch_x.x.x.x_bundle.msixbundle` — Windows picks the right architecture automatically
-3. Double-click to install — Hatch starts automatically
+2. Open **<https://fbtwitter.github.io/hatch/Hatch.appinstaller>** and choose **Install** — Windows picks the right architecture automatically
+
+Installing this way registers Hatch with Windows App Installer, which checks daily for
+new versions and updates in the background. Windows performs those checks — Hatch itself
+still makes no outbound calls outside the opt-in sync path.
 
 Subsequent releases don't need the certificate step again.
+
+<details>
+<summary>One-off install without automatic updates</summary>
+
+Download `Hatch_x.x.x.x_bundle.msixbundle` from [Releases](../../releases) and
+double-click it. Installs done this way will not update themselves — including any
+install made before v0.18.0, which must be reinstalled once via the link above to
+join the update channel.
+</details>
 
 ### Building from Source
 
