@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AppInstaller xmlns="http://schemas.microsoft.com/appx/appinstaller/2021"
+              Version="0.0.0.0"
+              Uri="https://fbtwitter.github.io/hatch/Hatch.appinstaller">
+  <MainBundle Name="MIME-PROBE" Publisher="CN=probe" Version="0.0.0.0"
+              Uri="https://example.invalid/probe.msixbundle" />
+</AppInstaller>
