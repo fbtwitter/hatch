@@ -35,6 +35,22 @@ public sealed class TipEngine
         "Tip_Greeting_Anytime_3"
     ];
 
+    // Original lines in the mascot's own voice. Deliberately unattributed — see
+    // context/current-feature.md: this app does not put words in a real person's mouth.
+    // Users add their own (attributed or not) via Settings; those are merged in.
+    private static readonly string[] InspirationKeys =
+    [
+        "Tip_Inspiration_0", "Tip_Inspiration_1", "Tip_Inspiration_2",
+        "Tip_Inspiration_3", "Tip_Inspiration_4", "Tip_Inspiration_5",
+        "Tip_Inspiration_6", "Tip_Inspiration_7", "Tip_Inspiration_8",
+        "Tip_Inspiration_9", "Tip_Inspiration_10", "Tip_Inspiration_11"
+    ];
+
+    private static readonly string[] CaptureInviteKeys =
+    [
+        "Tip_Capture_0", "Tip_Capture_1", "Tip_Capture_2", "Tip_Capture_3"
+    ];
+
     private static int _greetingIndex = 0;
 
     private const int InactivityThresholdMinutes = 5;
@@ -42,6 +58,7 @@ public sealed class TipEngine
     private const int CompletedTodayCelebrationThreshold = 5;
     private const int StaleTaskThresholdDays = 14;
     private const int EveningHour = 18;
+    private const int UndatedBacklogThreshold = 5;
 
     private readonly Func<string, string> _resolve;
 
@@ -53,8 +70,13 @@ public sealed class TipEngine
         _resolve = resolve ?? (key => key);
     }
 
+    // chattiness/customTips/lastInspiration are optional so the existing call sites and
+    // the pre-existing test suite keep compiling unchanged; TipCoordinator supplies them.
     public Tip? GetTip(IReadOnlyList<TodoItem> tasks, DateTime? lastMeaningfulTip = null,
-                       DateTime? lastActivity = null, DateTime? now = null)
+                       DateTime? lastActivity = null, DateTime? now = null,
+                       MascotChattiness chattiness = MascotChattiness.Balanced,
+                       IReadOnlyList<string>? customTips = null,
+                       DateTime? lastInspiration = null)
     {
         var current = now ?? DateTime.Now;
         var today = current.Date;
@@ -148,6 +170,67 @@ public sealed class TipEngine
                 IsMeaningful = true
             };
 
+        // Undated backlog — a real, actionable observation about the list, so it ranks
+        // above the fallback tier and counts as meaningful. Only fires once the pile is
+        // big enough to be worth mentioning; a couple of undated tasks is normal.
+        var undated = tasks.Count(t => !t.IsCompleted && t.DueDate == null);
+        if (undated >= UndatedBacklogThreshold)
+            return new Tip
+            {
+                Message = string.Format(_resolve("Tip_UndatedBacklog"), undated),
+                Severity = TipSeverity.Info,
+                Action = new TipAction { Label = _resolve("Tip_Action_ScheduleOne"), Type = TipActionType.OpenMainWindow },
+                DismissAfterMs = 0,
+                IsMeaningful = true
+            };
+
+        // ── Fallback tier: nothing actionable is pending ────────────────────────────
+        // Quiet means exactly that — no greetings, no inspiration, no invitations.
+        if (chattiness == MascotChattiness.Quiet) return null;
+
+        // Onboarding outranks inspiration: someone with no tasks at all needs the prompt
+        // that gets them started, not a quote. Deliberately above the daily slot.
+        if (tasks.Count == 0)
+        {
+            var emptyTip = new Tip
+            {
+                Message = _resolve("Tip_EmptyList"),
+                Severity = TipSeverity.Warning,
+                Action = new TipAction { Label = _resolve("Tip_Action_AddSample"), Type = TipActionType.AddSampleTask },
+                DismissAfterMs = 0,
+                IsMeaningful = false
+            };
+            return chattiness != MascotChattiness.Chatty &&
+                   ShouldSuppressFallback(current, lastMeaningfulTip, lastActivity)
+                ? null : emptyTip;
+        }
+
+        // The one guaranteed slot: first showing of the day gets an inspiration line even
+        // when the silence rule would otherwise suppress it. Date-seeded rather than
+        // random so the same line holds all day instead of re-rolling per bubble open.
+        bool inspirationDueToday = chattiness != MascotChattiness.Quiet &&
+                                   lastInspiration?.Date != today;
+        if (inspirationDueToday)
+        {
+            var pool = BuildInspirationPool(customTips);
+            if (pool.Count > 0)
+            {
+                var dayNumber = (int)(current.Date.Ticks / TimeSpan.TicksPerDay);
+                return new Tip
+                {
+                    Message = pool[dayNumber % pool.Count],
+                    Severity = TipSeverity.Info,
+                    Action = null,
+                    DismissAfterMs = 6000,
+                    IsMeaningful = false,
+                    IsInspiration = true
+                };
+            }
+        }
+
+        bool suppress = chattiness != MascotChattiness.Chatty &&
+                        ShouldSuppressFallback(current, lastMeaningfulTip, lastActivity);
+
         if (hasOpenTasks)
         {
             var fallbackTip = new Tip
@@ -158,31 +241,35 @@ public sealed class TipEngine
                 DismissAfterMs = 5000,
                 IsMeaningful = false
             };
-            return ShouldSuppressFallback(current, lastMeaningfulTip, lastActivity) ? null : fallbackTip;
+            return suppress ? null : fallbackTip;
         }
 
-        if (tasks.Count == 0)
+        // Everything is done. Rather than another bare greeting, invite the next thought
+        // in — this is the moment the user has capacity to add something.
+        var captureTip = new Tip
         {
-            var fallbackTip = new Tip
-            {
-                Message = _resolve("Tip_EmptyList"),
-                Severity = TipSeverity.Warning,
-                Action = new TipAction { Label = _resolve("Tip_Action_AddSample"), Type = TipActionType.AddSampleTask },
-                DismissAfterMs = 0,
-                IsMeaningful = false
-            };
-            return ShouldSuppressFallback(current, lastMeaningfulTip, lastActivity) ? null : fallbackTip;
-        }
-
-        var anytimeTip = new Tip
-        {
-            Message = _resolve(AnytimeGreetingKeys[_greetingIndex++ % AnytimeGreetingKeys.Length]),
+            Message = _resolve(CaptureInviteKeys[_greetingIndex++ % CaptureInviteKeys.Length]),
             Severity = TipSeverity.Info,
-            Action = null,
-            DismissAfterMs = 3000,
+            Action = new TipAction { Label = _resolve("Tip_Action_WriteItDown"), Type = TipActionType.CaptureTask },
+            DismissAfterMs = 5000,
             IsMeaningful = false
         };
-        return ShouldSuppressFallback(current, lastMeaningfulTip, lastActivity) ? null : anytimeTip;
+        return suppress ? null : captureTip;
+    }
+
+    // Built-in lines and the user's own, merged. A user with many custom lines therefore
+    // sees them more often than the built-ins — intentional, so disliked built-ins can be
+    // drowned out without needing a replace-vs-append toggle.
+    private List<string> BuildInspirationPool(IReadOnlyList<string>? customTips)
+    {
+        var pool = new List<string>(InspirationKeys.Length + (customTips?.Count ?? 0));
+        foreach (var key in InspirationKeys)
+            pool.Add(_resolve(key));
+        if (customTips != null)
+            foreach (var line in customTips)
+                if (!string.IsNullOrWhiteSpace(line))
+                    pool.Add(line.Trim());
+        return pool;
     }
 
     private static bool ShouldSuppressFallback(DateTime now, DateTime? lastMeaningfulTip, DateTime? lastActivity)

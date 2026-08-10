@@ -349,6 +349,86 @@
                     </Grid>
                 </Border>
 
+                <!-- Mascot messages — how often, and the user's own lines -->
+                <toolkit:SettingsCard x:Uid="Settings_ChattinessCard"
+                                      Header="Mascot messages"
+                                      Description="How freely Hatch shows encouragement. Reminders about overdue tasks always appear.">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE8BD;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <!-- Item order maps 1:1 onto MascotChattiness (Quiet=0, Balanced=1,
+                         Chatty=2) — keep in sync with the enum. -->
+                    <ComboBox MinWidth="140"
+                              AutomationProperties.AutomationId="Settings_MascotChattiness"
+                              AutomationProperties.Name="Mascot messages"
+                              SelectedIndex="{x:Bind ViewModel.MascotChattinessIndex, Mode=TwoWay}">
+                        <ComboBoxItem x:Uid="Settings_Chattiness_Quiet"/>
+                        <ComboBoxItem x:Uid="Settings_Chattiness_Balanced"/>
+                        <ComboBoxItem x:Uid="Settings_Chattiness_Chatty"/>
+                    </ComboBox>
+                </toolkit:SettingsCard>
+
+                <toolkit:SettingsExpander x:Uid="Settings_CustomTipsExpander"
+                                          Header="Your own messages"
+                                          Description="Added to Hatch's built-in lines and shown at random. Your own quotes, reminders, anything.">
+                    <toolkit:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xE70F;"/>
+                    </toolkit:SettingsExpander.HeaderIcon>
+                    <toolkit:SettingsExpander.ItemsHeader>
+                        <StackPanel Padding="16,8,16,16" Spacing="8">
+                            <Grid ColumnSpacing="8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="CustomTipInput"
+                                         x:Uid="Settings_CustomTipInput"
+                                         Grid.Column="0"
+                                         AutomationProperties.AutomationId="Settings_CustomTipInput"
+                                         PlaceholderText="Write a line, press Enter"
+                                         KeyDown="CustomTipInput_KeyDown"/>
+                                <Button Grid.Column="1"
+                                        x:Uid="Settings_AddCustomTip"
+                                        AutomationProperties.AutomationId="Settings_AddCustomTip"
+                                        Content="Add"
+                                        Click="AddCustomTipButton_Click"/>
+                            </Grid>
+
+                            <ItemsRepeater ItemsSource="{x:Bind ViewModel.CustomTips, Mode=OneWay}">
+                                <ItemsRepeater.Layout>
+                                    <StackLayout Spacing="4"/>
+                                </ItemsRepeater.Layout>
+                                <ItemsRepeater.ItemTemplate>
+                                    <DataTemplate x:DataType="x:String">
+                                        <Grid Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                              CornerRadius="{ThemeResource ControlCornerRadius}"
+                                              Padding="12,6,6,6"
+                                              ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0"
+                                                       Text="{x:Bind}"
+                                                       TextWrapping="WrapWholeWords"
+                                                       VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1"
+                                                    Tag="{x:Bind}"
+                                                    x:Uid="Settings_RemoveCustomTip"
+                                                    AutomationProperties.Name="Remove message"
+                                                    Click="RemoveCustomTipButton_Click"
+                                                    Style="{ThemeResource SubtleButtonStyle}"
+                                                    Padding="8" MinWidth="0">
+                                                <FontIcon Glyph="&#xE711;" FontSize="12"/>
+                                            </Button>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsRepeater.ItemTemplate>
+                            </ItemsRepeater>
+                        </StackPanel>
+                    </toolkit:SettingsExpander.ItemsHeader>
+                </toolkit:SettingsExpander>
+
                 <!-- Lottie Animation File -->
                 <toolkit:SettingsCard
                     Header="Lottie Animation File"
@@ -844,7 +924,8 @@
                     <toolkit:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE946;"/>
                     </toolkit:SettingsExpander.HeaderIcon>
-                    <TextBlock Text="v0.14.0"
+                    <TextBlock Text="{x:Bind ViewModel.AppVersion}"
+                               AutomationProperties.AutomationId="Settings_AppVersion"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                VerticalAlignment="Center"/>
                     <toolkit:SettingsExpander.Items>

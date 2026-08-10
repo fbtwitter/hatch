@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -26,6 +27,9 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     {
         _wasSignedIn = App.SyncService.IsSignedIn;
         App.SyncService.StateChanged += OnSyncStateChanged;
+
+        foreach (var line in _settings.Current.CustomTips)
+            CustomTips.Add(line);
     }
 
     // ── Sync ─────────────────────────────────────────────────────────────────
@@ -591,6 +595,68 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             _settings.SaveDebounced();
             OnPropertyChanged();
         }
+    }
+
+    // Read at runtime rather than hardcoded in XAML: the About card had drifted to
+    // v0.14.0 while the app shipped 0.17.0, because nothing tied the two together.
+    // Packaged builds carry the manifest version; unpackaged Debug builds have no
+    // package identity, so they fall back to the assembly version from the csproj.
+    public string AppVersion
+    {
+        get
+        {
+            try
+            {
+                var v = Windows.ApplicationModel.Package.Current.Id.Version;
+                return $"v{v.Major}.{v.Minor}.{v.Build}";
+            }
+            catch
+            {
+                var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+                return v is null ? "v0.0.0" : $"v{v.Major}.{v.Minor}.{v.Build}";
+            }
+        }
+    }
+
+    // Maps 1:1 onto MascotChattiness (Quiet=0, Balanced=1, Chatty=2).
+    public int MascotChattinessIndex
+    {
+        get => (int)_settings.Current.MascotChattiness;
+        set
+        {
+            if (value < 0 || (int)_settings.Current.MascotChattiness == value) return;
+            _settings.Current.MascotChattiness = (MascotChattiness)value;
+            _settings.SaveDebounced();
+            OnPropertyChanged();
+        }
+    }
+
+    // The user's own message pool, merged with the built-in lines by TipEngine.
+    public ObservableCollection<string> CustomTips { get; } = [];
+
+    public bool HasCustomTips => CustomTips.Count > 0;
+
+    public void AddCustomTip(string text)
+    {
+        var trimmed = text.Trim();
+        if (trimmed.Length == 0) return;
+        if (CustomTips.Contains(trimmed, StringComparer.OrdinalIgnoreCase)) return;
+
+        CustomTips.Add(trimmed);
+        PersistCustomTips();
+    }
+
+    public void RemoveCustomTip(string text)
+    {
+        if (!CustomTips.Remove(text)) return;
+        PersistCustomTips();
+    }
+
+    private void PersistCustomTips()
+    {
+        _settings.Current.CustomTips = [.. CustomTips];
+        _settings.SaveDebounced();
+        OnPropertyChanged(nameof(HasCustomTips));
     }
 
     public bool HideWhenFullscreen
