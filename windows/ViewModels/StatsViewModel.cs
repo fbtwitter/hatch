@@ -47,18 +47,14 @@ public sealed class StatsViewModel : INotifyPropertyChanged
     // since the task list and this page can't be visible at the same time.
     public void RefreshStats()
     {
-        var neutralBg   = ThemeResourceHelper.GetBrush("SubtleFillColorSecondaryBrush");
-        var neutralFg   = ThemeResourceHelper.GetBrush("TextFillColorSecondaryBrush");
-        var successBg   = ThemeResourceHelper.GetBrush("SystemFillColorSuccessBackgroundBrush");
-        var successFg   = ThemeResourceHelper.GetBrush("SystemFillColorSuccessBrush");
-        var criticalBg  = ThemeResourceHelper.GetBrush("SystemFillColorCriticalBackgroundBrush");
-        var criticalFg  = ThemeResourceHelper.GetBrush("SystemFillColorCriticalBrush");
+        // Icons sit inline on the title's line now, so the colour has to carry the tile's
+        // state on its own — there is no longer a badge fill behind it.
+        var neutralFg  = ThemeResourceHelper.GetBrush("TextFillColorSecondaryBrush");
+        var successFg  = ThemeResourceHelper.GetBrush("SystemFillColorSuccessBrush");
+        var criticalFg = ThemeResourceHelper.GetBrush("SystemFillColorCriticalBrush");
         // No standard "starred/gold" theme token in this app's palette — same light/dark
         // hardcoded pairing PriorityToForegroundConverter already uses for chip colors,
         // via the ThemeResourceHelper.GetThemedBrush overload built for exactly this.
-        var starredBg = ThemeResourceHelper.GetThemedBrush(
-            Windows.UI.Color.FromArgb(255, 255, 244, 214),
-            Windows.UI.Color.FromArgb(255,  61,  47,  13));
         var starredFg = ThemeResourceHelper.GetThemedBrush(
             Windows.UI.Color.FromArgb(255, 157, 108,   0),
             Windows.UI.Color.FromArgb(255, 255, 200,  87));
@@ -91,7 +87,7 @@ public sealed class StatsViewModel : INotifyPropertyChanged
         Tiles.Clear();
         // An empty My Day has no ratio to report: "0 / 0" against "0%" in success-green
         // reads as failure when the truth is that nothing has been planned yet. Drop to a
-        // plain count, neutral colours, and a description that says so.
+        // plain count, a neutral icon, and a description that says so.
         Tiles.Add(new StatTileInfo(
             "Stats_MyDay", Strings.Stats_Tile_MyDay_Title,
             myDayPlanned ? $"{myDayCompleted} / {myDayTotal}" : "0",
@@ -99,23 +95,22 @@ public sealed class StatsViewModel : INotifyPropertyChanged
             myDayPlanned ? Strings.Stats_Tile_MyDay_Description : Strings.Stats_Tile_MyDay_Description_Empty,
             MyDayGlyph,
             myDayPlanned ? successFg : neutralFg,
-            myDayPlanned ? successBg : neutralBg,
             "myday"));
         Tiles.Add(new StatTileInfo(
             "Stats_DueToday", Strings.Stats_Tile_DueToday_Title,
             dueToday.ToString(), null,
             Strings.Stats_Tile_DueToday_Description,
-            DueTodayGlyph, neutralFg, neutralBg, "planned"));
+            DueTodayGlyph, neutralFg, "planned"));
         Tiles.Add(new StatTileInfo(
             "Stats_Overdue", Strings.Stats_Tile_Overdue_Title,
             overdue.ToString(), null,
             overdue > 0 ? Strings.Stats_Tile_Overdue_Description_Active : Strings.Stats_Tile_Overdue_Description_Clear,
-            OverdueGlyph, overdue > 0 ? criticalFg : neutralFg, overdue > 0 ? criticalBg : neutralBg, "planned"));
+            OverdueGlyph, overdue > 0 ? criticalFg : neutralFg, "planned"));
         Tiles.Add(new StatTileInfo(
             "Stats_Starred", Strings.Stats_Tile_Starred_Title,
             starred.ToString(), null,
             Strings.Stats_Tile_Starred_Description,
-            StarredGlyph, starredFg, starredBg, "important"));
+            StarredGlyph, starredFg, "important"));
 
         var tomorrow = today.AddDays(1);
 
