@@ -7,7 +7,9 @@ AppPackages/
 /*.ps1
 
 # Auto-generated MSIX assets (recreated by scripts/create-assets.ps1 on first build)
-Assets/
+# Anchored to windows/Assets specifically — an unanchored "Assets/" also matched the
+# root-level assets/ (source logo.svg, tracked, shared with mobile/ and README.md).
+/windows/Assets/
 
 # Signing certificate — never commit
 windows/scripts/Hatch-signing.pfx
