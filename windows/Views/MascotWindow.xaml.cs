@@ -53,6 +53,25 @@ public sealed partial class MascotWindow : Window
     private const int SW_HIDE          = 0;
     private const int SW_SHOWNOACTIVATE = 4;
 
+    // Deliberately a raw ShowWindow rather than AppWindow.Show(activateWindow: false).
+    // Measured 2026-08-10 by screen-capturing this window at launch:
+    //   * ShowWindow      → per-pixel alpha is preserved, but the XAML island does not
+    //                       composite until a pointer message arrives, so the window is
+    //                       blank (mascot *and* ProgressRing) until first hover.
+    //   * AppWindow.Show  → composites immediately, but paints an opaque black window
+    //                       rect; re-applying ApplyWindowStyles() and/or re-assigning
+    //                       TransparentTintBackdrop afterwards does not restore alpha.
+    // Transparency is the non-negotiable half (an opaque black square on the desktop is
+    // far worse than a late-drawing mascot), so ShowWindow stays until the composite
+    // problem is solved some other way. The SWP_FRAMECHANGED nudge is the same flush
+    // ApplyWindowStyles() uses to push style changes to DWM.
+    private void RevealMascotWindow()
+    {
+        ShowWindow(_hwnd, SW_SHOWNOACTIVATE);
+        NativeMethods.SetWindowPos(_hwnd, IntPtr.Zero, 0, 0, 0, 0,
+            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_FRAMECHANGED);
+    }
+
     public MascotWindow()
     {
         ViewModel = new MascotViewModel(DispatcherQueue);
@@ -160,7 +179,8 @@ public sealed partial class MascotWindow : Window
             }
             else if (e.PropertyName == nameof(MascotViewModel.IsMascotHidden))
             {
-                ShowWindow(_hwnd, ViewModel.IsMascotHidden ? SW_HIDE : SW_SHOWNOACTIVATE);
+                if (ViewModel.IsMascotHidden) ShowWindow(_hwnd, SW_HIDE);
+                else RevealMascotWindow();
                 // "Hide for an hour" etc. should also suppress any proactive tip popup.
                 if (ViewModel.IsMascotHidden)
                 {
@@ -306,7 +326,8 @@ public sealed partial class MascotWindow : Window
         switch (e.PropertyName)
         {
             case nameof(MascotViewModel.IsVisible):
-                ShowWindow(_hwnd, ViewModel.IsVisible ? SW_SHOWNOACTIVATE : SW_HIDE);
+                if (ViewModel.IsVisible) RevealMascotWindow();
+                else ShowWindow(_hwnd, SW_HIDE);
                 // Treat coming back from fullscreen hide as a fresh start for Lottie
                 if (!ViewModel.IsVisible)
                 {
@@ -670,7 +691,7 @@ public sealed partial class MascotWindow : Window
         // active "Hide for…" window; content is still prepared for a later reveal.
         if (ViewModel.IsVisible && !ViewModel.IsMascotHidden)
         {
-            ShowWindow(_hwnd, SW_SHOWNOACTIVATE);
+            RevealMascotWindow();
             ResetInactivity();
         }
         else
