@@ -57,6 +57,7 @@ public sealed partial class MainViewModel
             OnPropertyChanged(nameof(EmptyStateHeadline));
             OnPropertyChanged(nameof(EmptyStateSubtext));
             _completedGroup.IsExpanded = IsCompletedGroupExpanded(value);
+            _openGroup.IsCollapsible = value != "important";
             App.Settings.ActiveNavItem = value;
             _ = App.SettingsService.SaveAsync();
             OnPropertyChanged(nameof(SuggestionsVisible));
@@ -103,7 +104,7 @@ public sealed partial class MainViewModel
         bool matchesNav = _activeNavItem switch
         {
             "myday"     => task.IsInMyDay,
-            "important" => task.IsStarred,
+            "important" => task.IsStarred && !task.IsCompleted,
             "planned"   => task.DueDate != null && !task.IsCompleted,
             _           => !Guid.TryParse(_activeNavItem, out var listId) || task.ListId == listId
         };
@@ -121,7 +122,9 @@ public sealed partial class MainViewModel
                 .Where(t => t.IsInMyDay)
                 .OrderByDescending(TaskSorting.CreatedInstant)
                 .ThenBy(t => t.IsCompleted),
-            "important" => TaskSorting.ForImportant(Tasks.Where(t => t.IsStarred)),
+            // Important excludes completed tasks entirely, like Planned — a done task
+            // isn't something to act on anymore, even if it's still starred.
+            "important" => TaskSorting.ForImportant(Tasks.Where(t => t.IsStarred && !t.IsCompleted)),
             "planned"   => Tasks.Where(t => t.DueDate != null && !t.IsCompleted).OrderBy(t => t.DueDate),
             _           => TaskSorting.NewestFirst(Tasks.Where(MatchesFilter))
         };
