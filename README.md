@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="logo.svg" width="140" height="140" alt="Hatch Logo">
+<img src="assets/logo.svg" width="140" height="140" alt="Hatch Logo">
 
 # Hatch: Always-On To-Do
 
