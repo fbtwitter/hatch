@@ -546,6 +546,19 @@ public sealed partial class QuickAddBubbleWindow : Window
     {
         if (_currentTip?.Action == null) return;
 
+        // "Write it down" is the one action whose destination is this window — closing it
+        // would throw away the very box the user just asked for. Dismiss the tip, keep
+        // the bubble, and put the caret in the input.
+        if (_currentTip.Action.Type == TipActionType.CaptureTask)
+        {
+            _tipDismissCts?.Cancel();
+            TipBubble.Visibility = Visibility.Collapsed;
+            ResetTipDismissalCounter();
+            _tipAutoDismissCompleted = true;
+            TaskTitleBox.Focus(FocusState.Programmatic);
+            return;
+        }
+
         HideWindow();
         ExecuteTipAction(_currentTip.Action.Type);
     }

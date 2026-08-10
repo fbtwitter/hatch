@@ -289,6 +289,14 @@ public sealed partial class MascotWindow : Window
 
     private void ExecuteTipAction(TipActionType actionType)
     {
+        // Capture is the mascot's own job — open the quick-add bubble rather than the
+        // main window. Handled before the main-window guard below, since it needs neither.
+        if (actionType == TipActionType.CaptureTask)
+        {
+            ViewModel.ToggleBubbleCommand.Execute(null);
+            return;
+        }
+
         var mainWindow = App.MainWindowInstance;
         var mainVm = mainWindow?.ViewModel;
         if (mainVm == null || mainWindow == null) return;

@@ -182,6 +182,24 @@ public sealed partial class SettingsPage : Page
         _viewModel.SetLottieFilePath(null);
     }
 
+    private void AddCustomTipButton_Click(object sender, RoutedEventArgs e) => CommitCustomTip();
+
+    private void CustomTipInput_KeyDown(object sender, Microsoft.UI.Xaml.Input.KeyRoutedEventArgs e)
+    {
+        if (e.Key != Windows.System.VirtualKey.Enter) return;
+        CommitCustomTip();
+        e.Handled = true;
+    }
+
+    private void CommitCustomTip()
+    {
+        _viewModel.AddCustomTip(CustomTipInput.Text);
+        CustomTipInput.Text = string.Empty;
+    }
+
+    private void RemoveCustomTipButton_Click(object sender, RoutedEventArgs e)
+        => _viewModel.RemoveCustomTip((string)((FrameworkElement)sender).Tag);
+
     private async void ExportButton_Click(object sender, RoutedEventArgs e)
     {
         var format = (string)((Button)sender).Tag;

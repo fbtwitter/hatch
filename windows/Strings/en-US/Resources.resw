@@ -241,6 +241,31 @@
   <data name="Tip_Greeting_Evening_1" xml:space="preserve"><value>Tomorrow's a new slate</value></data>
   <data name="Tip_Greeting_Evening_2" xml:space="preserve"><value>You earned this</value></data>
   <data name="Tip_Greeting_Evening_3" xml:space="preserve"><value>Wrap up strong</value></data>
+  <!-- ── Mascot engagement ─────────────────────────────────────
+       Inspiration lines are original and deliberately unattributed — the app does not
+       attribute words to a real person. Users add their own in Settings → Mascot. -->
+  <data name="Tip_Inspiration_0" xml:space="preserve"><value>Start where you are. That's enough.</value></data>
+  <data name="Tip_Inspiration_1" xml:space="preserve"><value>A short list you finish beats a long one you don't.</value></data>
+  <data name="Tip_Inspiration_2" xml:space="preserve"><value>Done is a direction, not a destination.</value></data>
+  <data name="Tip_Inspiration_3" xml:space="preserve"><value>The hardest part is usually the first line.</value></data>
+  <data name="Tip_Inspiration_4" xml:space="preserve"><value>Progress is quieter than you expect.</value></data>
+  <data name="Tip_Inspiration_5" xml:space="preserve"><value>You don't have to do it all today.</value></data>
+  <data name="Tip_Inspiration_6" xml:space="preserve"><value>Write it down and let your head rest.</value></data>
+  <data name="Tip_Inspiration_7" xml:space="preserve"><value>Small and finished beats big and someday.</value></data>
+  <data name="Tip_Inspiration_8" xml:space="preserve"><value>Momentum comes after starting, not before.</value></data>
+  <data name="Tip_Inspiration_9" xml:space="preserve"><value>Clearing one thing counts as a good day.</value></data>
+  <data name="Tip_Inspiration_10" xml:space="preserve"><value>Rest is part of the work.</value></data>
+  <data name="Tip_Inspiration_11" xml:space="preserve"><value>Tomorrow gets easier when today is written down.</value></data>
+
+  <data name="Tip_Capture_0" xml:space="preserve"><value>All clear. Anything on your mind?</value></data>
+  <data name="Tip_Capture_1" xml:space="preserve"><value>Nothing pending. Want to note something for later?</value></data>
+  <data name="Tip_Capture_2" xml:space="preserve"><value>You're caught up. Capture the next thought?</value></data>
+  <data name="Tip_Capture_3" xml:space="preserve"><value>Empty list, clear head. Add one for tomorrow?</value></data>
+
+  <data name="Tip_UndatedBacklog" xml:space="preserve"><value>{0} tasks have no date yet. Give one a day?</value><comment>{0} = open tasks without a due date, always ≥ 5</comment></data>
+  <data name="Tip_Action_ScheduleOne" xml:space="preserve"><value>Schedule one</value></data>
+  <data name="Tip_Action_WriteItDown" xml:space="preserve"><value>Write it down</value></data>
+
   <data name="Tip_Greeting_Anytime_0" xml:space="preserve"><value>You've got this</value></data>
   <data name="Tip_Greeting_Anytime_1" xml:space="preserve"><value>One task at a time</value></data>
   <data name="Tip_Greeting_Anytime_2" xml:space="preserve"><value>You're all caught up</value></data>
@@ -249,6 +274,18 @@
   <!-- ── Settings › Automatic tip time (x:Uid mapped) ────────── -->
   <data name="Settings_TipTimeHeader.Text" xml:space="preserve"><value>Automatic Tip Time</value></data>
   <data name="Settings_TipTimeDescription.Text" xml:space="preserve"><value>When the once-a-day automatic tip is allowed to appear</value></data>
+  <data name="Settings_ChattinessCard.Header" xml:space="preserve"><value>Mascot messages</value></data>
+  <data name="Settings_ChattinessCard.Description" xml:space="preserve"><value>How freely Hatch shows encouragement. Reminders about overdue tasks always appear.</value></data>
+  <data name="Settings_Chattiness_Quiet.Content" xml:space="preserve"><value>Quiet</value></data>
+  <data name="Settings_Chattiness_Balanced.Content" xml:space="preserve"><value>Balanced</value></data>
+  <data name="Settings_Chattiness_Chatty.Content" xml:space="preserve"><value>Chatty</value></data>
+
+  <data name="Settings_CustomTipsExpander.Header" xml:space="preserve"><value>Your own messages</value></data>
+  <data name="Settings_CustomTipsExpander.Description" xml:space="preserve"><value>Added to Hatch's built-in lines and shown at random. Your own quotes, reminders, anything.</value></data>
+  <data name="Settings_CustomTipInput.PlaceholderText" xml:space="preserve"><value>Write a line, press Enter</value></data>
+  <data name="Settings_AddCustomTip.Content" xml:space="preserve"><value>Add</value></data>
+  <data name="Settings_RemoveCustomTip.ToolTipService.ToolTip" xml:space="preserve"><value>Remove message</value></data>
+
   <data name="Settings_TipTime_Anytime.Content" xml:space="preserve"><value>Any time</value></data>
   <data name="Settings_TipTime_Morning.Content" xml:space="preserve"><value>Morning</value></data>
   <data name="Settings_TipTime_Afternoon.Content" xml:space="preserve"><value>Afternoon</value></data>
