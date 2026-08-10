@@ -24,7 +24,6 @@ public partial class App : Application
     public App()
     {
         InitializeComponent();
-        SettingsService.Load();
         RegisterProtocolWhenUnpackaged();
     }
 
@@ -159,6 +158,13 @@ public partial class App : Application
             // We are the main instance — handle future activations (OAuth callbacks, etc.)
             mainInstance.Activated += OnAppActivated;
 
+            // Was synchronous File.ReadAllText in the App constructor — moved here and
+            // awaited so cold start never blocks the UI thread on file I/O. Placed after
+            // the redirect-and-exit path above (a secondary instance shouldn't pay for a
+            // settings read it'll never use) but before anything below, which all touches
+            // Settings/App.Settings.
+            await SettingsService.LoadAsync();
+
             // Unpackaged (Debug): StartupRegistryService writes --startup into the Run key.
             // Packaged (MSIX): activation kind is StartupTask when launched by the OS.
             // Never infer startup from empty args — that would suppress the window on every manual launch.
@@ -175,7 +181,7 @@ public partial class App : Application
                 int size = Settings.MascotSize;
                 Settings.MascotX = workArea.X + workArea.Width - size - 12;
                 Settings.MascotY = workArea.Y + workArea.Height - size - 12;
-                _ = SettingsService.SaveAsync();
+                SettingsService.SaveDebounced();
             }
 
             MainWindowInstance = new MainWindow();

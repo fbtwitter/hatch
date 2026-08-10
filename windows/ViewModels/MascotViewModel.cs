@@ -49,7 +49,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         {
             if (App.Settings.MascotX == value) return;
             App.Settings.MascotX = value;
-            if (!_isDragging) _ = App.SettingsService.SaveAsync();
+            if (!_isDragging) App.SettingsService.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -61,7 +61,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         {
             if (App.Settings.MascotY == value) return;
             App.Settings.MascotY = value;
-            if (!_isDragging) _ = App.SettingsService.SaveAsync();
+            if (!_isDragging) App.SettingsService.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -75,7 +75,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         {
             if (App.Settings.MascotSize == value) return;
             App.Settings.MascotSize = Math.Max(40, value); // Minimum 40px
-            _ = App.SettingsService.SaveAsync();
+            App.SettingsService.SaveDebounced();
             OnPropertyChanged();
             OnPropertyChanged(nameof(WindowSize));
         }
@@ -88,7 +88,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         {
             if (App.Settings.MuteAnimation == value) return;
             App.Settings.MuteAnimation = value;
-            _ = App.SettingsService.SaveAsync();
+            App.SettingsService.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -251,7 +251,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         {
             if (App.Settings.LockMascotPosition == value) return;
             App.Settings.LockMascotPosition = value;
-            _ = App.SettingsService.SaveAsync();
+            App.SettingsService.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -294,7 +294,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     {
         if (!_isDragging) return;
         _isDragging = false;
-        _ = App.SettingsService.SaveAsync();
+        App.SettingsService.SaveDebounced();
     }
 
     private void ResetPosition()
@@ -303,7 +303,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         var size = WindowSize;
         X = workArea.X + workArea.Width  - size - EdgePadding;
         Y = workArea.Y + workArea.Height - size - EdgePadding;
-        _ = App.SettingsService.SaveAsync();
+        App.SettingsService.SaveDebounced();
     }
 
     private void OpenResize()
@@ -435,7 +435,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
             var size = WindowSize;
             App.Settings.MascotX = workArea.X + workArea.Width  - size - EdgePadding;
             App.Settings.MascotY = workArea.Y + workArea.Height - size - EdgePadding;
-            _ = App.SettingsService.SaveAsync();
+            App.SettingsService.SaveDebounced();
         }
         else
         {
@@ -535,7 +535,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     {
         var hideUntil = DateTime.UtcNow.Add(duration);
         App.Settings.HideUntilTicks = hideUntil.Ticks;
-        _ = App.SettingsService.SaveAsync();
+        App.SettingsService.SaveDebounced();
 
         IsMascotHidden = true;
 
@@ -556,7 +556,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     {
         // No expiry tick — stays hidden until the app is restarted
         App.Settings.HideUntilTicks = long.MaxValue;
-        _ = App.SettingsService.SaveAsync();
+        App.SettingsService.SaveDebounced();
 
         IsMascotHidden = true;
 
@@ -596,7 +596,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     private void RestoreFromHide()
     {
         App.Settings.HideUntilTicks = null;
-        _ = App.SettingsService.SaveAsync();
+        App.SettingsService.SaveDebounced();
 
         IsMascotHidden = false;
         StopHideRestoreTimer();
