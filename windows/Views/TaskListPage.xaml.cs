@@ -68,6 +68,31 @@ public sealed partial class TaskListPage : Page
         this.KeyDown += OnPageKeyDown;
     }
 
+    // Called by MainWindow when the window is hidden to the tray (NavigationCacheMode
+    // keeps this page instance alive across that, so its realized ListView containers
+    // would otherwise stay resident for as long as the app sits in the tray). Clearing
+    // ItemsSource lets the containers be reclaimed; RestoreListBindings puts the exact
+    // same source references back — the underlying ObservableCollections are untouched,
+    // so nothing is lost, just re-realized on the next layout pass.
+    public void ReleaseListBindings()
+    {
+        FlatGroupsItemsControl.ItemsSource = null;
+        GroupedListView.ItemsSource = null;
+        _cachedTaskListViews = null;
+    }
+
+    // Restores from the ViewModel's current state, never from a snapshot taken at hide
+    // time: a sync pull landing while the window sits in the tray raises PlannedGroups,
+    // which reassigns PlannedGroupsSource.Source and so replaces .View entirely. Putting
+    // a captured .View back would show pre-pull data until the next refresh.
+    public void RestoreListBindings()
+    {
+        if (_vm == null) return;
+        FlatGroupsItemsControl.ItemsSource = _vm.FlatGroupedTasks;
+        if (_vm.ActiveNavItem == "planned")
+            RefreshPlannedGroups();
+    }
+
     private void OnActualThemeChanged(FrameworkElement sender, object args)
     {
         if (_vm == null) return;

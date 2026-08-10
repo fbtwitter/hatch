@@ -28,6 +28,11 @@ public sealed partial class QuickAddBubbleWindow : Window
     // Fired when the user dismisses the bubble (close/Esc/action) — not on app shutdown.
     public event Action? Dismissed;
     private CancellationTokenSource? _tipDismissCts;
+    // A separate, per-segment token linked to _tipDismissCts — cancelling this alone
+    // (on hover-pause) stops just the current countdown wait without tearing down the
+    // whole tip lifecycle; cancelling _tipDismissCts cancels both.
+    private CancellationTokenSource? _tipCountdownCts;
+    private System.Diagnostics.Stopwatch? _tipDismissStopwatch;
     private bool _tipDismissPaused = false;
     private int _tipDismissRemainingMs = 0;
     private bool _tipWasShown = false;
@@ -194,6 +199,11 @@ public sealed partial class QuickAddBubbleWindow : Window
         _tipAutoDismissCompleted = false;
         _tipDismissCts?.Cancel();
         _tipDismissCts = null;
+        _tipCountdownCts?.Cancel();
+        _tipCountdownCts?.Dispose();
+        _tipCountdownCts = null;
+        _tipDismissStopwatch = null;
+        _tipDismissPaused = false;
 
         // Reset form to initial state
         TaskTitleBox.Text = string.Empty;
@@ -337,7 +347,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         mainVm.SaveAsync();
 
         App.Settings.LastUsedListId = selectedListId;
-        _ = App.SettingsService.SaveAsync();
+        App.SettingsService.SaveDebounced();
 
         // Trigger mascot wiggle on first add in this session
         TriggerMascotWiggle();
@@ -451,7 +461,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         if (_currentTip.DismissAfterMs > 0)
         {
             _tipDismissRemainingMs = _currentTip.DismissAfterMs;
-            _ = ScheduleTipDismissAsync(_tipDismissCts.Token);
+            StartTipCountdown();
         }
         else if (_currentTip.Severity == TipSeverity.Critical)
         {
@@ -465,31 +475,25 @@ public sealed partial class QuickAddBubbleWindow : Window
         App.MascotWindowInstance?.ViewModel.SetDailyTipIndicatorVisible();
     }
 
-    private async Task ScheduleTipDismissAsync(CancellationToken ct)
+    // Starts (or resumes, after a hover-pause) a single wait for _tipDismissRemainingMs —
+    // no polling. TipBubble_PointerEntered cancels _tipCountdownCts to pause; the resume
+    // in TipBubble_PointerExited calls this again with whatever time was left.
+    private void StartTipCountdown()
+    {
+        _tipCountdownCts?.Cancel();
+        _tipCountdownCts?.Dispose();
+        _tipCountdownCts = _tipDismissCts == null
+            ? new CancellationTokenSource()
+            : CancellationTokenSource.CreateLinkedTokenSource(_tipDismissCts.Token);
+        _tipDismissStopwatch = System.Diagnostics.Stopwatch.StartNew();
+        _ = RunTipCountdownAsync(_tipDismissRemainingMs, _tipCountdownCts.Token);
+    }
+
+    private async Task RunTipCountdownAsync(int delayMs, CancellationToken ct)
     {
         try
         {
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-
-            while (_tipDismissRemainingMs > 0 && !ct.IsCancellationRequested)
-            {
-                if (_tipDismissPaused)
-                {
-                    await Task.Delay(50, ct);
-                    continue;
-                }
-
-                int elapsed = (int)stopwatch.ElapsedMilliseconds;
-                _tipDismissRemainingMs -= elapsed;
-                stopwatch.Restart();
-
-                if (_tipDismissRemainingMs <= 0)
-                    break;
-
-                await Task.Delay(Math.Min(50, _tipDismissRemainingMs), ct);
-            }
-
-            if (ct.IsCancellationRequested) return;
+            await Task.Delay(delayMs, ct);
 
             // Auto-dismiss completed — user didn't manually close = engagement
             _tipAutoDismissCompleted = true;
@@ -521,12 +525,21 @@ public sealed partial class QuickAddBubbleWindow : Window
 
     private void TipBubble_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
     {
+        if (_tipDismissPaused || _tipDismissStopwatch == null) return;
         _tipDismissPaused = true;
+
+        _tipDismissRemainingMs -= (int)_tipDismissStopwatch.ElapsedMilliseconds;
+        if (_tipDismissRemainingMs < 0) _tipDismissRemainingMs = 0;
+        _tipCountdownCts?.Cancel();
     }
 
     private void TipBubble_PointerExited(object sender, PointerRoutedEventArgs e)
     {
+        if (!_tipDismissPaused) return;
         _tipDismissPaused = false;
+
+        if (_tipDismissRemainingMs > 0)
+            StartTipCountdown();
     }
 
     private void TipActionButton_Click(object sender, RoutedEventArgs e)

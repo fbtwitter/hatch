@@ -467,7 +467,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             if (_settings.Current.MinimizeToTray == value) return;
             _settings.Current.MinimizeToTray = value;
             App.MainWindowInstance?.UpdateTrayBehavior(value);
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -482,7 +482,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             App.MainWindowInstance?.ApplyTheme(_settings.Current.Theme);
             App.MainWindowInstance?.ViewModel.NotifyThemeChanged();
             App.BubbleWindowInstance?.ApplyCurrentTheme();
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -495,7 +495,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             if ((int)_settings.Current.Backdrop == value) return;
             _settings.Current.Backdrop = (AppBackdrop)value;
             App.MainWindowInstance?.ApplyBackdrop(_settings.Current.Backdrop);
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -507,7 +507,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (_settings.Current.ShowMascot == value) return;
             _settings.Current.ShowMascot = value;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             App.MascotWindowInstance?.ViewModel.ApplyShowMascotChanged();
             OnPropertyChanged();
         }
@@ -520,7 +520,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (_settings.Current.MuteAnimation == value) return;
             _settings.Current.MuteAnimation = value;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             App.MascotWindowInstance?.ViewModel.RaiseMuteChanged();
             OnPropertyChanged();
         }
@@ -533,7 +533,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (_settings.Current.LockMascotPosition == value) return;
             _settings.Current.LockMascotPosition = value;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             App.MascotWindowInstance?.ViewModel.RaiseLockPositionChanged();
             OnPropertyChanged();
         }
@@ -546,7 +546,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (_settings.Current.LottieFilePath == value) return;
             _settings.Current.LottieFilePath = value;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
             OnPropertyChanged(nameof(LottieFileDisplay));
             OnPropertyChanged(nameof(HasLottieFile));
@@ -574,7 +574,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (_settings.Current.ShowTipsAutomatically == value) return;
             _settings.Current.ShowTipsAutomatically = value;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -588,7 +588,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (value < 0 || (int)_settings.Current.ProactiveTipTime == value) return;
             _settings.Current.ProactiveTipTime = (TipTimePreference)value;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -600,7 +600,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (_settings.Current.HideWhenFullscreen == value) return;
             _settings.Current.HideWhenFullscreen = value;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -613,7 +613,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             if (_settings.Current.RunAtStartup == value) return;
             _settings.Current.RunAtStartup = value;
             _startupRegistry.SetStartupEnabled(value);
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -626,7 +626,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             var clamped = Math.Clamp(value, 60, 200);
             if (_settings.Current.MascotSize == clamped) return;
             _settings.Current.MascotSize = clamped;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             App.MascotWindowInstance?.ViewModel.RaiseWindowSizeChanged();
             OnPropertyChanged();
         }
@@ -639,7 +639,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         {
             if (_settings.Current.MascotAlwaysOnTop == value) return;
             _settings.Current.MascotAlwaysOnTop = value;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             App.MascotWindowInstance?.ApplyAlwaysOnTop(value);
             OnPropertyChanged();
         }
@@ -656,7 +656,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             if (_settings.Current.HotkeyModifiers == value) return;
             _settings.Current.HotkeyModifiers = value;
             ReRegisterHotKey();
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
             OnPropertyChanged(nameof(HotkeyDescription));
             OnPropertyChanged(nameof(HotkeyCtrl));
@@ -700,7 +700,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             if (_settings.Current.HotkeyVirtualKey == value) return;
             _settings.Current.HotkeyVirtualKey = value;
             ReRegisterHotKey();
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             OnPropertyChanged();
             OnPropertyChanged(nameof(HotkeyDescription));
         }

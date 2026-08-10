@@ -582,9 +582,11 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
 
     public void SaveAsync()
     {
-        _saveCancelToken?.Cancel();
+        var previous = _saveCancelToken;
+        previous?.Cancel();
         _saveCancelToken = new CancellationTokenSource();
         _ = DoSaveAsync(_saveCancelToken.Token);
+        previous?.Dispose();
     }
 
     private async Task DoSaveAsync(CancellationToken ct)

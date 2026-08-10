@@ -30,7 +30,7 @@ public sealed class TipCoordinator
         var tip = _engine.GetTip(tasks, S.LastMeaningfulTipTime, S.LastUserActivityTime);
         if (tip == null)
         {
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
             return null;
         }
 
@@ -43,7 +43,7 @@ public sealed class TipCoordinator
             isNewDailyTip = true;
         }
 
-        _ = _settings.SaveAsync();
+        _settings.SaveDebounced();
         return tip;
     }
 
@@ -59,7 +59,7 @@ public sealed class TipCoordinator
         if (!Helpers.TipSchedule.IsInPreferredWindow(DateTime.Now, S.ProactiveTipTime)) return null;
 
         S.LastProactiveTipCheckDate = DateTime.Today;
-        _ = _settings.SaveAsync();
+        _settings.SaveDebounced();
 
         return TryGetContextualTip(tasks, out isNewDailyTip);
     }
@@ -69,7 +69,7 @@ public sealed class TipCoordinator
         if (S.ConsecutiveTipDismissals > 0)
         {
             S.ConsecutiveTipDismissals = 0;
-            _ = _settings.SaveAsync();
+            _settings.SaveDebounced();
         }
     }
 
@@ -81,6 +81,6 @@ public sealed class TipCoordinator
             S.TipAutoOpenCooldownUntil = DateTime.Today.AddDays(3);
             S.ConsecutiveTipDismissals = 0;
         }
-        _ = _settings.SaveAsync();
+        _settings.SaveDebounced();
     }
 }
