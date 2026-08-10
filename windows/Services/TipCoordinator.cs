@@ -27,12 +27,22 @@ public sealed class TipCoordinator
             return null;
 
         S.LastUserActivityTime = DateTime.Now;
-        var tip = _engine.GetTip(tasks, S.LastMeaningfulTipTime, S.LastUserActivityTime);
+
+        var tip = _engine.GetTip(tasks, S.LastMeaningfulTipTime, S.LastUserActivityTime,
+                                 now: null,
+                                 chattiness: S.MascotChattiness,
+                                 customTips: S.CustomTips,
+                                 lastInspiration: S.LastInspirationDate);
         if (tip == null)
         {
             _settings.SaveDebounced();
             return null;
         }
+
+        // Only the inspiration line consumes the daily slot — an actionable tip outranks
+        // it and must not silently spend it.
+        if (tip.IsInspiration)
+            S.LastInspirationDate = today;
 
         if (tip.IsMeaningful)
             S.LastMeaningfulTipTime = DateTime.Now;
