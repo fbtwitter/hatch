@@ -8,6 +8,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.18.0] - 2026-08-10
+
+### Added
+- **Mascot engagement** — a daily inspiration line (stable for the whole day, not re-rolled
+  on every open), a suggestion when undated tasks pile up, and an invitation to capture a
+  thought when everything is clear. Built-in lines are original and unattributed; add your
+  own in Settings → Mascot, where they join the same pool
+- **Mascot messages** setting — Quiet / Balanced / Chatty. Reminders about overdue tasks
+  appear at every level
+
+### Changed
+- Completed tasks show only what still matters: checkbox, title and list name. Due date,
+  repeat, priority, tags, the star and the Focus/Snooze menu items are dropped once a task
+  is done
+- Important excludes completed tasks entirely, matching Planned — a star never clears
+  itself, so its Completed group grew without bound
+
+### Fixed
+- Undo now covers deletion, not just completion, and appears when completing a task from
+  Planned or Important (both were previously silent)
+- About page reported v0.14.0 on a v0.17.0 build; the version is now read at runtime
+- Settings changed moments before quitting could be lost
+- Cold start no longer blocks the UI thread reading settings.json
+
+---
+
 ## [0.17.0] - 2026-07-28
 
 ### Added
