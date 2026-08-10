@@ -8,6 +8,7 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.18.0** | Aug 10, 2026 | Mascot engagement (daily inspiration, capture invite, undated-task suggestion), user-editable message pool, Quiet/Balanced/Chatty setting, undo for deletion, leaner completed rows, startup and per-keystroke performance pass |
 | **v0.17.0** | Jul 28, 2026 | Sync protocol v2 (tombstone deletes), Android companion authoring parity (task detail editing, lists, search, recurrence), Android background sync + on-device due-date reminders |
 | **v0.16.0** | Jul 24, 2026 | End-to-end encrypted sync, PKCE OAuth, Kotlin Multiplatform Android companion, TOTP two-factor auth (`aal2` RLS), MFA + passphrase recovery, Windows App SDK 2.3.1 |
 | **v0.15.0** | Jul 14, 2026 | Show Mascot setting, mascot loading ring + entrance fade, mascot-only manual launch, Summary launchpad (tiles/rows navigate), PowerToys-style title-bar search sizing |

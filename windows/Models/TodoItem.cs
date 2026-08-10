@@ -124,6 +124,11 @@ public sealed class TodoItem : INotifyPropertyChanged
         get => _listName;
         set
         {
+            // RefreshListNames() re-sets this on every task whenever any list is
+            // renamed — without this guard, a one-list rename fires four
+            // PropertyChanged events (and every bound x:Bind/converter) on every
+            // task in the app, not just the renamed list's.
+            if (_listName == value) return;
             _listName = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasListName));

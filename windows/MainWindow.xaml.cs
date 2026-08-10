@@ -107,7 +107,7 @@ public sealed partial class MainWindow : Window
             {
                 MascotViewModel.PositionMainWindowNearMascot(this);
                 App.Settings.FirstRunComplete = true;
-                _ = App.SettingsService.SaveAsync();
+                App.SettingsService.SaveDebounced();
             }
             catch (Exception ex)
             {
@@ -203,6 +203,10 @@ public sealed partial class MainWindow : Window
     {
         DispatcherQueue.TryEnqueue(() =>
         {
+            // Put the released list bindings back before the window is shown again —
+            // see OnWindowClosing's tray-hide branch and MainPage.RestoreTaskListMemory.
+            (RootFrame?.Content as MainPage)?.RestoreTaskListMemory();
+
             // Do not reposition the window when restoring from tray; just show it
             ShowWindow(_hwnd, SW_RESTORE);
             AppWindow.Show(true);
@@ -238,6 +242,7 @@ public sealed partial class MainWindow : Window
     private void OnExitRequested()
     {
         _isExiting = true;
+        App.SettingsService.FlushPendingSave();
         Application.Current.Exit();
     }
 
@@ -248,6 +253,12 @@ public sealed partial class MainWindow : Window
             args.Cancel = true;
             ViewModel.DismissUndoBar();
             ShowWindow(_hwnd, SW_HIDE);
+
+            // Release the task list's realized ListView containers while hidden — the
+            // page itself stays alive (NavigationCacheMode.Enabled), only its bound
+            // ItemsSource is cleared, so it's cheap to reclaim and cheap to restore.
+            (RootFrame?.Content as MainPage)?.ReleaseTaskListMemory();
+
             try
             {
                 NativeMethods.EmptyWorkingSet(Process.GetCurrentProcess().Handle);
@@ -258,6 +269,9 @@ public sealed partial class MainWindow : Window
             }
             return;
         }
+        // Real close (not a tray hide) — same reasoning as OnExitRequested.
+        App.SettingsService.FlushPendingSave();
+
         if (_subclassProc is not null)
         {
             NativeMethods.RemoveWindowSubclass(_hwnd, _subclassProc, 1);

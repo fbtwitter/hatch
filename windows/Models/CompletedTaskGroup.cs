@@ -12,6 +12,7 @@ public sealed class CompletedTaskGroup : INotifyPropertyChanged
     private bool _showEmptyState;
     private string? _countLabel;
     private bool _isExpanded = true;
+    private bool _isCollapsible = true;
 
     public string Name
     {
@@ -32,6 +33,8 @@ public sealed class CompletedTaskGroup : INotifyPropertyChanged
             if (_hasItems == value) return;
             _hasItems = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowExpander));
+            OnPropertyChanged(nameof(ShowFlatList));
             ShowEmptyState = !value && EmptyMessage != null;
         }
     }
@@ -57,6 +60,27 @@ public sealed class CompletedTaskGroup : INotifyPropertyChanged
             OnPropertyChanged();
         }
     }
+
+    // False on the Open group when the current nav item can never show a Completed
+    // group alongside it (Important) — there's nothing to collapse it in favor of,
+    // so the header/chevron is dropped and the items render as a plain list.
+    public bool IsCollapsible
+    {
+        get => _isCollapsible;
+        set
+        {
+            if (_isCollapsible == value) return;
+            _isCollapsible = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowExpander));
+            OnPropertyChanged(nameof(ShowFlatList));
+        }
+    }
+
+    // Both variants still respect HasItems — an empty group (e.g. Completed while
+    // on Important, which can never gain items) renders nothing, not an empty shell.
+    public bool ShowExpander => HasItems && IsCollapsible;
+    public bool ShowFlatList => HasItems && !IsCollapsible;
 
     // Non-null on the Completed group; updated as items are added/removed.
     // Null on the Open group so no count chip is rendered.

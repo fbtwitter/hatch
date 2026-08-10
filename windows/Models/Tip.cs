@@ -7,6 +7,11 @@ public class Tip
     public TipAction? Action { get; set; }
     public int DismissAfterMs { get; set; } = 5000;  // 5s default for low-priority
     public bool IsMeaningful { get; set; } = true;   // false = fallback tip (suppress if user active recently)
+
+    // True only for the once-a-day inspiration line. TipCoordinator stamps
+    // LastInspirationDate off this rather than inferring it from Severity/Action, so
+    // reordering the engine's tiers cannot silently start consuming the daily slot.
+    public bool IsInspiration { get; set; }
 }
 
 public class TipAction
@@ -29,5 +34,6 @@ public enum TipActionType
     ViewMyDay = 2,
     AddSampleTask = 3,
     OpenMainWindow = 4,
-    ViewPlanned = 5
+    ViewPlanned = 5,
+    CaptureTask = 6   // put the caret in the quick-add box so a thought can be written down
 }
