@@ -59,7 +59,7 @@ public sealed partial class MainViewModel
             _completedGroup.IsExpanded = IsCompletedGroupExpanded(value);
             _openGroup.IsCollapsible = value != "important";
             App.Settings.ActiveNavItem = value;
-            _ = App.SettingsService.SaveAsync();
+            App.SettingsService.SaveDebounced();
             OnPropertyChanged(nameof(SuggestionsVisible));
             OnPropertyChanged(nameof(ShowEmptyState));
             // Defer one frame so the page shell renders before the list rebuilds,

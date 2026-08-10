@@ -43,9 +43,11 @@ public sealed partial class MainViewModel
     // directly, since those are rare compared to every keystroke and should reflect instantly.
     private void DebounceSearchResults()
     {
-        _searchDebounceToken?.Cancel();
+        var previous = _searchDebounceToken;
+        previous?.Cancel();
         _searchDebounceToken = new CancellationTokenSource();
         _ = DebounceSearchResultsAsync(_searchDebounceToken.Token);
+        previous?.Dispose();
     }
 
     private async Task DebounceSearchResultsAsync(CancellationToken ct)

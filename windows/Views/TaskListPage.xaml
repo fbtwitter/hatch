@@ -515,7 +515,8 @@
                 <ScrollViewer Grid.Row="0" x:Name="FlatListView"
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel>
-                        <ItemsControl ItemsSource="{x:Bind ViewModel.FlatGroupedTasks, Mode=OneWay}"
+                        <ItemsControl x:Name="FlatGroupsItemsControl"
+                                      ItemsSource="{x:Bind ViewModel.FlatGroupedTasks, Mode=OneWay}"
                                       HorizontalAlignment="Stretch"
                                       Padding="24,0,24,8">
                             <ItemsControl.ItemContainerStyle>

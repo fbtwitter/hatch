@@ -18,7 +18,7 @@ internal static class SyncTokenStore
             Save(settings.SyncAccessToken, settings.SyncRefreshToken);
             settings.SyncAccessToken  = null;
             settings.SyncRefreshToken = null;
-            _ = App.SettingsService.SaveAsync();
+            App.SettingsService.SaveDebounced();
         }
         return (Retrieve(AccessName), Retrieve(RefreshName));
     }

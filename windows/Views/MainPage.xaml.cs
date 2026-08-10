@@ -680,6 +680,14 @@ public sealed partial class MainPage : Page
         _suppressNavigation = false;
     }
 
+    // Called by MainWindow when the window is hidden to the tray. Only forwards when
+    // TaskListPage is the currently active ContentFrame content — if the user minimized
+    // while on Settings/Stats/Sync, TaskListPage is sitting inertly in the Frame's
+    // NavigationCacheMode page cache either way, off the interactive path already.
+    public void ReleaseTaskListMemory() => (ContentFrame.Content as TaskListPage)?.ReleaseListBindings();
+
+    public void RestoreTaskListMemory() => (ContentFrame.Content as TaskListPage)?.RestoreListBindings();
+
     private void TitleBar_BackRequested(TitleBar sender, object args)
     {
         if (ContentFrame.CanGoBack)
