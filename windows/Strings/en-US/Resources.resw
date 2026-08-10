@@ -76,8 +76,10 @@
   <data name="NewTask_AddButton.Content" xml:space="preserve"><value>Add</value></data>
   <data name="NewTask_AddButton.ToolTipService.ToolTip" xml:space="preserve"><value>Add task (Enter)</value></data>
 
-  <!-- ── Undo snackbar (x:Uid mapped) ─────────────────────────── -->
-  <data name="UndoInfoBar.Message" xml:space="preserve"><value>Task completed</value></data>
+  <!-- ── Undo snackbar (UndoButton.Content is x:Uid mapped; the Message varies by
+       action, so it's set from Helpers.Strings via MainViewModel.UndoMessage) ── -->
+  <data name="UndoMessage_TaskCompleted" xml:space="preserve"><value>Task completed</value></data>
+  <data name="UndoMessage_TaskDeleted" xml:space="preserve"><value>Task deleted</value></data>
   <data name="UndoButton.Content" xml:space="preserve"><value>Undo</value></data>
 
   <!-- ── Task row x:Uid mapped ──────────────────────────────── -->
