@@ -59,9 +59,15 @@ internal static class Strings
     public static string DueDate_Overdue(int days) => string.Format(Get("DueDate_Overdue"), days);
 
     // ── Summary page tiles ────────────────────────────────────
-    public static string Stats_Tile_Overdue        => Get("Stats_Tile_Overdue");
-    public static string Stats_Tile_CompletedToday => Get("Stats_Tile_CompletedToday");
-    public static string Stats_Tile_Open           => Get("Stats_Tile_Open");
+    public static string Stats_Tile_MyDay_Title                => Get("Stats_Tile_MyDay_Title");
+    public static string Stats_Tile_MyDay_Description          => Get("Stats_Tile_MyDay_Description");
+    public static string Stats_Tile_DueToday_Title             => Get("Stats_Tile_DueToday_Title");
+    public static string Stats_Tile_DueToday_Description       => Get("Stats_Tile_DueToday_Description");
+    public static string Stats_Tile_Overdue_Title              => Get("Stats_Tile_Overdue_Title");
+    public static string Stats_Tile_Overdue_Description_Clear  => Get("Stats_Tile_Overdue_Description_Clear");
+    public static string Stats_Tile_Overdue_Description_Active => Get("Stats_Tile_Overdue_Description_Active");
+    public static string Stats_Tile_Starred_Title              => Get("Stats_Tile_Starred_Title");
+    public static string Stats_Tile_Starred_Description        => Get("Stats_Tile_Starred_Description");
 
     // ── Planned group headers ─────────────────────────────────
     public static string PlannedGroup_Overdue   => Get("PlannedGroup_Overdue");

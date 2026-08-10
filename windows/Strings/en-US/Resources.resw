@@ -148,9 +148,15 @@
   <data name="Stats_UpcomingHeader.Text" xml:space="preserve"><value>Upcoming</value></data>
   <data name="Stats_EmptyToday.Text" xml:space="preserve"><value>Nothing due today.</value></data>
   <data name="Stats_EmptyUpcoming.Text" xml:space="preserve"><value>Nothing due soon.</value></data>
-  <data name="Stats_Tile_Overdue" xml:space="preserve"><value>Overdue</value></data>
-  <data name="Stats_Tile_CompletedToday" xml:space="preserve"><value>Completed today</value></data>
-  <data name="Stats_Tile_Open" xml:space="preserve"><value>Open</value></data>
+  <data name="Stats_Tile_MyDay_Title" xml:space="preserve"><value>My Day</value></data>
+  <data name="Stats_Tile_MyDay_Description" xml:space="preserve"><value>complete today</value></data>
+  <data name="Stats_Tile_DueToday_Title" xml:space="preserve"><value>Due today</value></data>
+  <data name="Stats_Tile_DueToday_Description" xml:space="preserve"><value>tasks on the docket</value></data>
+  <data name="Stats_Tile_Overdue_Title" xml:space="preserve"><value>Overdue</value></data>
+  <data name="Stats_Tile_Overdue_Description_Clear" xml:space="preserve"><value>Nothing slipping</value></data>
+  <data name="Stats_Tile_Overdue_Description_Active" xml:space="preserve"><value>Catch up when you can</value></data>
+  <data name="Stats_Tile_Starred_Title" xml:space="preserve"><value>Starred</value></data>
+  <data name="Stats_Tile_Starred_Description" xml:space="preserve"><value>Important &amp; pinned</value></data>
 
   <!-- ── Task row overflow menu (x:Uid mapped) ───────────────── -->
   <data name="TaskRow_FocusMenuItem.Text" xml:space="preserve"><value>Focus on this</value></data>

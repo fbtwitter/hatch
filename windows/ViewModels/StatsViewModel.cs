@@ -10,9 +10,14 @@ namespace Hatch.ViewModels;
 
 public sealed class StatsViewModel : INotifyPropertyChanged
 {
-    private const string OverdueGlyph = "";
-    private const string CheckGlyph   = "";
-    private const string ListGlyph    = "";
+    // Reused from the nav rail (MainPage.xaml) so a tile's icon matches the destination
+    // it navigates to: Sun = My Day, Calendar = Planned (Due today routes there too),
+    // Star = Important. StarredGlyph (U+E735) is the filled star, per BoolToStarGlyphConverter's
+    // "starred" state — since this tile counts starred items, not the category itself.
+    private const string MyDayGlyph    = "\uE706";
+    private const string DueTodayGlyph = "\uED28";
+    private const string OverdueGlyph  = "\uE7BA";
+    private const string StarredGlyph  = "\uE735";
 
     private static readonly Windows.Globalization.DateTimeFormatting.DateTimeFormatter _dueLabelFormatter =
         new("dayofweek.abbreviated month.abbreviated day");
@@ -42,41 +47,77 @@ public sealed class StatsViewModel : INotifyPropertyChanged
     // since the task list and this page can't be visible at the same time.
     public void RefreshStats()
     {
-        var neutralBg  = ThemeResourceHelper.GetBrush("SubtleFillColorSecondaryBrush");
-        var neutralFg  = ThemeResourceHelper.GetBrush("TextFillColorSecondaryBrush");
-        var successBg  = ThemeResourceHelper.GetBrush("SystemFillColorSuccessBackgroundBrush");
-        var successFg  = ThemeResourceHelper.GetBrush("SystemFillColorSuccessBrush");
-        var criticalBg = ThemeResourceHelper.GetBrush("SystemFillColorCriticalBackgroundBrush");
-        var criticalFg = ThemeResourceHelper.GetBrush("SystemFillColorCriticalBrush");
+        var neutralBg   = ThemeResourceHelper.GetBrush("SubtleFillColorSecondaryBrush");
+        var neutralFg   = ThemeResourceHelper.GetBrush("TextFillColorSecondaryBrush");
+        var successBg   = ThemeResourceHelper.GetBrush("SystemFillColorSuccessBackgroundBrush");
+        var successFg   = ThemeResourceHelper.GetBrush("SystemFillColorSuccessBrush");
+        var criticalBg  = ThemeResourceHelper.GetBrush("SystemFillColorCriticalBackgroundBrush");
+        var criticalFg  = ThemeResourceHelper.GetBrush("SystemFillColorCriticalBrush");
+        // No standard "starred/gold" theme token in this app's palette — same light/dark
+        // hardcoded pairing PriorityToForegroundConverter already uses for chip colors,
+        // via the ThemeResourceHelper.GetThemedBrush overload built for exactly this.
+        var starredBg = ThemeResourceHelper.GetThemedBrush(
+            Windows.UI.Color.FromArgb(255, 255, 244, 214),
+            Windows.UI.Color.FromArgb(255,  61,  47,  13));
+        var starredFg = ThemeResourceHelper.GetThemedBrush(
+            Windows.UI.Color.FromArgb(255, 157, 108,   0),
+            Windows.UI.Color.FromArgb(255, 255, 200,  87));
 
         var tasks = Tasks.ToList();
         var today = DateTime.Today;
 
-        int open = tasks.Count(t => !t.IsCompleted);
+        // Completing a task does not clear IsInMyDay (only the daily reset does), so a
+        // finished task stays in the denominator — which is what makes this a progress
+        // ratio rather than a shrinking backlog count.
+        int myDayTotal     = tasks.Count(t => t.IsInMyDay);
+        int myDayCompleted = tasks.Count(t => t.IsInMyDay && t.IsCompleted);
+        int myDayPercent   = myDayTotal > 0 ? (int)Math.Round(myDayCompleted * 100.0 / myDayTotal) : 0;
+
         // Due dates: the day as written, never through ToLocalTime — see TipEngine.
-        // CompletedAt below is a real instant, so local conversion is correct there.
+        int dueToday = tasks.Count(t =>
+            !t.IsCompleted && t.DueDate != null && t.DueDate.Value.Date == today);
+
         int overdue = tasks.Count(t =>
             !t.IsCompleted && t.DueDate != null && t.DueDate.Value.Date < today);
-        int completedToday = tasks.Count(t =>
-            t.CompletedAt.HasValue && t.CompletedAt.Value.ToLocalTime().Date == today);
+
+        // Matches the Important nav filter (MainViewModel.Filtering.cs): starred and not
+        // yet completed — a star never clears itself, so a completed task would otherwise
+        // sit in this count forever.
+        int starred = tasks.Count(t => t.IsStarred && !t.IsCompleted);
 
         Tiles.Clear();
-        Tiles.Add(new StatTileInfo("Stats_Overdue", overdue, Strings.Stats_Tile_Overdue, OverdueGlyph,
-            overdue > 0 ? criticalFg : neutralFg, overdue > 0 ? criticalBg : neutralBg, "planned"));
-        Tiles.Add(new StatTileInfo("Stats_CompletedToday", completedToday, Strings.Stats_Tile_CompletedToday, CheckGlyph, successFg, successBg, null));
-        Tiles.Add(new StatTileInfo("Stats_Open", open, Strings.Stats_Tile_Open, ListGlyph, neutralFg, neutralBg, "alltasks"));
+        Tiles.Add(new StatTileInfo(
+            "Stats_MyDay", Strings.Stats_Tile_MyDay_Title,
+            $"{myDayCompleted} / {myDayTotal}", $"{myDayPercent}%",
+            Strings.Stats_Tile_MyDay_Description,
+            MyDayGlyph, successFg, successBg, "myday"));
+        Tiles.Add(new StatTileInfo(
+            "Stats_DueToday", Strings.Stats_Tile_DueToday_Title,
+            dueToday.ToString(), null,
+            Strings.Stats_Tile_DueToday_Description,
+            DueTodayGlyph, neutralFg, neutralBg, "planned"));
+        Tiles.Add(new StatTileInfo(
+            "Stats_Overdue", Strings.Stats_Tile_Overdue_Title,
+            overdue.ToString(), null,
+            overdue > 0 ? Strings.Stats_Tile_Overdue_Description_Active : Strings.Stats_Tile_Overdue_Description_Clear,
+            OverdueGlyph, overdue > 0 ? criticalFg : neutralFg, overdue > 0 ? criticalBg : neutralBg, "planned"));
+        Tiles.Add(new StatTileInfo(
+            "Stats_Starred", Strings.Stats_Tile_Starred_Title,
+            starred.ToString(), null,
+            Strings.Stats_Tile_Starred_Description,
+            StarredGlyph, starredFg, starredBg, "important"));
 
         var tomorrow = today.AddDays(1);
 
         // Split into "Today" (the PM's daily-agenda glance — what's actually due right now)
         // and "Upcoming" (strictly future, forward-planning). Deliberately not a calendar
         // view — reuses the due-date data already on hand instead of duplicating Planned.
-        var dueToday = tasks
+        var dueTodayTasks = tasks
             .Where(t => !t.IsCompleted && t.DueDate != null && t.DueDate.Value.Date == today)
             .OrderBy(TaskSorting.CreatedInstant);
 
         TodayTasks.Clear();
-        foreach (var task in dueToday)
+        foreach (var task in dueTodayTasks)
             TodayTasks.Add(new UpcomingTaskInfo(task, task.Title, task.ListName));
         HasTodayTasks = TodayTasks.Count > 0;
 
