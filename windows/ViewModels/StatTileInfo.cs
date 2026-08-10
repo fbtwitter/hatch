@@ -14,7 +14,6 @@ public sealed record StatTileInfo(
     string Description,
     string IconGlyph,
     Brush IconForeground,
-    Brush BadgeBackground,
     string? NavTag)
 {
     // A screen reader announces the button's Name and nothing inside it, so binding the
