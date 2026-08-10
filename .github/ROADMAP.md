@@ -8,6 +8,7 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.19.1** | Aug 10, 2026 | Empty My Day tile no longer reads as a failed day |
 | **v0.19.0** | Aug 10, 2026 | Automatic updates for sideloaded installs (App Installer via GitHub Pages), Summary tiles rebuilt around today (My Day progress, Due today, Overdue, Starred), all desktop dependencies to latest stable |
 | **v0.18.0** | Aug 10, 2026 | Mascot engagement (daily inspiration, capture invite, undated-task suggestion), user-editable message pool, Quiet/Balanced/Chatty setting, undo for deletion, leaner completed rows, startup and per-keystroke performance pass |
 | **v0.17.0** | Jul 28, 2026 | Sync protocol v2 (tombstone deletes), Android companion authoring parity (task detail editing, lists, search, recurrence), Android background sync + on-device due-date reminders |
