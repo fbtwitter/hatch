@@ -59,14 +59,14 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.3.1" />
-    <PackageReference Include="Supabase" Version="1.1.1" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.1839" PrivateAssets="all" />
+    <PackageReference Include="Supabase" Version="1.6.0" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2526" PrivateAssets="all" />
     <!-- Required: MSIX build tasks were compiled against .NET 8 and probe for this assembly at build time -->
-    <PackageReference Include="System.Security.Permissions" Version="8.0.0" />
-    <PackageReference Include="WinUIEx" Version="2.9.1" />
+    <PackageReference Include="System.Security.Permissions" Version="10.0.10" />
+    <PackageReference Include="WinUIEx" Version="2.9.2" />
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
     <PackageReference Include="CommunityToolkit.WinUI.Lottie" Version="8.2.250604" />
-    <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.3.2" />
+    <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.4.0" />
   </ItemGroup>
 
   <!-- Auto-generate PNG assets from ../assets/logo.svg on first build if missing.

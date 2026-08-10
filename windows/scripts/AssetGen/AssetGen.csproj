@@ -6,6 +6,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Svg" Version="3.4.7" />
+    <PackageReference Include="Svg" Version="3.4.8" />
   </ItemGroup>
 </Project>
