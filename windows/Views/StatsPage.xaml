@@ -5,7 +5,7 @@
     xmlns:vm="using:Hatch.ViewModels"
     xmlns:local="using:Hatch.Views"
     xmlns:converters="using:Hatch.Converters"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="Transparent">
 
     <Page.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
@@ -24,14 +24,9 @@
             <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="{ThemeResource OverlayCornerRadius}"/>
-            <Setter Property="Padding" Value="20"/>
-            <!-- Sized for the tallest tile: My Day stacks 4 lines (title row, value,
-                 "0%", description) where the others have 3. UniformGridLayout gives
-                 every cell the same height and will not grow it to fit content — too
-                 small and the centred layout silently clips the outer lines rather
-                 than expanding, which is exactly how "complete today" disappeared at
-                 124. Must match UniformGridLayout.MinItemHeight below. -->
-            <Setter Property="MinHeight" Value="140"/>
+            <Setter Property="Padding" Value="16"/>
+            <!-- Must match UniformGridLayout.MinItemHeight below — too small silently clips content instead of growing. -->
+            <Setter Property="MinHeight" Value="112"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="VerticalAlignment" Value="Stretch"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -68,6 +63,8 @@
         </DataTemplate>
     </Page.Resources>
 
+    <!-- Capped on the outer Grid, not inside the ScrollViewer, or its Padding sits outside the cap. -->
+    <Grid MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
     <ScrollViewer Padding="24" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="20">
 
@@ -79,7 +76,7 @@
                  whatever width is available, instead of a fixed column count. -->
             <ItemsRepeater ItemsSource="{x:Bind ViewModel.Tiles}">
                 <ItemsRepeater.Layout>
-                    <UniformGridLayout MinItemWidth="220" MinItemHeight="140"
+                    <UniformGridLayout MinItemWidth="220" MinItemHeight="112"
                                        MinRowSpacing="16" MinColumnSpacing="16"
                                        ItemsStretch="Fill"/>
                 </ItemsRepeater.Layout>
@@ -113,15 +110,20 @@
                                 </StackPanel>
                                 <TextBlock AutomationProperties.AutomationId="{x:Bind AutomationId}"
                                            Text="{x:Bind Value}"
-                                           Style="{ThemeResource TitleTextBlockStyle}"/>
-                                <TextBlock Text="{x:Bind SecondaryValue}"
-                                           Style="{ThemeResource BodyStrongTextBlockStyle}"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           Visibility="{x:Bind local:StatsPage.SecondaryValueVisibility(SecondaryValue)}"/>
-                                <TextBlock Text="{x:Bind Description}"
-                                           Style="{ThemeResource CaptionTextBlockStyle}"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           TextWrapping="WrapWholeWords"/>
+                                           Style="{ThemeResource TitleTextBlockStyle}"
+                                           FontSize="32"/>
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <TextBlock Text="{x:Bind SecondaryValue}"
+                                               Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               VerticalAlignment="Bottom"
+                                               Visibility="{x:Bind local:StatsPage.SecondaryValueVisibility(SecondaryValue)}"/>
+                                    <TextBlock Text="{x:Bind Description}"
+                                               Style="{ThemeResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               TextWrapping="WrapWholeWords"
+                                               VerticalAlignment="Bottom"/>
+                                </StackPanel>
                             </StackPanel>
                         </Button>
                     </DataTemplate>
@@ -166,4 +168,5 @@
             </StackPanel>
         </StackPanel>
     </ScrollViewer>
+    </Grid>
 </Page>

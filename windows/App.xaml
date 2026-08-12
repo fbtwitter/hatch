@@ -8,6 +8,7 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls"/>
             </ResourceDictionary.MergedDictionaries>
             <ThemeShadow x:Key="CommonShadow"/>
+            <x:Double x:Key="PageMaxWidth">1100</x:Double>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

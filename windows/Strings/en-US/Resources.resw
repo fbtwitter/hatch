@@ -198,6 +198,7 @@
   <data name="PaneTagInput.PlaceholderText" xml:space="preserve"><value>Add a tag, press Enter</value></data>
   <data name="PaneTagChipRemove.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Remove tag</value></data>
   <data name="Pane_CreatedLabel.Text" xml:space="preserve"><value>Created</value></data>
+  <data name="Pane_UpdatedLabel.Text" xml:space="preserve"><value>Updated</value></data>
 
   <!-- ── Priority chip labels (code-accessed) ────────────────── -->
   <data name="Priority_None" xml:space="preserve"><value>None</value></data>
