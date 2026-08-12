@@ -179,7 +179,10 @@ jobs:
           # Create the bundle
           $bundleName = "Hatch_${{ env.MSIX_VERSION }}_bundle.msixbundle"
           $bundlePath = "${{ github.workspace }}\$bundleName"
-          & $makeAppx.FullName bundle /d $stagingDir /p $bundlePath /overwrite
+          # /bv required: without it MakeAppx auto-generates a timestamp-based bundle
+          # Identity Version, which then mismatches the Hatch.appinstaller MainBundle
+          # Version below and breaks install/update with "Error in parsing the app package".
+          & $makeAppx.FullName bundle /d $stagingDir /p $bundlePath /bv "${{ env.MSIX_VERSION }}" /overwrite
           if ($LASTEXITCODE -ne 0) { Write-Error "MakeAppx bundle failed"; exit $LASTEXITCODE }
 
           "BUNDLE_PATH=$bundlePath" | Out-File $env:GITHUB_ENV -Append
