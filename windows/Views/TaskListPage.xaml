@@ -325,6 +325,11 @@
         </DataTemplate>
 
         <Style x:Key="TaskListViewItemStyle" TargetType="ListViewItem">
+            <!-- Rows cap and centre themselves so a ListView using this style can span its
+                 column full width and keep its scrollbar at the true edge. PageMaxRowWidth,
+                 not PageMaxWidth: the cap sits inside the list's own 24px padding. -->
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="MaxWidth" Value="{StaticResource PageMaxRowWidth}" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Margin" Value="0, 2" />
@@ -419,8 +424,10 @@
             <ColumnDefinition Width="Auto" />
         </Grid.ColumnDefinitions>
 
-        <!-- Left column: header + add row + task list -->
-        <Grid Grid.Column="0" MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
+        <!-- Left column: header + add row + task list. Deliberately uncapped — each row below
+             caps its own content instead, so the scrolling controls span the full column and
+             their scrollbars track its right edge rather than a capped content edge. -->
+        <Grid Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -429,7 +436,8 @@
             </Grid.RowDefinitions>
 
             <!-- Header -->
-            <Grid Grid.Row="0" Padding="24,24,24,8">
+            <Grid Grid.Row="0" Padding="24,24,24,8"
+                  MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
                 <TextBlock x:Name="HeaderText" Text="My Tasks"
                            Style="{ThemeResource TitleLargeTextBlockStyle}"
                            VerticalAlignment="Center" />
@@ -440,6 +448,7 @@
                         Orientation="Horizontal"
                         Spacing="8"
                         Padding="24,0,24,6"
+                        MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch"
                         Visibility="{x:Bind ViewModel.IsTagFilterActive, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                 <TextBlock x:Uid="TagFilter_ShowingText"
                            Text="Showing:"
@@ -462,7 +471,8 @@
             </StackPanel>
 
             <!-- Add task row -->
-            <Grid Grid.Row="2" Padding="24,8,24,16" ColumnSpacing="8">
+            <Grid Grid.Row="2" Padding="24,8,24,16" ColumnSpacing="8"
+                  MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -512,9 +522,15 @@
                 </StackPanel>
 
                 <!-- Flat list with grouping — My Day, Important, All Tasks -->
-                <ScrollViewer Margin="8,0" Grid.Row="0" x:Name="FlatListView"
+                <!-- Full width (no side margin) so the scrollbar tracks the column's true right
+                     edge. The wrapper's Width is pinned to the viewport because this
+                     ScrollViewer's extent runs wider than its viewport once the per-group
+                     ListViews are inside it, and a MaxWidth+Stretch child centres itself against
+                     the extent — which parked the whole list ~240px right of the header. -->
+                <ScrollViewer Grid.Row="0" x:Name="FlatListView"
                               HorizontalScrollBarVisibility="Disabled">
-                    <StackPanel>
+                    <Grid Width="{x:Bind FlatListView.ViewportWidth, Mode=OneWay}">
+                    <StackPanel MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
                         <ItemsControl x:Name="FlatGroupsItemsControl"
                                       ItemsSource="{x:Bind ViewModel.FlatGroupedTasks, Mode=OneWay}"
                                       HorizontalAlignment="Stretch"
@@ -535,7 +551,7 @@
                                                   HorizontalAlignment="Stretch"
                                                   HorizontalContentAlignment="Stretch"
                                                   Padding="0"
-                                                  Margin="14,4"
+                                                  Margin="24,4"
                                                   CornerRadius="{ThemeResource ControlCornerRadius}"
                                                   Visibility="{x:Bind ShowExpander, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                                             <Expander.Resources>
@@ -580,7 +596,7 @@
                                                   SelectionMode="Single"
                                                   SelectionChanged="TaskListView_SelectionChanged"
                                                   IsTabStop="False"
-                                                  Margin="16,4"
+                                                  Margin="24,4"
                                                   Visibility="{x:Bind ShowFlatList, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
                                                   ScrollViewer.VerticalScrollBarVisibility="Disabled"
                                                   ScrollViewer.HorizontalScrollBarVisibility="Disabled">
@@ -594,7 +610,7 @@
                         </ItemsControl>
 
                         <!-- Suggestions — My Day only, shows tasks from previous days not yet completed -->
-                        <StackPanel Margin="16,8,16,24"
+                        <StackPanel Margin="24,8,24,24"
                                     Spacing="4"
                                     Visibility="{x:Bind ViewModel.SuggestionsVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                             <TextBlock x:Uid="Suggestions_Header"
@@ -645,9 +661,13 @@
                         </StackPanel>
 
                     </StackPanel>
+                    </Grid>
                 </ScrollViewer>
 
-                <!-- Grouped list — Planned view only -->
+                <!-- Grouped list — Planned view only. Full width so its scrollbar sits at the
+                     column's right edge; rows and group headers cap themselves instead.
+                     Padding stays — it is a margin on the ScrollContentPresenter, so it insets
+                     the rows without moving the ScrollBar. -->
                 <ListView Grid.Row="0" x:Name="GroupedListView"
                           ItemsSource="{x:Bind PlannedGroupsSource.View, Mode=OneWay}"
                           SelectionMode="Single"
@@ -661,6 +681,17 @@
                     </ListView.ItemContainerTransitions>
                     <ListView.GroupStyle>
                         <GroupStyle>
+                            <!-- The cap has to sit on the container, not the TextBlock inside it:
+                                 ListViewHeaderItem shrink-wraps its content, so a MaxWidth on the
+                                 header's own content has no room to centre within and the header
+                                 lands hard left of its rows. -->
+                            <GroupStyle.HeaderContainerStyle>
+                                <Style TargetType="ListViewHeaderItem">
+                                    <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                    <Setter Property="MaxWidth" Value="{StaticResource PageMaxRowWidth}" />
+                                </Style>
+                            </GroupStyle.HeaderContainerStyle>
                             <GroupStyle.HeaderTemplate>
                                 <DataTemplate x:DataType="vm:PlannedGroup">
                                     <TextBlock Text="{x:Bind Name, Mode=OneTime}"
@@ -682,6 +713,7 @@
                          IsClosable="True"
                          Severity="Informational"
                          Margin="16,8,16,12"
+                         MaxWidth="{StaticResource PageMaxRowWidth}" HorizontalAlignment="Stretch"
                          Closed="UndoInfoBar_Closed">
                     <InfoBar.ActionButton>
                         <Button x:Uid="UndoButton"

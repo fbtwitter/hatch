@@ -17,7 +17,9 @@
         <!-- Rounded, hover-highlighted row — simpler than TaskListPage's TaskListViewItemStyle
              since this list has no selection state (SelectionMode="None"), just hover/press. -->
         <Style x:Key="ResultRowStyle" TargetType="ListViewItem">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="MaxWidth" Value="{StaticResource PageMaxRowWidth}" />
             <Setter Property="Padding" Value="0" />
             <Setter Property="Margin" Value="0,3" />
             <Setter Property="IsTabStop" Value="False" />
@@ -70,13 +72,16 @@
             opens the full details pane back on TaskListPage; only the completion checkbox
             is directly interactive here since it needs no code-behind beyond a data binding.
         -->
+        <!-- Full-width so its scrollbar tracks the window edge; each row is capped and centered
+             individually via ResultRowStyle (PowerToys-style), not the ListView itself. Padding
+             stays: it is a margin on the ScrollContentPresenter, so it insets the rows without
+             moving the ScrollBar, which sits in its own column at the control's right edge. -->
         <ListView Grid.Row="1"
                   x:Name="ResultsListView"
                   ItemsSource="{x:Bind ViewModel.SearchResults, Mode=OneWay}"
                   SelectionMode="None"
                   ItemContainerStyle="{StaticResource ResultRowStyle}"
                   Padding="24,0,24,16"
-                  MaxWidth="{StaticResource PageMaxWidth}"
                   HorizontalAlignment="Stretch"
                   Visibility="{x:Bind ViewModel.IsSearchEmpty, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
             <ListView.ItemContainerTransitions>
