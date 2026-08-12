@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.20.1] - 2026-08-12
+
+### Changed
+- Release package no longer bundles ONNX Runtime and DirectML — Hatch has no AI/ML
+  feature, and the Windows App SDK metapackage was pulling both in transitively at
+  roughly 120 MB across x64/arm64/arm64ec, unused. Confirmed via loaded-module
+  inspection that neither was ever loaded at runtime, so this is an install-size
+  reduction only
+
+---
+
 ## [0.20.0] - 2026-08-12
 
 ### Changed

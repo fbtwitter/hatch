@@ -14,7 +14,7 @@
     <!-- Keep in sync with Package.appxmanifest's Identity Version and the release tag.
          Packaged builds read the manifest; unpackaged Debug builds have no package
          identity and fall back to this via SettingsViewModel.AppVersion. -->
-    <Version>0.20.0</Version>
+    <Version>0.20.1</Version>
     <!-- Signing and package generation are handled by CI; disabled locally -->
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
     <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>
@@ -59,6 +59,15 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.3.1" />
+    <!-- Hatch has no AI/ML feature. The metapackage pulls in Microsoft.WindowsAppSDK.ML
+         transitively, which carries onnxruntime.dll + DirectML.dll for x64/arm64/arm64ec
+         (~120MB combined, unused) — excluded here rather than dropped from the metapackage
+         reference, so the rest of the WinUI build pipeline (WinUI/Foundation/
+         InteractiveExperiences/etc., all wired up by the metapackage's own targets) stays
+         untouched. Confirmed via `Get-Process -Id ... | Modules` that these DLLs were never
+         actually loaded at runtime even before this change — this trims install size only. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK.ML" Version="2.1.74" ExcludeAssets="all" />
+    <PackageReference Include="Microsoft.Windows.AI.MachineLearning" Version="2.1.74" ExcludeAssets="all" />
     <PackageReference Include="Supabase" Version="1.6.0" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2526" PrivateAssets="all" />
     <!-- Required: MSIX build tasks were compiled against .NET 8 and probe for this assembly at build time -->
