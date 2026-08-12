@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.20.3] - 2026-08-13
+
+### Fixed
+- Sideload install/auto-update via `Hatch.appinstaller` failed with "Error in parsing the
+  app package" — the release workflow's MSIX bundling step never pinned a bundle version,
+  so `MakeAppx` auto-generated a timestamp-based one that didn't match what the
+  `.appinstaller` manifest declared. Direct `.msixbundle` downloads were unaffected
+
+---
+
 ## [0.20.2] - 2026-08-13
 
 ### Fixed
