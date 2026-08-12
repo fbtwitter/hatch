@@ -79,7 +79,7 @@
         <DataTemplate x:Key="TaskItemTemplate" x:DataType="models:TodoItem">
             <Grid Tag="{x:Bind}"
                   Margin="0,0"
-                  Padding="16,12,24,12"
+                  Padding="24,12,24,12"
                   ColumnSpacing="8"
                   CornerRadius="0"
                   Background="Transparent"
@@ -138,14 +138,16 @@
                                     VerticalAlignment="Center"
                                     x:Uid="Task_DateChipButton">
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                    <FontIcon Glyph="{x:Bind DueDate, Converter={StaticResource DueDateToChipGlyph}, Mode=OneWay}"
-                                              FontSize="11"
-                                              Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
-                                              VerticalAlignment="Center" />
-                                    <TextBlock Text="{x:Bind DueDate, Converter={StaticResource DueDateToString}, Mode=OneWay}"
-                                               Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
-                                               Style="{ThemeResource CaptionTextBlockStyle}"
-                                               VerticalAlignment="Center" />
+                                    <FontIcon
+                                        Glyph="{x:Bind DueDate, Converter={StaticResource DueDateToChipGlyph}, Mode=OneWay}"
+                                        FontSize="11"
+                                        Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
+                                        VerticalAlignment="Center" />
+                                    <TextBlock
+                                        Text="{x:Bind DueDate, Converter={StaticResource DueDateToString}, Mode=OneWay}"
+                                        Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
+                                        Style="{ThemeResource CaptionTextBlockStyle}"
+                                        VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
@@ -160,19 +162,21 @@
                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </Border>
 
-                            <Border Background="{x:Bind Priority, Converter={StaticResource PriorityToBrush}, Mode=OneWay}"
-                                    CornerRadius="4"
-                                    Padding="6,2"
-                                    VerticalAlignment="Center"
-                                    ToolTipService.ToolTip="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, Mode=OneWay}"
-                                    Visibility="{x:Bind HasPriority, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                            <Border
+                                Background="{x:Bind Priority, Converter={StaticResource PriorityToBrush}, Mode=OneWay}"
+                                CornerRadius="4"
+                                Padding="6,2"
+                                VerticalAlignment="Center"
+                                ToolTipService.ToolTip="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, Mode=OneWay}"
+                                Visibility="{x:Bind HasPriority, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                                 <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                     <FontIcon Glyph="&#xE7C1;"
                                               FontSize="10"
                                               Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
-                                    <TextBlock Text="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, Mode=OneWay}"
-                                               Style="{ThemeResource CaptionTextBlockStyle}"
-                                               Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
+                                    <TextBlock
+                                        Text="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, Mode=OneWay}"
+                                        Style="{ThemeResource CaptionTextBlockStyle}"
+                                        Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
                                 </StackPanel>
                             </Border>
 
@@ -202,9 +206,10 @@
                                        Style="{ThemeResource CaptionTextBlockStyle}"
                                        VerticalAlignment="Center" />
 
-                            <ItemsRepeater ItemsSource="{x:Bind Tags, Converter={StaticResource TagsPreview}, Mode=OneWay}"
-                                           Visibility="{x:Bind Tags, Converter={StaticResource TagsToVisibility}, Mode=OneWay}"
-                                           VerticalAlignment="Center">
+                            <ItemsRepeater
+                                ItemsSource="{x:Bind Tags, Converter={StaticResource TagsPreview}, Mode=OneWay}"
+                                Visibility="{x:Bind Tags, Converter={StaticResource TagsToVisibility}, Mode=OneWay}"
+                                VerticalAlignment="Center">
                                 <ItemsRepeater.Layout>
                                     <StackLayout Orientation="Horizontal" Spacing="4" />
                                 </ItemsRepeater.Layout>
@@ -231,9 +236,10 @@
                                     Style="{StaticResource ChipButtonStyle}"
                                     VerticalAlignment="Center"
                                     Padding="6,1">
-                                <TextBlock Text="{x:Bind Tags, Converter={StaticResource TagsOverflowCount}, Mode=OneWay}"
-                                           Style="{ThemeResource CaptionTextBlockStyle}"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock
+                                    Text="{x:Bind Tags, Converter={StaticResource TagsOverflowCount}, Mode=OneWay}"
+                                    Style="{ThemeResource CaptionTextBlockStyle}"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </Button>
 
                         </StackPanel>
@@ -279,25 +285,27 @@
                                                 Click="FocusMenuItem_Click"
                                                 Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
                                     <MenuFlyoutItem.Icon>
-                                        <FontIcon Glyph="&#xE8B0;"/>
+                                        <FontIcon Glyph="&#xE8B0;" />
                                     </MenuFlyoutItem.Icon>
                                 </MenuFlyoutItem>
-                                <MenuFlyoutSeparator Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}"/>
+                                <MenuFlyoutSeparator
+                                    Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}" />
                                 <MenuFlyoutSubItem x:Uid="TaskRow_SnoozeSubItem" Text="Snooze"
-                                                    Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
+                                                   Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
                                     <MenuFlyoutSubItem.Icon>
-                                        <FontIcon Glyph="&#xE121;"/>
+                                        <FontIcon Glyph="&#xE121;" />
                                     </MenuFlyoutSubItem.Icon>
                                     <MenuFlyoutItem Tag="{x:Bind}"
                                                     x:Uid="TaskRow_SnoozeTomorrowItem"
                                                     Text="Tomorrow"
-                                                    Click="SnoozeTomorrow_Click"/>
+                                                    Click="SnoozeTomorrow_Click" />
                                     <MenuFlyoutItem Tag="{x:Bind}"
                                                     x:Uid="TaskRow_SnoozeNextWeekItem"
                                                     Text="Next week"
-                                                    Click="SnoozeNextWeek_Click"/>
+                                                    Click="SnoozeNextWeek_Click" />
                                 </MenuFlyoutSubItem>
-                                <MenuFlyoutSeparator Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}"/>
+                                <MenuFlyoutSeparator
+                                    Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}" />
                                 <MenuFlyoutItem Tag="{x:Bind}"
                                                 x:Uid="Task_DeleteMenuItem"
                                                 Click="DeleteButton_Click">
@@ -314,95 +322,18 @@
             </Grid>
         </DataTemplate>
 
-        <Style x:Key="TaskListViewItemStyle" TargetType="ListViewItem">
-            <!-- Rows cap and centre themselves so a ListView using this style can span its
-                 column full width and keep its scrollbar at the true edge. PageMaxRowWidth,
-                 not PageMaxWidth: the cap sits inside the list's own 24px padding. -->
+        <Style x:Key="TaskListViewItemStyle" TargetType="ListViewItem"
+               BasedOn="{StaticResource DefaultListViewItemStyle}">
+            <!-- BasedOn required — without it, no Template setter means no selection visuals. -->
+            <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}" />
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
             <Setter Property="HorizontalAlignment" Value="Stretch" />
             <Setter Property="MaxWidth" Value="{StaticResource PageMaxRowWidth}" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="Padding" Value="0" />
-            <Setter Property="Margin" Value="0, 2" />
+            <Setter Property="Margin" Value="0, 0" />
             <Setter Property="IsTabStop" Value="False" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ListViewItem">
-                        <Grid x:Name="ContentBorder"
-                              Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                            <Border x:Name="SelectionBar"
-                                    Width="3"
-                                    VerticalAlignment="Stretch"
-                                    HorizontalAlignment="Left"
-                                    Background="{ThemeResource AccentFillColorDefaultBrush}"
-                                    Opacity="0" />
-                            <ContentPresenter HorizontalAlignment="Stretch" />
-                            <VisualStateManager.VisualStateGroups>
-                                <VisualStateGroup x:Name="CommonStates">
-                                    <VisualState x:Name="Normal" />
-                                    <VisualState x:Name="PointerOver">
-                                        <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentBorder"
-                                                                           Storyboard.TargetProperty="Background">
-                                                <DiscreteObjectKeyFrame KeyTime="0"
-                                                                        Value="{ThemeResource ControlFillColorSecondaryBrush}" />
-                                            </ObjectAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </VisualState>
-                                    <VisualState x:Name="Pressed">
-                                        <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentBorder"
-                                                                           Storyboard.TargetProperty="Background">
-                                                <DiscreteObjectKeyFrame KeyTime="0"
-                                                                        Value="{ThemeResource ControlFillColorTertiaryBrush}" />
-                                            </ObjectAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </VisualState>
-                                    <VisualState x:Name="Selected">
-                                        <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentBorder"
-                                                                           Storyboard.TargetProperty="Background">
-                                                <DiscreteObjectKeyFrame KeyTime="0"
-                                                                        Value="{ThemeResource SubtleFillColorSecondaryBrush}" />
-                                            </ObjectAnimationUsingKeyFrames>
-                                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBar"
-                                                                           Storyboard.TargetProperty="Opacity">
-                                                <SplineDoubleKeyFrame KeyTime="0:0:0.15" Value="1"
-                                                                      KeySpline="0.1,0.9 0.2,1.0" />
-                                            </DoubleAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </VisualState>
-                                    <VisualState x:Name="PointerOverSelected">
-                                        <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentBorder"
-                                                                           Storyboard.TargetProperty="Background">
-                                                <DiscreteObjectKeyFrame KeyTime="0"
-                                                                        Value="{ThemeResource SubtleFillColorTertiaryBrush}" />
-                                            </ObjectAnimationUsingKeyFrames>
-                                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBar"
-                                                                           Storyboard.TargetProperty="Opacity">
-                                                <DiscreteDoubleKeyFrame KeyTime="0" Value="1" />
-                                            </DoubleAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </VisualState>
-                                    <VisualState x:Name="PressedSelected">
-                                        <Storyboard>
-                                            <ObjectAnimationUsingKeyFrames Storyboard.TargetName="ContentBorder"
-                                                                           Storyboard.TargetProperty="Background">
-                                                <DiscreteObjectKeyFrame KeyTime="0"
-                                                                        Value="{ThemeResource SubtleFillColorTertiaryBrush}" />
-                                            </ObjectAnimationUsingKeyFrames>
-                                            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="SelectionBar"
-                                                                           Storyboard.TargetProperty="Opacity">
-                                                <DiscreteDoubleKeyFrame KeyTime="0" Value="1" />
-                                            </DoubleAnimationUsingKeyFrames>
-                                        </Storyboard>
-                                    </VisualState>
-                                </VisualStateGroup>
-                            </VisualStateManager.VisualStateGroups>
-                        </Grid>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
         </Style>
     </Page.Resources>
 
@@ -515,149 +446,148 @@
                 <ScrollViewer Grid.Row="0" x:Name="FlatListView"
                               HorizontalScrollBarVisibility="Disabled">
                     <Grid Width="{x:Bind FlatListView.ViewportWidth, Mode=OneWay}">
-                    <StackPanel MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
-                        <ItemsControl x:Name="FlatGroupsItemsControl"
-                                      ItemsSource="{x:Bind ViewModel.FlatGroupedTasks, Mode=OneWay}"
-                                      HorizontalAlignment="Stretch"
-                                      Padding="24,0,24,8">
-                            <ItemsControl.ItemContainerStyle>
-                                <Style TargetType="ContentPresenter">
-                                    <Setter Property="HorizontalAlignment" Value="Stretch" />
-                                </Style>
-                            </ItemsControl.ItemContainerStyle>
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate x:DataType="models:CompletedTaskGroup">
-                                    <StackPanel Spacing="4" HorizontalAlignment="Stretch">
+                        <StackPanel MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
+                            <ItemsControl x:Name="FlatGroupsItemsControl"
+                                          ItemsSource="{x:Bind ViewModel.FlatGroupedTasks, Mode=OneWay}"
+                                          HorizontalAlignment="Stretch"
+                                          Padding="24,0,24,8">
+                                <ItemsControl.ItemContainerStyle>
+                                    <Style TargetType="ContentPresenter">
+                                        <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                    </Style>
+                                </ItemsControl.ItemContainerStyle>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:CompletedTaskGroup">
+                                        <StackPanel Spacing="4" HorizontalAlignment="Stretch">
 
-                                        <!-- Collapsible variant: used whenever a Completed group can appear
+                                            <!-- Collapsible variant: used whenever a Completed group can appear
                                              alongside this one (My Day, All Tasks, custom lists) — the
                                              header lets you fold Open away to make room for Completed. -->
-                                        <Expander IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
-                                                  HorizontalAlignment="Stretch"
-                                                  HorizontalContentAlignment="Stretch"
-                                                  Padding="0"
-                                                  Margin="24,4"
-                                                  CornerRadius="{ThemeResource ControlCornerRadius}"
-                                                  Visibility="{x:Bind ShowExpander, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                                            <Expander.Resources>
-                                                <StaticResource x:Key="ExpanderHeaderBackground"
-                                                                ResourceKey="SubtleFillColorSecondaryBrush" />
-                                                <StaticResource x:Key="ExpanderHeaderBackgroundPointerOver"
-                                                                ResourceKey="SubtleFillColorTertiaryBrush" />
-                                            </Expander.Resources>
-                                            <Expander.Header>
-                                                <StackPanel Orientation="Horizontal" Spacing="8"
-                                                            Padding="0,16" VerticalAlignment="Center">
-                                                    <TextBlock Text="{x:Bind Name, Mode=OneWay}"
-                                                               FontWeight="SemiBold"
-                                                               Visibility="{x:Bind HasCountLabel, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}"
-                                                               VerticalAlignment="Center" />
-                                                    <TextBlock Text="{x:Bind CountLabel, Mode=OneWay}"
-                                                               Visibility="{x:Bind HasCountLabel, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                                               FontWeight="SemiBold"
-                                                               VerticalAlignment="Center" />
-                                                </StackPanel>
-                                            </Expander.Header>
+                                            <Expander IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
+                                                      HorizontalAlignment="Stretch"
+                                                      HorizontalContentAlignment="Stretch"
+                                                      Padding="0"
+                                                      Margin="24,4"
+                                                      CornerRadius="{ThemeResource ControlCornerRadius}"
+                                                      Visibility="{x:Bind ShowExpander, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                                                <Expander.Resources>
+                                                    <StaticResource x:Key="ExpanderHeaderBackground"
+                                                                    ResourceKey="SubtleFillColorSecondaryBrush" />
+                                                    <StaticResource x:Key="ExpanderHeaderBackgroundPointerOver"
+                                                                    ResourceKey="SubtleFillColorTertiaryBrush" />
+                                                </Expander.Resources>
+                                                <Expander.Header>
+                                                    <StackPanel Orientation="Horizontal" Spacing="8"
+                                                                Padding="0,16" VerticalAlignment="Center">
+                                                        <TextBlock Text="{x:Bind Name, Mode=OneWay}"
+                                                                   FontWeight="SemiBold"
+                                                                   Visibility="{x:Bind HasCountLabel, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}"
+                                                                   VerticalAlignment="Center" />
+                                                        <TextBlock Text="{x:Bind CountLabel, Mode=OneWay}"
+                                                                   Visibility="{x:Bind HasCountLabel, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                                                   FontWeight="SemiBold"
+                                                                   VerticalAlignment="Center" />
+                                                    </StackPanel>
+                                                </Expander.Header>
 
+                                                <ListView ItemsSource="{x:Bind Items, Mode=OneWay}"
+                                                          ItemTemplate="{StaticResource TaskItemTemplate}"
+                                                          ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
+                                                          Margin="0"
+                                                          Padding="0, 1"
+                                                          CornerRadius="0"
+                                                          SelectionMode="Single"
+                                                          SelectionChanged="TaskListView_SelectionChanged"
+                                                          IsTabStop="False"
+                                                          ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                                    <ListView.ItemContainerTransitions>
+                                                        <TransitionCollection />
+                                                    </ListView.ItemContainerTransitions>
+                                                </ListView>
+                                            </Expander>
+
+                                            <!-- Flat variant: Important's Open group, no Completed counterpart so no header/chevron. -->
                                             <ListView ItemsSource="{x:Bind Items, Mode=OneWay}"
                                                       ItemTemplate="{StaticResource TaskItemTemplate}"
                                                       ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
                                                       SelectionMode="Single"
                                                       SelectionChanged="TaskListView_SelectionChanged"
                                                       IsTabStop="False"
+                                                      Margin="20,4"
+                                                      Visibility="{x:Bind ShowFlatList, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
                                                       ScrollViewer.VerticalScrollBarVisibility="Disabled"
                                                       ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                                                 <ListView.ItemContainerTransitions>
                                                     <TransitionCollection />
                                                 </ListView.ItemContainerTransitions>
                                             </ListView>
-                                        </Expander>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
 
-                                        <!-- Flat variant: Important's Open group — there's no Completed
-                                             counterpart to fold this away for, so no header, no chevron. -->
-                                        <ListView ItemsSource="{x:Bind Items, Mode=OneWay}"
-                                                  ItemTemplate="{StaticResource TaskItemTemplate}"
-                                                  ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
-                                                  SelectionMode="Single"
-                                                  SelectionChanged="TaskListView_SelectionChanged"
-                                                  IsTabStop="False"
-                                                  Margin="24,4"
-                                                  Visibility="{x:Bind ShowFlatList, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                                            <ListView.ItemContainerTransitions>
-                                                <TransitionCollection />
-                                            </ListView.ItemContainerTransitions>
-                                        </ListView>
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-
-                        <!-- Suggestions — My Day only, shows tasks from previous days not yet completed -->
-                        <StackPanel Margin="24,8,24,24"
-                                    Spacing="4"
-                                    Visibility="{x:Bind ViewModel.SuggestionsVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                            <TextBlock x:Uid="Suggestions_Header"
-                                       Text="Suggested"
-                                       Style="{ThemeResource CaptionTextBlockStyle}"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                       Margin="8,0,0,4" />
-                            <ItemsRepeater ItemsSource="{x:Bind ViewModel.MySuggestions, Mode=OneWay}">
-                                <ItemsRepeater.ItemTemplate>
-                                    <DataTemplate x:DataType="models:TodoItem">
-                                        <!-- Card is a real Button (keyboard + narrator reachable);
-                                             the Add button overlays as a sibling to avoid nesting
-                                             interactive controls. -->
-                                        <Grid Margin="0,2">
-                                            <Button Tag="{x:Bind}"
-                                                    AutomationProperties.Name="{x:Bind Title, Mode=OneWay}"
-                                                    Click="SuggestionCard_Click"
-                                                    HorizontalAlignment="Stretch"
-                                                    HorizontalContentAlignment="Stretch"
-                                                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                                                    BorderThickness="0"
-                                                    CornerRadius="{ThemeResource ControlCornerRadius}"
-                                                    Padding="12,10">
-                                                <TextBlock Text="{x:Bind Title, Mode=OneWay}"
+                            <!-- Suggestions — My Day only, shows tasks from previous days not yet completed -->
+                            <StackPanel Margin="24,8,24,24"
+                                        Spacing="4"
+                                        Visibility="{x:Bind ViewModel.SuggestionsVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                                <TextBlock x:Uid="Suggestions_Header"
+                                           Text="Suggested"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Margin="8,0,0,4" />
+                                <!-- Native ListView, not a Button ItemsRepeater — gets the selection indicator for free. Background must stay Transparent or it masks it. -->
+                                <ListView ItemsSource="{x:Bind ViewModel.MySuggestions, Mode=OneWay}"
+                                          ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
+                                          SelectionMode="Single"
+                                          SelectionChanged="TaskListView_SelectionChanged"
+                                          IsTabStop="False"
+                                          ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                    <ListView.ItemContainerTransitions>
+                                        <TransitionCollection />
+                                    </ListView.ItemContainerTransitions>
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate x:DataType="models:TodoItem">
+                                            <Grid Tag="{x:Bind}"
+                                                  Padding="12, 8,12, 8"
+                                                  ColumnSpacing="8"
+                                                  Background="Transparent">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Grid.Column="0"
+                                                           Text="{x:Bind Title, Mode=OneWay}"
                                                            VerticalAlignment="Center"
                                                            TextTrimming="CharacterEllipsis"
-                                                           Margin="0,0,40,0"
                                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                            </Button>
-                                            <Button Tag="{x:Bind}"
-                                                    x:Uid="Suggestion_AddButton"
-                                                    AutomationProperties.Name="Add to My Day"
-                                                    Click="SuggestionAddButton_Click"
-                                                    Style="{ThemeResource AccentButtonStyle}"
-                                                    Padding="6"
-                                                    MinWidth="0"
-                                                    Width="32" Height="32"
-                                                    Margin="0,0,6,0"
-                                                    ToolTipService.ToolTip="Add to My Day"
-                                                    HorizontalAlignment="Right"
-                                                    VerticalAlignment="Center">
-                                                <FontIcon Glyph="&#xE710;" FontSize="14" />
-                                            </Button>
-                                        </Grid>
-                                    </DataTemplate>
-                                </ItemsRepeater.ItemTemplate>
-                            </ItemsRepeater>
-                        </StackPanel>
+                                                <Button Grid.Column="1" Tag="{x:Bind}"
+                                                        x:Uid="Suggestion_AddButton"
+                                                        AutomationProperties.Name="Add to My Day"
+                                                        Click="SuggestionAddButton_Click"
+                                                        Style="{ThemeResource AccentButtonStyle}"
+                                                        Padding="8"
+                                                        MinWidth="0"
+                                                        ToolTipService.ToolTip="Add to My Day">
+                                                    <FontIcon Glyph="&#xE710;" FontSize="14" />
+                                                </Button>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </StackPanel>
 
-                    </StackPanel>
+                        </StackPanel>
                     </Grid>
                 </ScrollViewer>
 
-                <!-- Grouped list — Planned view only. Full width so its scrollbar sits at the
-                     column's right edge; rows and group headers cap themselves instead.
-                     Padding stays — it is a margin on the ScrollContentPresenter, so it insets
-                     the rows without moving the ScrollBar. -->
+                <!-- Grouped list — Planned view only. Padding insets rows without moving the ScrollBar (it's a margin on ScrollContentPresenter) — keep it near the flat lists' inset or rows misalign. -->
                 <ListView Grid.Row="0" x:Name="GroupedListView"
                           ItemsSource="{x:Bind PlannedGroupsSource.View, Mode=OneWay}"
                           SelectionMode="Single"
                           SelectionChanged="TaskListView_SelectionChanged"
-                          Padding="24,0,24,0"
+                          Padding="20,0,20,0"
                           ItemTemplate="{StaticResource TaskItemTemplate}"
                           ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
                           Visibility="Collapsed">
@@ -848,7 +778,8 @@
                                                     BorderThickness="1"
                                                     CornerRadius="8"
                                                     Padding="10,0,0,0">
-                                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                                <StackPanel Orientation="Horizontal" Spacing="4"
+                                                            VerticalAlignment="Center">
                                                     <TextBlock Text="{x:Bind}"
                                                                VerticalAlignment="Center"
                                                                Style="{ThemeResource CaptionTextBlockStyle}"

@@ -15,7 +15,7 @@
                  a parent's 24px padding — e.g. on a ListViewItem within a padded ListView.
                  Both land the content on the same left edge. -->
             <x:Double x:Key="PageMaxWidth">1100</x:Double>
-            <x:Double x:Key="PageMaxRowWidth">1052</x:Double>
+            <x:Double x:Key="PageMaxRowWidth">1060</x:Double>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
