@@ -2,11 +2,7 @@ using Microsoft.Windows.ApplicationModel.Resources;
 
 namespace Hatch.Helpers;
 
-/// <summary>
-/// Typed, static access to Strings/en-US/Resources.resw.
-/// Use this from C# code-behind and view-models.
-/// XAML should use x:Uid instead.
-/// </summary>
+// Typed access to Strings/en-US/Resources.resw for C# call sites; XAML uses x:Uid instead.
 internal static class Strings
 {
     private static readonly ResourceLoader _loader = new ResourceLoader();

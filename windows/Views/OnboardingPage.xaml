@@ -40,7 +40,6 @@
                     </Canvas>
                 </Viewbox>
 
-                <!-- Heading -->
                 <StackPanel Spacing="6">
                     <TextBlock Text="Welcome to Hatch"
                                Style="{ThemeResource TitleLargeTextBlockStyle}"
@@ -53,7 +52,6 @@
                                TextWrapping="Wrap"/>
                 </StackPanel>
 
-                <!-- Privacy bullets -->
                 <StackPanel Spacing="20">
 
                     <Grid ColumnSpacing="16">
@@ -112,7 +110,6 @@
 
                 </StackPanel>
 
-                <!-- Get started -->
                 <Button x:Name="GetStartedButton"
                         Content="Get started"
                         AutomationProperties.AutomationId="Onboarding_GetStarted"
