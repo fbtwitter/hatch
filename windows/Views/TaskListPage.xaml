@@ -5,7 +5,7 @@
     xmlns:models="using:Hatch.Models"
     xmlns:converters="using:Hatch.Converters"
     xmlns:vm="using:Hatch.ViewModels"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="Transparent">
 
     <Page.Resources>
         <converters:BoolToStrikethroughConverter x:Key="BoolToStrikethrough" />
@@ -420,7 +420,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- Left column: header + add row + task list -->
-        <Grid Grid.Column="0">
+        <Grid Grid.Column="0" MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -429,7 +429,7 @@
             </Grid.RowDefinitions>
 
             <!-- Header -->
-            <Grid Grid.Row="0" Padding="16,24,16,8">
+            <Grid Grid.Row="0" Padding="24,24,24,8">
                 <TextBlock x:Name="HeaderText" Text="My Tasks"
                            Style="{ThemeResource TitleLargeTextBlockStyle}"
                            VerticalAlignment="Center" />
@@ -439,7 +439,7 @@
             <StackPanel Grid.Row="1"
                         Orientation="Horizontal"
                         Spacing="8"
-                        Padding="20,0,16,6"
+                        Padding="24,0,24,6"
                         Visibility="{x:Bind ViewModel.IsTagFilterActive, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                 <TextBlock x:Uid="TagFilter_ShowingText"
                            Text="Showing:"
@@ -462,7 +462,7 @@
             </StackPanel>
 
             <!-- Add task row -->
-            <Grid Grid.Row="2" Padding="16,8,16,16" ColumnSpacing="8">
+            <Grid Grid.Row="2" Padding="24,8,24,16" ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -512,7 +512,7 @@
                 </StackPanel>
 
                 <!-- Flat list with grouping — My Day, Important, All Tasks -->
-                <ScrollViewer Grid.Row="0" x:Name="FlatListView"
+                <ScrollViewer Margin="8,0" Grid.Row="0" x:Name="FlatListView"
                               HorizontalScrollBarVisibility="Disabled">
                     <StackPanel>
                         <ItemsControl x:Name="FlatGroupsItemsControl"
@@ -535,7 +535,7 @@
                                                   HorizontalAlignment="Stretch"
                                                   HorizontalContentAlignment="Stretch"
                                                   Padding="0"
-                                                  Margin="16,4"
+                                                  Margin="14,4"
                                                   CornerRadius="{ThemeResource ControlCornerRadius}"
                                                   Visibility="{x:Bind ShowExpander, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                                             <Expander.Resources>
@@ -652,7 +652,7 @@
                           ItemsSource="{x:Bind PlannedGroupsSource.View, Mode=OneWay}"
                           SelectionMode="Single"
                           SelectionChanged="TaskListView_SelectionChanged"
-                          Padding="16,0,16,0"
+                          Padding="24,0,24,0"
                           ItemTemplate="{StaticResource TaskItemTemplate}"
                           ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
                           Visibility="Collapsed">
@@ -871,16 +871,31 @@
                                      KeyDown="PaneTagInput_KeyDown" />
                         </StackPanel>
 
-                        <!-- Created at -->
-                        <StackPanel Spacing="4">
-                            <TextBlock x:Uid="Pane_CreatedLabel"
-                                       Text="Created"
-                                       Style="{ThemeResource CaptionTextBlockStyle}"
-                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                            <TextBlock x:Name="PaneCreatedAtText"
-                                       Style="{ThemeResource CaptionTextBlockStyle}"
-                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                        </StackPanel>
+                        <!-- Created / Updated at -->
+                        <Grid ColumnSpacing="24">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <TextBlock x:Uid="Pane_CreatedLabel"
+                                           Text="Created"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                <TextBlock x:Name="PaneCreatedAtText"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock x:Uid="Pane_UpdatedLabel"
+                                           Text="Updated"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                <TextBlock x:Name="PaneUpdatedAtText"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                            </StackPanel>
+                        </Grid>
 
                     </StackPanel>
                 </ScrollViewer>

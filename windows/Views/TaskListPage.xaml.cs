@@ -44,7 +44,7 @@ public sealed partial class TaskListPage : Page
 
     private const double BreakpointWidth = 700;
 
-    private static readonly Windows.Globalization.DateTimeFormatting.DateTimeFormatter _createdAtFormatter =
+    private static readonly Windows.Globalization.DateTimeFormatting.DateTimeFormatter _timestampFormatter =
         new("dayofweek.abbreviated month.abbreviated day year.full");
 
     public TaskListPage()
@@ -281,10 +281,13 @@ public sealed partial class TaskListPage : Page
             : null;
         PaneRepeatCombo.SelectedIndex = (int)task.Recurrence;
         PaneRepeatCombo.IsEnabled = task.DueDate.HasValue;
-        PaneCreatedAtText.Text = _createdAtFormatter.Format(task.CreatedAt.ToLocalTime());
+        PaneCreatedAtText.Text = _timestampFormatter.Format(task.CreatedAt.ToLocalTime());
+        PaneUpdatedAtText.Text = _timestampFormatter.Format(task.UpdatedAt.ToLocalTime());
         PaneTagInput.Text = string.Empty;
         PaneTagChips.ItemsSource = task.Tags;
-        _updatingPane = false;
+
+        // Deferred: DateChanged can fire on a later tick, and resetting the guard inline let it land after _updatingPane was already false.
+        DispatcherQueue.TryEnqueue(() => _updatingPane = false);
     }
 
     private void PaneTagChipRemove_Click(object sender, RoutedEventArgs e)
@@ -794,7 +797,9 @@ public sealed partial class TaskListPage : Page
         _flyoutCalendar!.Date = dueDate.HasValue
             ? (DateTimeOffset?)new DateTimeOffset(dueDate.Value.Date, TimeSpan.Zero)
             : null;
-        _updatingFlyout = false;
+
+        // Same deferred-DateChanged hazard as PopulatePaneFields — inline reset could self-fire FlyoutCommitAndClose and close the flyout on open.
+        DispatcherQueue.TryEnqueue(() => _updatingFlyout = false);
     }
 
     private void FlyoutCommitAndClose(DateTimeOffset? date)

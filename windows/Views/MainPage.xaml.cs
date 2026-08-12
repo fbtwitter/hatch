@@ -115,7 +115,8 @@ public sealed partial class MainPage : Page
         SelectNavItem(_viewModel.ActiveNavItem);
         _suppressNavigation = false;
 
-        NavigateToTaskList();
+        // Cold start only — no transition on the very first page the user sees.
+        NavigateToTaskList(new SuppressNavigationTransitionInfo());
     }
 
     // ── Custom list nav sync ─────────────────────────────────────────────────
@@ -503,9 +504,7 @@ public sealed partial class MainPage : Page
 
             if (isSearchActive && !isOnSearchPage)
             {
-                ContentFrame.Navigate(typeof(SearchPage), _viewModel, new SuppressNavigationTransitionInfo());
-                ContentFrame.BackStack.Clear();
-                MainTitleBar.IsBackButtonVisible = false;
+                ContentFrame.Navigate(typeof(SearchPage), _viewModel, new EntranceNavigationTransitionInfo());
             }
             else if (!isSearchActive && isOnSearchPage)
             {
@@ -523,15 +522,12 @@ public sealed partial class MainPage : Page
         {
             if (ReferenceEquals(item, NavView.SettingsItem))
             {
-                ContentFrame.Navigate(typeof(SettingsPage), null, new SuppressNavigationTransitionInfo());
-                MainTitleBar.IsBackButtonVisible = true;
+                ContentFrame.Navigate(typeof(SettingsPage), null, new EntranceNavigationTransitionInfo());
                 return;
             }
             if (item.Tag as string == "summary")
             {
-                ContentFrame.Navigate(typeof(StatsPage), null, new SuppressNavigationTransitionInfo());
-                ContentFrame.BackStack.Clear();
-                MainTitleBar.IsBackButtonVisible = false;
+                ContentFrame.Navigate(typeof(StatsPage), null, new EntranceNavigationTransitionInfo());
                 return;
             }
         }
@@ -600,8 +596,7 @@ public sealed partial class MainPage : Page
 
         if (args.IsSettingsSelected)
         {
-            ContentFrame.Navigate(typeof(SettingsPage), null, new DrillInNavigationTransitionInfo());
-            MainTitleBar.IsBackButtonVisible = true;
+            ContentFrame.Navigate(typeof(SettingsPage), null, args.RecommendedNavigationTransitionInfo);
             return;
         }
 
@@ -610,14 +605,12 @@ public sealed partial class MainPage : Page
 
         if (tag == "summary")
         {
-            ContentFrame.Navigate(typeof(StatsPage), null, new SuppressNavigationTransitionInfo());
-            ContentFrame.BackStack.Clear();
-            MainTitleBar.IsBackButtonVisible = false;
+            ContentFrame.Navigate(typeof(StatsPage), null, args.RecommendedNavigationTransitionInfo);
             return;
         }
 
         _viewModel.ActiveNavItem = tag;
-        NavigateToTaskList();
+        NavigateToTaskList(args.RecommendedNavigationTransitionInfo);
     }
 
     private void NavView_ItemInvoked(NavigationView sender, NavigationViewItemInvokedEventArgs args)
@@ -634,11 +627,9 @@ public sealed partial class MainPage : Page
         }
     }
 
-    private void NavigateToTaskList()
+    private void NavigateToTaskList(NavigationTransitionInfo? transition = null)
     {
-        ContentFrame.Navigate(typeof(TaskListPage), _viewModel, new SuppressNavigationTransitionInfo());
-        ContentFrame.BackStack.Clear();
-        MainTitleBar.IsBackButtonVisible = false;
+        ContentFrame.Navigate(typeof(TaskListPage), _viewModel, transition ?? new EntranceNavigationTransitionInfo());
     }
 
     public void NavigateTo(string tag)
@@ -673,8 +664,7 @@ public sealed partial class MainPage : Page
 
     public void NavigateToSettingsPage()
     {
-        ContentFrame.Navigate(typeof(SettingsPage), null, new DrillInNavigationTransitionInfo());
-        MainTitleBar.IsBackButtonVisible = true;
+        ContentFrame.Navigate(typeof(SettingsPage), null, new EntranceNavigationTransitionInfo());
         _suppressNavigation = true;
         NavView.SelectedItem = NavView.SettingsItem;
         _suppressNavigation = false;
@@ -687,29 +677,6 @@ public sealed partial class MainPage : Page
     public void ReleaseTaskListMemory() => (ContentFrame.Content as TaskListPage)?.ReleaseListBindings();
 
     public void RestoreTaskListMemory() => (ContentFrame.Content as TaskListPage)?.RestoreListBindings();
-
-    private void TitleBar_BackRequested(TitleBar sender, object args)
-    {
-        if (ContentFrame.CanGoBack)
-            ContentFrame.GoBack();
-
-        MainTitleBar.IsBackButtonVisible = ContentFrame.CanGoBack;
-
-        if (ContentFrame.Content is TaskListPage)
-        {
-            _suppressNavigation = true;
-            SelectNavItem(_viewModel.ActiveNavItem);
-            _suppressNavigation = false;
-        }
-        else if (ContentFrame.Content is StatsPage)
-        {
-            // Summary never becomes ActiveNavItem (it isn't a task list), so
-            // SelectNavItem can't restore it — select the nav item directly.
-            _suppressNavigation = true;
-            NavView.SelectedItem = SummaryItem;
-            _suppressNavigation = false;
-        }
-    }
 
     private void TitleBar_PaneToggleRequested(TitleBar sender, object args)
     {

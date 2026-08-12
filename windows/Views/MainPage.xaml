@@ -14,9 +14,7 @@
         <TitleBar
             x:Name="MainTitleBar"
             Title="Hatch"
-            IsBackButtonVisible="False"
             IsPaneToggleButtonVisible="True"
-            BackRequested="TitleBar_BackRequested"
             PaneToggleRequested="TitleBar_PaneToggleRequested">
             <TitleBar.Resources>
                 <!-- Template default is Center, which collapses the content presenter to the
@@ -92,7 +90,8 @@
                 </NavigationViewItem>
             </NavigationView.FooterMenuItems>
 
-            <Frame x:Name="ContentFrame"/>
+            <!-- Full width deliberately: pages are Transparent and cap their own content (PageMaxWidth); no back button, so no nav stack needed. -->
+            <Frame x:Name="ContentFrame" IsNavigationStackEnabled="False"/>
         </NavigationView>
 
     </Grid>

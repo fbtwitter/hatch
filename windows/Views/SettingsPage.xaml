@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:toolkit="using:CommunityToolkit.WinUI.Controls"
     xmlns:converters="using:Hatch.Converters"
-    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    Background="Transparent">
 
     <Page.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
@@ -35,14 +35,15 @@
         </Style>
     </Page.Resources>
 
-    <Grid>
+    <!-- Capped as one unit so the header stays aligned with the cards below it. -->
+    <Grid MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        
+
         <!-- Header -->
-        <TextBlock Grid.Row="0" Padding="16,24,16,8" x:Name="HeaderText" Text="Settings"
+        <TextBlock Grid.Row="0" Padding="24,24,24,8" x:Name="HeaderText" Text="Settings"
                    Style="{ThemeResource TitleLargeTextBlockStyle}"
                    VerticalAlignment="Center"/>
 
