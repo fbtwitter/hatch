@@ -337,12 +337,6 @@ public sealed partial class TaskListPage : Page
         _paneTask.Priority = (TaskPriority)PanePriorityCombo.SelectedIndex;
     }
 
-    private void SuggestionCard_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button { Tag: TodoItem task })
-            ViewModel.SelectedTask = task;
-    }
-
     private void SuggestionAddButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: TodoItem task })
@@ -446,17 +440,25 @@ public sealed partial class TaskListPage : Page
     private void SyncListViewSelection(TodoItem? task)
     {
         _suppressSelectionChanged = true;
-        foreach (var lv in FindTaskListViews())
-            lv.SelectedItem = task != null && lv.Items.Contains(task) ? task : null;
-        _suppressSelectionChanged = false;
+        // Deferred: cross-page navigation can land here before the ListViews are realized
+        // by the layout pass, so FindTaskListViews would find nothing yet.
+        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, () =>
+        {
+            _cachedTaskListViews = null;
+            foreach (var lv in FindTaskListViews())
+                lv.SelectedItem = task != null && lv.Items.Contains(task) ? task : null;
+            _suppressSelectionChanged = false;
+        });
     }
 
     private IEnumerable<ListView> FindTaskListViews()
     {
         if (_cachedTaskListViews != null) return _cachedTaskListViews;
-        var template = (DataTemplate)Resources["TaskItemTemplate"];
+        // Matched by ItemContainerStyle, not ItemTemplate — Suggestions uses a different
+        // row template but shares this style, so one filter covers every selectable list.
+        var style = (Style)Resources["TaskListViewItemStyle"];
         _cachedTaskListViews = FindDescendants<ListView>(this)
-            .Where(lv => lv.ItemTemplate == template)
+            .Where(lv => lv.ItemContainerStyle == style)
             .ToList();
         return _cachedTaskListViews;
     }
