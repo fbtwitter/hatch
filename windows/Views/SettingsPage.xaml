@@ -35,21 +35,20 @@
         </Style>
     </Page.Resources>
 
-    <!-- Capped as one unit so the header stays aligned with the cards below it. -->
-    <Grid MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <!-- ScrollViewer spans the full page so its scrollbar tracks the window edge (PowerToys-style);
+         the cap sits on the StackPanel inside it. The title is the first child of that same
+         StackPanel rather than a pinned header above it: a header outside the ScrollViewer
+         centres against the page width while the cards centre against the scrolling area, and
+         those two widths differ, so they cannot be made to line up by capping them separately.
+         Sharing one container makes them aligned by construction. The title scrolls with the
+         list as a result, which is what Summary already does. -->
+    <ScrollViewer Padding="24,0,24,24" VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="{StaticResource SettingsCardSpacing}"
+                    MaxWidth="{StaticResource PageMaxRowWidth}" HorizontalAlignment="Stretch">
 
-        <!-- Header -->
-        <TextBlock Grid.Row="0" Padding="24,24,24,8" x:Name="HeaderText" Text="Settings"
-                   Style="{ThemeResource TitleLargeTextBlockStyle}"
-                   VerticalAlignment="Center"/>
-
-        <!-- Settings list -->
-        <ScrollViewer Grid.Row="1" Padding="24,0,24,24" VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+            <TextBlock x:Name="HeaderText" Text="Settings"
+                       Style="{ThemeResource TitleLargeTextBlockStyle}"
+                       Margin="0,24,0,8"/>
 
                 <!-- ── Appearance & behavior ────────────────────────── -->
                 <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
@@ -958,8 +957,7 @@
                     </toolkit:SettingsExpander.Items>
                 </toolkit:SettingsExpander>
 
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
+        </StackPanel>
+    </ScrollViewer>
 </Page>
 
