@@ -3,11 +3,8 @@ using Microsoft.UI.Xaml.Media;
 
 namespace Hatch.Converters;
 
-/// <summary>
-/// Resolves a WinUI theme resource key against the app's actual in-use theme.
-/// TryGetValue on a ResourceDictionary only searches the top level — WinUI stores
-/// system tokens inside nested MergedDictionaries, so we walk them recursively.
-/// </summary>
+// TryGetValue on a ResourceDictionary only searches the top level — WinUI stores
+// system tokens inside nested MergedDictionaries, so we walk them recursively.
 internal static class ThemeResourceHelper
 {
     public static Brush GetBrush(string key)
@@ -53,11 +50,8 @@ internal static class ThemeResourceHelper
         return new SolidColorBrush(color);
     }
 
-    /// <summary>
-    /// Recursively searches a ResourceDictionary and all its MergedDictionaries.
-    /// WinUI stores system tokens (e.g. ControlFillColorDefaultBrush) in nested
-    /// MergedDictionaries that TryGetValue alone cannot reach.
-    /// </summary>
+    // WinUI stores system tokens (e.g. ControlFillColorDefaultBrush) in nested
+    // MergedDictionaries that TryGetValue alone cannot reach.
     private static bool TryFindInDictionary(ResourceDictionary rd, string key, out object? value)
     {
         if (rd.TryGetValue(key, out value))

@@ -74,7 +74,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         set
         {
             if (App.Settings.MascotSize == value) return;
-            App.Settings.MascotSize = Math.Max(40, value); // Minimum 40px
+            App.Settings.MascotSize = Math.Max(40, value);
             App.SettingsService.SaveDebounced();
             OnPropertyChanged();
             OnPropertyChanged(nameof(WindowSize));

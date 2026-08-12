@@ -64,7 +64,6 @@
                 </DoubleAnimation>
             </Storyboard>
 
-            <!-- Restore opacity instantly on hover/interaction -->
             <Storyboard x:Key="IdleFadeIn">
                 <DoubleAnimation
                     Storyboard.TargetName="MascotGrid"
@@ -76,7 +75,6 @@
                 </DoubleAnimation>
             </Storyboard>
 
-            <!-- Hover: subtle scale up -->
             <Storyboard x:Key="HoverIn">
                 <DoubleAnimation
                     Storyboard.TargetName="MascotGridTransform"
@@ -96,7 +94,6 @@
                 </DoubleAnimation>
             </Storyboard>
 
-            <!-- Hover end: return to normal scale -->
             <Storyboard x:Key="HoverOut">
                 <DoubleAnimation
                     Storyboard.TargetName="MascotGridTransform"
@@ -185,7 +182,6 @@
                       StrokeThickness="3.5"
                       StrokeLineJoin="Round" />
 
-                <!-- Horizontal crack across the middle -->
                 <Path Data="M14 50 L24 56 L32 48 L42 58 L52 50 L60 60 L70 52 L80 60 L86 54"
                       Fill="Transparent"
                       Stroke="#1A1A1A"
@@ -221,7 +217,6 @@
                       HorizontalAlignment="Center"
                       VerticalAlignment="Center" />
 
-        <!-- Daily tip indicator: small dot in top-right corner -->
         <Ellipse x:Name="DailyTipIndicator"
                  Width="12" Height="12"
                  Fill="{ThemeResource SystemFillColorSuccessBrush}"

@@ -20,7 +20,7 @@ public sealed class AppSettings
     public bool MinimizeToTray { get; set; } = true;
     public int MascotX { get; set; } = -1; // -1 = not yet set; use default on first launch
     public int MascotY { get; set; } = -1;
-    public int MascotSize { get; set; } = 120; // Window size in pixels
+    public int MascotSize { get; set; } = 120;
     public bool MuteAnimation { get; set; } = false;
     public bool LockMascotPosition { get; set; } = false;
     public string? LottieFilePath { get; set; } = null;

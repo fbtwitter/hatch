@@ -4,7 +4,7 @@ public sealed class TaskList
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = string.Empty;
-    public string AccentColor { get; set; } = "#0078D4"; // Default blue
+    public string AccentColor { get; set; } = "#0078D4";
     public bool IsPinned { get; set; } = false;
     public int SortOrder { get; set; } = 0;
     public string? CustomIcon { get; set; } = null;

@@ -97,17 +97,14 @@
                           VerticalAlignment="Center"
                           x:Uid="Task_CheckBox" />
 
-                <!-- Title + meta row — fades as a unit when completed -->
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2"
                             Opacity="{x:Bind IsCompleted, Converter={StaticResource BoolToOpacity}, Mode=OneWay}">
                     <TextBlock Text="{x:Bind Title, Mode=OneWay}"
                                TextDecorations="{x:Bind IsCompleted, Converter={StaticResource BoolToStrikethrough}, Mode=OneWay}"
                                TextTrimming="CharacterEllipsis" />
 
-                    <!-- Meta row: list name · date chip · tags — all on one line -->
                     <StackPanel Orientation="Horizontal" Spacing="4">
 
-                        <!-- List name chip -->
                         <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                                 CornerRadius="4"
                                 Padding="6,2"
@@ -126,14 +123,12 @@
                         <StackPanel Orientation="Horizontal" Spacing="4"
                                     Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
 
-                            <!-- · separator between list name and date -->
                             <TextBlock Text="·"
                                        Visibility="{x:Bind HasListNameToDateSeparator, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                        Style="{ThemeResource CaptionTextBlockStyle}"
                                        VerticalAlignment="Center" />
 
-                            <!-- Date chip — clicking opens the date flyout -->
                             <Button Tag="{x:Bind}"
                                     AutomationProperties.AutomationId="Task_DateChipButton"
                                     Click="ChipDateButton_Click"
@@ -154,7 +149,6 @@
                                 </StackPanel>
                             </Button>
 
-                            <!-- Repeat chip — only when the task has an active recurrence -->
                             <Border x:Uid="Task_RepeatChip"
                                     Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                                     CornerRadius="4"
@@ -166,7 +160,6 @@
                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </Border>
 
-                            <!-- Priority chip — only when a priority tier is set; color-coded by tier -->
                             <Border Background="{x:Bind Priority, Converter={StaticResource PriorityToBrush}, Mode=OneWay}"
                                     CornerRadius="4"
                                     Padding="6,2"
@@ -183,7 +176,6 @@
                                 </StackPanel>
                             </Border>
 
-                            <!-- Add-date ghost — only when not completed and no date -->
                             <Button Tag="{x:Bind}"
                                     AutomationProperties.AutomationId="Task_AddDateButton"
                                     Click="ChipDateButton_Click"
@@ -204,14 +196,12 @@
                                 </StackPanel>
                             </Button>
 
-                            <!-- · separator — only when both date and tags are present -->
                             <TextBlock Text="·"
                                        Visibility="{x:Bind HasMetaSeparator, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                        Style="{ThemeResource CaptionTextBlockStyle}"
                                        VerticalAlignment="Center" />
 
-                            <!-- Tag chips: first 2 -->
                             <ItemsRepeater ItemsSource="{x:Bind Tags, Converter={StaticResource TagsPreview}, Mode=OneWay}"
                                            Visibility="{x:Bind Tags, Converter={StaticResource TagsToVisibility}, Mode=OneWay}"
                                            VerticalAlignment="Center">
@@ -339,7 +329,6 @@
                     <ControlTemplate TargetType="ListViewItem">
                         <Grid x:Name="ContentBorder"
                               Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                            <!-- 3px accent selection indicator -->
                             <Border x:Name="SelectionBar"
                                     Width="3"
                                     VerticalAlignment="Stretch"
@@ -435,7 +424,6 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <!-- Header -->
             <Grid Grid.Row="0" Padding="24,24,24,8"
                   MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
                 <TextBlock x:Name="HeaderText" Text="My Tasks"
@@ -443,7 +431,6 @@
                            VerticalAlignment="Center" />
             </Grid>
 
-            <!-- Tag filter banner — visible when a tag filter is active -->
             <StackPanel Grid.Row="1"
                         Orientation="Horizontal"
                         Spacing="8"
@@ -470,7 +457,6 @@
                 </Button>
             </StackPanel>
 
-            <!-- Add task row -->
             <Grid Grid.Row="2" Padding="24,8,24,16" ColumnSpacing="8"
                   MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
@@ -491,7 +477,6 @@
                         x:Uid="NewTask_AddButton" />
             </Grid>
 
-            <!-- Content area -->
             <Grid Grid.Row="3">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*" />
@@ -704,7 +689,6 @@
                     </ListView.GroupStyle>
                 </ListView>
 
-                <!-- Undo snackbar -->
                 <InfoBar Grid.Row="1"
                          x:Name="UndoInfoBar"
                          AutomationProperties.AutomationId="UndoInfoBar"
@@ -752,7 +736,6 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <!-- Pane header -->
                 <Grid Grid.Row="0" Padding="16,16,16,8">
                     <TextBlock x:Uid="Pane_Header"
                                Text="Details"
@@ -772,13 +755,11 @@
                     </Button>
                 </Grid>
 
-                <!-- Pane fields -->
                 <ScrollViewer Grid.Row="1"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
                     <StackPanel Padding="16,8,16,24" Spacing="16">
 
-                        <!-- Title -->
                         <TextBox x:Name="PaneTitleBox"
                                  x:Uid="PaneTitleBox"
                                  Header="Title"
@@ -788,7 +769,6 @@
                                  HorizontalAlignment="Stretch"
                                  TextChanged="PaneTitleBox_TextChanged" />
 
-                        <!-- Notes -->
                         <TextBox x:Name="PaneNotesBox"
                                  x:Uid="PaneNotesBox"
                                  AutomationProperties.AutomationId="PaneNotesBox"
@@ -803,7 +783,6 @@
                                  TextChanged="PaneNotesBox_TextChanged"
                                  KeyDown="PaneNotesBox_KeyDown" />
 
-                        <!-- My Day toggle -->
                         <ToggleSwitch x:Name="PaneMyDayToggle"
                                       x:Uid="PaneMyDayToggle"
                                       Header="My Day"
@@ -812,7 +791,6 @@
                                       Toggled="PaneMyDayToggle_Toggled"
                                       Margin="0,-4,0,-4" />
 
-                        <!-- Priority -->
                         <!-- Item order must match the TaskPriority enum — code-behind maps
                              SelectedIndex straight to the enum value. -->
                         <ComboBox x:Name="PanePriorityCombo"
@@ -827,7 +805,6 @@
                             <ComboBoxItem x:Uid="PriorityItem_High" Content="High" />
                         </ComboBox>
 
-                        <!-- Due date -->
                         <CalendarDatePicker x:Name="PaneDueDatePicker"
                                             x:Uid="PaneDueDatePicker"
                                             Header="Due date"
@@ -851,7 +828,6 @@
                             <ComboBoxItem x:Uid="RepeatItem_Monthly" Content="Monthly" />
                         </ComboBox>
 
-                        <!-- Tags -->
                         <StackPanel Spacing="8">
                             <TextBlock x:Uid="Pane_TagsLabel"
                                        Text="Tags"
@@ -903,7 +879,6 @@
                                      KeyDown="PaneTagInput_KeyDown" />
                         </StackPanel>
 
-                        <!-- Created / Updated at -->
                         <Grid ColumnSpacing="24">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />

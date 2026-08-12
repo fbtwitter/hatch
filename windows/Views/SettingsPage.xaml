@@ -50,11 +50,9 @@
                        Style="{ThemeResource TitleLargeTextBlockStyle}"
                        Margin="0,24,0,8"/>
 
-                <!-- ── Appearance & behavior ────────────────────────── -->
                 <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
                            Text="Appearance &amp; behavior"/>
 
-                <!-- Minimize to Tray — custom toggle card -->
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -82,7 +80,6 @@
                     </Grid>
                 </Border>
 
-                <!-- Run at Startup — custom toggle card -->
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -110,7 +107,6 @@
                     </Grid>
                 </Border>
 
-                <!-- App Theme -->
                 <toolkit:SettingsCard
                     Header="App Theme"
                     Description="Choose your preferred color scheme">
@@ -126,7 +122,6 @@
                     </ComboBox>
                 </toolkit:SettingsCard>
 
-                <!-- Window Backdrop -->
                 <toolkit:SettingsCard
                     Header="Window Backdrop"
                     Description="Background material effect for the main window">
@@ -143,11 +138,9 @@
                     </ComboBox>
                 </toolkit:SettingsCard>
 
-                <!-- ── Mascot ───────────────────────────────────────── -->
                 <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
                            Text="Mascot"/>
 
-                <!-- Show Mascot — custom toggle card -->
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -175,7 +168,6 @@
                     </Grid>
                 </Border>
 
-                <!-- Lock Position — custom toggle card -->
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -203,7 +195,6 @@
                     </Grid>
                 </Border>
 
-                <!-- Mute Animation — custom toggle card -->
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -231,7 +222,6 @@
                     </Grid>
                 </Border>
 
-                <!-- Always on Top — custom toggle card -->
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -259,7 +249,6 @@
                     </Grid>
                 </Border>
 
-                <!-- Hide When Fullscreen — custom toggle card -->
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -287,7 +276,6 @@
                     </Grid>
                 </Border>
 
-                <!-- Show Tips Automatically — custom toggle card -->
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -429,7 +417,6 @@
                     </toolkit:SettingsExpander.ItemsHeader>
                 </toolkit:SettingsExpander>
 
-                <!-- Lottie Animation File -->
                 <toolkit:SettingsCard
                     Header="Lottie Animation File"
                     Description="{x:Bind ViewModel.LottieFileDisplay, Mode=OneWay}">
@@ -447,7 +434,6 @@
                     </StackPanel>
                 </toolkit:SettingsCard>
 
-                <!-- Mascot Size -->
                 <toolkit:SettingsExpander Header="Mascot Size"
                                           Description="Choose how large the mascot appears on screen">
                     <toolkit:SettingsExpander.HeaderIcon>
@@ -477,7 +463,6 @@
                     </toolkit:SettingsExpander.Items>
                 </toolkit:SettingsExpander>
 
-                <!-- Quick-add global hotkey -->
                 <!-- Description is static: the live combination is the collapsed-state
                      content on the right. Binding both to HotkeyDescription printed the
                      same string twice, inches apart. -->
@@ -486,7 +471,6 @@
                     <toolkit:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE92E;"/>
                     </toolkit:SettingsExpander.HeaderIcon>
-                    <!-- Key-cap styling so the combination reads as something you press. -->
                     <Border Background="{ThemeResource ControlFillColorDefaultBrush}"
                             BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
                             BorderThickness="1"
@@ -520,7 +504,6 @@
                                           IsChecked="{x:Bind ViewModel.HotkeyAlt, Mode=TwoWay}"/>
                             </StackPanel>
                         </toolkit:SettingsCard>
-                        <!-- Key -->
                         <toolkit:SettingsCard Header="Key"
                                               ContentAlignment="Vertical"
                                               Description="Pressed together with the modifiers above">
@@ -553,11 +536,9 @@
                          Title="That shortcut is already taken"
                          Message="Another application registered it first, so it will not reach Hatch. Pick a different key or modifier below."/>
 
-                <!-- ── Sync ────────────────────────────────────────── -->
                 <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
                            Text="Sync"/>
 
-                <!-- Signed-in state -->
                 <toolkit:SettingsCard
                     Visibility="{x:Bind ViewModel.IsSyncSignedIn, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
                     Header="{x:Bind ViewModel.SyncUserEmail, Mode=OneWay}"
@@ -813,7 +794,6 @@
                          IsClosable="True"
                          CloseButtonClick="SyncNotice_Close"/>
 
-                <!-- Sync error (shown when signed in and sync fails) -->
                 <InfoBar x:Name="SyncErrorBar"
                          Severity="Error"
                          IsOpen="{x:Bind ViewModel.HasSyncError, Mode=OneWay}"
@@ -821,7 +801,6 @@
                          Message="{x:Bind ViewModel.SyncError, Mode=OneWay}"
                          IsClosable="False"/>
 
-                <!-- Sign-in form -->
                 <toolkit:SettingsExpander
                     Visibility="{x:Bind ViewModel.IsSyncNotSignedIn, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
                     Header="Sync across devices"
@@ -872,7 +851,6 @@
                     </toolkit:SettingsExpander.Items>
                 </toolkit:SettingsExpander>
 
-                <!-- ── Data ─────────────────────────────────────────── -->
                 <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
                            Text="Data"/>
 
@@ -913,7 +891,6 @@
                                TextWrapping="Wrap"/>
                 </toolkit:SettingsCard>
 
-                <!-- ── About ────────────────────────────────────────── -->
                 <TextBlock Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"
                            Text="About"/>
 
