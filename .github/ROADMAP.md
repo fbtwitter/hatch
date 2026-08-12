@@ -8,6 +8,7 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.20.2** | Aug 13, 2026 | Task selection indicator fixed across the app — was silently broken, intermittently missing on Search/Summary jumps, and misaligned on Planned/Important |
 | **v0.20.1** | Aug 12, 2026 | Release package no longer bundles unused ONNX Runtime/DirectML (~120 MB) — install size reduction only, memory is unaffected |
 | **v0.20.0** | Aug 12, 2026 | Consistent page max width with back navigation removed, scrollbars anchored to the window edge, list/header alignment fixes across Tasks, Planned and Settings |
 | **v0.19.1** | Aug 10, 2026 | Empty My Day tile no longer reads as a failed day |
