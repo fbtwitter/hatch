@@ -8,6 +8,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.20.0] - 2026-08-12
+
+### Changed
+- Every page caps its content to one consistent max width, and back navigation is gone
+- Page scrollbars now sit at the window edge instead of the edge of the capped content,
+  so they track the window the way the rest of Windows does
+
+### Fixed
+- The task list no longer drifts right of its header on a wide or maximised window
+- Planned's "Today" and "Later" group headers line up with the rows beneath them
+- The Settings title lines up with the cards below it
+
+---
+
 ## [0.19.1] - 2026-08-10
 
 ### Fixed
