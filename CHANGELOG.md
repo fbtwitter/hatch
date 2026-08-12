@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.20.2] - 2026-08-13
+
+### Fixed
+- Task selection indicator now works reliably everywhere — a custom row template had
+  silently dropped native selection visuals, the main list and Suggested cards land on the
+  same native ListView highlight instead of a hand-rolled one, jumping in from Search or the
+  Summary page no longer occasionally leaves no row highlighted, and Planned/Important rows
+  line up with the rest of the list
+
+---
+
 ## [0.20.1] - 2026-08-12
 
 ### Changed
