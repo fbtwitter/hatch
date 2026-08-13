@@ -563,8 +563,7 @@
                                               ContentAlignment="Vertical">
                             <toolkit:SettingsCard.Description>
                                 <TextBlock Text="At least one is required — without a modifier the key would be captured system-wide"
-                                           Style="{StaticResource SettingsDescriptionTextBlockStyle}"
-                                           ToolTipService.ToolTip="At least one is required — without a modifier the key would be captured system-wide"/>
+                                           TextWrapping="Wrap"/>
                             </toolkit:SettingsCard.Description>
                             <StackPanel Orientation="Horizontal" Spacing="24">
                                 <CheckBox Content="Ctrl"
@@ -585,8 +584,7 @@
                                               ContentAlignment="Vertical">
                             <toolkit:SettingsCard.Description>
                                 <TextBlock Text="Pressed together with the modifiers above"
-                                           Style="{StaticResource SettingsDescriptionTextBlockStyle}"
-                                           ToolTipService.ToolTip="Pressed together with the modifiers above"/>
+                                           TextWrapping="Wrap"/>
                             </toolkit:SettingsCard.Description>
                             <ComboBox x:Name="HotkeyKeySelector"
                                       AutomationProperties.AutomationId="Settings_HotkeyKeyComboBox"
@@ -1104,17 +1102,13 @@
 
                         <toolkit:SettingsCard Header="Author">
                             <toolkit:SettingsCard.Description>
-                                <TextBlock Text="Reza Fauzi Augusdi"
-                                           Style="{StaticResource SettingsDescriptionTextBlockStyle}"
-                                           ToolTipService.ToolTip="Reza Fauzi Augusdi"/>
+                                <TextBlock Text="Reza Fauzi Augusdi" TextWrapping="Wrap"/>
                             </toolkit:SettingsCard.Description>
                         </toolkit:SettingsCard>
 
                         <toolkit:SettingsCard Header="Source code">
                             <toolkit:SettingsCard.Description>
-                                <TextBlock Text="github.com/fbtwitter/hatch"
-                                           Style="{StaticResource SettingsDescriptionTextBlockStyle}"
-                                           ToolTipService.ToolTip="github.com/fbtwitter/hatch"/>
+                                <TextBlock Text="github.com/fbtwitter/hatch" TextWrapping="Wrap"/>
                             </toolkit:SettingsCard.Description>
                             <Button Content="Open on GitHub"
                                     AutomationProperties.AutomationId="Settings_OpenGitHub"
@@ -1123,9 +1117,7 @@
 
                         <toolkit:SettingsCard Header="Report an issue">
                             <toolkit:SettingsCard.Description>
-                                <TextBlock Text="Found a bug or have a suggestion?"
-                                           Style="{StaticResource SettingsDescriptionTextBlockStyle}"
-                                           ToolTipService.ToolTip="Found a bug or have a suggestion?"/>
+                                <TextBlock Text="Found a bug or have a suggestion?" TextWrapping="Wrap"/>
                             </toolkit:SettingsCard.Description>
                             <Button Content="Open issues"
                                     AutomationProperties.AutomationId="Settings_OpenGitHubIssues"
