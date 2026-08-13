@@ -14,14 +14,14 @@
 -->
 <AppInstaller
     xmlns="http://schemas.microsoft.com/appx/appinstaller/2021"
-    Version="0.21.3.0"
+    Version="0.21.4.0"
     Uri="https://fbtwitter.github.io/hatch/Hatch.appinstaller">
 
   <MainBundle
       Name="RezaFauziAugusdi.HatchAlways-OnTo-Do"
       Publisher="CN=9D1F8C40-115A-44D9-94E5-BA0ECC194C4C"
-      Version="0.21.3.0"
-      Uri="https://github.com/fbtwitter/hatch/releases/download/v0.21.3/Hatch_0.21.3.0_bundle.msixbundle" />
+      Version="0.21.4.0"
+      Uri="https://github.com/fbtwitter/hatch/releases/download/v0.21.4/Hatch_0.21.4.0_bundle.msixbundle" />
 
   <UpdateSettings>
     <!-- Windows performs these checks, not Hatch: the app itself still makes no
