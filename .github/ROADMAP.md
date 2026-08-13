@@ -8,6 +8,7 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.21.4** | Aug 13, 2026 | Releases now publish to the Microsoft Store automatically |
 | **v0.21.3** | Aug 13, 2026 | Fix navigation badge counts flashing repeatedly during normal use while synced |
 | **v0.21.2** | Aug 13, 2026 | Fix GitHub sign-in always failing with a bad_oauth_state error |
 | **v0.21.1** | Aug 13, 2026 | Fix missing padding on the completed-tasks group; AssetGen can render Store listing submission images |
