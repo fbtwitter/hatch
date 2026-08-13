@@ -312,6 +312,8 @@
   <data name="Sync_Error_NoPassphrase" xml:space="preserve"><value>Set your sync passphrase to resume syncing.</value></data>
   <data name="Sync_Error_WrongPassphrase" xml:space="preserve"><value>Wrong sync passphrase — use the same passphrase you set on your other device.</value></data>
   <data name="Sync_Error_PassphraseTooShort" xml:space="preserve"><value>Passphrase must be at least 8 characters.</value></data>
+  <data name="Sync_Error_OldPassphraseWrong" xml:space="preserve"><value>That's not your current sync passphrase.</value></data>
+  <data name="Sync_Error_PassphraseMismatch" xml:space="preserve"><value>New passphrases don't match.</value></data>
   <data name="Sync_Error_MfaRequired" xml:space="preserve"><value>Enter the code from your authenticator to resume syncing.</value></data>
   <data name="Sync_Error_NoMfaFactor" xml:space="preserve"><value>No authenticator is set up for this account.</value></data>
   <data name="Sync_Error_BadRecoveryCode" xml:space="preserve"><value>That recovery code was not recognised. Check for typos, or try another code from your list.</value></data>
@@ -323,6 +325,18 @@
   <data name="Settings_SyncPassphraseCard.Header" xml:space="preserve"><value>Sync passphrase</value></data>
   <data name="Settings_SyncPassphraseCard.Description" xml:space="preserve"><value>Never sent to the server. If you lose it, synced data cannot be recovered.</value></data>
   <data name="Settings_SyncPassphraseSet.Content" xml:space="preserve"><value>Set passphrase</value></data>
+
+  <!-- ── Change sync passphrase (x:Uid mapped) ────────────────── -->
+  <data name="Settings_ChangePassphraseCard.Header" xml:space="preserve"><value>Change passphrase</value></data>
+  <data name="Settings_ChangePassphraseCard.Description" xml:space="preserve"><value>Requires your current passphrase. Other signed-in devices will need the new one entered again the next time they sync.</value></data>
+  <data name="Settings_ChangePassphraseStart.Content" xml:space="preserve"><value>Change passphrase</value></data>
+  <data name="Settings_ChangePassphraseFormCard.Header" xml:space="preserve"><value>Change your passphrase</value></data>
+  <data name="Settings_ChangePassphraseFormCard.Description" xml:space="preserve"><value>Enter your current passphrase, then the new one twice.</value></data>
+  <data name="Settings_ChangePassphraseOldBox.Header" xml:space="preserve"><value>Current passphrase</value></data>
+  <data name="Settings_ChangePassphraseNewBox.Header" xml:space="preserve"><value>New passphrase</value></data>
+  <data name="Settings_ChangePassphraseConfirmBox.Header" xml:space="preserve"><value>Confirm new passphrase</value></data>
+  <data name="Settings_ChangePassphraseSubmit.Content" xml:space="preserve"><value>Change passphrase</value></data>
+  <data name="Settings_ChangePassphraseCancel.Content" xml:space="preserve"><value>Cancel</value></data>
 
   <!-- ── Sync recovery kit (x:Uid mapped) ─────────────────────── -->
   <data name="Settings_RecoveryKitCard.Header" xml:space="preserve"><value>Sync recovery kit</value></data>

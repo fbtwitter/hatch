@@ -128,6 +128,8 @@ internal static class Strings
     public static string Sync_Error_NoPassphrase       => Get("Sync_Error_NoPassphrase");
     public static string Sync_Error_WrongPassphrase    => Get("Sync_Error_WrongPassphrase");
     public static string Sync_Error_PassphraseTooShort => Get("Sync_Error_PassphraseTooShort");
+    public static string Sync_Error_OldPassphraseWrong => Get("Sync_Error_OldPassphraseWrong");
+    public static string Sync_Error_PassphraseMismatch => Get("Sync_Error_PassphraseMismatch");
     public static string Sync_Error_MfaRequired        => Get("Sync_Error_MfaRequired");
     public static string Sync_Error_NoMfaFactor        => Get("Sync_Error_NoMfaFactor");
     public static string Sync_Error_BadRecoveryCode    => Get("Sync_Error_BadRecoveryCode");
