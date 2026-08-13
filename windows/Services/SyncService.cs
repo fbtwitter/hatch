@@ -132,8 +132,21 @@ public sealed class SyncService
     {
         var options = new Supabase.SupabaseOptions { AutoRefreshToken = true };
         _client = new SupabaseClient(SupabaseUrl, SupabaseKey, options);
+        _client.Auth.AddStateChangedListener(OnAuthStateChanged);
         await _client.InitializeAsync();
         await RestoreSessionAsync();
+    }
+
+    // AutoRefreshToken silently rotates the refresh token in-memory on every background
+    // refresh (GoTrue single-use rotation). Without this, the Credential Locker keeps
+    // holding the token from the last explicit sign-in, which GoTrue rejects the next time
+    // the app restores a session — forcing a re-login that looks random from the outside.
+    private async void OnAuthStateChanged(object? sender, GotrueConstants.AuthState state)
+    {
+        if (state != GotrueConstants.AuthState.TokenRefreshed) return;
+        var session = _client?.Auth.CurrentSession;
+        if (session?.AccessToken == null || session.RefreshToken == null) return;
+        await PersistSessionAsync(session);
     }
 
     private async Task RestoreSessionAsync()
