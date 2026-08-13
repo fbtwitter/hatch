@@ -217,6 +217,16 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         SyncError = null;
     });
 
+    public async Task SignInWithGitHubAsync()
+    {
+        IsSyncing = true;
+        SyncError = null;
+        var (url, error) = await App.SyncService.GetGitHubSignInUrlAsync();
+        IsSyncing = false;
+        if (error != null) { SyncError = error; return; }
+        _ = Windows.System.Launcher.LaunchUriAsync(new Uri(url!));
+    }
+
     private void OnSyncStateChanged()
     {
         var queue = App.MainWindowInstance?.DispatcherQueue;
