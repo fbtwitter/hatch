@@ -25,14 +25,6 @@ public sealed class AppSettings
     public bool LockMascotPosition { get; set; } = false;
     public string? LottieFilePath { get; set; } = null;
     public string ActiveNavItem { get; set; } = "myday";
-
-    // Which page the main window jumps to when opened from the mascot (bubble's open
-    // button, right-click "Show Main Window") while it was hidden. Null/empty = "remember
-    // last page" — ActiveNavItem's own persistence, unchanged. A fixed tag ("myday",
-    // "important", "planned", "alltasks", "summary") or a custom list's Guid as a string —
-    // same tag scheme ActiveNavItem and MainWindow.NavigateTo already use, deliberately not
-    // a separate representation. See Helpers/MascotOpenPageHelper for the fallback applied
-    // when a pinned custom list has since been deleted.
     public string? MascotOpenPageTag { get; set; } = null;
     public Guid LastUsedListId { get; set; } = Guid.Empty;
     public bool FirstRunComplete { get; set; } = false;

@@ -116,9 +116,6 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    // 560×490 keeps the 48px compact nav rail plus a usable content area — widened from
-    // 480 to give the Settings page's fixed-right-column rows (icon | text | control, not
-    // reflowing at narrow widths like SettingsCard does) enough room to not feel cramped.
     private const int MinW = 560;
     private const int MinH = 490;
 

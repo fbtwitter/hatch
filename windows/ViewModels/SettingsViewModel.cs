@@ -115,10 +115,6 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
     public void DismissRecoveryKit() => RecoveryKitText = null;
 
-    // --- Change passphrase --------------------------------------------------------------
-    // Rotation, not recovery: requires the current passphrase. A lost passphrase stays
-    // unrecoverable by design (docs/mfa-spec.md §6) — this is not a way around that.
-
     private bool _isChangingPassphrase;
     public bool IsChangingPassphrase
     {
@@ -126,7 +122,6 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         private set { _isChangingPassphrase = value; OnPropertyChanged(); OnPropertyChanged(nameof(CanStartChangePassphrase)); }
     }
 
-    // Hidden while the form itself is open, so there is only one way to reach it at a time.
     public bool CanStartChangePassphrase => IsSyncSignedIn && IsPassphraseSet && !IsChangingPassphrase;
 
     public void StartChangePassphrase() => IsChangingPassphrase = true;
@@ -153,8 +148,6 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
         IsChangingPassphrase = false;
 
-        // Same as first-time setup: the old kit is void the moment the passphrase changes,
-        // so show the new one at the one moment the user is already thinking about it.
         ShowRecoveryKit();
     }
 
@@ -676,11 +669,6 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         }
     }
 
-    // Fixed pages plus one entry per custom list — a plain enum can't represent the custom
-    // lists, which are dynamic, so this uses ItemsSource/SelectedItem instead of the
-    // SelectedIndex-onto-enum pattern used elsewhere in this file (ThemeIndex, BackdropIndex,
-    // MascotChattinessIndex). Built once per page visit: nothing in this app's UI flow lets a
-    // list be created or deleted while Settings is open, so it does not need to stay live.
     public ObservableCollection<MascotOpenPageOption> MascotOpenPageOptions { get; } = [];
 
     private MascotOpenPageOption? _selectedMascotOpenPageOption;
@@ -710,10 +698,6 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         foreach (var list in customLists)
             MascotOpenPageOptions.Add(new(list.Id.ToString(), list.Name));
 
-        // Resolved, not read directly: a pinned list deleted since the setting was last
-        // written must not leave the ComboBox showing nothing selected. Sets the backing
-        // field directly rather than going through the property setter, which would
-        // immediately re-save on every Settings page visit even when nothing changed.
         var resolvedTag = MascotOpenPageHelper.Resolve(_settings.Current.MascotOpenPageTag, customLists);
         _selectedMascotOpenPageOption =
             MascotOpenPageOptions.FirstOrDefault(o => o.Tag == resolvedTag) ?? MascotOpenPageOptions[0];

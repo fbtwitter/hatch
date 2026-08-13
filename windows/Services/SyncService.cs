@@ -80,15 +80,6 @@ public sealed class SyncService
         }
     }
 
-    // Rotation, not recovery: the old passphrase must still be known. Nothing here helps a
-    // user who has actually lost it — that stays impossible by design (docs/mfa-spec.md §6).
-    //
-    // Other already-signed-in devices are not touched here and do not need to be: the next
-    // time one of them reads this row it will fail exactly like any other stale-passphrase
-    // case (SyncDecisions.ReadServerPayload → Unreadable), and
-    // SettingsViewModel.CheckAndHandleConflictAsync already discards a passphrase that
-    // cannot open the row and re-shows the entry card — that path was built for a different
-    // scenario but covers this one for free.
     public async Task<string?> ChangePassphraseAsync(string oldPassphrase, string newPassphrase)
     {
         if (_client == null) return Strings.Sync_Error_NotReady;
@@ -101,16 +92,12 @@ public sealed class SyncService
             var (status, data) = SyncDecisions.ReadServerPayload(row?.TasksJson, oldPassphrase);
             if (status == ServerReadStatus.Unreadable) return Strings.Sync_Error_OldPassphraseWrong;
 
-            // Empty account: nothing to re-encrypt, just adopt the new passphrase.
             var toPush = data ?? new TasksFile();
 
             SyncPassphraseStore.Save(newPassphrase);
             var pushError = await PushAsync(toPush, mergeFirst: false);
             if (pushError != null)
             {
-                // The new passphrase is now cached locally but the server row is still
-                // encrypted with the old one — restore consistency rather than leave this
-                // device unable to read its own account on the next sync.
                 SyncPassphraseStore.Save(oldPassphrase);
                 return pushError;
             }
@@ -178,10 +165,6 @@ public sealed class SyncService
         await RestoreSessionAsync();
     }
 
-    // AutoRefreshToken silently rotates the refresh token in-memory on every background
-    // refresh (GoTrue single-use rotation). Without this, the Credential Locker keeps
-    // holding the token from the last explicit sign-in, which GoTrue rejects the next time
-    // the app restores a session — forcing a re-login that looks random from the outside.
     private async void OnAuthStateChanged(object? sender, GotrueConstants.AuthState state)
     {
         if (state != GotrueConstants.AuthState.TokenRefreshed) return;
@@ -203,17 +186,11 @@ public sealed class SyncService
         catch (Supabase.Gotrue.Exceptions.GotrueException ex)
             when (ex.Reason != Supabase.Gotrue.Exceptions.FailureHint.Reason.Offline)
         {
-            // The auth server evaluated the token and rejected it (invalid/expired/rotated)
-            // — it is really dead, nothing to retry.
             ClearTokens();
             App.SettingsService.SaveDebounced();
         }
         catch
         {
-            // GotrueException(Offline) or a raw network failure (DNS/timeout at launch) — no
-            // server response was reached, so the token was never evaluated and may still be
-            // valid. Leave it in the vault; the next launch or auto-sync retry can pick it
-            // back up instead of forcing a needless re-login.
         }
     }
 
