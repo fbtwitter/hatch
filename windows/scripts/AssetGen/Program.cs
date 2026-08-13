@@ -30,10 +30,12 @@ Bitmap RenderSvg(int w, int h, float paddingFraction = 0f, bool whiteBg = false)
     return canvas;
 }
 
-void Save(string name, int canvasW, int canvasH, float padding = 0f, bool whiteBg = false)
+void Save(string name, int canvasW, int canvasH, float padding = 0f, bool whiteBg = false, string? targetDir = null)
 {
+    var dir = targetDir ?? outDir;
+    Directory.CreateDirectory(dir);
     using var bmp = RenderSvg(canvasW, canvasH, padding, whiteBg);
-    bmp.Save(Path.Combine(outDir, name), ImageFormat.Png);
+    bmp.Save(Path.Combine(dir, name), ImageFormat.Png);
     Console.WriteLine($"  {name} ({canvasW}x{canvasH})");
 }
 
@@ -131,4 +133,10 @@ SaveIco("HatchHidden.ico", [16, 24, 32, 48, 64, 128, 256], size =>
     using var normal = RenderSvg(size, size);
     return ToGreyscale(normal);
 });
+// Store listing submission images (Partner Center) — not part of the MSIX package, so
+// these render to docs/store-assets instead of Assets. Re-run manually if logo.svg changes.
+var storeAssetsDir = Path.Combine(outDir, "..", "..", "docs", "store-assets");
+Save("StoreLogo-300.png", 300, 300, targetDir: storeAssetsDir);
+Save("StoreLogo-150.png", 150, 150, targetDir: storeAssetsDir);
+Save("StoreLogo-71.png",   71,  71, targetDir: storeAssetsDir);
 Console.WriteLine("Done.");
