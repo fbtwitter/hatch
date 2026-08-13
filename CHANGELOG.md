@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.21.2] - 2026-08-13
+
+### Fixed
+- GitHub sign-in always failed with a `bad_oauth_state` error — a newer transitive
+  dependency (gotrue-csharp) was appending an extra query parameter that broke Supabase's
+  own OAuth state tracking
+- Sign-in with GitHub button no longer allows overlapping sign-in attempts while one is
+  already in progress
+
+---
+
 ## [0.21.1] - 2026-08-13
 
 ### Fixed
