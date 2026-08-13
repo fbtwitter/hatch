@@ -254,7 +254,7 @@ jobs:
           body: |
             ## Install
 
-            **[Get Hatch on the Microsoft Store](#)** — recommended, no setup required.
+            **[Get Hatch on the Microsoft Store](https://apps.microsoft.com/detail/9PKTQFG9S3K8)** — recommended, no setup required.
 
             Or install directly, and get future updates automatically:
             1. **First time only** — download `install-cert.cer`, double-click → Install Certificate → Local Machine → Trusted People → Finish
@@ -277,3 +277,24 @@ jobs:
             ${{ env.BUNDLE_PATH }}
             ${{ env.APPINSTALLER_PATH }}
             install-cert.cer
+
+      # Same signed bundle the GitHub release above ships — no separate build.
+      # msstore-cli's GitHub Actions publishing only supports free listings; Hatch is free.
+      - name: Publish to Microsoft Store
+        if: github.event_name == 'push'
+        uses: microsoft/microsoft-store-apppublisher@v1.1
+
+      - name: Reconfigure Microsoft Store CLI
+        if: github.event_name == 'push'
+        shell: pwsh
+        run: |
+          msstore reconfigure `
+            --tenantId "${{ secrets.AZURE_AD_TENANT_ID }}" `
+            --sellerId "${{ secrets.SELLER_ID }}" `
+            --clientId "${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}" `
+            --clientSecret "${{ secrets.AZURE_AD_APPLICATION_SECRET }}"
+
+      - name: Submit to Microsoft Store
+        if: github.event_name == 'push'
+        shell: pwsh
+        run: msstore publish "${{ env.BUNDLE_PATH }}" -id "${{ secrets.STORE_PRODUCT_ID }}"
