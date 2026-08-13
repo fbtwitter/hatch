@@ -466,7 +466,7 @@
                                             <Expander IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
                                                       HorizontalAlignment="Stretch"
                                                       HorizontalContentAlignment="Stretch"
-                                                      Padding="0"
+                                                      Padding="4"
                                                       Margin="24,4"
                                                       CornerRadius="{ThemeResource ControlCornerRadius}"
                                                       Visibility="{x:Bind ShowExpander, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
