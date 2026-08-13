@@ -8,6 +8,7 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.21.3** | Aug 13, 2026 | Fix navigation badge counts flashing repeatedly during normal use while synced |
 | **v0.21.2** | Aug 13, 2026 | Fix GitHub sign-in always failing with a bad_oauth_state error |
 | **v0.21.1** | Aug 13, 2026 | Fix missing padding on the completed-tasks group; AssetGen can render Store listing submission images |
 | **v0.21.0** | Aug 13, 2026 | Change your sync passphrase without losing data, pick a default page for the mascot to open the main window to, Settings page description/layout consistency pass, recovery-code brute-force rate limit |
