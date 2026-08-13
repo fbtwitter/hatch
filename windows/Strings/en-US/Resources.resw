@@ -279,6 +279,12 @@
   <data name="Tip_Greeting_Anytime_2" xml:space="preserve"><value>You're all caught up</value></data>
   <data name="Tip_Greeting_Anytime_3" xml:space="preserve"><value>Every task counts</value></data>
 
+  <!-- ── Settings › Appearance &amp; behavior (x:Uid mapped) ──── -->
+  <data name="Settings_MinimizeToTrayDescription.Text" xml:space="preserve"><value>Keep running in the background when closed</value></data>
+  <data name="Settings_MinimizeToTrayDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Keep running in the background when closed</value></data>
+  <data name="Settings_RunAtStartupDescription.Text" xml:space="preserve"><value>Hatch will launch automatically</value></data>
+  <data name="Settings_RunAtStartupDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Hatch will launch automatically</value></data>
+
   <!-- ── Settings › Automatic tip time (x:Uid mapped) ────────── -->
   <data name="Settings_TipTimeHeader.Text" xml:space="preserve"><value>Automatic Tip Time</value></data>
   <data name="Settings_TipTimeDescription.Text" xml:space="preserve"><value>When the once-a-day automatic tip is allowed to appear</value></data>
@@ -402,4 +408,175 @@
 
   <!-- ── Settings (code-accessed) ────────────────────────────── -->
   <data name="Settings_NoFileSelected" xml:space="preserve"><value>(none selected)</value></data>
+
+  <!-- ── Settings page — full x:Uid coverage pass ─────────────────────────────
+       Every remaining hardcoded string on SettingsPage.xaml, converted to x:Uid.
+       Grouped by page section, in page order. -->
+
+  <!-- Cards converted from toolkit:SettingsCard to the custom Border+Grid row layout
+       (matching Settings_TipTimeHeader/Description) — the Header text that used to come
+       from SettingsCard.Header now lives on its own TextBlock with its own x:Uid. -->
+  <data name="Settings_ThemeCardHeader.Text" xml:space="preserve"><value>App Theme</value></data>
+  <data name="Settings_BackdropCardHeader.Text" xml:space="preserve"><value>Window Backdrop</value></data>
+  <data name="Settings_ChattinessCardHeader.Text" xml:space="preserve"><value>Mascot messages</value></data>
+  <data name="Settings_OpenPageCardHeader.Text" xml:space="preserve"><value>Default page</value></data>
+  <data name="Settings_LottieCardHeader.Text" xml:space="preserve"><value>Lottie Animation File</value></data>
+  <data name="Settings_OpenDataFolderCardHeader.Text" xml:space="preserve"><value>Open data folder</value></data>
+  <data name="Settings_ExportTasksCardHeader.Text" xml:space="preserve"><value>Export tasks</value></data>
+
+  <!-- Page title / Appearance & behavior -->
+  <data name="Settings_PageTitle.Text" xml:space="preserve"><value>Settings</value></data>
+  <data name="Settings_SectionAppearance.Text" xml:space="preserve"><value>Appearance &amp; behavior</value></data>
+  <data name="Settings_MinimizeToTrayHeader.Text" xml:space="preserve"><value>Minimize to System Tray</value></data>
+  <data name="Settings_MinimizeToTray.AutomationProperties.Name" xml:space="preserve"><value>Minimize to System Tray</value></data>
+  <data name="Settings_MinimizeToTray.OnContent" xml:space="preserve"><value>On</value></data>
+  <data name="Settings_MinimizeToTray.OffContent" xml:space="preserve"><value>Off</value></data>
+  <data name="Settings_RunAtStartupHeader.Text" xml:space="preserve"><value>Run at startup</value></data>
+  <data name="Settings_RunAtStartup.AutomationProperties.Name" xml:space="preserve"><value>Run at startup</value></data>
+  <data name="Settings_RunAtStartup.OnContent" xml:space="preserve"><value>On</value></data>
+  <data name="Settings_RunAtStartup.OffContent" xml:space="preserve"><value>Off</value></data>
+  <data name="Settings_ThemeCard.Header" xml:space="preserve"><value>App Theme</value></data>
+  <data name="Settings_ThemeCardDescription.Text" xml:space="preserve"><value>Choose your preferred color scheme</value></data>
+  <data name="Settings_ThemeCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Choose your preferred color scheme</value></data>
+  <data name="Settings_ThemeComboBox.AutomationProperties.Name" xml:space="preserve"><value>App Theme</value></data>
+  <data name="Settings_Theme_SystemDefault.Content" xml:space="preserve"><value>System Default</value></data>
+  <data name="Settings_Theme_Light.Content" xml:space="preserve"><value>Light</value></data>
+  <data name="Settings_Theme_Dark.Content" xml:space="preserve"><value>Dark</value></data>
+  <data name="Settings_BackdropCard.Header" xml:space="preserve"><value>Window Backdrop</value></data>
+  <data name="Settings_BackdropCardDescription.Text" xml:space="preserve"><value>Background material effect for the main window</value></data>
+  <data name="Settings_BackdropCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Background material effect for the main window</value></data>
+  <data name="Settings_BackdropComboBox.AutomationProperties.Name" xml:space="preserve"><value>Window Backdrop</value></data>
+  <data name="Settings_Backdrop_None.Content" xml:space="preserve"><value>None</value></data>
+  <data name="Settings_Backdrop_Mica.Content" xml:space="preserve"><value>Mica</value></data>
+  <data name="Settings_Backdrop_MicaAlt.Content" xml:space="preserve"><value>Mica Alt</value></data>
+  <data name="Settings_Backdrop_DesktopAcrylic.Content" xml:space="preserve"><value>Desktop Acrylic</value></data>
+  <data name="Settings_SectionMascot.Text" xml:space="preserve"><value>Mascot</value></data>
+
+  <!-- Mascot toggles -->
+  <data name="Settings_ShowMascotHeader.Text" xml:space="preserve"><value>Show Mascot</value></data>
+  <data name="Settings_ShowMascotDescription.Text" xml:space="preserve"><value>Display the floating mascot on your desktop. Quick-add hotkey and tray keep working when off</value></data>
+  <data name="Settings_ShowMascotDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Display the floating mascot on your desktop. Quick-add hotkey and tray keep working when off</value></data>
+  <data name="Settings_ShowMascot.AutomationProperties.Name" xml:space="preserve"><value>Show mascot</value></data>
+  <data name="Settings_ShowMascot.OnContent" xml:space="preserve"><value>On</value></data>
+  <data name="Settings_ShowMascot.OffContent" xml:space="preserve"><value>Off</value></data>
+  <data name="Settings_LockPositionHeader.Text" xml:space="preserve"><value>Lock Position</value></data>
+  <data name="Settings_LockPositionDescription.Text" xml:space="preserve"><value>Prevent the mascot from being dragged</value></data>
+  <data name="Settings_LockPositionDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Prevent the mascot from being dragged</value></data>
+  <data name="Settings_LockPosition.AutomationProperties.Name" xml:space="preserve"><value>Lock mascot position</value></data>
+  <data name="Settings_LockPosition.OnContent" xml:space="preserve"><value>On</value></data>
+  <data name="Settings_LockPosition.OffContent" xml:space="preserve"><value>Off</value></data>
+  <data name="Settings_MuteAnimationHeader.Text" xml:space="preserve"><value>Mute Animation</value></data>
+  <data name="Settings_MuteAnimationDescription.Text" xml:space="preserve"><value>Pause the mascot idle animation</value></data>
+  <data name="Settings_MuteAnimationDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Pause the mascot idle animation</value></data>
+  <data name="Settings_MuteAnimation.AutomationProperties.Name" xml:space="preserve"><value>Mute mascot animation</value></data>
+  <data name="Settings_MuteAnimation.OnContent" xml:space="preserve"><value>On</value></data>
+  <data name="Settings_MuteAnimation.OffContent" xml:space="preserve"><value>Off</value></data>
+  <data name="Settings_AlwaysOnTopHeader.Text" xml:space="preserve"><value>Always on Top</value></data>
+  <data name="Settings_AlwaysOnTopDescription.Text" xml:space="preserve"><value>Keep the mascot above all other windows</value></data>
+  <data name="Settings_AlwaysOnTopDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Keep the mascot above all other windows</value></data>
+  <data name="Settings_AlwaysOnTop.AutomationProperties.Name" xml:space="preserve"><value>Mascot always on top</value></data>
+  <data name="Settings_AlwaysOnTop.OnContent" xml:space="preserve"><value>On</value></data>
+  <data name="Settings_AlwaysOnTop.OffContent" xml:space="preserve"><value>Off</value></data>
+  <data name="Settings_HideFullscreenHeader.Text" xml:space="preserve"><value>Hide During Fullscreen &amp; Games</value></data>
+  <data name="Settings_HideFullscreenDescription.Text" xml:space="preserve"><value>Automatically hide when a fullscreen app, game, or presentation is active</value></data>
+  <data name="Settings_HideFullscreenDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Automatically hide when a fullscreen app, game, or presentation is active</value></data>
+  <data name="Settings_HideFullscreen.AutomationProperties.Name" xml:space="preserve"><value>Hide during fullscreen</value></data>
+  <data name="Settings_HideFullscreen.OnContent" xml:space="preserve"><value>On</value></data>
+  <data name="Settings_HideFullscreen.OffContent" xml:space="preserve"><value>Off</value></data>
+  <data name="Settings_ShowTipsAutomaticallyHeader.Text" xml:space="preserve"><value>Show Tips Automatically</value></data>
+  <data name="Settings_ShowTipsAutomaticallyDescription.Text" xml:space="preserve"><value>Pop up tips above the mascot on their own, instead of waiting for a click</value></data>
+  <data name="Settings_ShowTipsAutomaticallyDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Pop up tips above the mascot on their own, instead of waiting for a click</value></data>
+  <data name="Settings_ShowTipsAutomatically.AutomationProperties.Name" xml:space="preserve"><value>Show tips automatically</value></data>
+  <data name="Settings_ShowTipsAutomatically.OnContent" xml:space="preserve"><value>On</value></data>
+  <data name="Settings_ShowTipsAutomatically.OffContent" xml:space="preserve"><value>Off</value></data>
+  <data name="Settings_TipTime.AutomationProperties.Name" xml:space="preserve"><value>Automatic tip time</value></data>
+  <data name="Settings_MascotChattiness.AutomationProperties.Name" xml:space="preserve"><value>Mascot messages</value></data>
+  <data name="Settings_MascotOpenPage.AutomationProperties.Name" xml:space="preserve"><value>Default page when opening from mascot</value></data>
+
+  <!-- Lottie, Mascot Size, Quick-Add Hotkey -->
+  <data name="Settings_LottieCard.Header" xml:space="preserve"><value>Lottie Animation File</value></data>
+  <data name="Settings_BrowseLottie.Content" xml:space="preserve"><value>Browse</value></data>
+  <data name="Settings_ClearLottie.Content" xml:space="preserve"><value>Clear</value></data>
+  <data name="Settings_MascotSizeExpander.Header" xml:space="preserve"><value>Mascot Size</value></data>
+  <data name="Settings_MascotSizeExpanderDescription.Text" xml:space="preserve"><value>Choose how large the mascot appears on screen</value></data>
+  <data name="Settings_MascotSizeExpanderDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Choose how large the mascot appears on screen</value></data>
+  <data name="Settings_MascotSizePresetsCard.Header" xml:space="preserve"><value>Presets</value></data>
+  <data name="Settings_SizeSmall.Content" xml:space="preserve"><value>Small</value></data>
+  <data name="Settings_SizeMedium.Content" xml:space="preserve"><value>Medium</value></data>
+  <data name="Settings_SizeLarge.Content" xml:space="preserve"><value>Large</value></data>
+  <data name="Settings_MascotSizeCustomCard.Header" xml:space="preserve"><value>Custom</value></data>
+  <data name="Settings_SizeSlider.AutomationProperties.Name" xml:space="preserve"><value>Mascot size</value></data>
+  <data name="Settings_HotkeyExpander.Header" xml:space="preserve"><value>Quick-Add Hotkey</value></data>
+  <data name="Settings_HotkeyExpanderDescription.Text" xml:space="preserve"><value>Opens quick-add from anywhere, even when Hatch is hidden</value></data>
+  <data name="Settings_HotkeyExpanderDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Opens quick-add from anywhere, even when Hatch is hidden</value></data>
+  <data name="Settings_ModifiersCard.Header" xml:space="preserve"><value>Modifiers</value></data>
+  <data name="Settings_ModifiersCardDescription.Text" xml:space="preserve"><value>At least one is required — without a modifier the key would be captured system-wide</value></data>
+  <data name="Settings_HotkeyCtrl.Content" xml:space="preserve"><value>Ctrl</value></data>
+  <data name="Settings_HotkeyShift.Content" xml:space="preserve"><value>Shift</value></data>
+  <data name="Settings_HotkeyAlt.Content" xml:space="preserve"><value>Alt</value></data>
+  <data name="Settings_KeyCard.Header" xml:space="preserve"><value>Key</value></data>
+  <data name="Settings_KeyCardDescription.Text" xml:space="preserve"><value>Pressed together with the modifiers above</value></data>
+  <data name="Settings_HotkeyKeyComboBox.AutomationProperties.Name" xml:space="preserve"><value>Hotkey key</value></data>
+  <data name="Settings_HotkeyKey_Space.Content" xml:space="preserve"><value>Space</value></data>
+  <data name="Settings_HotkeyKey_A.Content" xml:space="preserve"><value>A</value></data>
+  <data name="Settings_HotkeyKey_Q.Content" xml:space="preserve"><value>Q</value></data>
+  <data name="Settings_HotkeyKey_T.Content" xml:space="preserve"><value>T</value></data>
+  <data name="Settings_HotkeyKey_N.Content" xml:space="preserve"><value>N</value></data>
+  <data name="Settings_HotkeyKey_Plus.Content" xml:space="preserve"><value>+</value></data>
+  <data name="Settings_HotkeyConflict.Title" xml:space="preserve"><value>That shortcut is already taken</value></data>
+  <data name="Settings_HotkeyConflict.Message" xml:space="preserve"><value>Another application registered it first, so it will not reach Hatch. Pick a different key or modifier below.</value></data>
+  <data name="Settings_SectionSync.Text" xml:space="preserve"><value>Sync</value></data>
+
+  <!-- Sync section -->
+  <data name="Settings_SyncSignOut.Content" xml:space="preserve"><value>Sign out</value></data>
+  <data name="Settings_MfaChallengeCode.AutomationProperties.Name" xml:space="preserve"><value>Authenticator code</value></data>
+  <data name="Settings_MfaChallengeCode.PlaceholderText" xml:space="preserve"><value>000000</value></data>
+  <data name="Settings_RecoveryCode.AutomationProperties.Name" xml:space="preserve"><value>Recovery code</value></data>
+  <data name="Settings_RecoveryCode.PlaceholderText" xml:space="preserve"><value>XXXXX-XXXXX</value></data>
+  <data name="Settings_RecoveryKitText.AutomationProperties.Name" xml:space="preserve"><value>Sync recovery kit</value></data>
+  <data name="Settings_MfaQrImage.AutomationProperties.Name" xml:space="preserve"><value>Authenticator QR code</value></data>
+  <data name="Settings_MfaSecretBox.AutomationProperties.Name" xml:space="preserve"><value>Authenticator setup key</value></data>
+  <data name="Settings_MfaCodeBox.AutomationProperties.Name" xml:space="preserve"><value>Authenticator code</value></data>
+  <data name="Settings_MfaCodeBox.PlaceholderText" xml:space="preserve"><value>000000</value></data>
+  <data name="Settings_RecoveryCodes.AutomationProperties.Name" xml:space="preserve"><value>Recovery codes</value></data>
+  <data name="Settings_SyncAcrossDevicesExpander.Header" xml:space="preserve"><value>Sync across devices</value></data>
+  <data name="Settings_SyncAcrossDevicesExpanderDescription.Text" xml:space="preserve"><value>Sign in to keep your tasks in sync across PCs</value></data>
+  <data name="Settings_SyncAcrossDevicesExpanderDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Sign in to keep your tasks in sync across PCs</value></data>
+  <data name="Settings_SyncEmailCard.Header" xml:space="preserve"><value>Email</value></data>
+  <data name="Settings_SyncEmail.AutomationProperties.Name" xml:space="preserve"><value>Email</value></data>
+  <data name="Settings_SyncPasswordCard.Header" xml:space="preserve"><value>Password</value></data>
+  <data name="Settings_SyncPassword.AutomationProperties.Name" xml:space="preserve"><value>Password</value></data>
+  <data name="Settings_SyncSignIn.Content" xml:space="preserve"><value>Sign in</value></data>
+  <data name="Settings_SyncSignUp.Content" xml:space="preserve"><value>Create account</value></data>
+  <data name="Settings_SyncGitHubCard.Header" xml:space="preserve"><value>Or continue with</value></data>
+  <data name="Settings_SyncGitHub.Content" xml:space="preserve"><value>Sign in with GitHub</value></data>
+  <data name="Settings_SyncPassphrase.AutomationProperties.Name" xml:space="preserve"><value>Sync passphrase</value></data>
+
+  <!-- Data section -->
+  <data name="Settings_SectionData.Text" xml:space="preserve"><value>Data</value></data>
+  <data name="Settings_OpenDataFolderCard.Header" xml:space="preserve"><value>Open data folder</value></data>
+  <data name="Settings_OpenDataFolderCardDescription.Text" xml:space="preserve"><value>Browse or back up your tasks.json and settings.json files</value></data>
+  <data name="Settings_OpenDataFolderCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Browse or back up your tasks.json and settings.json files</value></data>
+  <data name="Settings_OpenDataFolder.Content" xml:space="preserve"><value>Open folder</value></data>
+  <data name="Settings_ExportTasksCard.Header" xml:space="preserve"><value>Export tasks</value></data>
+  <data name="Settings_ExportTasksCardDescription.Text" xml:space="preserve"><value>Save your tasks as a file you choose where to put — JSON for a full backup, CSV for a spreadsheet, Markdown for a checklist you can paste into a status update</value></data>
+  <data name="Settings_ExportTasksCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Save your tasks as a file you choose where to put — JSON for a full backup, CSV for a spreadsheet, Markdown for a checklist you can paste into a status update</value></data>
+  <data name="Settings_ExportJson.Content" xml:space="preserve"><value>JSON</value></data>
+  <data name="Settings_ExportCsv.Content" xml:space="preserve"><value>CSV</value></data>
+  <data name="Settings_ExportMarkdown.Content" xml:space="preserve"><value>Markdown</value></data>
+
+  <!-- About section -->
+  <data name="Settings_SectionAbout.Text" xml:space="preserve"><value>About</value></data>
+  <data name="Settings_HatchExpander.Header" xml:space="preserve"><value>Hatch</value></data>
+  <data name="Settings_HatchExpanderDescription.Text" xml:space="preserve"><value>Local-first task manager for Windows</value></data>
+  <data name="Settings_PrivacyCard.Header" xml:space="preserve"><value>Privacy</value></data>
+  <data name="Settings_PrivacyCardDescription.Text" xml:space="preserve"><value>No account · No cloud · No telemetry. All data is stored locally in %LocalAppData%\Hatch\ and never leaves your device.</value></data>
+  <data name="Settings_AuthorCard.Header" xml:space="preserve"><value>Author</value></data>
+  <data name="Settings_AuthorCardDescription.Text" xml:space="preserve"><value>Reza Fauzi Augusdi</value></data>
+  <data name="Settings_SourceCodeCard.Header" xml:space="preserve"><value>Source code</value></data>
+  <data name="Settings_SourceCodeCardDescription.Text" xml:space="preserve"><value>github.com/fbtwitter/hatch</value></data>
+  <data name="Settings_OpenGitHub.Content" xml:space="preserve"><value>Open on GitHub</value></data>
+  <data name="Settings_ReportIssueCard.Header" xml:space="preserve"><value>Report an issue</value></data>
+  <data name="Settings_ReportIssueCardDescription.Text" xml:space="preserve"><value>Found a bug or have a suggestion?</value></data>
+  <data name="Settings_OpenGitHubIssues.Content" xml:space="preserve"><value>Open issues</value></data>
 </root>
