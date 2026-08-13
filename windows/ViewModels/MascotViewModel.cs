@@ -5,6 +5,7 @@ using System.Windows.Input;
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
+using Hatch.Helpers;
 using Hatch.Models;
 using Hatch.Services;
 using Hatch.Views;
@@ -339,7 +340,31 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         // Coming from tray — restore default size and position near mascot.
         PositionMainWindowNearMascot(win, resetSize: true);
         win.AppWindow.Show();
+        NavigateToPinnedPage(win);
         win.Activate();
+    }
+
+    private static void NavigateToPinnedPage(MainWindow win)
+    {
+        var storedTag = App.Settings.MascotOpenPageTag;
+        var tag = MascotOpenPageHelper.Resolve(storedTag, win.ViewModel.CustomLists);
+        if (string.IsNullOrEmpty(tag)) return; // "remember last page"
+
+        if (tag != storedTag)
+        {
+            // The pinned custom list was deleted since — persist the Summary fallback so
+            // Settings reflects the correction too, not just this one navigation.
+            App.Settings.MascotOpenPageTag = tag;
+            App.SettingsService.SaveDebounced();
+        }
+
+        // The window was hidden, not destroyed — its frame still shows whatever was last on
+        // screen. If that already matches the pinned target, skip the navigate call: Frame.
+        // Navigate always builds a fresh page and plays its transition, which would flash
+        // the same content the user is about to see anyway.
+        if (win.IsShowingPage(tag)) return;
+
+        win.NavigateTo(tag);
     }
 
     private static void ToggleMainWindow()
@@ -364,6 +389,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
         PositionMainWindowNearMascot(win, resetSize: true);
         win.AppWindow.Show();
+        NavigateToPinnedPage(win);
 
         NativeMethods.SetWindowPos(mainHwnd, NativeMethods.HWND_TOPMOST,   0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
         NativeMethods.SetWindowPos(mainHwnd, NativeMethods.HWND_NOTOPMOST, 0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);

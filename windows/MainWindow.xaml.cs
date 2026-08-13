@@ -180,6 +180,9 @@ public sealed partial class MainWindow : Window
             mainPage.NavigateTo(tag);
     }
 
+    public bool IsShowingPage(string tag)
+        => RootFrame.Content is MainPage mainPage && mainPage.IsShowingPage(tag);
+
     public void NavigateToTask(TodoItem task)
     {
         if (RootFrame.Content is MainPage mainPage)
