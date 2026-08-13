@@ -159,10 +159,20 @@ public sealed class SyncService
             await RefreshMfaChallengeStateAsync();
             StateChanged?.Invoke();
         }
-        catch
+        catch (Supabase.Gotrue.Exceptions.GotrueException ex)
+            when (ex.Reason != Supabase.Gotrue.Exceptions.FailureHint.Reason.Offline)
         {
+            // The auth server evaluated the token and rejected it (invalid/expired/rotated)
+            // — it is really dead, nothing to retry.
             ClearTokens();
             App.SettingsService.SaveDebounced();
+        }
+        catch
+        {
+            // GotrueException(Offline) or a raw network failure (DNS/timeout at launch) — no
+            // server response was reached, so the token was never evaluated and may still be
+            // valid. Leave it in the vault; the next launch or auto-sync retry can pick it
+            // back up instead of forcing a needless re-login.
         }
     }
 
