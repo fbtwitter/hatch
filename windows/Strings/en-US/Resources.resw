@@ -288,6 +288,15 @@
   <data name="Settings_Chattiness_Balanced.Content" xml:space="preserve"><value>Balanced</value></data>
   <data name="Settings_Chattiness_Chatty.Content" xml:space="preserve"><value>Chatty</value></data>
 
+  <data name="Settings_OpenPageCard.Header" xml:space="preserve"><value>Default page</value></data>
+  <data name="Settings_OpenPageCard.Description" xml:space="preserve"><value>Which page the main window jumps to when you open it from the mascot. "Remember last page" keeps whatever you were last looking at. A pinned custom list that's later deleted falls back to Summary.</value></data>
+  <data name="Settings_OpenPage_RememberLast" xml:space="preserve"><value>Remember last page</value></data>
+  <data name="Settings_OpenPage_Summary" xml:space="preserve"><value>Summary</value></data>
+  <data name="Settings_OpenPage_MyDay" xml:space="preserve"><value>My Day</value></data>
+  <data name="Settings_OpenPage_Important" xml:space="preserve"><value>Important</value></data>
+  <data name="Settings_OpenPage_Planned" xml:space="preserve"><value>Planned</value></data>
+  <data name="Settings_OpenPage_AllTasks" xml:space="preserve"><value>All Tasks</value></data>
+
   <data name="Settings_CustomTipsExpander.Header" xml:space="preserve"><value>Your own messages</value></data>
   <data name="Settings_CustomTipsExpander.Description" xml:space="preserve"><value>Added to Hatch's built-in lines and shown at random. Your own quotes, reminders, anything.</value></data>
   <data name="Settings_CustomTipInput.PlaceholderText" xml:space="preserve"><value>Write a line, press Enter</value></data>

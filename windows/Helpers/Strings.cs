@@ -137,4 +137,10 @@ internal static class Strings
 
     // ── Settings ─────────────────────────────────────────────
     public static string Settings_NoFileSelected => Get("Settings_NoFileSelected");
+    public static string Settings_OpenPage_RememberLast => Get("Settings_OpenPage_RememberLast");
+    public static string Settings_OpenPage_Summary      => Get("Settings_OpenPage_Summary");
+    public static string Settings_OpenPage_MyDay        => Get("Settings_OpenPage_MyDay");
+    public static string Settings_OpenPage_Important    => Get("Settings_OpenPage_Important");
+    public static string Settings_OpenPage_Planned      => Get("Settings_OpenPage_Planned");
+    public static string Settings_OpenPage_AllTasks     => Get("Settings_OpenPage_AllTasks");
 }
