@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.21.4] - 2026-08-13
+
+### Added
+- Releases now publish to the Microsoft Store automatically as part of the tag-triggered
+  release pipeline, alongside the existing GitHub release and App Installer feed
+
+---
+
 ## [0.21.3] - 2026-08-13
 
 ### Fixed
