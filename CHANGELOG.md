@@ -6,10 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+---
+
+## [0.21.0] - 2026-08-13
+
 ### Added
 - Settings → Sync: change your sync passphrase without losing existing synced data —
   decrypts with the current one and re-encrypts with the new one. Other signed-in devices
   detect the change automatically on their next sync and re-prompt for the new passphrase
+- Settings → Mascot: pick a default page for the main window to open to from the mascot
+  (My Day, Important, Planned, All Tasks, Summary, or any custom list), instead of always
+  resuming wherever it was last left. A pinned custom list that's later deleted falls back
+  to Summary automatically
+
+### Changed
+- Settings page descriptions now show as a single line with an ellipsis, with the full
+  text available on hover, instead of wrapping across multiple lines
+- Several Settings rows (App Theme, Window Backdrop, Mascot messages, Default page, Lottie
+  Animation File, Open data folder, Export tasks) now match the compact icon/text/control
+  layout used elsewhere on the page, and no longer reflow their controls below the header
+  at narrow widths
+- Main window's minimum width increased from 480px to 560px
 
 ### Fixed
 - Sync sessions were sometimes silently dropped, forcing an unnecessary re-sign-in — a
@@ -19,6 +36,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 - `redeem_mfa_recovery_code` had no throttle of its own (Supabase has no per-RPC rate
   limit); a stolen password alone was enough to attempt unlimited guesses against a user's
   recovery codes. Now locks out further attempts for 15 minutes after 5 failures
+- Backfilled the baseline database schema and row-level-security policy into migration
+  history — they predated migration tracking entirely, so a schema rebuilt from scratch
+  would not have reproduced them
 
 ---
 
