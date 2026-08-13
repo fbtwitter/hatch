@@ -33,6 +33,28 @@
                 <Setter Property="MinHeight" Value="64"/>
             </Style.Setters>
         </Style>
+
+        <!--
+            SettingsCard/SettingsExpander hardcode TextWrapping="Wrap" on their Description's
+            control-template ContentPresenter, with no exposed property to change it — so
+            every Description on this page is set via property-element syntax with an
+            explicit TextBlock using this style, instead of the plain-string attribute form.
+            Local values always win over a template's implicit style, which is what makes
+            this override reliable without re-templating either control.
+            FontSize/Foreground mirror the toolkit's own SettingsCardDescriptionFontSize (12)
+            and TextFillColorSecondaryBrush — hardcoded rather than referencing those
+            ThemeResource keys directly, since the toolkit's dictionary isn't explicitly
+            merged in App.xaml (it self-registers for the control's own default style; that
+            doesn't guarantee the keys resolve from an app-level XAML lookup).
+        -->
+        <Style x:Key="SettingsDescriptionTextBlockStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
+            <Style.Setters>
+                <Setter Property="FontSize" Value="12"/>
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
+                <Setter Property="TextWrapping" Value="NoWrap"/>
+                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            </Style.Setters>
+        </Style>
     </Page.Resources>
 
     <!-- ScrollViewer spans the full page so its scrollbar tracks the window edge (PowerToys-style);
@@ -108,8 +130,12 @@
                 </Border>
 
                 <toolkit:SettingsCard
-                    Header="App Theme"
-                    Description="Choose your preferred color scheme">
+                    Header="App Theme">
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock Text="Choose your preferred color scheme"
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="Choose your preferred color scheme"/>
+                    </toolkit:SettingsCard.Description>
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE790;"/>
                     </toolkit:SettingsCard.HeaderIcon>
@@ -123,8 +149,12 @@
                 </toolkit:SettingsCard>
 
                 <toolkit:SettingsCard
-                    Header="Window Backdrop"
-                    Description="Background material effect for the main window">
+                    Header="Window Backdrop">
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock Text="Background material effect for the main window"
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="Background material effect for the main window"/>
+                    </toolkit:SettingsCard.Description>
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE771;"/>
                     </toolkit:SettingsCard.HeaderIcon>
@@ -339,8 +369,12 @@
 
                 <!-- Mascot messages — how often, and the user's own lines -->
                 <toolkit:SettingsCard x:Uid="Settings_ChattinessCard"
-                                      Header="Mascot messages"
-                                      Description="How freely Hatch shows encouragement. Reminders about overdue tasks always appear.">
+                                      Header="Mascot messages">
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock Text="How freely Hatch shows encouragement. Reminders about overdue tasks always appear."
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="How freely Hatch shows encouragement. Reminders about overdue tasks always appear."/>
+                    </toolkit:SettingsCard.Description>
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE8BD;"/>
                     </toolkit:SettingsCard.HeaderIcon>
@@ -358,8 +392,12 @@
 
                 <!-- Which page the main window jumps to when opened from the mascot -->
                 <toolkit:SettingsCard x:Uid="Settings_OpenPageCard"
-                                      Header="Default page"
-                                      Description="Which page the main window jumps to when you open it from the mascot.">
+                                      Header="Default page">
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock Text="Which page the main window jumps to when you open it from the mascot. A pinned custom list that's later deleted falls back to Summary."
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="Which page the main window jumps to when you open it from the mascot. &quot;Remember last page&quot; keeps whatever you were last looking at. A pinned custom list that's later deleted falls back to Summary."/>
+                    </toolkit:SettingsCard.Description>
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE71D;"/>
                     </toolkit:SettingsCard.HeaderIcon>
@@ -376,8 +414,12 @@
                 </toolkit:SettingsCard>
 
                 <toolkit:SettingsExpander x:Uid="Settings_CustomTipsExpander"
-                                          Header="Your own messages"
-                                          Description="Added to Hatch's built-in lines and shown at random. Your own quotes, reminders, anything.">
+                                          Header="Your own messages">
+                    <toolkit:SettingsExpander.Description>
+                        <TextBlock Text="Added to Hatch's built-in lines and shown at random. Your own quotes, reminders, anything."
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="Added to Hatch's built-in lines and shown at random. Your own quotes, reminders, anything."/>
+                    </toolkit:SettingsExpander.Description>
                     <toolkit:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE70F;"/>
                     </toolkit:SettingsExpander.HeaderIcon>
@@ -437,8 +479,12 @@
                 </toolkit:SettingsExpander>
 
                 <toolkit:SettingsCard
-                    Header="Lottie Animation File"
-                    Description="{x:Bind ViewModel.LottieFileDisplay, Mode=OneWay}">
+                    Header="Lottie Animation File">
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock Text="{x:Bind ViewModel.LottieFileDisplay, Mode=OneWay}"
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="{x:Bind ViewModel.LottieFileDisplay, Mode=OneWay}"/>
+                    </toolkit:SettingsCard.Description>
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE8A5;"/>
                     </toolkit:SettingsCard.HeaderIcon>
@@ -453,8 +499,12 @@
                     </StackPanel>
                 </toolkit:SettingsCard>
 
-                <toolkit:SettingsExpander Header="Mascot Size"
-                                          Description="Choose how large the mascot appears on screen">
+                <toolkit:SettingsExpander Header="Mascot Size">
+                    <toolkit:SettingsExpander.Description>
+                        <TextBlock Text="Choose how large the mascot appears on screen"
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="Choose how large the mascot appears on screen"/>
+                    </toolkit:SettingsExpander.Description>
                     <toolkit:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE744;"/>
                     </toolkit:SettingsExpander.HeaderIcon>
@@ -485,8 +535,12 @@
                 <!-- Description is static: the live combination is the collapsed-state
                      content on the right. Binding both to HotkeyDescription printed the
                      same string twice, inches apart. -->
-                <toolkit:SettingsExpander Header="Quick-Add Hotkey"
-                                          Description="Opens quick-add from anywhere, even when Hatch is hidden">
+                <toolkit:SettingsExpander Header="Quick-Add Hotkey">
+                    <toolkit:SettingsExpander.Description>
+                        <TextBlock Text="Opens quick-add from anywhere, even when Hatch is hidden"
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="Opens quick-add from anywhere, even when Hatch is hidden"/>
+                    </toolkit:SettingsExpander.Description>
                     <toolkit:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE92E;"/>
                     </toolkit:SettingsExpander.HeaderIcon>
@@ -506,8 +560,12 @@
                              at-least-one rule and needs the full width to say it, rather
                              than wrapping to three words a line beside the checkboxes. -->
                         <toolkit:SettingsCard Header="Modifiers"
-                                              ContentAlignment="Vertical"
-                                              Description="At least one is required — without a modifier the key would be captured system-wide">
+                                              ContentAlignment="Vertical">
+                            <toolkit:SettingsCard.Description>
+                                <TextBlock Text="At least one is required — without a modifier the key would be captured system-wide"
+                                           Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                           ToolTipService.ToolTip="At least one is required — without a modifier the key would be captured system-wide"/>
+                            </toolkit:SettingsCard.Description>
                             <StackPanel Orientation="Horizontal" Spacing="24">
                                 <CheckBox Content="Ctrl"
                                           AutomationProperties.AutomationId="Settings_HotkeyCtrl"
@@ -524,8 +582,12 @@
                             </StackPanel>
                         </toolkit:SettingsCard>
                         <toolkit:SettingsCard Header="Key"
-                                              ContentAlignment="Vertical"
-                                              Description="Pressed together with the modifiers above">
+                                              ContentAlignment="Vertical">
+                            <toolkit:SettingsCard.Description>
+                                <TextBlock Text="Pressed together with the modifiers above"
+                                           Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                           ToolTipService.ToolTip="Pressed together with the modifiers above"/>
+                            </toolkit:SettingsCard.Description>
                             <ComboBox x:Name="HotkeyKeySelector"
                                       AutomationProperties.AutomationId="Settings_HotkeyKeyComboBox"
                                       AutomationProperties.Name="Hotkey key"
@@ -560,8 +622,12 @@
 
                 <toolkit:SettingsCard
                     Visibility="{x:Bind ViewModel.IsSyncSignedIn, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                    Header="{x:Bind ViewModel.SyncUserEmail, Mode=OneWay}"
-                    Description="{x:Bind ViewModel.SyncLastSyncedText, Mode=OneWay}">
+                    Header="{x:Bind ViewModel.SyncUserEmail, Mode=OneWay}">
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock Text="{x:Bind ViewModel.SyncLastSyncedText, Mode=OneWay}"
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="{x:Bind ViewModel.SyncLastSyncedText, Mode=OneWay}"/>
+                    </toolkit:SettingsCard.Description>
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE77B;"/>
                     </toolkit:SettingsCard.HeaderIcon>
@@ -580,6 +646,11 @@
                 <toolkit:SettingsCard x:Uid="Settings_MfaChallengeCard"
                     ContentAlignment="Vertical"
                     Visibility="{x:Bind ViewModel.IsMfaChallengePending, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock Text="Open the authenticator app you set up for Hatch and type the 6-digit code it shows."
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="Open the authenticator app you set up for Hatch and type the 6-digit code it shows."/>
+                    </toolkit:SettingsCard.Description>
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE928;"/>
                     </toolkit:SettingsCard.HeaderIcon>
@@ -609,6 +680,11 @@
                 <toolkit:SettingsCard x:Uid="Settings_RecoveryRedeemCard"
                     ContentAlignment="Vertical"
                     Visibility="{x:Bind ViewModel.IsRedeemingRecovery, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock Text="This turns two-factor authentication OFF and discards your remaining codes. Your tasks and your sync passphrase are unaffected. Set two-factor up again afterwards."
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="This turns two-factor authentication OFF and discards your remaining codes. Your tasks and your sync passphrase are unaffected. Set two-factor up again afterwards."/>
+                    </toolkit:SettingsCard.Description>
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE785;"/>
                     </toolkit:SettingsCard.HeaderIcon>
@@ -645,6 +721,11 @@
                 <toolkit:SettingsCard x:Uid="Settings_SyncPassphraseCard"
                     ContentAlignment="Vertical"
                     Visibility="{x:Bind ViewModel.IsSignedInWithoutPassphrase, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock Text="Never sent to the server. If you lose it, synced data cannot be recovered."
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="Never sent to the server. If you lose it, synced data cannot be recovered."/>
+                    </toolkit:SettingsCard.Description>
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE72E;"/>
                     </toolkit:SettingsCard.HeaderIcon>
@@ -665,6 +746,11 @@
                 <!-- Change passphrase — rotation, not recovery; requires the current one -->
                 <toolkit:SettingsCard x:Uid="Settings_ChangePassphraseCard"
                     Visibility="{x:Bind ViewModel.CanStartChangePassphrase, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock Text="Requires your current passphrase. Other signed-in devices will need the new one entered again the next time they sync."
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="Requires your current passphrase. Other signed-in devices will need the new one entered again the next time they sync."/>
+                    </toolkit:SettingsCard.Description>
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE72E;"/>
                     </toolkit:SettingsCard.HeaderIcon>
@@ -676,6 +762,11 @@
                 <toolkit:SettingsCard x:Uid="Settings_ChangePassphraseFormCard"
                     ContentAlignment="Vertical"
                     Visibility="{x:Bind ViewModel.IsChangingPassphrase, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock Text="Enter your current passphrase, then the new one twice."
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="Enter your current passphrase, then the new one twice."/>
+                    </toolkit:SettingsCard.Description>
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE72E;"/>
                     </toolkit:SettingsCard.HeaderIcon>
@@ -708,6 +799,11 @@
                 <!-- Sync recovery kit — the passphrase cannot be reset or recovered -->
                 <toolkit:SettingsCard x:Uid="Settings_RecoveryKitCard"
                     Visibility="{x:Bind ViewModel.CanShowRecoveryKit, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock Text="Your passphrase cannot be reset or recovered by anyone. Save a copy somewhere you'll still have if this PC is lost."
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="Your passphrase cannot be reset or recovered by anyone. Save a copy somewhere you'll still have if this PC is lost."/>
+                    </toolkit:SettingsCard.Description>
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE7BA;"/>
                     </toolkit:SettingsCard.HeaderIcon>
@@ -751,6 +847,11 @@
                 <!-- Two-factor authentication (docs/mfa-spec.md) -->
                 <toolkit:SettingsCard x:Uid="Settings_MfaCard"
                     Visibility="{x:Bind ViewModel.IsMfaSettingsVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock Text="Require a code from an authenticator app when signing in. This protects your account — your tasks are already protected by the sync passphrase."
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="Require a code from an authenticator app when signing in. This protects your account — your tasks are already protected by the sync passphrase."/>
+                    </toolkit:SettingsCard.Description>
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE928;"/>
                     </toolkit:SettingsCard.HeaderIcon>
@@ -779,6 +880,11 @@
                 <toolkit:SettingsCard x:Uid="Settings_MfaEnrollCard"
                     ContentAlignment="Vertical"
                     Visibility="{x:Bind ViewModel.IsMfaEnrolling, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock Text="Enter this setup key in Google Authenticator, Authy, 1Password or similar, then type the 6-digit code it shows."
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="Enter this setup key in Google Authenticator, Authy, 1Password or similar, then type the 6-digit code it shows."/>
+                    </toolkit:SettingsCard.Description>
                     <StackPanel Spacing="12">
                         <Border x:Name="MfaQrPanel"
                                 Background="White"
@@ -865,8 +971,12 @@
 
                 <toolkit:SettingsExpander
                     Visibility="{x:Bind ViewModel.IsSyncNotSignedIn, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                    Header="Sync across devices"
-                    Description="Sign in to keep your tasks in sync across PCs">
+                    Header="Sync across devices">
+                    <toolkit:SettingsExpander.Description>
+                        <TextBlock Text="Sign in to keep your tasks in sync across PCs"
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="Sign in to keep your tasks in sync across PCs"/>
+                    </toolkit:SettingsExpander.Description>
                     <toolkit:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE895;"/>
                     </toolkit:SettingsExpander.HeaderIcon>
@@ -917,8 +1027,12 @@
                            Text="Data"/>
 
                 <toolkit:SettingsCard
-                    Header="Open data folder"
-                    Description="Browse or back up your tasks.json and settings.json files">
+                    Header="Open data folder">
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock Text="Browse or back up your tasks.json and settings.json files"
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="Browse or back up your tasks.json and settings.json files"/>
+                    </toolkit:SettingsCard.Description>
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE8B7;"/>
                     </toolkit:SettingsCard.HeaderIcon>
@@ -928,8 +1042,12 @@
                 </toolkit:SettingsCard>
 
                 <toolkit:SettingsCard
-                    Header="Export tasks"
-                    Description="Save your tasks as a file you choose where to put — JSON for a full backup, CSV for a spreadsheet, Markdown for a checklist you can paste into a status update">
+                    Header="Export tasks">
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock Text="Save your tasks as a file you choose where to put — JSON for a full backup, CSV for a spreadsheet, Markdown for a checklist you can paste into a status update"
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="Save your tasks as a file you choose where to put — JSON for a full backup, CSV for a spreadsheet, Markdown for a checklist you can paste into a status update"/>
+                    </toolkit:SettingsCard.Description>
                     <toolkit:SettingsCard.HeaderIcon>
                         <FontIcon Glyph="&#xE898;"/>
                     </toolkit:SettingsCard.HeaderIcon>
@@ -958,8 +1076,12 @@
 
                 <toolkit:SettingsExpander
                     Margin="0,0,0,24"
-                    Header="Hatch"
-                    Description="Local-first task manager for Windows">
+                    Header="Hatch">
+                    <toolkit:SettingsExpander.Description>
+                        <TextBlock Text="Local-first task manager for Windows"
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                   ToolTipService.ToolTip="Local-first task manager for Windows"/>
+                    </toolkit:SettingsExpander.Description>
                     <toolkit:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE946;"/>
                     </toolkit:SettingsExpander.HeaderIcon>
@@ -968,6 +1090,10 @@
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                VerticalAlignment="Center"/>
                     <toolkit:SettingsExpander.Items>
+                        <!-- Deliberately excluded from the one-line-ellipsis treatment used
+                             everywhere else on this page: this is the core privacy promise
+                             (see HARD STOPS in project-overview.md), which the product wants
+                             surfaced in full, not truncated behind a hover. -->
                         <toolkit:SettingsCard Header="Privacy">
                             <toolkit:SettingsCard.Description>
                                 <TextBlock
@@ -976,19 +1102,31 @@
                             </toolkit:SettingsCard.Description>
                         </toolkit:SettingsCard>
 
-                        <toolkit:SettingsCard Header="Author"
-                                              Description="Reza Fauzi Augusdi">
+                        <toolkit:SettingsCard Header="Author">
+                            <toolkit:SettingsCard.Description>
+                                <TextBlock Text="Reza Fauzi Augusdi"
+                                           Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                           ToolTipService.ToolTip="Reza Fauzi Augusdi"/>
+                            </toolkit:SettingsCard.Description>
                         </toolkit:SettingsCard>
 
-                        <toolkit:SettingsCard Header="Source code"
-                                              Description="github.com/fbtwitter/hatch">
+                        <toolkit:SettingsCard Header="Source code">
+                            <toolkit:SettingsCard.Description>
+                                <TextBlock Text="github.com/fbtwitter/hatch"
+                                           Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                           ToolTipService.ToolTip="github.com/fbtwitter/hatch"/>
+                            </toolkit:SettingsCard.Description>
                             <Button Content="Open on GitHub"
                                     AutomationProperties.AutomationId="Settings_OpenGitHub"
                                     Command="{x:Bind ViewModel.OpenGitHubCommand}"/>
                         </toolkit:SettingsCard>
 
-                        <toolkit:SettingsCard Header="Report an issue"
-                                              Description="Found a bug or have a suggestion?">
+                        <toolkit:SettingsCard Header="Report an issue">
+                            <toolkit:SettingsCard.Description>
+                                <TextBlock Text="Found a bug or have a suggestion?"
+                                           Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                           ToolTipService.ToolTip="Found a bug or have a suggestion?"/>
+                            </toolkit:SettingsCard.Description>
                             <Button Content="Open issues"
                                     AutomationProperties.AutomationId="Settings_OpenGitHubIssues"
                                     Command="{x:Bind ViewModel.OpenGitHubIssuesCommand}"/>
