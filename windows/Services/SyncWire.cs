@@ -23,4 +23,17 @@ public static class SyncWire
 
     public static TasksFile? Deserialize(string json)
         => JsonSerializer.Deserialize<TasksFile>(json, JsonOptions);
+
+    // Order-insensitive: SyncMerge.Merge rebuilds its result from a Dictionary, so it
+    // doesn't preserve list order even when no task or list actually changed. A plain
+    // Serialize(a) == Serialize(b) would report "changed" on every merge.
+    public static bool IsEquivalent(TasksFile a, TasksFile b)
+    {
+        string Canonical(TasksFile f) => Serialize(new TasksFile
+        {
+            Tasks = [.. f.Tasks.OrderBy(t => t.Id)],
+            Lists = [.. f.Lists.OrderBy(l => l.Id)]
+        });
+        return Canonical(a) == Canonical(b);
+    }
 }
