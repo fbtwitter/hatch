@@ -348,20 +348,14 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     {
         var storedTag = App.Settings.MascotOpenPageTag;
         var tag = MascotOpenPageHelper.Resolve(storedTag, win.ViewModel.CustomLists);
-        if (string.IsNullOrEmpty(tag)) return; // "remember last page"
+        if (string.IsNullOrEmpty(tag)) return;
 
         if (tag != storedTag)
         {
-            // The pinned custom list was deleted since — persist the Summary fallback so
-            // Settings reflects the correction too, not just this one navigation.
             App.Settings.MascotOpenPageTag = tag;
             App.SettingsService.SaveDebounced();
         }
 
-        // The window was hidden, not destroyed — its frame still shows whatever was last on
-        // screen. If that already matches the pinned target, skip the navigate call: Frame.
-        // Navigate always builds a fresh page and plays its transition, which would flash
-        // the same content the user is about to see anyway.
         if (win.IsShowingPage(tag)) return;
 
         win.NavigateTo(tag);

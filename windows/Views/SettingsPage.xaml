@@ -34,19 +34,6 @@
             </Style.Setters>
         </Style>
 
-        <!--
-            SettingsCard/SettingsExpander hardcode TextWrapping="Wrap" on their Description's
-            control-template ContentPresenter, with no exposed property to change it — so
-            every Description on this page is set via property-element syntax with an
-            explicit TextBlock using this style, instead of the plain-string attribute form.
-            Local values always win over a template's implicit style, which is what makes
-            this override reliable without re-templating either control.
-            FontSize/Foreground mirror the toolkit's own SettingsCardDescriptionFontSize (12)
-            and TextFillColorSecondaryBrush — hardcoded rather than referencing those
-            ThemeResource keys directly, since the toolkit's dictionary isn't explicitly
-            merged in App.xaml (it self-registers for the control's own default style; that
-            doesn't guarantee the keys resolve from an app-level XAML lookup).
-        -->
         <Style x:Key="SettingsDescriptionTextBlockStyle" BasedOn="{StaticResource CaptionTextBlockStyle}" TargetType="TextBlock">
             <Style.Setters>
                 <Setter Property="FontSize" Value="12"/>
@@ -56,17 +43,6 @@
             </Style.Setters>
         </Style>
 
-        <!--
-            SettingsCard.xaml renders HeaderIcon inside a Viewbox bound to
-            SettingsCardHeaderIconMaxSize/SettingsCardHeaderIconMargin (defaults 20 /
-            "2,0,20,0"), and SettingsExpander.xaml merges that same dictionary — so both
-            controls' icons share these two keys. A Viewbox scales its content to fill that
-            box regardless of the source FontIcon's own FontSize, so the only way to match
-            the custom Border+Grid rows' plain 16px/"0,0,20,0" icons is to override the keys
-            themselves, not the icon markup. ThemeResource lookups follow the live visual
-            tree, so this Page-level override reaches every SettingsCard/SettingsExpander
-            icon on the page, including ones that were not converted to the custom row shape.
-        -->
         <x:Double x:Key="SettingsCardHeaderIconMaxSize">16</x:Double>
         <Thickness x:Key="SettingsCardHeaderIconMargin">0,0,20,0</Thickness>
     </Page.Resources>
@@ -433,7 +409,6 @@
                     </Grid>
                 </Border>
 
-                <!-- Which page the main window jumps to when opened from the mascot -->
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -452,11 +427,6 @@
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                        Margin="0,2,0,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
-                        <!-- Fixed pages plus one entry per custom list — built in the ViewModel
-                             (dynamic tail), so this binds ItemsSource/SelectedItem rather than
-                             the SelectedIndex-onto-fixed-ComboBoxItems pattern used elsewhere on
-                             this page. MascotOpenPageOption.ToString() supplies the display text,
-                             so no ItemTemplate is needed. -->
                         <ComboBox Grid.Column="2" MinWidth="160" VerticalAlignment="Center"
                                   x:Uid="Settings_MascotOpenPage"
                                   AutomationProperties.AutomationId="Settings_MascotOpenPage"
@@ -790,7 +760,6 @@
                     </StackPanel>
                 </toolkit:SettingsCard>
 
-                <!-- Change passphrase — rotation, not recovery; requires the current one -->
                 <toolkit:SettingsCard x:Uid="Settings_ChangePassphraseCard"
                     Visibility="{x:Bind ViewModel.CanStartChangePassphrase, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                     <toolkit:SettingsCard.Description>
@@ -1146,10 +1115,6 @@
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                VerticalAlignment="Center"/>
                     <toolkit:SettingsExpander.Items>
-                        <!-- Deliberately excluded from the one-line-ellipsis treatment used
-                             everywhere else on this page: this is the core privacy promise
-                             (see HARD STOPS in project-overview.md), which the product wants
-                             surfaced in full, not truncated behind a hover. -->
                         <toolkit:SettingsCard x:Uid="Settings_PrivacyCard">
                             <toolkit:SettingsCard.Description>
                                 <TextBlock x:Uid="Settings_PrivacyCardDescription" TextWrapping="Wrap"/>

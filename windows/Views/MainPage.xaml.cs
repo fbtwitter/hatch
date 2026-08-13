@@ -632,12 +632,6 @@ public sealed partial class MainPage : Page
         ContentFrame.Navigate(typeof(TaskListPage), _viewModel, transition ?? new EntranceNavigationTransitionInfo());
     }
 
-    // Whether ContentFrame is already showing tag, independent of window visibility — hiding
-    // the window doesn't reset the frame, so this stays accurate across a hide/show cycle.
-    // Callers that might redirect to a page that's already on screen (e.g. the mascot's
-    // pinned default) should check this first: Frame.Navigate always creates a fresh page
-    // instance and plays its transition even when the target is already current, which
-    // would otherwise flash the same content at the user for no reason.
     public bool IsShowingPage(string tag) => tag == "summary"
         ? ContentFrame.Content is StatsPage
         : ContentFrame.Content is TaskListPage && _viewModel.ActiveNavItem == tag;
@@ -651,9 +645,6 @@ public sealed partial class MainPage : Page
         SelectNavItem(tag);
         _suppressNavigation = false;
 
-        // Mirrors NavView_SelectionChanged's own "summary" branch: Summary is not a task
-        // list, so it deliberately does not touch ActiveNavItem — restarting the app must
-        // not reopen to Summary just because it was the last page visited.
         if (tag == "summary")
         {
             ContentFrame.Navigate(typeof(StatsPage), null, new EntranceNavigationTransitionInfo());

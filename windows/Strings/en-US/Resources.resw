@@ -279,7 +279,6 @@
   <data name="Tip_Greeting_Anytime_2" xml:space="preserve"><value>You're all caught up</value></data>
   <data name="Tip_Greeting_Anytime_3" xml:space="preserve"><value>Every task counts</value></data>
 
-  <!-- ── Settings › Appearance &amp; behavior (x:Uid mapped) ──── -->
   <data name="Settings_MinimizeToTrayDescription.Text" xml:space="preserve"><value>Keep running in the background when closed</value></data>
   <data name="Settings_MinimizeToTrayDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Keep running in the background when closed</value></data>
   <data name="Settings_RunAtStartupDescription.Text" xml:space="preserve"><value>Hatch will launch automatically</value></data>
@@ -346,7 +345,6 @@
   <data name="Settings_SyncPassphraseCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Never sent to the server. If you lose it, synced data cannot be recovered.</value></data>
   <data name="Settings_SyncPassphraseSet.Content" xml:space="preserve"><value>Set passphrase</value></data>
 
-  <!-- ── Change sync passphrase (x:Uid mapped) ────────────────── -->
   <data name="Settings_ChangePassphraseCard.Header" xml:space="preserve"><value>Change passphrase</value></data>
   <data name="Settings_ChangePassphraseCardDescription.Text" xml:space="preserve"><value>Requires your current passphrase. Other signed-in devices will need the new one entered again the next time they sync.</value></data>
   <data name="Settings_ChangePassphraseCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Requires your current passphrase. Other signed-in devices will need the new one entered again the next time they sync.</value></data>
@@ -409,13 +407,6 @@
   <!-- ── Settings (code-accessed) ────────────────────────────── -->
   <data name="Settings_NoFileSelected" xml:space="preserve"><value>(none selected)</value></data>
 
-  <!-- ── Settings page — full x:Uid coverage pass ─────────────────────────────
-       Every remaining hardcoded string on SettingsPage.xaml, converted to x:Uid.
-       Grouped by page section, in page order. -->
-
-  <!-- Cards converted from toolkit:SettingsCard to the custom Border+Grid row layout
-       (matching Settings_TipTimeHeader/Description) — the Header text that used to come
-       from SettingsCard.Header now lives on its own TextBlock with its own x:Uid. -->
   <data name="Settings_ThemeCardHeader.Text" xml:space="preserve"><value>App Theme</value></data>
   <data name="Settings_BackdropCardHeader.Text" xml:space="preserve"><value>Window Backdrop</value></data>
   <data name="Settings_ChattinessCardHeader.Text" xml:space="preserve"><value>Mascot messages</value></data>
@@ -424,7 +415,6 @@
   <data name="Settings_OpenDataFolderCardHeader.Text" xml:space="preserve"><value>Open data folder</value></data>
   <data name="Settings_ExportTasksCardHeader.Text" xml:space="preserve"><value>Export tasks</value></data>
 
-  <!-- Page title / Appearance & behavior -->
   <data name="Settings_PageTitle.Text" xml:space="preserve"><value>Settings</value></data>
   <data name="Settings_SectionAppearance.Text" xml:space="preserve"><value>Appearance &amp; behavior</value></data>
   <data name="Settings_MinimizeToTrayHeader.Text" xml:space="preserve"><value>Minimize to System Tray</value></data>
@@ -452,7 +442,6 @@
   <data name="Settings_Backdrop_DesktopAcrylic.Content" xml:space="preserve"><value>Desktop Acrylic</value></data>
   <data name="Settings_SectionMascot.Text" xml:space="preserve"><value>Mascot</value></data>
 
-  <!-- Mascot toggles -->
   <data name="Settings_ShowMascotHeader.Text" xml:space="preserve"><value>Show Mascot</value></data>
   <data name="Settings_ShowMascotDescription.Text" xml:space="preserve"><value>Display the floating mascot on your desktop. Quick-add hotkey and tray keep working when off</value></data>
   <data name="Settings_ShowMascotDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Display the floating mascot on your desktop. Quick-add hotkey and tray keep working when off</value></data>
@@ -493,7 +482,6 @@
   <data name="Settings_MascotChattiness.AutomationProperties.Name" xml:space="preserve"><value>Mascot messages</value></data>
   <data name="Settings_MascotOpenPage.AutomationProperties.Name" xml:space="preserve"><value>Default page when opening from mascot</value></data>
 
-  <!-- Lottie, Mascot Size, Quick-Add Hotkey -->
   <data name="Settings_LottieCard.Header" xml:space="preserve"><value>Lottie Animation File</value></data>
   <data name="Settings_BrowseLottie.Content" xml:space="preserve"><value>Browse</value></data>
   <data name="Settings_ClearLottie.Content" xml:space="preserve"><value>Clear</value></data>
@@ -527,7 +515,6 @@
   <data name="Settings_HotkeyConflict.Message" xml:space="preserve"><value>Another application registered it first, so it will not reach Hatch. Pick a different key or modifier below.</value></data>
   <data name="Settings_SectionSync.Text" xml:space="preserve"><value>Sync</value></data>
 
-  <!-- Sync section -->
   <data name="Settings_SyncSignOut.Content" xml:space="preserve"><value>Sign out</value></data>
   <data name="Settings_MfaChallengeCode.AutomationProperties.Name" xml:space="preserve"><value>Authenticator code</value></data>
   <data name="Settings_MfaChallengeCode.PlaceholderText" xml:space="preserve"><value>000000</value></data>
@@ -552,7 +539,6 @@
   <data name="Settings_SyncGitHub.Content" xml:space="preserve"><value>Sign in with GitHub</value></data>
   <data name="Settings_SyncPassphrase.AutomationProperties.Name" xml:space="preserve"><value>Sync passphrase</value></data>
 
-  <!-- Data section -->
   <data name="Settings_SectionData.Text" xml:space="preserve"><value>Data</value></data>
   <data name="Settings_OpenDataFolderCard.Header" xml:space="preserve"><value>Open data folder</value></data>
   <data name="Settings_OpenDataFolderCardDescription.Text" xml:space="preserve"><value>Browse or back up your tasks.json and settings.json files</value></data>
@@ -565,7 +551,6 @@
   <data name="Settings_ExportCsv.Content" xml:space="preserve"><value>CSV</value></data>
   <data name="Settings_ExportMarkdown.Content" xml:space="preserve"><value>Markdown</value></data>
 
-  <!-- About section -->
   <data name="Settings_SectionAbout.Text" xml:space="preserve"><value>About</value></data>
   <data name="Settings_HatchExpander.Header" xml:space="preserve"><value>Hatch</value></data>
   <data name="Settings_HatchExpanderDescription.Text" xml:space="preserve"><value>Local-first task manager for Windows</value></data>
