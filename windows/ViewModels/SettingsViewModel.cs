@@ -113,6 +113,49 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
     public void DismissRecoveryKit() => RecoveryKitText = null;
 
+    // --- Change passphrase --------------------------------------------------------------
+    // Rotation, not recovery: requires the current passphrase. A lost passphrase stays
+    // unrecoverable by design (docs/mfa-spec.md §6) — this is not a way around that.
+
+    private bool _isChangingPassphrase;
+    public bool IsChangingPassphrase
+    {
+        get => _isChangingPassphrase;
+        private set { _isChangingPassphrase = value; OnPropertyChanged(); OnPropertyChanged(nameof(CanStartChangePassphrase)); }
+    }
+
+    // Hidden while the form itself is open, so there is only one way to reach it at a time.
+    public bool CanStartChangePassphrase => IsSyncSignedIn && IsPassphraseSet && !IsChangingPassphrase;
+
+    public void StartChangePassphrase() => IsChangingPassphrase = true;
+    public void CancelChangePassphrase() => IsChangingPassphrase = false;
+
+    public async Task ChangePassphraseAsync(string oldPassphrase, string newPassphrase, string confirmPassphrase)
+    {
+        if (newPassphrase.Trim().Length < 8)
+        {
+            SyncError = Strings.Sync_Error_PassphraseTooShort;
+            return;
+        }
+        if (newPassphrase != confirmPassphrase)
+        {
+            SyncError = Strings.Sync_Error_PassphraseMismatch;
+            return;
+        }
+
+        SyncError = null;
+        IsSyncing = true;
+        var error = await App.SyncService.ChangePassphraseAsync(oldPassphrase, newPassphrase);
+        IsSyncing = false;
+        if (error != null) { SyncError = error; return; }
+
+        IsChangingPassphrase = false;
+
+        // Same as first-time setup: the old kit is void the moment the passphrase changes,
+        // so show the new one at the one moment the user is already thinking about it.
+        ShowRecoveryKit();
+    }
+
     public string SyncLastSyncedText
     {
         get
