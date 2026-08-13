@@ -8,6 +8,7 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.21.1** | Aug 13, 2026 | Fix missing padding on the completed-tasks group; AssetGen can render Store listing submission images |
 | **v0.21.0** | Aug 13, 2026 | Change your sync passphrase without losing data, pick a default page for the mascot to open the main window to, Settings page description/layout consistency pass, recovery-code brute-force rate limit |
 | **v0.20.3** | Aug 13, 2026 | Fix sideload install/auto-update via App Installer — "Error in parsing the app package" caused by an unpinned MSIX bundle version |
 | **v0.20.2** | Aug 13, 2026 | Task selection indicator fixed across the app — was silently broken, intermittently missing on Search/Summary jumps, and misaligned on Planned/Important |

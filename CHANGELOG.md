@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.21.1] - 2026-08-13
+
+### Fixed
+- Completed-tasks group `Expander` content was sitting flush against its border with no
+  padding
+
+### Added
+- AssetGen can now render Store listing submission images (300/150/71px) to
+  `docs/store-assets`, separate from the app's own packaged assets
+
+---
+
 ## [0.21.0] - 2026-08-13
 
 ### Added
