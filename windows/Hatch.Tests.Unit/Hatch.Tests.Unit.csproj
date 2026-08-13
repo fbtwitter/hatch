@@ -41,6 +41,7 @@
     <Compile Include="..\Services\SyncMerge.cs" Link="Source\Services\SyncMerge.cs" />
     <Compile Include="..\Services\SyncDecisions.cs" Link="Source\Services\SyncDecisions.cs" />
     <Compile Include="..\Helpers\RecoveryKit.cs" Link="Source\Helpers\RecoveryKit.cs" />
+    <Compile Include="..\Helpers\MascotOpenPageHelper.cs" Link="Source\Helpers\MascotOpenPageHelper.cs" />
   </ItemGroup>
 
   <ItemGroup>

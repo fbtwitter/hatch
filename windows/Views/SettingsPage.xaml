@@ -356,6 +356,25 @@
                     </ComboBox>
                 </toolkit:SettingsCard>
 
+                <!-- Which page the main window jumps to when opened from the mascot -->
+                <toolkit:SettingsCard x:Uid="Settings_OpenPageCard"
+                                      Header="Default page"
+                                      Description="Which page the main window jumps to when you open it from the mascot.">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE71D;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <!-- Fixed pages plus one entry per custom list — built in the ViewModel
+                         (dynamic tail), so this binds ItemsSource/SelectedItem rather than
+                         the SelectedIndex-onto-fixed-ComboBoxItems pattern used elsewhere on
+                         this page. MascotOpenPageOption.ToString() supplies the display text,
+                         so no ItemTemplate is needed. -->
+                    <ComboBox MinWidth="160"
+                              AutomationProperties.AutomationId="Settings_MascotOpenPage"
+                              AutomationProperties.Name="Default page when opening from mascot"
+                              ItemsSource="{x:Bind ViewModel.MascotOpenPageOptions}"
+                              SelectedItem="{x:Bind ViewModel.SelectedMascotOpenPageOption, Mode=TwoWay}"/>
+                </toolkit:SettingsCard>
+
                 <toolkit:SettingsExpander x:Uid="Settings_CustomTipsExpander"
                                           Header="Your own messages"
                                           Description="Added to Hatch's built-in lines and shown at random. Your own quotes, reminders, anything.">

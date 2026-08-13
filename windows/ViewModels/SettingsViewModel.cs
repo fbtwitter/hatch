@@ -30,6 +30,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
         foreach (var line in _settings.Current.CustomTips)
             CustomTips.Add(line);
+
+        InitializeMascotOpenPageOptions();
     }
 
     // ── Sync ─────────────────────────────────────────────────────────────────
@@ -672,6 +674,49 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             _settings.SaveDebounced();
             OnPropertyChanged();
         }
+    }
+
+    // Fixed pages plus one entry per custom list — a plain enum can't represent the custom
+    // lists, which are dynamic, so this uses ItemsSource/SelectedItem instead of the
+    // SelectedIndex-onto-enum pattern used elsewhere in this file (ThemeIndex, BackdropIndex,
+    // MascotChattinessIndex). Built once per page visit: nothing in this app's UI flow lets a
+    // list be created or deleted while Settings is open, so it does not need to stay live.
+    public ObservableCollection<MascotOpenPageOption> MascotOpenPageOptions { get; } = [];
+
+    private MascotOpenPageOption? _selectedMascotOpenPageOption;
+    public MascotOpenPageOption? SelectedMascotOpenPageOption
+    {
+        get => _selectedMascotOpenPageOption;
+        set
+        {
+            if (value == null || _selectedMascotOpenPageOption == value) return;
+            _selectedMascotOpenPageOption = value;
+            _settings.Current.MascotOpenPageTag = value.Tag;
+            _settings.SaveDebounced();
+            OnPropertyChanged();
+        }
+    }
+
+    private void InitializeMascotOpenPageOptions()
+    {
+        MascotOpenPageOptions.Add(new(null, Strings.Settings_OpenPage_RememberLast));
+        MascotOpenPageOptions.Add(new(MascotOpenPageHelper.SummaryFallbackTag, Strings.Settings_OpenPage_Summary));
+        MascotOpenPageOptions.Add(new("myday", Strings.Settings_OpenPage_MyDay));
+        MascotOpenPageOptions.Add(new("important", Strings.Settings_OpenPage_Important));
+        MascotOpenPageOptions.Add(new("planned", Strings.Settings_OpenPage_Planned));
+        MascotOpenPageOptions.Add(new("alltasks", Strings.Settings_OpenPage_AllTasks));
+
+        var customLists = App.MainWindowInstance?.ViewModel.CustomLists ?? [];
+        foreach (var list in customLists)
+            MascotOpenPageOptions.Add(new(list.Id.ToString(), list.Name));
+
+        // Resolved, not read directly: a pinned list deleted since the setting was last
+        // written must not leave the ComboBox showing nothing selected. Sets the backing
+        // field directly rather than going through the property setter, which would
+        // immediately re-save on every Settings page visit even when nothing changed.
+        var resolvedTag = MascotOpenPageHelper.Resolve(_settings.Current.MascotOpenPageTag, customLists);
+        _selectedMascotOpenPageOption =
+            MascotOpenPageOptions.FirstOrDefault(o => o.Tag == resolvedTag) ?? MascotOpenPageOptions[0];
     }
 
     // The user's own message pool, merged with the built-in lines by TipEngine.
