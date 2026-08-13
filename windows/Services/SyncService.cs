@@ -80,6 +80,47 @@ public sealed class SyncService
         }
     }
 
+    // Rotation, not recovery: the old passphrase must still be known. Nothing here helps a
+    // user who has actually lost it — that stays impossible by design (docs/mfa-spec.md §6).
+    //
+    // Other already-signed-in devices are not touched here and do not need to be: the next
+    // time one of them reads this row it will fail exactly like any other stale-passphrase
+    // case (SyncDecisions.ReadServerPayload → Unreadable), and
+    // SettingsViewModel.CheckAndHandleConflictAsync already discards a passphrase that
+    // cannot open the row and re-shows the entry card — that path was built for a different
+    // scenario but covers this one for free.
+    public async Task<string?> ChangePassphraseAsync(string oldPassphrase, string newPassphrase)
+    {
+        if (_client == null) return Strings.Sync_Error_NotReady;
+        if (!IsSignedIn)    return Strings.Sync_Error_NotSignedIn;
+        if (IsMfaChallengePending) return Strings.Sync_Error_MfaRequired;
+        try
+        {
+            var response = await _client.From<UserDataRow>().Get();
+            var row = response.Models.FirstOrDefault();
+            var (status, data) = SyncDecisions.ReadServerPayload(row?.TasksJson, oldPassphrase);
+            if (status == ServerReadStatus.Unreadable) return Strings.Sync_Error_OldPassphraseWrong;
+
+            // Empty account: nothing to re-encrypt, just adopt the new passphrase.
+            var toPush = data ?? new TasksFile();
+
+            SyncPassphraseStore.Save(newPassphrase);
+            var pushError = await PushAsync(toPush, mergeFirst: false);
+            if (pushError != null)
+            {
+                // The new passphrase is now cached locally but the server row is still
+                // encrypted with the old one — restore consistency rather than leave this
+                // device unable to read its own account on the next sync.
+                SyncPassphraseStore.Save(oldPassphrase);
+                return pushError;
+            }
+
+            StateChanged?.Invoke();
+            return null;
+        }
+        catch (Exception ex) { return ex.Message; }
+    }
+
     public event Action? StateChanged;
     public event Action? TasksReceived; // fires when a pull returned newer data
 

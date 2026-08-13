@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+### Added
+- Settings → Sync: change your sync passphrase without losing existing synced data —
+  decrypts with the current one and re-encrypts with the new one. Other signed-in devices
+  detect the change automatically on their next sync and re-prompt for the new passphrase
+
+### Fixed
+- Sync sessions were sometimes silently dropped, forcing an unnecessary re-sign-in — a
+  rotated refresh token from GoTrue's background auto-refresh was never persisted to the
+  Credential Locker, and a transient network failure at launch was treated the same as a
+  genuinely dead token
+- `redeem_mfa_recovery_code` had no throttle of its own (Supabase has no per-RPC rate
+  limit); a stolen password alone was enough to attempt unlimited guesses against a user's
+  recovery codes. Now locks out further attempts for 15 minutes after 5 failures
+
 ---
 
 ## [0.20.3] - 2026-08-13

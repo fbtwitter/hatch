@@ -643,6 +643,49 @@
                     </StackPanel>
                 </toolkit:SettingsCard>
 
+                <!-- Change passphrase — rotation, not recovery; requires the current one -->
+                <toolkit:SettingsCard x:Uid="Settings_ChangePassphraseCard"
+                    Visibility="{x:Bind ViewModel.CanStartChangePassphrase, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE72E;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <Button x:Uid="Settings_ChangePassphraseStart"
+                            AutomationProperties.AutomationId="Settings_ChangePassphraseStart"
+                            Click="ChangePassphraseStart_Click"/>
+                </toolkit:SettingsCard>
+
+                <toolkit:SettingsCard x:Uid="Settings_ChangePassphraseFormCard"
+                    ContentAlignment="Vertical"
+                    Visibility="{x:Bind ViewModel.IsChangingPassphrase, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsCard.HeaderIcon>
+                        <FontIcon Glyph="&#xE72E;"/>
+                    </toolkit:SettingsCard.HeaderIcon>
+                    <StackPanel Spacing="8">
+                        <PasswordBox x:Name="ChangePassphraseOldBox"
+                                     x:Uid="Settings_ChangePassphraseOldBox"
+                                     AutomationProperties.AutomationId="Settings_ChangePassphraseOld"
+                                     HorizontalAlignment="Stretch"/>
+                        <PasswordBox x:Name="ChangePassphraseNewBox"
+                                     x:Uid="Settings_ChangePassphraseNewBox"
+                                     AutomationProperties.AutomationId="Settings_ChangePassphraseNew"
+                                     HorizontalAlignment="Stretch"/>
+                        <PasswordBox x:Name="ChangePassphraseConfirmBox"
+                                     x:Uid="Settings_ChangePassphraseConfirmBox"
+                                     AutomationProperties.AutomationId="Settings_ChangePassphraseConfirm"
+                                     HorizontalAlignment="Stretch"/>
+                        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                            <Button x:Uid="Settings_ChangePassphraseCancel"
+                                    AutomationProperties.AutomationId="Settings_ChangePassphraseCancel"
+                                    Click="ChangePassphraseCancel_Click"/>
+                            <Button x:Uid="Settings_ChangePassphraseSubmit"
+                                    AutomationProperties.AutomationId="Settings_ChangePassphraseSubmit"
+                                    Style="{ThemeResource AccentButtonStyle}"
+                                    IsEnabled="{x:Bind ViewModel.IsNotSyncing, Mode=OneWay}"
+                                    Click="ChangePassphraseSubmit_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </toolkit:SettingsCard>
+
                 <!-- Sync recovery kit — the passphrase cannot be reset or recovered -->
                 <toolkit:SettingsCard x:Uid="Settings_RecoveryKitCard"
                     Visibility="{x:Bind ViewModel.CanShowRecoveryKit, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">

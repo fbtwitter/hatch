@@ -284,6 +284,28 @@ public sealed partial class SettingsPage : Page
         SyncPassphraseBox.Password = "";
     }
 
+    private void ChangePassphraseStart_Click(object sender, RoutedEventArgs e)
+        => ViewModel.StartChangePassphrase();
+
+    private void ChangePassphraseCancel_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.CancelChangePassphrase();
+        ChangePassphraseOldBox.Password = "";
+        ChangePassphraseNewBox.Password = "";
+        ChangePassphraseConfirmBox.Password = "";
+    }
+
+    private async void ChangePassphraseSubmit_Click(object sender, RoutedEventArgs e)
+    {
+        await ViewModel.ChangePassphraseAsync(
+            ChangePassphraseOldBox.Password,
+            ChangePassphraseNewBox.Password,
+            ChangePassphraseConfirmBox.Password);
+        ChangePassphraseOldBox.Password = "";
+        ChangePassphraseNewBox.Password = "";
+        ChangePassphraseConfirmBox.Password = "";
+    }
+
     private async void MfaEnable_Click(object sender, RoutedEventArgs e)
     {
         await ViewModel.StartMfaEnrollmentAsync();
