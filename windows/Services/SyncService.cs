@@ -260,9 +260,17 @@ public sealed class SyncService
                 if (mergeError != null) return mergeError;
                 if (merged != null)
                 {
+                    // A merge always returns *a* TasksFile, even when the server row
+                    // already reflects our own last push and nothing actually changed.
+                    // Only reload the UI (which rebuilds the whole Tasks collection and
+                    // recomputes every nav badge) on a genuine difference — otherwise
+                    // every debounced push flashes the badges for no visible reason.
+                    if (!SyncWire.IsEquivalent(merged, data))
+                    {
+                        await new TaskStorageService().SaveAsync(merged);
+                        TasksReceived?.Invoke();
+                    }
                     data = merged;
-                    await new TaskStorageService().SaveAsync(data);
-                    TasksReceived?.Invoke();
                 }
             }
 

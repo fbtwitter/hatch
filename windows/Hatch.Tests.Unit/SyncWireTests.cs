@@ -169,4 +169,37 @@ public class SyncWireTests
         Assert.IsFalse(json.Contains("HasMetaSeparator"));
         Assert.IsFalse(json.Contains("ListName"));
     }
+
+    [TestMethod]
+    public void IsEquivalent_SameContentDifferentOrder_ReturnsTrue()
+    {
+        var data = CanonicalData();
+        var reordered = new TasksFile
+        {
+            Tasks = [.. data.Tasks.AsEnumerable().Reverse()],
+            Lists = data.Lists
+        };
+
+        Assert.IsTrue(SyncWire.IsEquivalent(data, reordered));
+    }
+
+    [TestMethod]
+    public void IsEquivalent_DifferentTaskField_ReturnsFalse()
+    {
+        var data = CanonicalData();
+        var changed = CanonicalData();
+        changed.Tasks[0].Title = "Different title";
+
+        Assert.IsFalse(SyncWire.IsEquivalent(data, changed));
+    }
+
+    [TestMethod]
+    public void IsEquivalent_ExtraTaskOnOneSide_ReturnsFalse()
+    {
+        var data = CanonicalData();
+        var withExtra = CanonicalData();
+        withExtra.Tasks.Add(new TodoItem { Id = Guid.NewGuid(), Title = "New" });
+
+        Assert.IsFalse(SyncWire.IsEquivalent(data, withExtra));
+    }
 }
