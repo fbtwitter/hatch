@@ -282,12 +282,17 @@
   <!-- ── Settings › Automatic tip time (x:Uid mapped) ────────── -->
   <data name="Settings_TipTimeHeader.Text" xml:space="preserve"><value>Automatic Tip Time</value></data>
   <data name="Settings_TipTimeDescription.Text" xml:space="preserve"><value>When the once-a-day automatic tip is allowed to appear</value></data>
+  <data name="Settings_TipTimeDescription.ToolTipService.ToolTip" xml:space="preserve"><value>When the once-a-day automatic tip is allowed to appear</value></data>
   <data name="Settings_ChattinessCard.Header" xml:space="preserve"><value>Mascot messages</value></data>
+  <data name="Settings_ChattinessCardDescription.Text" xml:space="preserve"><value>How freely Hatch shows encouragement. Reminders about overdue tasks always appear.</value></data>
+  <data name="Settings_ChattinessCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>How freely Hatch shows encouragement. Reminders about overdue tasks always appear.</value></data>
   <data name="Settings_Chattiness_Quiet.Content" xml:space="preserve"><value>Quiet</value></data>
   <data name="Settings_Chattiness_Balanced.Content" xml:space="preserve"><value>Balanced</value></data>
   <data name="Settings_Chattiness_Chatty.Content" xml:space="preserve"><value>Chatty</value></data>
 
   <data name="Settings_OpenPageCard.Header" xml:space="preserve"><value>Default page</value></data>
+  <data name="Settings_OpenPageCardDescription.Text" xml:space="preserve"><value>Which page the main window jumps to when you open it from the mascot. A pinned custom list that's later deleted falls back to Summary.</value></data>
+  <data name="Settings_OpenPageCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Which page the main window jumps to when you open it from the mascot. "Remember last page" keeps whatever you were last looking at. A pinned custom list that's later deleted falls back to Summary.</value></data>
   <data name="Settings_OpenPage_RememberLast" xml:space="preserve"><value>Remember last page</value></data>
   <data name="Settings_OpenPage_Summary" xml:space="preserve"><value>Summary</value></data>
   <data name="Settings_OpenPage_MyDay" xml:space="preserve"><value>My Day</value></data>
@@ -296,6 +301,8 @@
   <data name="Settings_OpenPage_AllTasks" xml:space="preserve"><value>All Tasks</value></data>
 
   <data name="Settings_CustomTipsExpander.Header" xml:space="preserve"><value>Your own messages</value></data>
+  <data name="Settings_CustomTipsExpanderDescription.Text" xml:space="preserve"><value>Added to Hatch's built-in lines and shown at random. Your own quotes, reminders, anything.</value></data>
+  <data name="Settings_CustomTipsExpanderDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Added to Hatch's built-in lines and shown at random. Your own quotes, reminders, anything.</value></data>
   <data name="Settings_CustomTipInput.PlaceholderText" xml:space="preserve"><value>Write a line, press Enter</value></data>
   <data name="Settings_AddCustomTip.Content" xml:space="preserve"><value>Add</value></data>
   <data name="Settings_RemoveCustomTip.ToolTipService.ToolTip" xml:space="preserve"><value>Remove message</value></data>
@@ -329,12 +336,18 @@
   <data name="Settings_SyncPassphraseInfo.Title" xml:space="preserve"><value>End-to-end encryption</value></data>
   <data name="Settings_SyncPassphraseInfo.Message" xml:space="preserve"><value>Your tasks are encrypted on this device before upload — the server can never read them. Set a passphrase to start syncing, and use the same one on every device.</value></data>
   <data name="Settings_SyncPassphraseCard.Header" xml:space="preserve"><value>Sync passphrase</value></data>
+  <data name="Settings_SyncPassphraseCardDescription.Text" xml:space="preserve"><value>Never sent to the server. If you lose it, synced data cannot be recovered.</value></data>
+  <data name="Settings_SyncPassphraseCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Never sent to the server. If you lose it, synced data cannot be recovered.</value></data>
   <data name="Settings_SyncPassphraseSet.Content" xml:space="preserve"><value>Set passphrase</value></data>
 
   <!-- ── Change sync passphrase (x:Uid mapped) ────────────────── -->
   <data name="Settings_ChangePassphraseCard.Header" xml:space="preserve"><value>Change passphrase</value></data>
+  <data name="Settings_ChangePassphraseCardDescription.Text" xml:space="preserve"><value>Requires your current passphrase. Other signed-in devices will need the new one entered again the next time they sync.</value></data>
+  <data name="Settings_ChangePassphraseCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Requires your current passphrase. Other signed-in devices will need the new one entered again the next time they sync.</value></data>
   <data name="Settings_ChangePassphraseStart.Content" xml:space="preserve"><value>Change passphrase</value></data>
   <data name="Settings_ChangePassphraseFormCard.Header" xml:space="preserve"><value>Change your passphrase</value></data>
+  <data name="Settings_ChangePassphraseFormCardDescription.Text" xml:space="preserve"><value>Enter your current passphrase, then the new one twice.</value></data>
+  <data name="Settings_ChangePassphraseFormCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Enter your current passphrase, then the new one twice.</value></data>
   <data name="Settings_ChangePassphraseOldBox.Header" xml:space="preserve"><value>Current passphrase</value></data>
   <data name="Settings_ChangePassphraseNewBox.Header" xml:space="preserve"><value>New passphrase</value></data>
   <data name="Settings_ChangePassphraseConfirmBox.Header" xml:space="preserve"><value>Confirm new passphrase</value></data>
@@ -343,6 +356,8 @@
 
   <!-- ── Sync recovery kit (x:Uid mapped) ─────────────────────── -->
   <data name="Settings_RecoveryKitCard.Header" xml:space="preserve"><value>Sync recovery kit</value></data>
+  <data name="Settings_RecoveryKitCardDescription.Text" xml:space="preserve"><value>Your passphrase cannot be reset or recovered by anyone. Save a copy somewhere you'll still have if this PC is lost.</value></data>
+  <data name="Settings_RecoveryKitCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Your passphrase cannot be reset or recovered by anyone. Save a copy somewhere you'll still have if this PC is lost.</value></data>
   <data name="Settings_RecoveryKitShow.Content" xml:space="preserve"><value>Show recovery kit</value></data>
   <data name="Settings_RecoveryKitInfo.Title" xml:space="preserve"><value>Save this somewhere safe</value></data>
   <data name="Settings_RecoveryKitInfo.Message" xml:space="preserve"><value>This contains your sync passphrase in plain text. Keep it off this PC — a password manager, a printout, or separate storage.</value></data>
@@ -351,9 +366,13 @@
   <data name="Settings_RecoveryKitDone.Content" xml:space="preserve"><value>Hide</value></data>
 
   <data name="Settings_MfaCard.Header" xml:space="preserve"><value>Two-factor authentication</value></data>
+  <data name="Settings_MfaCardDescription.Text" xml:space="preserve"><value>Require a code from an authenticator app when signing in. This protects your account — your tasks are already protected by the sync passphrase.</value></data>
+  <data name="Settings_MfaCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Require a code from an authenticator app when signing in. This protects your account — your tasks are already protected by the sync passphrase.</value></data>
   <data name="Settings_MfaEnable.Content" xml:space="preserve"><value>Set up</value></data>
   <data name="Settings_MfaDisable.Content" xml:space="preserve"><value>Turn off</value></data>
   <data name="Settings_MfaEnrollCard.Header" xml:space="preserve"><value>Add Hatch to your authenticator</value></data>
+  <data name="Settings_MfaEnrollCardDescription.Text" xml:space="preserve"><value>Enter this setup key in Google Authenticator, Authy, 1Password or similar, then type the 6-digit code it shows.</value></data>
+  <data name="Settings_MfaEnrollCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Enter this setup key in Google Authenticator, Authy, 1Password or similar, then type the 6-digit code it shows.</value></data>
   <data name="Settings_MfaSecretBox.Header" xml:space="preserve"><value>Setup key (if you can't scan)</value></data>
   <data name="Settings_MfaCodeBox.Header" xml:space="preserve"><value>Code from your app</value></data>
   <data name="Settings_MfaConfirm.Content" xml:space="preserve"><value>Verify</value></data>
@@ -365,6 +384,8 @@
   <data name="Settings_MfaChallengeInfo.Title" xml:space="preserve"><value>Two-factor code required</value></data>
   <data name="Settings_MfaChallengeInfo.Message" xml:space="preserve"><value>Syncing is paused until you enter the current code from your authenticator. Your tasks on this PC are unaffected.</value></data>
   <data name="Settings_MfaChallengeCard.Header" xml:space="preserve"><value>Enter your authenticator code</value></data>
+  <data name="Settings_MfaChallengeCardDescription.Text" xml:space="preserve"><value>Open the authenticator app you set up for Hatch and type the 6-digit code it shows.</value></data>
+  <data name="Settings_MfaChallengeCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Open the authenticator app you set up for Hatch and type the 6-digit code it shows.</value></data>
   <data name="Settings_MfaChallengeSubmit.Content" xml:space="preserve"><value>Verify</value></data>
   <data name="Settings_MfaUseRecovery.Content" xml:space="preserve"><value>Use a recovery code</value></data>
 
@@ -374,6 +395,8 @@
   <data name="Settings_RecoveryCopy.Content" xml:space="preserve"><value>Copy</value></data>
   <data name="Settings_RecoveryDone.Content" xml:space="preserve"><value>I've saved them</value></data>
   <data name="Settings_RecoveryRedeemCard.Header" xml:space="preserve"><value>Enter a recovery code</value></data>
+  <data name="Settings_RecoveryRedeemCardDescription.Text" xml:space="preserve"><value>This turns two-factor authentication OFF and discards your remaining codes. Your tasks and your sync passphrase are unaffected. Set two-factor up again afterwards.</value></data>
+  <data name="Settings_RecoveryRedeemCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>This turns two-factor authentication OFF and discards your remaining codes. Your tasks and your sync passphrase are unaffected. Set two-factor up again afterwards.</value></data>
   <data name="Settings_RecoveryRedeem.Content" xml:space="preserve"><value>Use code</value></data>
   <data name="Settings_RecoveryCancel.Content" xml:space="preserve"><value>Cancel</value></data>
 
