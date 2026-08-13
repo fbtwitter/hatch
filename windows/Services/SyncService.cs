@@ -325,12 +325,30 @@ public sealed class SyncService
             var url = state?.Uri?.ToString();
             if (string.IsNullOrEmpty(url)) return (null, "GitHub sign-in returned no URL.");
 
+            // gotrue-csharp >=6.1.0 always appends its own client-side `state` query param
+            // (SignInOptions.State support). GoTrue's own /authorize forwards every
+            // unrecognized query param straight through as a raw provider auth-code option,
+            // so this clobbers GoTrue's own server-tracked state — /callback then rejects
+            // the mismatched value GitHub echoes back with a "bad_oauth_state" error, every
+            // time. Stripping it here restores the wire behavior GoTrue's own state
+            // tracking expects; PKCE is still what protects the code exchange.
+            url = RemoveQueryParam(url, "state");
+
             // Held only until the callback returns. It never leaves this process — that is
             // the whole point: the code in the redirect is useless without it.
             _pkceVerifier = state!.PKCEVerifier;
             return (url, null);
         }
         catch (Exception ex) { return (null, ex.Message); }
+    }
+
+    private static string RemoveQueryParam(string url, string paramName)
+    {
+        var uri = new Uri(url);
+        var query = SyncDecisions.ParseQueryString(uri.Query.TrimStart('?'))
+            .Where(kv => kv.Key != paramName)
+            .Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}");
+        return new UriBuilder(uri) { Query = string.Join("&", query) }.Uri.ToString();
     }
 
     // --- Multi-factor authentication (TOTP) ------------------------------------------
