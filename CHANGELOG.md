@@ -8,6 +8,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.21.3] - 2026-08-13
+
+### Fixed
+- Navigation badge counts flashed repeatedly during normal use while signed into sync —
+  every debounced push after a task edit was reloading the whole task list and
+  recomputing every badge, even when nothing had actually changed
+
+---
+
 ## [0.21.2] - 2026-08-13
 
 ### Fixed
