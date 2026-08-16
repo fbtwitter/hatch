@@ -138,6 +138,9 @@ private object Routes {
     const val Sync = "settings/sync"
 }
 
+// SavedStateHandle key Summary uses to hand the Tasks entry a task id to open on arrival.
+private const val OPEN_TASK_KEY = "openTaskId"
+
 @Composable
 private fun HatchApp(vm: CompanionViewModel = viewModel()) {
     val state by vm.state.collectAsState()
@@ -248,7 +251,7 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
             popEnterTransition = { contentFade().targetContentEnter },
             popExitTransition = { contentFade().initialContentExit },
         ) {
-            composable(Routes.Tasks) {
+            composable(Routes.Tasks) { entry ->
                 // By id, not by value: a save replaces the instance in the list.
                 var editingId by rememberSaveable { mutableStateOf<String?>(null) }
                 val editing = state.tasks.firstOrNull { it.id == editingId }
@@ -257,9 +260,21 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
                 // A nullable TaskList alone could not tell "closed" from "creating".
                 var listDialog by remember { mutableStateOf<ListDialog?>(null) }
 
-                // Summary's Today/Upcoming rows and KPI tiles land here after navigating over.
-                LaunchedEffect(Unit) {
-                    vm.openTaskRequested.collect { id -> editingId = id }
+                // Summary's Today/Upcoming rows land here after navigating over. Carried via
+                // this entry's own savedStateHandle rather than a SharedFlow: the bottom-nav
+                // save/restore pattern tears this composable (and any collector it started)
+                // down while another tab is showing, so an event fired while Summary was on
+                // screen had no active collector by the time this one raced back into
+                // existence — the open request was silently lost. savedStateHandle is state
+                // tied to the entry itself, not an event, so there is nothing to race.
+                val openTaskId by entry.savedStateHandle
+                    .getStateFlow<String?>(OPEN_TASK_KEY, null)
+                    .collectAsState()
+                LaunchedEffect(openTaskId) {
+                    if (openTaskId != null) {
+                        editingId = openTaskId
+                        entry.savedStateHandle[OPEN_TASK_KEY] = null
+                    }
                 }
 
                 // One deletion path for the swipe and the sheet's Delete button. The sheet
@@ -330,7 +345,14 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
                     tasks = state.tasks,
                     lists = state.lists,
                     onNavigateToList = { nav -> vm.setActiveNav(nav); goToTasks() },
-                    onOpenTask = { task -> vm.requestOpenTask(task.id); goToTasks() },
+                    onOpenTask = { task ->
+                        goToTasks()
+                        // Set after navigating: this needs the *new* Tasks entry's handle,
+                        // which navigate() only creates once the destination exists.
+                        navController.currentBackStackEntry
+                            ?.savedStateHandle
+                            ?.set(OPEN_TASK_KEY, task.id)
+                    },
                 )
             }
 
