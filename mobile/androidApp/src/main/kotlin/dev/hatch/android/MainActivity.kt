@@ -27,12 +27,15 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -63,6 +66,11 @@ import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import dev.hatch.sync.TaskList
 import dev.hatch.sync.TodoItem
 import kotlinx.coroutines.flow.drop
@@ -120,16 +128,38 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Three destinations and no library: a nav graph for two leaves would cost a dependency and
-// an extra indirection for a phone app whose whole job is one list.
-private enum class Screen { Tasks, Settings, Sync }
+// Route names, not an enum: Navigation-Compose keys its back stack by route string, and My
+// Day / All Tasks share one destination (Tasks) distinguished by CompanionViewModel.activeNav
+// rather than by route — see the bottom bar's selected= checks below.
+private object Routes {
+    const val Tasks = "tasks"
+    const val Summary = "summary"
+    const val Settings = "settings"
+    const val Sync = "settings/sync"
+}
 
 @Composable
 private fun HatchApp(vm: CompanionViewModel = viewModel()) {
     val state by vm.state.collectAsState()
     // The app opens on the task list and never asks who you are — sync is opt-in.
-    var screen by rememberSaveable { mutableStateOf(Screen.Tasks) }
+    val navController = rememberNavController()
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
     val snackbar = remember { SnackbarHostState() }
+
+    // The Google-recommended bottom-nav pattern: peer destinations save/restore each other's
+    // state and never stack on top of one another, so back from any tab goes straight to the
+    // start destination instead of walking tab-visit history.
+    fun goToTasks() = navController.navigate(Routes.Tasks) {
+        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
+
+    fun goToTopLevel(route: String) = navController.navigate(route) {
+        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
+    }
 
     // Stopped on pause so a backgrounded app holds no timer.
     LifecycleResumeEffect(Unit) {
@@ -141,7 +171,7 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
     // on the Sync screen, because those need an answer.
     LaunchedEffect(Unit) {
         vm.pullCompleted.collect { count ->
-            screen = Screen.Tasks
+            goToTasks()
             snackbar.showSnackbar("Pulled — $count task${if (count == 1) "" else "s"}")
         }
     }
@@ -156,13 +186,15 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
     // A pull-to-refresh that ends badly would otherwise just stop its spinner with no
     // explanation. Gated on the previous state being Working so only a deliberate
     // operation reports here — a failed background push (previous state On) stays silent,
-    // or a flaky network would raise a snackbar on every edit made offline.
+    // or a flaky network would raise a snackbar on every edit made offline. Also gated on
+    // Tasks being the visible tab: Settings/Sync already show the state directly, so a
+    // snackbar there on top of it would be redundant.
     LaunchedEffect(Unit) {
         var previous: SyncState? = null
         snapshotFlow { state.sync }.collect { sync ->
             val wasWorking = previous is SyncState.Working
             previous = sync
-            if (!wasWorking || screen != Screen.Tasks) return@collect
+            if (!wasWorking || currentRoute != Routes.Tasks) return@collect
             when (sync) {
                 is SyncState.Failed -> snackbar.showSnackbar(sync.message)
                 SyncState.NeedsPassphrase, SyncState.WrongPassphrase, is SyncState.NeedsMfaCode ->
@@ -172,45 +204,51 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
         }
     }
 
-    // Back left a secondary screen by leaving the app entirely, because nothing was
-    // listening. Same target as each screen's own up arrow.
-    BackHandler(enabled = screen != Screen.Tasks) {
-        screen = if (screen == Screen.Sync) Screen.Settings else Screen.Tasks
-    }
-
-    // Shared-axis X between the three destinations. Direction comes from the enum order, so
-    // going in slides one way and coming back slides the other without tracking history.
-    AnimatedContent(
-        targetState = screen,
-        transitionSpec = { screenTransition(forward = targetState.ordinal > initialState.ordinal) },
-        label = "screen",
-    ) { current ->
-        when (current) {
-            Screen.Sync -> SyncScreen(
-                sync = state.sync,
-                onSignIn = vm::signIn,
-                onSignUp = vm::signUp,
-                onGithub = vm::signInWithGithub,
-                onPassphrase = vm::submitPassphrase,
-                onMfaCode = vm::submitMfaCode,
-                onShowRecovery = vm::showRecoveryCodeEntry,
-                onRedeemRecovery = vm::redeemRecoveryCode,
-                onRefresh = vm::refresh,
-                onPush = vm::push,
-                onSignOut = vm::signOut,
-                onBack = { screen = Screen.Settings },
-                snackbar = snackbar,
-            )
-
-            Screen.Settings -> SettingsScreen(
-                themeMode = state.themeMode,
-                sync = state.sync,
-                onThemeMode = vm::setThemeMode,
-                onOpenSync = { screen = Screen.Sync },
-                onBack = { screen = Screen.Tasks },
-            )
-
-            Screen.Tasks -> {
+    // No manual BackHandler here: once composed inside a NavHost, the system/predictive back
+    // gesture is handled by the NavController itself — Settings → Sync pops on its own.
+    Scaffold(
+        bottomBar = {
+            NavigationBar {
+                NavigationBarItem(
+                    selected = currentRoute == Routes.Tasks && state.activeNav == NAV_MY_DAY,
+                    onClick = { vm.setActiveNav(NAV_MY_DAY); goToTasks() },
+                    icon = { Icon(Icons.Rounded.CheckCircle, contentDescription = null) },
+                    label = { Text("My Day") },
+                )
+                NavigationBarItem(
+                    selected = currentRoute == Routes.Tasks && state.activeNav == NAV_ALL_TASKS,
+                    onClick = { vm.setActiveNav(NAV_ALL_TASKS); goToTasks() },
+                    icon = { Icon(Icons.AutoMirrored.Rounded.List, contentDescription = null) },
+                    label = { Text("All Tasks") },
+                )
+                NavigationBarItem(
+                    selected = currentRoute == Routes.Summary,
+                    onClick = { goToTopLevel(Routes.Summary) },
+                    icon = { Icon(Icons.Rounded.Info, contentDescription = null) },
+                    label = { Text("Summary") },
+                )
+                NavigationBarItem(
+                    selected = currentRoute == Routes.Settings || currentRoute == Routes.Sync,
+                    onClick = { goToTopLevel(Routes.Settings) },
+                    icon = { Icon(Icons.Rounded.Settings, contentDescription = null) },
+                    label = { Text("Settings") },
+                )
+            }
+        },
+    ) { outerPadding ->
+        // Fade between the bottom bar's own peer destinations — Material's guidance for
+        // switching bottom-tab siblings — reserving the shared-axis slide in Motion.kt for an
+        // actual forward/back step (Settings → Sync), overridden per-destination below.
+        NavHost(
+            navController = navController,
+            startDestination = Routes.Tasks,
+            modifier = Modifier.padding(outerPadding),
+            enterTransition = { contentFade().targetContentEnter },
+            exitTransition = { contentFade().initialContentExit },
+            popEnterTransition = { contentFade().targetContentEnter },
+            popExitTransition = { contentFade().initialContentExit },
+        ) {
+            composable(Routes.Tasks) {
                 // By id, not by value: a save replaces the instance in the list.
                 var editingId by rememberSaveable { mutableStateOf<String?>(null) }
                 val editing = state.tasks.firstOrNull { it.id == editingId }
@@ -218,6 +256,11 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
 
                 // A nullable TaskList alone could not tell "closed" from "creating".
                 var listDialog by remember { mutableStateOf<ListDialog?>(null) }
+
+                // Summary's Today/Upcoming rows and KPI tiles land here after navigating over.
+                LaunchedEffect(Unit) {
+                    vm.openTaskRequested.collect { id -> editingId = id }
+                }
 
                 // One deletion path for the swipe and the sheet's Delete button. The sheet
                 // used to call the ViewModel directly, so the most deliberate delete in the
@@ -258,7 +301,6 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
                     onToggle = vm::toggleComplete,
                     onOpen = { editingId = it.id },
                     onDelete = deleteWithUndo,
-                    onOpenSettings = { screen = Screen.Settings },
                 )
 
                 if (editing != null) {
@@ -281,6 +323,48 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
                         onDismiss = { listDialog = null },
                     )
                 }
+            }
+
+            composable(Routes.Summary) {
+                SummaryScreen(
+                    tasks = state.tasks,
+                    lists = state.lists,
+                    onNavigateToList = { nav -> vm.setActiveNav(nav); goToTasks() },
+                    onOpenTask = { task -> vm.requestOpenTask(task.id); goToTasks() },
+                )
+            }
+
+            composable(Routes.Settings) {
+                SettingsScreen(
+                    themeMode = state.themeMode,
+                    sync = state.sync,
+                    onThemeMode = vm::setThemeMode,
+                    onOpenSync = { navController.navigate(Routes.Sync) },
+                )
+            }
+
+            composable(
+                Routes.Sync,
+                enterTransition = { screenTransition(forward = true).targetContentEnter },
+                exitTransition = { screenTransition(forward = true).initialContentExit },
+                popEnterTransition = { screenTransition(forward = false).targetContentEnter },
+                popExitTransition = { screenTransition(forward = false).initialContentExit },
+            ) {
+                SyncScreen(
+                    sync = state.sync,
+                    onSignIn = vm::signIn,
+                    onSignUp = vm::signUp,
+                    onGithub = vm::signInWithGithub,
+                    onPassphrase = vm::submitPassphrase,
+                    onMfaCode = vm::submitMfaCode,
+                    onShowRecovery = vm::showRecoveryCodeEntry,
+                    onRedeemRecovery = vm::redeemRecoveryCode,
+                    onRefresh = vm::refresh,
+                    onPush = vm::push,
+                    onSignOut = vm::signOut,
+                    onBack = { navController.popBackStack() },
+                    snackbar = snackbar,
+                )
             }
         }
     }
@@ -311,7 +395,6 @@ private fun TaskScreen(
     onToggle: (TodoItem) -> Unit,
     onOpen: (TodoItem) -> Unit,
     onDelete: (TodoItem) -> Unit,
-    onOpenSettings: () -> Unit,
 ) {
     val searching = searchQuery.isNotEmpty()
 
@@ -373,7 +456,6 @@ private fun TaskScreen(
                 onNavigate = { onNavigate(it); scope.launch { drawerState.close() } },
                 onCreateList = { onCreateList(); scope.launch { drawerState.close() } },
                 onEditList = { onEditList(it); scope.launch { drawerState.close() } },
-                onOpenSettings = { onOpenSettings(); scope.launch { drawerState.close() } },
             )
         },
     ) {
@@ -528,11 +610,15 @@ private fun AddTaskBar(onSubmit: (String) -> Unit) {
     // Insets on the Box and centring via contentAlignment, not Modifier.align on the Row: the
     // previous form measured as 1px tall while drawing full height, which left the Scaffold
     // placing the snackbar over an area that could not be touched.
+    //
+    // No navigationBarsPadding() here: this bar now floats above the bottom NavigationBar
+    // rather than the system gesture bar directly, and the outer Scaffold in HatchApp already
+    // consumes that system inset once via its own bottomBar. Adding it again here would pad
+    // this field twice.
     Box(
         Modifier
             .fillMaxWidth()
             .imePadding()
-            .navigationBarsPadding()
             .padding(horizontal = 12.dp, vertical = 10.dp),
         contentAlignment = Alignment.TopCenter,
     ) {
@@ -709,14 +795,19 @@ private fun TaskRow(
     modifier: Modifier = Modifier,
 ) {
     val haptics = LocalHapticFeedback.current
-    val meta = remember(task.listId, task.dueDate, task.tags, task.priority, listNames) {
+    // Tags render as their own chip row below, not folded into this text — see tagChips.
+    val meta = remember(task.listId, task.dueDate, task.priority, listNames) {
         listOfNotNull(
             listNames[task.listId],
             dueDateLabel(task.dueDate),
             PriorityMetaLabels.getOrNull(task.priority)?.takeIf { it.isNotEmpty() },
-            task.tags.takeIf { it.isNotEmpty() }?.joinToString(" ") { "#$it" },
         ).joinToString("  ·  ")
     }
+    // Matches windows/Converters/TagsPreviewConverter.cs + TagsOverflowCountConverter.cs:
+    // the first 2 as chips, the rest folded into a single "+N" chip rather than wrapping
+    // an unbounded row onto a second line in a compact list row.
+    val tagChips = remember(task.tags) { task.tags.take(2) }
+    val tagOverflow = remember(task.tags) { (task.tags.size - 2).coerceAtLeast(0) }
     // Title colour only: animating the whole row would run a per-row animation on scroll.
     val titleColor by animateColorAsState(
         if (task.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant
@@ -830,8 +921,21 @@ private fun TaskRow(
                         color = titleColor,
                     )
                 },
-                supportingContent = if (meta.isEmpty()) null else {
-                    { Text(meta, style = MaterialTheme.typography.bodySmall) }
+                supportingContent = if (meta.isEmpty() && tagChips.isEmpty()) null else {
+                    {
+                        Column {
+                            if (meta.isNotEmpty()) {
+                                Text(meta, style = MaterialTheme.typography.bodySmall)
+                            }
+                            if (tagChips.isNotEmpty()) {
+                                Spacer(Modifier.height(4.dp))
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    tagChips.forEach { tag -> TagChip("#$tag") }
+                                    if (tagOverflow > 0) TagChip("+$tagOverflow")
+                                }
+                            }
+                        }
+                    }
                 },
                 trailingContent = if (!task.isStarred) null else {
                     {
@@ -849,6 +953,23 @@ private fun TaskRow(
                 ),
             )
         }
+    }
+}
+
+// Compact pill for a row's tag preview — deliberately not AssistChip/SuggestionChip, whose
+// 36dp minimum height would inflate every row in the list just to show two words of tag text.
+@Composable
+private fun TagChip(text: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = MaterialTheme.shapes.small,
+    ) {
+        Text(
+            text,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+        )
     }
 }
 
