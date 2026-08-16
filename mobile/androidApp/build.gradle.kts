@@ -78,7 +78,9 @@ dependencies {
     // Icons only — the material (M2) components themselves are deliberately not pulled in.
     implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-tooling-preview")
+    // No @Preview composables exist in this codebase, so ui-tooling-preview (which ships in
+    // every variant, including release) would be pure weight. ui-tooling stays — it's
+    // debug-only and keeps Android Studio's Layout Inspector working.
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     implementation("androidx.activity:activity-compose:1.12.4")
