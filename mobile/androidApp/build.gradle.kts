@@ -82,6 +82,10 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     implementation("androidx.activity:activity-compose:1.12.4")
+    // Bottom-bar navigation (My Day / All Tasks / Summary / Settings). String routes only —
+    // no kotlinx-serialization type-safe routes, so this doesn't need the serialization
+    // Gradle plugin on top of what :shared already pulls in for SyncWire.
+    implementation("androidx.navigation:navigation-compose:2.9.8")
     // Android-12-style icon splash on API 26–31, and keep-on-screen until the first disk
     // read lands — without it those releases cold-start on a bare white window.
     implementation("androidx.core:core-splashscreen:1.2.0")

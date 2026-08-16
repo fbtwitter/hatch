@@ -114,6 +114,11 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
     private val _pushCompleted = MutableSharedFlow<Int>(extraBufferCapacity = 1)
     val pushCompleted: SharedFlow<Int> = _pushCompleted.asSharedFlow()
 
+    // An event, not state: tapping a Summary row should open that one task once, not leave
+    // an id sitting in AppState that reopens the sheet on the next unrelated recomposition.
+    private val _openTaskRequested = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val openTaskRequested: SharedFlow<String> = _openTaskRequested.asSharedFlow()
+
     private var pushJob: Job? = null
 
     // Tombstones — outside AppState, but rejoin the file on every save and push (§5).
@@ -246,6 +251,11 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setActiveNav(nav: String) {
         _state.value = _state.value.copy(activeNav = nav)
+    }
+
+    // Called from Summary's Today/Upcoming rows and KPI tiles that jump to a specific task.
+    fun requestOpenTask(taskId: String) {
+        _openTaskRequested.tryEmit(taskId)
     }
 
     fun setSearchQuery(query: String) {

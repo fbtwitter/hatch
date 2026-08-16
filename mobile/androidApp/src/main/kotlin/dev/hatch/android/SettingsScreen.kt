@@ -13,14 +13,12 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -41,6 +39,9 @@ import androidx.compose.ui.unit.dp
 // Mirrors the Windows Settings page: Appearance → Theme, then Sync, then About. Theme used
 // to be an overflow menu on the task list, which put a preference in the same place as the
 // screen's actions — Material puts persistent preferences on their own screen.
+//
+// No back arrow: Settings is a bottom-bar tab now, a peer of Tasks and Summary, not a screen
+// pushed on top of one — there's nowhere "back" to go from a peer tab.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
@@ -48,7 +49,6 @@ fun SettingsScreen(
     sync: SyncState,
     onThemeMode: (ThemeMode) -> Unit,
     onOpenSync: () -> Unit,
-    onBack: () -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -57,11 +57,6 @@ fun SettingsScreen(
         topBar = {
             MediumTopAppBar(
                 title = { Text("Settings") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                 ),
