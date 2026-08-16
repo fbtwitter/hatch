@@ -22,7 +22,6 @@ import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
@@ -59,7 +58,6 @@ fun ListsDrawerSheet(
     onNavigate: (String) -> Unit,
     onCreateList: () -> Unit,
     onEditList: (TaskList) -> Unit,
-    onOpenSettings: () -> Unit,
 ) {
     val sorted = remember(lists) {
         lists.sortedWith(compareByDescending<TaskList> { it.isPinned }.thenBy { it.sortOrder })
@@ -144,22 +142,6 @@ fun ListsDrawerSheet(
                 )
                 Spacer(Modifier.height(16.dp))
             }
-
-            HorizontalDivider(
-                Modifier.padding(horizontal = 28.dp),
-                color = MaterialTheme.colorScheme.outlineVariant,
-            )
-
-            // Pinned below the divider: this leaves the task list rather than filtering it, and
-            // a preference should not compete with the lists for the same reading order.
-            NavigationDrawerItem(
-                selected = false,
-                onClick = onOpenSettings,
-                icon = { Icon(Icons.Rounded.Settings, contentDescription = null) },
-                label = { Text("Settings") },
-                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
-            )
-            Spacer(Modifier.height(12.dp))
         }
     }
 }
