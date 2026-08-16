@@ -68,6 +68,9 @@ data class AppState(
     val themeMode: ThemeMode = ThemeMode.System,
     // Same vocabulary as MainViewModel.ActiveNavItem: a smart-list key, or a list GUID.
     val activeNav: String = NAV_ALL_TASKS,
+    // Separate from searchQuery being non-empty: a real empty string has to be a valid,
+    // fully-typeable query, so "search mode is on" can't be inferred from the text alone.
+    val isSearchActive: Boolean = false,
     val searchQuery: String = "",
 )
 
@@ -250,6 +253,15 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setSearchQuery(query: String) {
         _state.value = _state.value.copy(searchQuery = query)
+    }
+
+    // Deactivating also clears the query — leaving search always starts the next visit
+    // fresh, and drops the stale text rather than reopening on it.
+    fun setSearchActive(active: Boolean) {
+        _state.value = _state.value.copy(
+            isSearchActive = active,
+            searchQuery = if (active) _state.value.searchQuery else "",
+        )
     }
 
     // Stamped here, not per call site: an edit without a fresh UpdatedAt loses the merge.

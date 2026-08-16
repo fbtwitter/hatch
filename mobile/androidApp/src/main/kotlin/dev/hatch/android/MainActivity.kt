@@ -302,6 +302,7 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
                     loaded = state.loaded,
                     activeNav = state.activeNav,
                     searchQuery = state.searchQuery,
+                    isSearchActive = state.isSearchActive,
                     // Working included so the box stays mounted for the pull it is
                     // spinning for — On alone would unmount it the moment a pull began.
                     refreshEnabled = state.sync is SyncState.On || state.sync is SyncState.Working,
@@ -309,6 +310,7 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
                     snackbar = snackbar,
                     onNavigate = vm::setActiveNav,
                     onSearch = vm::setSearchQuery,
+                    onSearchActiveChange = vm::setSearchActive,
                     onRefresh = vm::refresh,
                     onCreateList = { listDialog = ListDialog.New },
                     onEditList = { listDialog = ListDialog.Edit(it) },
@@ -405,11 +407,13 @@ private fun TaskScreen(
     loaded: Boolean,
     activeNav: String,
     searchQuery: String,
+    isSearchActive: Boolean,
     refreshEnabled: Boolean,
     refreshing: Boolean,
     snackbar: SnackbarHostState,
     onNavigate: (String) -> Unit,
     onSearch: (String) -> Unit,
+    onSearchActiveChange: (Boolean) -> Unit,
     onRefresh: () -> Unit,
     onCreateList: () -> Unit,
     onEditList: (TaskList) -> Unit,
@@ -418,11 +422,13 @@ private fun TaskScreen(
     onOpen: (TodoItem) -> Unit,
     onDelete: (TodoItem) -> Unit,
 ) {
-    val searching = searchQuery.isNotEmpty()
+    val searching = isSearchActive
 
     // Derived, not recomputed: without remember these run whenever anything on the screen
-    // changes, and none of them depend on most of it.
-    val visible = remember(tasks, activeNav, searchQuery) {
+    // changes, and none of them depend on most of it. searching is its own key, not implied
+    // by searchQuery any more — leaving an empty search (query already "") changes searching
+    // without changing searchQuery, and this has to notice that switch either way.
+    val visible = remember(tasks, activeNav, searchQuery, searching) {
         if (searching) searchResults(tasks, searchQuery) else tasksForNav(tasks, activeNav)
     }
     val open = remember(visible) { visible.filter { !it.isCompleted } }
@@ -466,7 +472,7 @@ private fun TaskScreen(
     // predictive-back callbacks for both (DrawerPredictiveBackHandler and the sheet dialog's
     // PredictiveBackOnBackPressedCallback), and those are composed deeper, so they take
     // priority over this one whenever they are open.
-    BackHandler(enabled = searching) { onSearch("") }
+    BackHandler(enabled = searching) { onSearchActiveChange(false) }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -486,7 +492,7 @@ private fun TaskScreen(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             if (searching) {
-                SearchTopBar(searchQuery, onSearch)
+                SearchTopBar(searchQuery, onSearch, onLeaveSearch = { onSearchActiveChange(false) })
             } else {
                 // The two-row collapsing bar Material uses for a screen's primary title.
                 // The count rides in the title slot because the stable MediumTopAppBar has
@@ -510,9 +516,7 @@ private fun TaskScreen(
                     // Search only. Settings is a preference, not an action on this list, so
                     // it lives in the drawer footer rather than beside the list's own verbs.
                     actions = {
-                        // A space, not "": search is active when the query is non-empty.
-                        // searchResults trims, so it still matches nothing.
-                        IconButton(onClick = { onSearch(" ") }) {
+                        IconButton(onClick = { onSearchActiveChange(true) }) {
                             Icon(Icons.Rounded.Search, contentDescription = "Search")
                         }
                     },
@@ -747,7 +751,7 @@ private fun EmptyState(
 // would fight the keyboard for height.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SearchTopBar(searchQuery: String, onSearch: (String) -> Unit) {
+private fun SearchTopBar(searchQuery: String, onSearch: (String) -> Unit, onLeaveSearch: () -> Unit) {
     val focusRequester = remember { FocusRequester() }
 
     // Opening search used to leave the field unfocused, so the first tap on the icon did
@@ -772,15 +776,13 @@ private fun SearchTopBar(searchQuery: String, onSearch: (String) -> Unit) {
             )
         },
         navigationIcon = {
-            IconButton(onClick = { onSearch("") }) {
+            IconButton(onClick = onLeaveSearch) {
                 Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Leave search")
             }
         },
         actions = {
-            // Nothing to clear when the query is the placeholder space, and an inert
-            // button reads as a broken one.
             if (searchQuery.isNotBlank()) {
-                IconButton(onClick = { onSearch(" ") }) {
+                IconButton(onClick = { onSearch("") }) {
                     Icon(Icons.Rounded.Close, contentDescription = "Clear search")
                 }
             }
