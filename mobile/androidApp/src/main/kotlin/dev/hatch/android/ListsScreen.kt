@@ -82,6 +82,10 @@ fun ListsScreen(
     onDelete: (TodoItem) -> Unit,
     onCreateList: () -> Unit,
     onEditList: (TaskList) -> Unit,
+    // False when Lists is a page of the outer 4-tab HorizontalPager (MainActivity.kt) — a
+    // per-row horizontal dismiss would fight both that pager and this screen's own folder
+    // pager for the same axis. True (the default) is what a standalone caller still gets.
+    swipeToDeleteEnabled: Boolean = true,
 ) {
     val folders = remember(lists) { foldersFor(lists) }
 
@@ -230,6 +234,7 @@ fun ListsScreen(
                 onTagClick = { tag -> tagFilter = tag },
                 // My Day is not a folder, so nothing here can offer "add to My Day".
                 onAddToMyDay = {},
+                swipeToDeleteEnabled = swipeToDeleteEnabled,
             )
         }
     }
