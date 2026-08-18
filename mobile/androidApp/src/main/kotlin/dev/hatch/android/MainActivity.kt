@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.automirrored.rounded.List
@@ -35,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,13 +51,13 @@ import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dev.hatch.sync.TaskList
 import dev.hatch.sync.TodoItem
+import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
 // Caps line length on wide screens, where a full-width title reads like a spreadsheet row
@@ -104,15 +107,23 @@ class MainActivity : ComponentActivity() {
 
 // Route names, not an enum: Navigation-Compose keys its back stack by route string. There is
 // no per-list route — which list the Lists tab shows is a folder selection inside that tab,
-// not a destination, so nothing can push a second copy of it onto the back stack.
+// not a destination, so nothing can push a second copy of it onto the back stack. My Day,
+// Lists, Summary and Settings are not routes at all any more — they are pages of the
+// HorizontalPager Routes.Home hosts, matching how Lists' own folder strip already pages
+// between folders. Only screens actually pushed on top of that — Search, Sync — stay real
+// NavHost destinations.
 private object Routes {
-    const val MyDay = "myday"
-    const val Lists = "lists"
-    const val Summary = "summary"
-    const val Settings = "settings"
+    const val Home = "home"
     const val Sync = "settings/sync"
     const val Search = "search"
 }
+
+// Page indices into the Home pager, in bottom-bar order.
+private const val PageMyDay = 0
+private const val PageLists = 1
+private const val PageSummary = 2
+private const val PageSettings = 3
+private const val PageCount = 4
 
 @Composable
 private fun HatchApp(vm: CompanionViewModel = viewModel()) {
@@ -124,6 +135,12 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
+    // Drives the bottom bar and the pager together — real WhatsApp/Telegram-style tab paging,
+    // replacing the earlier hand-built peek-and-commit gesture (SwipePeek.kt, now removed): a
+    // real HorizontalPager tracks the finger continuously, natively supports both directions,
+    // and now covers all four tabs, not just the two the hand-built version singled out.
+    val pagerState = rememberPagerState(initialPage = PageMyDay) { PageCount }
+
     // Held here rather than per-screen: the detail sheet is a modal over the whole app, and
     // three screens open it. While each screen owned its own copy, Summary had to hand the
     // task list an id through the back stack and hope the collector on the other side was
@@ -134,13 +151,14 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
     // A nullable TaskList alone could not tell "closed" from "creating".
     var listDialog by remember { mutableStateOf<ListDialog?>(null) }
 
-    // The Google-recommended bottom-nav pattern: peer destinations save/restore each other's
-    // state and never stack on top of one another, so back from any tab goes straight to the
-    // start destination instead of walking tab-visit history.
-    fun goToTab(route: String) = navController.navigate(route) {
-        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-        launchSingleTop = true
-        restoreState = true
+    // A tab tap (or a cross-tab pager drag committing) always has to land on Home first —
+    // Search and Sync are pushed on top of it, not peers of it, so there may be nothing to
+    // animate the pager onto until whatever's on top is popped back off.
+    fun goToPage(page: Int) {
+        if (navController.currentBackStackEntry?.destination?.route != Routes.Home) {
+            navController.popBackStack(Routes.Home, false)
+        }
+        scope.launch { pagerState.animateScrollToPage(page) }
     }
 
     // Opening a list always means the Lists tab, wherever it was asked for — a Summary tile
@@ -149,11 +167,11 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
     // showing it, with nothing extra on the back stack.
     fun openList(nav: String) {
         if (nav == NAV_MY_DAY) {
-            goToTab(Routes.MyDay)
+            goToPage(PageMyDay)
             return
         }
         vm.selectFolder(nav)
-        goToTab(Routes.Lists)
+        goToPage(PageLists)
     }
 
     // One deletion path for the swipe, the search results and the sheet's Delete button. The
@@ -191,10 +209,6 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
     val addSuggestionToMyDay: (TodoItem) -> Unit = remember { { task -> vm.setMyDay(task, true) } }
     // Shared with the Lists tab below too — same bug, same fix, one instance either way.
     val addTask: (String, String) -> String? = remember { { title, nav -> vm.addTask(title, nav) } }
-    // Committed by SwipePeekHost when a drag between My Day and Lists crosses its threshold —
-    // see SwipePeek.kt.
-    val goToListsTab: () -> Unit = remember { { goToTab(Routes.Lists) } }
-    val goToMyDayTab: () -> Unit = remember { { goToTab(Routes.MyDay) } }
 
     // Stopped on pause so a backgrounded app holds no timer.
     LifecycleResumeEffect(Unit) {
@@ -208,7 +222,7 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
     LaunchedEffect(Unit) {
         vm.pullCompleted.collect { count ->
             if (navController.currentBackStackEntry?.destination?.route == Routes.Sync) {
-                goToTab(Routes.MyDay)
+                goToPage(PageMyDay)
             }
             snackbar.showSnackbar("Pulled — $count task${if (count == 1) "" else "s"}")
         }
@@ -240,7 +254,8 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
             val wasWorking = previous is SyncState.Working
             previous = sync
             val route = navController.currentBackStackEntry?.destination?.route
-            if (!wasWorking || route == Routes.Sync || route == Routes.Settings) return@collect
+            val onSettingsPage = route == Routes.Home && pagerState.currentPage == PageSettings
+            if (!wasWorking || route == Routes.Sync || onSettingsPage) return@collect
             when (sync) {
                 is SyncState.Failed -> snackbar.showSnackbar(sync.message)
                 SyncState.NeedsPassphrase, SyncState.WrongPassphrase, is SyncState.NeedsMfaCode ->
@@ -250,10 +265,10 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
         }
     }
 
-    // Built once here rather than inline at each composable(...) below: SwipePeekHost has to
-    // compose both screens at once while a cross-tab drag is in progress — the peek is a real,
-    // live instance of the sibling screen, not a mockup — so both destinations and both
-    // SwipePeekHost calls need the exact same two content blocks.
+    // Built once here rather than inline in the pager below, matching the earlier lambda-
+    // hoisting fix for the same reason: an inline lambda would be rebuilt on every HatchApp
+    // recomposition (every task edit, toggle, sync pull) and passed to the pager as a fresh
+    // instance each time.
     val myDayContent: @Composable () -> Unit = {
         TaskListScreen(
             nav = NAV_MY_DAY,
@@ -272,7 +287,8 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
             onOpen = openTask,
             onDelete = deleteWithUndo,
             onAddToMyDay = addSuggestionToMyDay,
-            // SwipePeekHost owns horizontal swipe on this route instead.
+            // The outer pager owns horizontal swipe on every page now — a per-row dismiss
+            // gesture would fight it for the same axis on every page, not just this one.
             swipeToDeleteEnabled = false,
         )
     }
@@ -294,7 +310,42 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
             onDelete = deleteWithUndo,
             onCreateList = { listDialog = ListDialog.New },
             onEditList = { listDialog = ListDialog.Edit(it) },
+            // Same reasoning as My Day: Lists' own folder pager already competes with the
+            // outer one for the same axis, so a per-row dismiss on top would be a third
+            // competitor. Delete still works via the detail sheet and search results.
+            swipeToDeleteEnabled = false,
         )
+    }
+    val summaryContent: @Composable () -> Unit = {
+        SummaryScreen(
+            tasks = state.tasks,
+            lists = state.lists,
+            onNavigateToList = ::openList,
+            onOpenTask = openTask,
+        )
+    }
+    val settingsContent: @Composable () -> Unit = {
+        SettingsScreen(
+            themeMode = state.themeMode,
+            useDynamicColor = state.useDynamicColor,
+            sync = state.sync,
+            snackbar = snackbar,
+            onThemeMode = vm::setThemeMode,
+            onDynamicColor = vm::setDynamicColor,
+            onOpenSync = { navController.navigate(Routes.Sync) },
+            onExport = vm::exportTo,
+        )
+    }
+
+    // The page a live drag is currently closest to, not just the settled one — the bottom
+    // bar's highlight tracks this so it moves with the finger the same way the pager's own
+    // content does, instead of only snapping once the gesture ends.
+    val livePage by remember {
+        derivedStateOf {
+            (pagerState.currentPage + pagerState.currentPageOffsetFraction)
+                .roundToInt()
+                .coerceIn(0, PageCount - 1)
+        }
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -316,45 +367,49 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
                     NavigationBar {
                         // Filled when selected, outlined when not: the icon swap is half of
                         // what makes a Material bottom bar readable at a glance, and without
-                        // it the pill indicator is doing the work alone.
+                        // it the pill indicator is doing the work alone. Selected reads off
+                        // livePage, not pagerState.currentPage directly, so the highlight
+                        // moves with a drag in progress instead of only snapping at the end.
                         NavTab(
-                            selected = currentRoute == Routes.MyDay,
+                            selected = currentRoute == Routes.Home && livePage == PageMyDay,
                             filled = Icons.Rounded.CheckCircle,
                             outlined = Icons.Outlined.CheckCircle,
                             label = "My Day",
-                            onClick = { goToTab(Routes.MyDay) },
+                            onClick = { goToPage(PageMyDay) },
                         )
                         NavTab(
-                            selected = currentRoute == Routes.Lists,
+                            selected = currentRoute == Routes.Home && livePage == PageLists,
                             filled = Icons.AutoMirrored.Rounded.List,
                             outlined = Icons.AutoMirrored.Outlined.List,
                             label = "Lists",
-                            onClick = { goToTab(Routes.Lists) },
+                            onClick = { goToPage(PageLists) },
                         )
                         NavTab(
-                            selected = currentRoute == Routes.Summary,
+                            selected = currentRoute == Routes.Home && livePage == PageSummary,
                             filled = HatchIcons.SummaryFilled,
                             outlined = HatchIcons.SummaryOutlined,
                             label = "Summary",
-                            onClick = { goToTab(Routes.Summary) },
+                            onClick = { goToPage(PageSummary) },
                         )
                         NavTab(
-                            selected = currentRoute == Routes.Settings || currentRoute == Routes.Sync,
+                            selected = (currentRoute == Routes.Home && livePage == PageSettings) ||
+                                currentRoute == Routes.Sync,
                             filled = Icons.Rounded.Settings,
                             outlined = Icons.Outlined.Settings,
                             label = "Settings",
-                            onClick = { goToTab(Routes.Settings) },
+                            onClick = { goToPage(PageSettings) },
                         )
                     }
                 }
             },
         ) { outerPadding ->
-            // Fade-through between the bottom bar's own peer destinations — Material's
-            // guidance for switching bottom-tab siblings — reserving the shared-axis slide in
-            // Motion.kt for an actual forward/back step, overridden per-destination below.
+            // fadeThrough no longer governs tab-to-tab motion — the pager's own drag-through
+            // transition replaces it for My Day/Lists/Summary/Settings. It still applies here
+            // for Home <-> Search, the one case left where the NavHost-level default is used
+            // rather than a composable(...)-level override.
             NavHost(
                 navController = navController,
-                startDestination = Routes.MyDay,
+                startDestination = Routes.Home,
                 // consumeWindowInsets alongside the padding, not padding alone. This Scaffold
                 // lifts its content by the navigation bar's height to clear the bottom bar,
                 // but without consuming the matching insets a descendant asking for
@@ -370,33 +425,32 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
                 popEnterTransition = { fadeThrough().targetContentEnter },
                 popExitTransition = { fadeThrough().initialContentExit },
             ) {
-                composable(Routes.MyDay) {
-                    // peekFromRight: Lists is the next tab over, so it slides in from the
-                    // right on a leftward drag. See SwipePeek.kt.
-                    SwipePeekHost(
-                        peekFromRight = true,
-                        onCommit = goToListsTab,
-                        peekContent = listsContent,
-                        content = myDayContent,
-                    )
-                }
-
-                composable(Routes.Lists) {
-                    SwipePeekHost(
-                        peekFromRight = false,
-                        onCommit = goToMyDayTab,
-                        peekContent = myDayContent,
-                        content = listsContent,
-                    )
-                }
-
-                composable(Routes.Summary) {
-                    SummaryScreen(
-                        tasks = state.tasks,
-                        lists = state.lists,
-                        onNavigateToList = ::openList,
-                        onOpenTask = openTask,
-                    )
+                composable(Routes.Home) {
+                    // beyondViewportPageCount stays at its default of 0: only the visible
+                    // page, plus whatever a swipe is actively dragging in, is composed — four
+                    // tabs do not mean four live screens running at once.
+                    //
+                    // userScrollEnabled is off while Lists is the current page: Lists owns its
+                    // own HorizontalPager for its folder strip, and nesting two pagers on the
+                    // same axis is not a priority dispute Compose resolves for free — the
+                    // outer one, being the ancestor, gets first claim on every drag via nested
+                    // scroll's pre-scroll pass, so a swipe meant to switch folders instead
+                    // always advanced this outer pager to the next tab. Folders are Lists'
+                    // own, already-shipped swipe feature, so it keeps full-width swipe there;
+                    // this pager still reaches Lists (and leaves it) via the bottom bar, just
+                    // not by dragging across Lists' own content.
+                    HorizontalPager(
+                        state = pagerState,
+                        userScrollEnabled = pagerState.currentPage != PageLists,
+                        modifier = Modifier.fillMaxSize(),
+                    ) { page ->
+                        when (page) {
+                            PageMyDay -> myDayContent()
+                            PageLists -> listsContent()
+                            PageSummary -> summaryContent()
+                            else -> settingsContent()
+                        }
+                    }
                 }
 
                 composable(
@@ -414,19 +468,6 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
                         onToggle = vm::toggleComplete,
                         onOpen = openTask,
                         onDelete = deleteWithUndo,
-                    )
-                }
-
-                composable(Routes.Settings) {
-                    SettingsScreen(
-                        themeMode = state.themeMode,
-                        useDynamicColor = state.useDynamicColor,
-                        sync = state.sync,
-                        snackbar = snackbar,
-                        onThemeMode = vm::setThemeMode,
-                        onDynamicColor = vm::setDynamicColor,
-                        onOpenSync = { navController.navigate(Routes.Sync) },
-                        onExport = vm::exportTo,
                     )
                 }
 
