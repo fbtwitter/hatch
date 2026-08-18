@@ -1,5 +1,7 @@
 package dev.hatch.android
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,12 +10,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -23,6 +26,7 @@ import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +36,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,7 +84,11 @@ fun SummaryScreen(
                 .padding(padding),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(Modifier.widthIn(max = ContentMaxWidth).padding(horizontal = 12.dp, vertical = 12.dp)) {
+            Column(
+                Modifier
+                    .widthIn(max = ContentMaxWidth)
+                    .padding(horizontal = ScreenPadding, vertical = 12.dp),
+            ) {
                 summary.tiles.chunked(2).forEach { rowTiles ->
                     Row(
                         Modifier.fillMaxWidth().padding(bottom = 12.dp),
@@ -116,46 +125,82 @@ fun SummaryScreen(
     }
 }
 
+// Each tile is tinted by what it is saying rather than all four being the same grey card —
+// overdue reads as a warning at a glance, and a day with nothing slipping does not.
 @Composable
 private fun SummaryTileCard(tile: SummaryTile, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    val tone = when (tile.tone) {
-        SummaryTileTone.Neutral -> MaterialTheme.colorScheme.onSurfaceVariant
-        SummaryTileTone.Success -> MaterialTheme.colorScheme.primary
-        SummaryTileTone.Critical -> MaterialTheme.colorScheme.error
-        SummaryTileTone.Starred -> MaterialTheme.colorScheme.tertiary
+    val container = when (tile.tone) {
+        SummaryTileTone.Neutral -> MaterialTheme.colorScheme.surfaceContainer
+        SummaryTileTone.Success -> MaterialTheme.colorScheme.primaryContainer
+        SummaryTileTone.Critical -> MaterialTheme.colorScheme.errorContainer
+        SummaryTileTone.Starred -> MaterialTheme.colorScheme.tertiaryContainer
     }
+    val content = when (tile.tone) {
+        SummaryTileTone.Neutral -> MaterialTheme.colorScheme.onSurface
+        SummaryTileTone.Success -> MaterialTheme.colorScheme.onPrimaryContainer
+        SummaryTileTone.Critical -> MaterialTheme.colorScheme.onErrorContainer
+        SummaryTileTone.Starred -> MaterialTheme.colorScheme.onTertiaryContainer
+    }
+    // The supporting text on a tinted tile cannot use onSurfaceVariant — that is a neutral
+    // grey and would sit on a coloured ground. Same colour at lower alpha instead.
+    val muted = content.copy(alpha = 0.75f)
+
     Surface(
         onClick = onClick,
-        shape = MaterialTheme.shapes.large,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = modifier.heightIn(min = 124.dp),
+        shape = RoundedCornerShape(CardCorner),
+        color = container,
+        contentColor = content,
+        modifier = modifier.heightIn(min = 132.dp),
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.Center) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(tileIcon(tile.id), contentDescription = null, tint = tone, modifier = Modifier.size(16.dp))
-                Text(
-                    tile.title,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Icon(tileIcon(tile.id), contentDescription = null, tint = muted, modifier = Modifier.size(15.dp))
+                Text(tile.title, style = MaterialTheme.typography.labelMedium, color = muted)
             }
-            Spacer(Modifier.height(6.dp))
-            Text(tile.value, style = MaterialTheme.typography.headlineMedium)
-            Spacer(Modifier.height(2.dp))
-            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    tile.value,
+                    style = MaterialTheme.typography.headlineMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 if (tile.secondaryValue != null) {
                     Text(
                         tile.secondaryValue,
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = muted,
+                        modifier = Modifier.padding(bottom = 3.dp),
                     )
                 }
-                Text(
-                    tile.description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            }
+            if (tile.progress != null) {
+                Spacer(Modifier.height(8.dp))
+                // Animated so arriving on the tab fills the bar rather than presenting it.
+                val progress by animateFloatAsState(
+                    targetValue = tile.progress,
+                    animationSpec = tween(MotionMedium, easing = EmphasizedDecelerate),
+                    label = "myDayProgress",
+                )
+                LinearProgressIndicator(
+                    progress = { progress },
+                    color = content,
+                    trackColor = content.copy(alpha = 0.20f),
+                    drawStopIndicator = {},
+                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(MaterialTheme.shapes.small),
                 )
             }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                tile.description,
+                style = MaterialTheme.typography.bodySmall,
+                color = muted,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
@@ -181,7 +226,7 @@ private fun SummarySection(
     )
     if (rows.isEmpty()) {
         Surface(
-            shape = MaterialTheme.shapes.large,
+            shape = RoundedCornerShape(CardCorner),
             color = MaterialTheme.colorScheme.surfaceContainer,
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -190,14 +235,14 @@ private fun SummarySection(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier.fillMaxWidth().padding(20.dp),
             )
         }
     } else {
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(MaterialTheme.shapes.large)
+                .clip(RoundedCornerShape(CardCorner))
                 .background(MaterialTheme.colorScheme.surfaceContainer),
         ) {
             rows.forEachIndexed { index, row ->
@@ -209,7 +254,7 @@ private fun SummarySection(
                     trailingContent = {
                         Text(
                             row.detail,
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     },
@@ -218,7 +263,7 @@ private fun SummarySection(
                 if (index != rows.lastIndex) {
                     HorizontalDivider(
                         color = MaterialTheme.colorScheme.outlineVariant,
-                        modifier = Modifier.padding(start = 16.dp),
+                        modifier = Modifier.padding(horizontal = 16.dp),
                     )
                 }
             }
