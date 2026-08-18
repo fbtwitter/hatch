@@ -49,12 +49,10 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import dev.hatch.sync.TaskList
 import dev.hatch.sync.TodoItem
 import kotlinx.coroutines.launch
@@ -104,26 +102,22 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// Route names, not an enum: Navigation-Compose keys its back stack by route string. `List`
-// is the pattern rather than a filled-in route — which is also what NavDestination.route
-// reports, so the bottom bar can match on it without parsing the argument back out.
+// Route names, not an enum: Navigation-Compose keys its back stack by route string. There is
+// no per-list route — which list the Lists tab shows is a folder selection inside that tab,
+// not a destination, so nothing can push a second copy of it onto the back stack.
 private object Routes {
     const val MyDay = "myday"
     const val Lists = "lists"
-    const val List = "list/{nav}"
     const val Summary = "summary"
     const val Settings = "settings"
     const val Sync = "settings/sync"
     const val Search = "search"
-
-    const val NavArg = "nav"
-
-    fun list(nav: String) = "list/$nav"
 }
 
 @Composable
 private fun HatchApp(vm: CompanionViewModel = viewModel()) {
     val state by vm.state.collectAsState()
+    val selectedFolder by vm.selectedFolder.collectAsState()
     // The app opens on My Day and never asks who you are — sync is opt-in.
     val navController = rememberNavController()
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
@@ -151,35 +145,56 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
 
     // Opening a list always means the Lists tab, wherever it was asked for — a Summary tile
     // that pushed a list onto the Summary tab would leave Summary highlighted while showing
-    // Planned. popUpTo keeps that tab one list deep instead of stacking them.
+    // Planned. Selecting the folder before switching tabs means the tab arrives already
+    // showing it, with nothing extra on the back stack.
     fun openList(nav: String) {
         if (nav == NAV_MY_DAY) {
             goToTab(Routes.MyDay)
             return
         }
+        vm.selectFolder(nav)
         goToTab(Routes.Lists)
-        navController.navigate(Routes.list(nav)) {
-            popUpTo(Routes.Lists)
-            launchSingleTop = true
-        }
     }
 
     // One deletion path for the swipe, the search results and the sheet's Delete button. The
     // sheet used to call the ViewModel directly, so the most deliberate delete in the app —
     // the one that propagates to every synced device — was the only one with no way back.
-    val deleteWithUndo: (TodoItem) -> Unit = { task ->
-        vm.deleteTask(task)
-        scope.launch {
-            // Long, not Short: four seconds to notice a destructive action and reach the
-            // button is not enough, and the delete now propagates to every synced device.
-            val result = snackbar.showSnackbar(
-                message = "Deleted \"${task.title.take(30)}\"",
-                actionLabel = "Undo",
-                duration = SnackbarDuration.Long,
-            )
-            if (result == SnackbarResult.ActionPerformed) vm.restoreTask(task)
+    //
+    // remember, matching openTask above: `state` is read at the top of this composable, so
+    // HatchApp recomposes on every task edit, toggle and sync pull. An un-hoisted lambda here
+    // was a fresh instance every one of those times, and passing it down as a TaskRow/
+    // SuggestionRow parameter made every visible row on My Day look "changed" to Compose on
+    // essentially every data change — the exact whole-list-invalidation failure mode
+    // ListAdapter/DiffUtil exist to avoid on RecyclerView, just reached from the other
+    // direction. vm/scope/snackbar are all stable across recomposition, so this only needs to
+    // be built once.
+    val deleteWithUndo: (TodoItem) -> Unit = remember {
+        { task ->
+            vm.deleteTask(task)
+            scope.launch {
+                // Long, not Short: four seconds to notice a destructive action and reach the
+                // button is not enough, and the delete now propagates to every synced device.
+                val result = snackbar.showSnackbar(
+                    message = "Deleted \"${task.title.take(30)}\"",
+                    actionLabel = "Undo",
+                    duration = SnackbarDuration.Long,
+                )
+                if (result == SnackbarResult.ActionPerformed) vm.restoreTask(task)
+            }
         }
     }
+
+    // Same reasoning as deleteWithUndo above — these three used to be built inline at each
+    // TaskListScreen call site, which recreated them on every HatchApp recomposition too.
+    val openSearch: () -> Unit = remember { { navController.navigate(Routes.Search) } }
+    val addTaskToMyDay: (String) -> String? = remember { { title -> vm.addTask(title, NAV_MY_DAY) } }
+    val addSuggestionToMyDay: (TodoItem) -> Unit = remember { { task -> vm.setMyDay(task, true) } }
+    // Shared with the Lists tab below too — same bug, same fix, one instance either way.
+    val addTask: (String, String) -> String? = remember { { title, nav -> vm.addTask(title, nav) } }
+    // Committed by SwipePeekHost when a drag between My Day and Lists crosses its threshold —
+    // see SwipePeek.kt.
+    val goToListsTab: () -> Unit = remember { { goToTab(Routes.Lists) } }
+    val goToMyDayTab: () -> Unit = remember { { goToTab(Routes.MyDay) } }
 
     // Stopped on pause so a backgrounded app holds no timer.
     LifecycleResumeEffect(Unit) {
@@ -235,6 +250,53 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
         }
     }
 
+    // Built once here rather than inline at each composable(...) below: SwipePeekHost has to
+    // compose both screens at once while a cross-tab drag is in progress — the peek is a real,
+    // live instance of the sibling screen, not a mockup — so both destinations and both
+    // SwipePeekHost calls need the exact same two content blocks.
+    val myDayContent: @Composable () -> Unit = {
+        TaskListScreen(
+            nav = NAV_MY_DAY,
+            tasks = state.tasks,
+            lists = state.lists,
+            loaded = state.loaded,
+            // Working included so the box stays mounted for the pull it is
+            // spinning for — On alone would unmount it the moment a pull began.
+            refreshEnabled = state.sync is SyncState.On || state.sync is SyncState.Working,
+            refreshing = state.sync is SyncState.Working,
+            snackbar = snackbar,
+            onOpenSearch = openSearch,
+            onRefresh = vm::refresh,
+            onAdd = addTaskToMyDay,
+            onToggle = vm::toggleComplete,
+            onOpen = openTask,
+            onDelete = deleteWithUndo,
+            onAddToMyDay = addSuggestionToMyDay,
+            // SwipePeekHost owns horizontal swipe on this route instead.
+            swipeToDeleteEnabled = false,
+        )
+    }
+    val listsContent: @Composable () -> Unit = {
+        ListsScreen(
+            selectedNav = selectedFolder,
+            tasks = state.tasks,
+            lists = state.lists,
+            loaded = state.loaded,
+            refreshEnabled = state.sync is SyncState.On || state.sync is SyncState.Working,
+            refreshing = state.sync is SyncState.Working,
+            snackbar = snackbar,
+            onSelectFolder = vm::selectFolder,
+            onOpenSearch = openSearch,
+            onRefresh = vm::refresh,
+            onAdd = addTask,
+            onToggle = vm::toggleComplete,
+            onOpen = openTask,
+            onDelete = deleteWithUndo,
+            onCreateList = { listDialog = ListDialog.New },
+            onEditList = { listDialog = ListDialog.Edit(it) },
+        )
+    }
+
     Box(Modifier.fillMaxSize()) {
         // No manual BackHandler here: once composed inside a NavHost, the system/predictive
         // back gesture is handled by the NavController itself.
@@ -263,8 +325,7 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
                             onClick = { goToTab(Routes.MyDay) },
                         )
                         NavTab(
-                            // The pattern, so every list opened inside this tab keeps it lit.
-                            selected = currentRoute == Routes.Lists || currentRoute == Routes.List,
+                            selected = currentRoute == Routes.Lists,
                             filled = Icons.AutoMirrored.Rounded.List,
                             outlined = Icons.AutoMirrored.Outlined.List,
                             label = "Lists",
@@ -310,72 +371,22 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
                 popExitTransition = { fadeThrough().initialContentExit },
             ) {
                 composable(Routes.MyDay) {
-                    TaskListScreen(
-                        nav = NAV_MY_DAY,
-                        tasks = state.tasks,
-                        lists = state.lists,
-                        loaded = state.loaded,
-                        // Working included so the box stays mounted for the pull it is
-                        // spinning for — On alone would unmount it the moment a pull began.
-                        refreshEnabled = state.sync is SyncState.On || state.sync is SyncState.Working,
-                        refreshing = state.sync is SyncState.Working,
-                        snackbar = snackbar,
-                        // A tab, so there is nowhere back to go.
-                        onBack = null,
-                        onOpenSearch = { navController.navigate(Routes.Search) },
-                        onRefresh = vm::refresh,
-                        onAdd = { title -> vm.addTask(title, NAV_MY_DAY) },
-                        onToggle = vm::toggleComplete,
-                        onOpen = openTask,
-                        onDelete = deleteWithUndo,
-                        onAddToMyDay = { task -> vm.setMyDay(task, true) },
+                    // peekFromRight: Lists is the next tab over, so it slides in from the
+                    // right on a leftward drag. See SwipePeek.kt.
+                    SwipePeekHost(
+                        peekFromRight = true,
+                        onCommit = goToListsTab,
+                        peekContent = listsContent,
+                        content = myDayContent,
                     )
                 }
 
                 composable(Routes.Lists) {
-                    ListsScreen(
-                        tasks = state.tasks,
-                        lists = state.lists,
-                        onOpenList = ::openList,
-                        onOpenSearch = { navController.navigate(Routes.Search) },
-                        onCreateList = { listDialog = ListDialog.New },
-                        onEditList = { listDialog = ListDialog.Edit(it) },
-                    )
-                }
-
-                composable(
-                    Routes.List,
-                    arguments = listOf(navArgument(Routes.NavArg) { type = NavType.StringType }),
-                    enterTransition = { screenTransition(forward = true).targetContentEnter },
-                    exitTransition = { screenTransition(forward = true).initialContentExit },
-                    popEnterTransition = { screenTransition(forward = false).targetContentEnter },
-                    popExitTransition = { screenTransition(forward = false).initialContentExit },
-                ) { entry ->
-                    val nav = entry.arguments?.getString(Routes.NavArg) ?: NAV_ALL_TASKS
-                    // A custom list can stop existing while it is open — deleted from the
-                    // dialog, or a tombstone arriving on the next pull. Leaving the route up
-                    // would show an empty list with the deleted list's name on it.
-                    val listGone = state.loaded &&
-                        nav !in SmartListNavs &&
-                        state.lists.none { it.id == nav }
-                    LaunchedEffect(listGone) { if (listGone) navController.popBackStack() }
-
-                    TaskListScreen(
-                        nav = nav,
-                        tasks = state.tasks,
-                        lists = state.lists,
-                        loaded = state.loaded,
-                        refreshEnabled = state.sync is SyncState.On || state.sync is SyncState.Working,
-                        refreshing = state.sync is SyncState.Working,
-                        snackbar = snackbar,
-                        onBack = { navController.popBackStack() },
-                        onOpenSearch = { navController.navigate(Routes.Search) },
-                        onRefresh = vm::refresh,
-                        onAdd = { title -> vm.addTask(title, nav) },
-                        onToggle = vm::toggleComplete,
-                        onOpen = openTask,
-                        onDelete = deleteWithUndo,
-                        onAddToMyDay = { task -> vm.setMyDay(task, true) },
+                    SwipePeekHost(
+                        peekFromRight = false,
+                        onCommit = goToMyDayTab,
+                        peekContent = myDayContent,
+                        content = listsContent,
                     )
                 }
 
@@ -486,10 +497,6 @@ private fun RowScope.NavTab(
         label = { Text(label) },
     )
 }
-
-// Every nav tag that is not a list id — the set a `list/{nav}` route may hold without any
-// TaskList existing for it.
-private val SmartListNavs = setOf(NAV_MY_DAY, NAV_IMPORTANT, NAV_PLANNED, NAV_ALL_TASKS)
 
 // Takes the MutableState rather than its value, so reading which task is open happens here
 // and not in HatchApp — opening a sheet must not recompose the nav graph.

@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -15,8 +14,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,6 +29,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -37,11 +40,12 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Checkbox
@@ -54,7 +58,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.SnackbarHost
@@ -63,7 +66,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -71,7 +74,6 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -89,8 +91,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.platform.ViewConfiguration
 import androidx.compose.ui.semantics.contentDescription
@@ -107,9 +109,8 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import java.time.LocalDate
 
-// One list — a smart list or a custom one. My Day is this screen at the top level, with no
-// back arrow and a Suggested section; every other list is this screen pushed inside the
-// Lists tab.
+// My Day: a whole screen with a collapsing title and a Suggested section. Every other list is
+// a folder page inside the Lists tab, which shares this file's body but brings its own chrome.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskListScreen(
@@ -120,7 +121,6 @@ fun TaskListScreen(
     refreshEnabled: Boolean,
     refreshing: Boolean,
     snackbar: SnackbarHostState,
-    onBack: (() -> Unit)?,
     onOpenSearch: () -> Unit,
     onRefresh: () -> Unit,
     onAdd: (String) -> String?,
@@ -128,11 +128,118 @@ fun TaskListScreen(
     onOpen: (TodoItem) -> Unit,
     onDelete: (TodoItem) -> Unit,
     onAddToMyDay: (TodoItem) -> Unit,
+    // False only on the My Day route — the outer SwipePeekHost (see MainActivity.kt) owns
+    // horizontal swipe there instead, so rows must not also react to it.
+    swipeToDeleteEnabled: Boolean = true,
 ) {
     // Local to the route, which is what makes it clear itself on the way out — the Windows
     // original has to null it by hand in the ActiveNavItem setter.
     var tagFilter by rememberSaveable { mutableStateOf<String?>(null) }
+    // remember, not a bare lambda literal: this screen recomposes on every scroll-driven
+    // composerCollapsed/atTop flip below, and an un-hoisted lambda here was a fresh instance
+    // each time — flowing into every visible TaskRow's onTagClick parameter and making
+    // Compose treat every row as changed mid-scroll, the exact moment that matters most.
+    val onTagClick: (String) -> Unit = remember { { tag -> tagFilter = tag } }
 
+    val model = rememberTaskListModel(nav, tasks, tagFilter)
+    val listNames = remember(lists) { lists.associate { it.id to it.name } }
+
+    val listState = rememberLazyListState()
+    var pendingScrollId by remember { mutableStateOf<String?>(null) }
+
+    // The add field is at the bottom, so a task added while scrolled down otherwise lands
+    // off-screen and reads as nothing having happened. By key rather than index 0 because
+    // neither Important nor Planned puts the newest task first.
+    LaunchedEffect(pendingScrollId, model.rows) {
+        val id = pendingScrollId ?: return@LaunchedEffect
+        val index = model.rows.indexOfFirst { it.key == id }
+        if (index >= 0) listState.animateScrollToItem(index)
+        pendingScrollId = null
+    }
+
+    val composerCollapsed = rememberComposerCollapsed(listState)
+    val onSubmit: (String) -> Unit = remember(onAdd) { { title -> pendingScrollId = onAdd(title) } }
+
+    Scaffold(
+        topBar = {
+            // Plain bar, matching Sync and Lists — not the collapsing MediumTopAppBar this
+            // screen used to have. That bar's hero treatment (large title giving back space
+            // on scroll) meant its own top row held only the search icon at rest, floating
+            // with no title beside it until the bar collapsed — inconsistent with every
+            // other screen in the app, which all keep title and search in the same row.
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(navTitle(nav, lists))
+                        // The filter replaces the count rather than adding a third line:
+                        // while one is on, the count is a count of the filter, not the list.
+                        if (tagFilter != null) {
+                            TagFilterPill(tagFilter!!) { tagFilter = null }
+                        } else {
+                            Text(
+                                model.countLabel,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onOpenSearch) {
+                        Icon(Icons.Rounded.Search, contentDescription = "Search")
+                    }
+                },
+            )
+        },
+        bottomBar = {
+            ComposerBar(
+                collapsed = composerCollapsed,
+                snackbar = snackbar,
+                onSubmit = onSubmit,
+            )
+        },
+    ) { padding ->
+        // Nothing at all until the disk read lands: showing "Nothing yet" for one frame and
+        // then replacing it with the real list reads as a bug.
+        if (!loaded) return@Scaffold
+
+        TaskListBody(
+            nav = nav,
+            model = model,
+            anyTasks = tasks.isNotEmpty(),
+            listNames = listNames,
+            listState = listState,
+            tagFilter = tagFilter,
+            padding = padding,
+            refreshEnabled = refreshEnabled,
+            refreshing = refreshing,
+            // No collapsing bar to fight over the same downward drag here, so a pull at
+            // the top is always a pull — matches the Lists tab's own folder pages.
+            pullEnabled = true,
+            onRefresh = onRefresh,
+            onToggle = onToggle,
+            onOpen = onOpen,
+            onDelete = onDelete,
+            onTagClick = onTagClick,
+            onAddToMyDay = onAddToMyDay,
+            swipeToDeleteEnabled = swipeToDeleteEnabled,
+        )
+    }
+}
+
+// Everything the list needs to draw, computed once. Shared by My Day, which owns a whole
+// screen, and by each folder page inside the Lists tab, which owns only a body.
+internal class TaskListModel(
+    val rows: List<ListRow>,
+    val countLabel: String,
+)
+
+@Composable
+internal fun rememberTaskListModel(
+    nav: String,
+    tasks: List<TodoItem>,
+    tagFilter: String?,
+): TaskListModel {
     // Derived, not recomputed: without remember these run whenever anything on the screen
     // changes, and none of them depend on most of it.
     val visible = remember(tasks, nav, tagFilter) {
@@ -145,68 +252,174 @@ fun TaskListScreen(
     val suggested = remember(tasks, nav) {
         if (nav == NAV_MY_DAY) suggestions(tasks) else emptyList()
     }
-    val listNames = remember(lists) { lists.associate { it.id to it.name } }
+    // Once reviewed, the whole tray collapses to just its header — this only ever exists on
+    // the My Day route, so one saveable flag per screen instance is enough; no key on nav.
+    var suggestionsExpanded by rememberSaveable { mutableStateOf(true) }
+    val rows = remember(sections, suggested, suggestionsExpanded) {
+        buildRows(sections, suggested, suggestionsExpanded) { suggestionsExpanded = !suggestionsExpanded }
+    }
 
-    val rows = remember(sections, suggested) { buildRows(sections, suggested) }
-
-    val openCount = remember(visible) { visible.count { !it.isCompleted } }
-    val doneCount = remember(visible) { visible.size - openCount }
-
-    // The flexible bar's second line. Open-only, matching the Lists badges.
-    val countLabel = remember(openCount, doneCount) {
+    // Open-only, matching the folder tabs' own counts.
+    val countLabel = remember(visible) {
+        val open = visible.count { !it.isCompleted }
+        val done = visible.size - open
         when {
-            openCount == 0 && doneCount == 0 -> "Nothing here"
-            openCount == 0 -> "All done"
-            else -> "$openCount open" + if (doneCount == 0) "" else " · $doneCount done"
+            open == 0 && done == 0 -> "Nothing here"
+            open == 0 -> "All done"
+            else -> "$open open" + if (done == 0) "" else " · $done done"
         }
     }
 
-    // exitUntilCollapsed, not enterAlways: a two-row flexible bar has a large title to give
-    // back, and enterAlways would slam it open on the smallest upward flick.
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    val listState = rememberLazyListState()
-    var pendingScrollId by remember { mutableStateOf<String?>(null) }
+    return remember(rows, countLabel) { TaskListModel(rows, countLabel) }
+}
 
-    // The add field is at the bottom, so a task added while scrolled down otherwise lands
-    // off-screen and reads as nothing having happened. By key rather than index 0 because
-    // neither Important nor Planned puts the newest task first.
-    LaunchedEffect(pendingScrollId, rows) {
-        val id = pendingScrollId ?: return@LaunchedEffect
-        val index = rows.indexOfFirst { it.key == id }
-        if (index >= 0) listState.animateScrollToItem(index)
-        pendingScrollId = null
-    }
-
-    // The collapsing bar and pull-to-refresh both want a downward drag at the top of the list,
-    // and the bar is the outer nested-scroll parent, so it wins: with the bar left collapsed,
-    // the first pull went into re-expanding it — the title slid back down into place and
-    // nothing refreshed — and only a second pull reached the spinner. Putting the bar back to
-    // fully expanded as soon as the list comes to rest at the top means the title is already
-    // where it belongs, the bar has nothing left to consume, and a pull at the top is a pull.
-    val atTop by remember(listState) {
-        derivedStateOf {
-            listState.firstVisibleItemIndex == 0 && listState.firstVisibleItemScrollOffset == 0
+// The list itself, with no chrome of its own. My Day wraps this in a screen with its own plain
+// top bar; a folder page is handed the Lists tab's padding and draws nothing else.
+@Composable
+internal fun TaskListBody(
+    nav: String,
+    model: TaskListModel,
+    anyTasks: Boolean,
+    listNames: Map<String, String>,
+    listState: LazyListState,
+    tagFilter: String?,
+    padding: PaddingValues,
+    refreshEnabled: Boolean,
+    refreshing: Boolean,
+    pullEnabled: Boolean,
+    onRefresh: () -> Unit,
+    onToggle: (TodoItem) -> Unit,
+    onOpen: (TodoItem) -> Unit,
+    onDelete: (TodoItem) -> Unit,
+    onTagClick: (String) -> Unit,
+    onAddToMyDay: (TodoItem) -> Unit,
+    // False only on My Day — see TaskRow for why folder pages keep swipe-to-delete as-is.
+    swipeToDeleteEnabled: Boolean = true,
+) {
+    // Completing or deleting the last task used to swap the list for the empty state
+    // between two frames. A fade only — nothing has moved, so nothing should slide.
+    val body: @Composable () -> Unit = {
+        AnimatedContent(
+            targetState = model.rows.isEmpty(),
+            transitionSpec = { contentFade() },
+            label = "body",
+        ) { empty ->
+            if (empty) {
+                EmptyState(
+                    nav = nav,
+                    tagFilter = tagFilter,
+                    anyTasks = anyTasks,
+                    modifier = Modifier.padding(padding),
+                )
+            } else {
+                Box(Modifier.fillMaxSize()) {
+                    // A header row already carries its own top padding (SectionHeaderRow),
+                    // but the open section has no header — its title is null — so a real
+                    // task can be the very first row, and `padding` alone is exactly the
+                    // bar's height with nothing left over. Added here rather than baked into
+                    // TaskRow itself, which would double this gap for every row after the
+                    // first.
+                    val layoutDirection = LocalLayoutDirection.current
+                    val listContentPadding = remember(padding, layoutDirection) {
+                        PaddingValues(
+                            start = padding.calculateStartPadding(layoutDirection),
+                            top = padding.calculateTopPadding() + ScreenPadding,
+                            end = padding.calculateEndPadding(layoutDirection),
+                            bottom = padding.calculateBottomPadding(),
+                        )
+                    }
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .widthIn(max = ContentMaxWidth)
+                            .align(Alignment.TopCenter),
+                        // The composer's own height is already in `padding`, because it is
+                        // the hosting Scaffold's bottomBar and that bar keeps a fixed height
+                        // whether it is expanded or collapsed. So the end of the list always
+                        // clears it, and collapsing never reflows the list. The bar does grow
+                        // while an undo snackbar is showing (see ComposerBar) — `padding`
+                        // tracks that too, so the list still clears it without a separate
+                        // case here.
+                        contentPadding = listContentPadding,
+                        verticalArrangement = Arrangement.spacedBy(GroupGap),
+                    ) {
+                        items(
+                            model.rows,
+                            key = { it.key },
+                            // Lets rows be reused across sections rather than rebuilt.
+                            contentType = { it.contentType },
+                        ) { row ->
+                            when (row) {
+                                is ListRow.Header -> SectionHeaderRow(row)
+                                is ListRow.Task -> TaskRow(
+                                    row.task,
+                                    listNames,
+                                    groupedShape(row.index, row.count),
+                                    onToggle,
+                                    onOpen,
+                                    onDelete,
+                                    onTagClick = onTagClick,
+                                    swipeToDeleteEnabled = swipeToDeleteEnabled,
+                                    modifier = Modifier.animateItem(),
+                                )
+                                is ListRow.Suggestion -> SuggestionRow(
+                                    row.task,
+                                    listNames,
+                                    groupedShape(row.index, row.count),
+                                    onOpen,
+                                    onAddToMyDay,
+                                    Modifier.animateItem(),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
-    LaunchedEffect(atTop) {
-        if (!atTop) return@LaunchedEffect
-        val offset = scrollBehavior.state.heightOffset
-        if (offset == 0f) return@LaunchedEffect
-        // Animated rather than snapped: the bar arriving instantly while the finger is still
-        // on the list reads as a glitch.
-        animate(offset, 0f, animationSpec = tween(MotionMedium, easing = EmphasizedDecelerate)) { value, _ ->
-            scrollBehavior.state.heightOffset = value
-        }
-    }
 
-    // Reading downward as "get out of the way" is the convention every Android list follows.
-    // Tracked here rather than inside the composer because the composer cannot see the list.
-    //
-    // Hysteresis, not a direction flag. Reacting to the first pixel of travel made the
-    // composer flap open and shut under a thumb that was barely moving; it now has to see a
-    // deliberate run downward before it gets out of the way, and gives up far sooner on the
-    // way back, so it errs towards being available.
-    var composerCollapsed by remember { mutableStateOf(false) }
+    // Composed only while signed in (or mid-pull): signed out gets no gesture and no
+    // spinner at all — sync is opt-in, and a spring-back pull would advertise it.
+    if (refreshEnabled) {
+        val pullState = rememberPullToRefreshState()
+        // Hand-built from Modifier.pullToRefresh rather than PullToRefreshBox: this
+        // Material3 version's PullToRefreshBox doesn't expose `enabled`, and the gate needs it.
+        Box(
+            Modifier.pullToRefresh(
+                isRefreshing = refreshing,
+                state = pullState,
+                enabled = pullEnabled,
+                onRefresh = onRefresh,
+            ),
+        ) {
+            body()
+            // The default slot pins the spinner to the box's own top edge, which sits behind
+            // the app bar — the scaffold hands insets down as padding rather than shrinking
+            // its content area.
+            PullToRefreshDefaults.Indicator(
+                state = pullState,
+                isRefreshing = refreshing,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = padding.calculateTopPadding()),
+            )
+        }
+    } else {
+        body()
+    }
+}
+
+// Reading downward as "get out of the way" is the convention every Android list follows.
+// Tracked outside the composer because the composer cannot see the list.
+//
+// Hysteresis, not a direction flag. Reacting to the first pixel of travel made the composer
+// flap open and shut under a thumb that was barely moving; it now has to see a deliberate run
+// downward before it gets out of the way, and gives up far sooner on the way back, so it errs
+// towards being available.
+@Composable
+internal fun rememberComposerCollapsed(listState: LazyListState): Boolean {
+    var collapsed by remember(listState) { mutableStateOf(false) }
     LaunchedEffect(listState) {
         var prevIndex = listState.firstVisibleItemIndex
         var prevOffset = listState.firstVisibleItemScrollOffset
@@ -225,174 +438,14 @@ fun TaskListScreen(
                 // continuous gesture rather than an afternoon of accumulated jitter.
                 travel = if ((travel > 0) != (delta > 0)) delta else travel + delta
                 when {
-                    travel > CollapseAfterPx -> composerCollapsed = true
-                    travel < -ExpandAfterPx -> composerCollapsed = false
+                    travel > CollapseAfterPx -> collapsed = true
+                    travel < -ExpandAfterPx -> collapsed = false
                 }
                 // Back at the very top there is nothing left to be in the way of.
-                if (index == 0 && offset == 0) composerCollapsed = false
+                if (index == 0 && offset == 0) collapsed = false
             }
     }
-
-    Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        topBar = {
-            MediumTopAppBar(
-                title = {
-                    Column {
-                        Text(navTitle(nav, lists))
-                        // The filter replaces the count rather than adding a third line:
-                        // while one is on, the count is a count of the filter, not the list.
-                        if (tagFilter != null) {
-                            TagFilterPill(tagFilter!!) { tagFilter = null }
-                        } else {
-                            Text(
-                                countLabel,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                },
-                navigationIcon = {
-                    if (onBack != null) {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                Icons.AutoMirrored.Rounded.ArrowBack,
-                                contentDescription = "Back to lists",
-                            )
-                        }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onOpenSearch) {
-                        Icon(Icons.Rounded.Search, contentDescription = "Search")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                ),
-                scrollBehavior = scrollBehavior,
-            )
-        },
-        bottomBar = {
-            ComposerBar(
-                collapsed = composerCollapsed,
-                snackbar = snackbar,
-                onSubmit = { title -> pendingScrollId = onAdd(title) },
-            )
-        },
-    ) { padding ->
-        // Nothing at all until the disk read lands: showing "Nothing yet" for one frame and
-        // then replacing it with the real list reads as a bug.
-        if (!loaded) return@Scaffold
-
-        // Completing or deleting the last task used to swap the list for the empty state
-        // between two frames. A fade only — nothing has moved, so nothing should slide.
-        val body: @Composable () -> Unit = {
-            AnimatedContent(
-                targetState = rows.isEmpty(),
-                transitionSpec = { contentFade() },
-                label = "body",
-            ) { empty ->
-                if (empty) {
-                    EmptyState(
-                        nav = nav,
-                        tagFilter = tagFilter,
-                        anyTasks = tasks.isNotEmpty(),
-                        modifier = Modifier.padding(padding),
-                    )
-                } else {
-                    Box(Modifier.fillMaxSize()) {
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier
-                                .fillMaxHeight()
-                                .widthIn(max = ContentMaxWidth)
-                                .align(Alignment.TopCenter),
-                            // The composer's own height is already in `padding`, because it
-                            // is this Scaffold's bottomBar and that bar keeps a fixed height
-                            // whether it is expanded or collapsed. So the end of the list
-                            // always clears it, and collapsing never reflows the list. The
-                            // bar does grow while an undo snackbar is showing (see
-                            // ComposerBar) — `padding` tracks that too, so the list still
-                            // clears it without a separate case here.
-                            contentPadding = padding,
-                            verticalArrangement = Arrangement.spacedBy(GroupGap),
-                        ) {
-                            items(
-                                rows,
-                                key = { it.key },
-                                // Lets rows be reused across sections rather than rebuilt.
-                                contentType = { it.contentType },
-                            ) { row ->
-                                when (row) {
-                                    is ListRow.Header -> SectionHeaderRow(row.text)
-                                    is ListRow.Task -> TaskRow(
-                                        row.task,
-                                        listNames,
-                                        groupedShape(row.index, row.count),
-                                        onToggle,
-                                        onOpen,
-                                        onDelete,
-                                        onTagClick = { tag -> tagFilter = tag },
-                                        modifier = Modifier.animateItem(),
-                                    )
-                                    is ListRow.Suggestion -> SuggestionRow(
-                                        row.task,
-                                        listNames,
-                                        groupedShape(row.index, row.count),
-                                        onOpen,
-                                        onAddToMyDay,
-                                        Modifier.animateItem(),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Composed only while signed in (or mid-pull): signed out gets no gesture and no
-        // spinner at all — sync is opt-in, and a spring-back pull would advertise it.
-        if (refreshEnabled) {
-            val pullState = rememberPullToRefreshState()
-            // Hand-built from Modifier.pullToRefresh rather than PullToRefreshBox: this
-            // Material3 version's PullToRefreshBox doesn't expose `enabled`, and the gate
-            // below needs it.
-            Box(
-                Modifier.pullToRefresh(
-                    isRefreshing = refreshing,
-                    state = pullState,
-                    // Only once the bar is fully expanded (title on its own bottom row) —
-                    // not mid-collapse. The two were fighting over the same downward drag:
-                    // a pull while the bar still had height left to give back went into
-                    // re-expanding the bar first, so the same gesture sometimes reached the
-                    // refresh threshold in one pull and sometimes needed a second, depending
-                    // on how collapsed the bar happened to be. Gating it removes the fork —
-                    // pull only ever does one thing — and the atTop effect above still snaps
-                    // the bar open as soon as the list rests at the top, so reaching that
-                    // state rarely takes an extra pull.
-                    enabled = scrollBehavior.state.heightOffset >= 0f,
-                    onRefresh = onRefresh,
-                ),
-            ) {
-                body()
-                // The default slot pins the spinner to the box's own top edge, which sits
-                // behind the app bar — the scaffold hands insets down as padding rather
-                // than shrinking its content area.
-                PullToRefreshDefaults.Indicator(
-                    state = pullState,
-                    isRefreshing = refreshing,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = padding.calculateTopPadding()),
-                )
-            }
-        } else {
-            body()
-        }
-    }
+    return collapsed
 }
 
 // One flat list of what the LazyColumn will emit, built once. The scroll-to-new-task effect
@@ -402,7 +455,15 @@ internal sealed interface ListRow {
     val key: String
     val contentType: String
 
-    data class Header(val text: String) : ListRow {
+    // count/expanded/onToggle stay null for a plain section divider (Overdue, Today, ...);
+    // only the Suggested header sets all three. Key excludes them so toggling never
+    // recreates the row.
+    data class Header(
+        val text: String,
+        val count: Int? = null,
+        val expanded: Boolean = true,
+        val onToggle: (() -> Unit)? = null,
+    ) : ListRow {
         override val key get() = "header-$text"
         override val contentType get() = "header"
     }
@@ -420,7 +481,12 @@ internal sealed interface ListRow {
     }
 }
 
-private fun buildRows(sections: List<TaskSection>, suggested: List<TodoItem>): List<ListRow> =
+private fun buildRows(
+    sections: List<TaskSection>,
+    suggested: List<TodoItem>,
+    suggestionsExpanded: Boolean,
+    onToggleSuggestions: () -> Unit,
+): List<ListRow> =
     buildList {
         sections.forEach { section ->
             section.title?.let { add(ListRow.Header(it)) }
@@ -429,9 +495,18 @@ private fun buildRows(sections: List<TaskSection>, suggested: List<TodoItem>): L
             }
         }
         if (suggested.isNotEmpty()) {
-            add(ListRow.Header(SuggestedHeader))
-            suggested.forEachIndexed { index, task ->
-                add(ListRow.Suggestion(task, index, suggested.size))
+            add(
+                ListRow.Header(
+                    SuggestedHeader,
+                    count = suggested.size,
+                    expanded = suggestionsExpanded,
+                    onToggle = onToggleSuggestions,
+                ),
+            )
+            if (suggestionsExpanded) {
+                suggested.forEachIndexed { index, task ->
+                    add(ListRow.Suggestion(task, index, suggested.size))
+                }
             }
         }
     }
@@ -447,23 +522,48 @@ private const val ExpandAfterPx = 60
 private const val ApproxRowPx = 200
 
 @Composable
-private fun SectionHeaderRow(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.labelLarge,
-        // Overdue is the one group heading that is itself a warning; the rest are neutral
-        // dividers and should not compete with the rows under them.
-        color = if (text == "Overdue") MaterialTheme.colorScheme.error
-        else MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 28.dp, top = 24.dp, bottom = 8.dp),
-    )
+private fun SectionHeaderRow(row: ListRow.Header) {
+    val label = if (row.count != null) "${row.text} (${row.count})" else row.text
+    if (row.onToggle == null) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            // Overdue is the one group heading that is itself a warning; the rest are neutral
+            // dividers and should not compete with the rows under them.
+            color = if (row.text == "Overdue") MaterialTheme.colorScheme.error
+            else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 28.dp, top = 24.dp, bottom = 8.dp),
+        )
+        return
+    }
+    // The only collapsible header: once suggestions have been reviewed, tapping this tucks
+    // the whole tray away behind its own count rather than leaving it to grow unbounded.
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = row.onToggle)
+            .padding(start = 28.dp, end = 20.dp, top = 24.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Icon(
+            if (row.expanded) Icons.Rounded.KeyboardArrowUp else Icons.Rounded.KeyboardArrowDown,
+            contentDescription = if (row.expanded) "Collapse suggestions" else "Expand suggestions",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }
 
 // "Showing: #tag ✕", sized to sit in the app bar's second line where the count normally is.
 // Not an InputChip: its 32dp minimum would push the collapsed bar taller than the title it
 // is collapsing to.
 @Composable
-private fun TagFilterPill(tag: String, onClear: () -> Unit) {
+internal fun TagFilterPill(tag: String, onClear: () -> Unit) {
     Surface(
         onClick = onClear,
         color = MaterialTheme.colorScheme.secondaryContainer,
@@ -507,7 +607,7 @@ private val ComposerSurfaceHeight = 56.dp
 // instead of a jump; imePadding lives here rather than on the composer alone so a
 // snackbar showing while the keyboard is up rises with it instead of landing underneath.
 @Composable
-private fun ComposerBar(collapsed: Boolean, snackbar: SnackbarHostState, onSubmit: (String) -> Unit) {
+internal fun ComposerBar(collapsed: Boolean, snackbar: SnackbarHostState, onSubmit: (String) -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
@@ -762,6 +862,11 @@ internal fun TaskRow(
     onOpen: (TodoItem) -> Unit,
     onDelete: (TodoItem) -> Unit,
     onTagClick: ((String) -> Unit)?,
+    // False only on My Day, which repurposes horizontal swipe for a page-level gesture
+    // instead (see TaskListScreen) — a per-row gesture there would fight it for the same
+    // drag, and would only ever fire for a swipe that starts on a row, not one that starts
+    // between rows or on a header, which the request was any swipe on the page.
+    swipeToDeleteEnabled: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val haptics = LocalHapticFeedback.current
@@ -785,6 +890,13 @@ internal fun TaskRow(
             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
             onToggle(task)
         }
+    }
+
+    if (!swipeToDeleteEnabled) {
+        Box(modifier.padding(horizontal = ScreenPadding).clip(shape)) {
+            TaskRowContent(task, listName, due, tagChips, tagOverflow, titleColor, toggle, onOpen, onTagClick)
+        }
+        return
     }
 
     // Deleting used to be far too easy, and the reason was not the threshold — it was which
@@ -903,6 +1015,24 @@ internal fun TaskRow(
                 }
             },
         ) {
+            TaskRowContent(task, listName, due, tagChips, tagOverflow, titleColor, toggle, onOpen, onTagClick)
+        }
+        }
+    }
+}
+
+@Composable
+private fun TaskRowContent(
+    task: TodoItem,
+    listName: String?,
+    due: DueChip?,
+    tagChips: List<String>,
+    tagOverflow: Int,
+    titleColor: Color,
+    toggle: () -> Unit,
+    onOpen: (TodoItem) -> Unit,
+    onTagClick: ((String) -> Unit)?,
+) {
             ListItem(
                 // Body opens, checkbox completes: with editable fields there has to be a way
                 // in that is not "complete it". A finished task also recedes without becoming
@@ -967,10 +1097,7 @@ internal fun TaskRow(
                         MaterialTheme.colorScheme.surfaceContainerLow
                     else MaterialTheme.colorScheme.surfaceContainer,
                 ),
-            )
-        }
-        }
-    }
+    )
 }
 
 // The checkbox carries the priority, so an urgent task is visible from the control you are
@@ -1011,7 +1138,17 @@ private fun SuggestionRow(
     val listName = listNames[task.listId]
     val due = remember(task.dueDate) { dueChipFor(task.dueDate) }
 
-    Box(modifier.padding(horizontal = ScreenPadding).clip(shape)) {
+    // Dimmed rather than outlined: a border read as too heavy a treatment for an offer, not
+    // a real row. surfaceContainerLowest is a tone no other row uses (open tasks sit on
+    // surfaceContainer, completed on surfaceContainerLow — the tone this row used to share,
+    // which made an offer look like something already done), and the alpha fades the whole
+    // card including its own "+" affordance, so the card itself reads as lighter-weight.
+    Box(
+        modifier
+            .padding(horizontal = ScreenPadding)
+            .clip(shape)
+            .alpha(0.82f),
+    ) {
         ListItem(
             modifier = Modifier.clickable { onOpen(task) },
             headlineContent = {
@@ -1055,7 +1192,7 @@ private fun SuggestionRow(
                 ) { Icon(Icons.Rounded.Add, contentDescription = "Add to My Day") }
             },
             colors = ListItemDefaults.colors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
             ),
         )
     }
