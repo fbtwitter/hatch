@@ -1,7 +1,8 @@
 package dev.hatch.android
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,234 +12,309 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MediumTopAppBar
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.hatch.sync.TaskList
 import dev.hatch.sync.TodoItem
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
 
-// The Lists tab: every destination that is not one of the other three tabs. This replaced a
-// ModalNavigationDrawer, which put half the app's navigation behind a gesture and left the
-// bottom bar with no tab highlighted whenever you were in Important, Planned or a custom
-// list — a state Material's bottom-nav spec does not have.
+// The Lists tab, as folders rather than a menu. It used to be a browse screen where every row
+// pushed a `list/{nav}` destination, so seeing a list was two taps and switching between two
+// lists was four — out to the menu and back in. Now the tab *is* a task list, showing All
+// Tasks by default, with a folder strip across the top: one tap, or a swipe, to any of them.
 //
-// My Day is deliberately absent: it is the first tab, permanently on screen, and listing it
-// again here would be the one row that navigates somewhere the bar already points at.
+// My Day is deliberately absent: it is the first bottom-bar tab, permanently on screen, and a
+// folder for it would be the one tab pointing where the bar already points.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListsScreen(
+    selectedNav: String,
     tasks: List<TodoItem>,
     lists: List<TaskList>,
-    onOpenList: (String) -> Unit,
+    loaded: Boolean,
+    refreshEnabled: Boolean,
+    refreshing: Boolean,
+    snackbar: SnackbarHostState,
+    onSelectFolder: (String) -> Unit,
     onOpenSearch: () -> Unit,
+    onRefresh: () -> Unit,
+    onAdd: (String, String) -> String?,
+    onToggle: (TodoItem) -> Unit,
+    onOpen: (TodoItem) -> Unit,
+    onDelete: (TodoItem) -> Unit,
     onCreateList: () -> Unit,
     onEditList: (TaskList) -> Unit,
 ) {
-    val sorted = remember(lists) {
-        lists.sortedWith(compareByDescending<TaskList> { it.isPinned }.thenBy { it.sortOrder })
+    val folders = remember(lists) { foldersFor(lists) }
+
+    // A custom list can stop existing while it is selected — deleted from the dialog, or a
+    // tombstone arriving on the next pull. This replaces the popBackStack the old pushed
+    // route performed, and covers the sync case the same way.
+    val selectedIndex = folders.indexOfFirst { it.nav == selectedNav }
+    LaunchedEffect(selectedIndex, loaded) {
+        if (loaded && selectedIndex < 0) onSelectFolder(NAV_ALL_TASKS)
     }
-    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val page = selectedIndex.coerceAtLeast(0)
+
+    val pagerState = rememberPagerState(initialPage = page) { folders.size }
+    val scope = rememberCoroutineScope()
+
+    // While the tab is open the pager is the source of truth and the ViewModel mirrors it;
+    // a selection arriving from outside pushes the pager instead. Splitting it that way is
+    // what keeps the two from fighting — see the drop(1) below.
+    val uiPage = pagerState.currentPage
+    val current = folders.getOrNull(uiPage)
+
+    // Snapped, not animated: arriving on the tab from a Summary tile should already be showing
+    // the folder that was asked for, rather than sliding to it from wherever the tab was left.
+    LaunchedEffect(page) {
+        if (page != pagerState.currentPage) pagerState.scrollToPage(page)
+    }
+
+    // drop(1) skips the emission composition itself produces. Without it, re-entering the tab
+    // reported the pager's *restored* page and immediately overwrote the folder a Summary tile
+    // had just selected — the jump landed on the Lists tab still showing the previous folder.
+    LaunchedEffect(pagerState, folders) {
+        snapshotFlow { pagerState.isScrollInProgress }
+            .drop(1)
+            .filter { !it }
+            .collect {
+                folders.getOrNull(pagerState.currentPage)?.let { onSelectFolder(it.nav) }
+            }
+    }
+
+    // One filter for the tab, not one per folder: a filter still applied on a folder you
+    // cannot see it on would be a trap. Cleared by switching folders.
+    val currentNav = current?.nav ?: NAV_ALL_TASKS
+    var tagFilter by rememberSaveable(currentNav) { mutableStateOf<String?>(null) }
+
+    // The composer belongs to the tab, not to a page, so it does not slide away under a swipe.
+    // Each page reports its own scroll-driven collapse and only the settled one is listened to.
+    var composerCollapsed by remember { mutableStateOf(false) }
+
+    val listNames = remember(lists) { lists.associate { it.id to it.name } }
+    val editableList = current?.list
 
     Scaffold(
-        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
-            MediumTopAppBar(
-                title = { Text("Lists") },
-                actions = {
-                    IconButton(onClick = onOpenSearch) {
-                        Icon(Icons.Rounded.Search, contentDescription = "Search")
+            Column {
+                // A plain bar, not the collapsing MediumTopAppBar the browse screen used: the
+                // folder strip has to stay reachable while the list underneath scrolls, which
+                // is the whole point of it.
+                TopAppBar(
+                    title = { Text("Lists") },
+                    actions = {
+                        IconButton(onClick = onOpenSearch) {
+                            Icon(Icons.Rounded.Search, contentDescription = "Search")
+                        }
+                        FolderMenu(
+                            list = editableList,
+                            onCreateList = onCreateList,
+                            onEditList = onEditList,
+                        )
+                    },
+                )
+                PrimaryScrollableTabRow(
+                    selectedTabIndex = uiPage,
+                    edgePadding = 8.dp,
+                    divider = {},
+                ) {
+                    folders.forEachIndexed { index, folder ->
+                        FolderTab(
+                            selected = index == uiPage,
+                            label = folder.label,
+                            count = remember(tasks, folder.nav) { navCount(tasks, folder.nav) },
+                            // Moves the pager; the settle collector above is what tells the
+                            // ViewModel, so a tap and a swipe end up on the same path.
+                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
+                            // Telegram's own gesture for folder options. Duplicated in the
+                            // app-bar menu above, because a long press is not reachable for
+                            // every input method and list management cannot be gesture-only.
+                            onLongClick = folder.list?.let { list -> { onEditList(list) } },
+                        )
                     }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                ),
-                scrollBehavior = scrollBehavior,
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                tagFilter?.let { tag ->
+                    Surface(color = MaterialTheme.colorScheme.surface) {
+                        Box(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                            TagFilterPill(tag) { tagFilter = null }
+                        }
+                    }
+                }
+            }
+        },
+        bottomBar = {
+            ComposerBar(
+                collapsed = composerCollapsed,
+                snackbar = snackbar,
+                // Against the folder on screen, so a task can never be filed into a list the
+                // tab is not showing.
+                onSubmit = { title -> current?.let { onAdd(title, it.nav) } },
             )
         },
     ) { padding ->
-        Column(
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(padding),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Column(Modifier.widthIn(max = ContentMaxWidth).padding(horizontal = ScreenPadding)) {
-                Spacer(Modifier.height(4.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(GroupGap)) {
-                    SmartLists.forEachIndexed { index, entry ->
-                        ListBrowseRow(
-                            shape = groupedShape(index, SmartLists.size),
-                            label = entry.label,
-                            leading = {
-                                TonalIcon(
-                                    entry.icon,
-                                    smartContainerColor(entry.nav),
-                                    smartContentColor(entry.nav),
-                                )
-                            },
-                            count = remember(tasks, entry.nav) { navCount(tasks, entry.nav) },
-                            onClick = { onOpenList(entry.nav) },
-                        )
-                    }
-                }
+        if (!loaded) return@Scaffold
 
-                SectionLabel("Lists")
-                Column(verticalArrangement = Arrangement.spacedBy(GroupGap)) {
-                    // +1 so the "New list" row rounds off the group instead of floating.
-                    val rowCount = sorted.size + 1
-                    sorted.forEachIndexed { index, list ->
-                        ListBrowseRow(
-                            shape = groupedShape(index, rowCount),
-                            label = list.name,
-                            // Windows shows the emoji when a list has one; the tinted avatar
-                            // keeps every row the same width either way.
-                            leading = { ListAvatar(list.accentColor, list.customIcon) },
-                            count = remember(tasks, list.id) { navCount(tasks, list.id) },
-                            onClick = { onOpenList(list.id) },
-                            trailing = {
-                                IconButton(onClick = { onEditList(list) }) {
-                                    Icon(
-                                        Icons.Rounded.MoreVert,
-                                        contentDescription = "Options for ${list.name}",
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            },
-                        )
-                    }
-                    ListBrowseRow(
-                        shape = groupedShape(rowCount - 1, rowCount),
-                        label = "New list",
-                        leading = {
-                            TonalIcon(
-                                Icons.Rounded.Add,
-                                MaterialTheme.colorScheme.surfaceContainerHighest,
-                                MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        },
-                        count = 0,
-                        onClick = onCreateList,
-                    )
-                }
-
-                Spacer(Modifier.height(24.dp))
+        HorizontalPager(
+            state = pagerState,
+            // Default (0): only the folder on screen, plus whatever a swipe is dragging in,
+            // is composed — twenty lists do not mean twenty live LazyColumns.
+            key = { folders[it].nav },
+            modifier = Modifier.fillMaxSize(),
+        ) { index ->
+            val folder = folders[index]
+            // Per page, so each folder keeps its own scroll position across a swipe.
+            val listState = rememberLazyListState()
+            val collapsed = rememberComposerCollapsed(listState)
+            val isCurrent = index == pagerState.currentPage
+            LaunchedEffect(collapsed, isCurrent) {
+                if (isCurrent) composerCollapsed = collapsed
             }
+
+            TaskListBody(
+                nav = folder.nav,
+                model = rememberTaskListModel(folder.nav, tasks, tagFilter.takeIf { isCurrent }),
+                anyTasks = tasks.isNotEmpty(),
+                listNames = listNames,
+                listState = listState,
+                tagFilter = tagFilter.takeIf { isCurrent },
+                padding = padding,
+                refreshEnabled = refreshEnabled,
+                refreshing = refreshing,
+                // No collapsing bar to fight over the same downward drag here, so a pull at
+                // the top is always a pull.
+                pullEnabled = true,
+                onRefresh = onRefresh,
+                onToggle = onToggle,
+                onOpen = onOpen,
+                onDelete = onDelete,
+                onTagClick = { tag -> tagFilter = tag },
+                // My Day is not a folder, so nothing here can offer "add to My Day".
+                onAddToMyDay = {},
+            )
         }
     }
 }
 
-// Not DateRange for both My Day and Planned: two rows with the same glyph are unreadable at
-// a glance. My Day is absent entirely — it is the first tab.
-private class SmartListEntry(val nav: String, val label: String, val icon: ImageVector)
+// Order is fixed: All Tasks first and default, then the two other smart lists, then the custom
+// lists in the order they already sort in — pinned first, then sortOrder.
+internal class Folder(val nav: String, val label: String, val list: TaskList? = null)
 
-private val SmartLists = listOf(
-    SmartListEntry(NAV_ALL_TASKS, "All Tasks", Icons.AutoMirrored.Rounded.List),
-    SmartListEntry(NAV_IMPORTANT, "Important", Icons.Rounded.Star),
-    SmartListEntry(NAV_PLANNED, "Planned", Icons.Rounded.DateRange),
-)
-
-// Important is gold wherever it appears — the star on a row, the Starred tile on Summary,
-// and here.
-@Composable
-private fun smartContainerColor(nav: String): Color = when (nav) {
-    NAV_IMPORTANT -> MaterialTheme.colorScheme.tertiaryContainer
-    NAV_PLANNED -> MaterialTheme.colorScheme.primaryContainer
-    else -> MaterialTheme.colorScheme.secondaryContainer
+private fun foldersFor(lists: List<TaskList>): List<Folder> = buildList {
+    add(Folder(NAV_ALL_TASKS, "All Tasks"))
+    add(Folder(NAV_IMPORTANT, "Important"))
+    add(Folder(NAV_PLANNED, "Planned"))
+    lists.sortedWith(compareByDescending<TaskList> { it.isPinned }.thenBy { it.sortOrder })
+        .forEach { add(Folder(it.id, it.name, it)) }
 }
 
+// Not Material's Tab: that one owns its own click, and a folder needs a long press as well.
+// The tab row's indicator positions itself from the children's measured widths either way.
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun smartContentColor(nav: String): Color = when (nav) {
-    NAV_IMPORTANT -> MaterialTheme.colorScheme.onTertiaryContainer
-    NAV_PLANNED -> MaterialTheme.colorScheme.onPrimaryContainer
-    else -> MaterialTheme.colorScheme.onSecondaryContainer
-}
-
-@Composable
-private fun ListBrowseRow(
-    shape: Shape,
+private fun FolderTab(
+    selected: Boolean,
     label: String,
-    leading: @Composable () -> Unit,
     count: Int,
     onClick: () -> Unit,
-    trailing: (@Composable () -> Unit)? = null,
+    onLongClick: (() -> Unit)?,
 ) {
-    ListItem(
-        // Clip first, then the click: the other order leaves the ripple square inside a
-        // rounded row.
-        modifier = Modifier.clip(shape).clickable(onClick = onClick),
-        headlineContent = {
-            Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        },
-        leadingContent = leading,
-        trailingContent = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // A plain number, not a Badge: Material's badge is an error colour by
-                // default, so a list with four things to do was rendering the same red dot
-                // an app uses to say something is wrong. Open only — a count that included
-                // completed tasks would never go down.
-                if (count > 0) {
-                    Text(
-                        "$count",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                if (trailing != null) {
-                    Spacer(Modifier.width(4.dp))
-                    trailing()
-                }
-            }
-        },
-        colors = ListItemDefaults.colors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        ),
-    )
+    val color =
+        if (selected) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.onSurfaceVariant
+    Row(
+        Modifier
+            .height(48.dp)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.titleSmall,
+            color = color,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        // A plain number, not a Badge: Material's badge is an error colour by default, so a
+        // list with four things to do rendered the same red dot an app uses to say something
+        // is wrong. Open only — a count including completed tasks would never go down.
+        if (count > 0) {
+            Spacer(Modifier.width(6.dp))
+            Text(
+                "$count",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
+// The keyboard- and screen-reader-reachable half of list management: everything the long press
+// on a tab offers, plus creating one.
 @Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 16.dp, top = 24.dp, bottom = 8.dp),
-    )
+private fun FolderMenu(
+    list: TaskList?,
+    onCreateList: () -> Unit,
+    onEditList: (TaskList) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    IconButton(onClick = { open = true }) {
+        Icon(Icons.Rounded.MoreVert, contentDescription = "List options")
+    }
+    DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        DropdownMenuItem(
+            text = { Text("New list") },
+            leadingIcon = { Icon(Icons.Rounded.Add, contentDescription = null) },
+            onClick = { open = false; onCreateList() },
+        )
+        if (list != null) {
+            DropdownMenuItem(
+                text = { Text("Edit \"${list.name}\"") },
+                leadingIcon = { Icon(Icons.Rounded.Edit, contentDescription = null) },
+                onClick = { open = false; onEditList(list) },
+            )
+        }
+    }
 }
 
 @Composable

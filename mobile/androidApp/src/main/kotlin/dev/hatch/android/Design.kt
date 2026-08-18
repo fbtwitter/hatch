@@ -156,31 +156,6 @@ internal fun TonalIcon(
     }
 }
 
-// The same container for a custom list, whose colour arrives as free text on the wire.
-@Composable
-internal fun ListAvatar(
-    accentHex: String,
-    customIcon: String?,
-    modifier: Modifier = Modifier,
-    size: Dp = AvatarSize,
-) {
-    val accent = parseAccent(accentHex)
-    Surface(
-        color = accent.copy(alpha = 0.16f),
-        shape = CircleShape,
-        modifier = modifier.size(size),
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            if (customIcon.isNullOrBlank()) {
-                Box(Modifier.size(size * 0.35f)) {
-                    Surface(color = accent, shape = CircleShape) { Box(Modifier.size(size * 0.35f)) }
-                }
-            } else {
-                Text(customIcon, style = MaterialTheme.typography.titleMedium)
-            }
-        }
-    }
-}
 
 // AccentColor is free text on the wire, so a bad value must not take the screen down.
 internal fun parseAccent(hex: String): Color =
