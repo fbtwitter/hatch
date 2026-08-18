@@ -115,6 +115,19 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
     )
     val state: StateFlow<AppState> = _state.asStateFlow()
 
+    // Which folder the Lists tab is showing. Held here rather than as a route argument so a
+    // jump from a Summary tile does not push a second `lists` entry onto the back stack and
+    // fight the bottom bar's saveState/restoreState, and rather than in a savedStateHandle so
+    // there is no collector that can be missing at emit time (b00761a). Outside AppState on
+    // purpose: switching folders must not wake every collector of the task list. Not
+    // persisted — a cold start opens on All Tasks.
+    private val _selectedFolder = MutableStateFlow(NAV_ALL_TASKS)
+    val selectedFolder: StateFlow<String> = _selectedFolder.asStateFlow()
+
+    fun selectFolder(nav: String) {
+        _selectedFolder.value = nav
+    }
+
     // An event, not state: in AppState, reopening Sync would replay a stale "Pulled — 17".
     private val _pullCompleted = MutableSharedFlow<Int>(extraBufferCapacity = 1)
     val pullCompleted: SharedFlow<Int> = _pullCompleted.asSharedFlow()
