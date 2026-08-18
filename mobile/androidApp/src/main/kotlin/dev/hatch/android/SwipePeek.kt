@@ -2,7 +2,10 @@ package dev.hatch.android
 
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -18,7 +21,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -46,9 +48,7 @@ import kotlinx.coroutines.launch
 // screen was last left — acceptable for something visible only while a finger is still down.
 @Composable
 fun SwipePeekHost(
-    // true: the peek slides in from the right on a leftward drag (My Day -> Lists), and the
-    // whole screen can start that drag — My Day has no horizontal gesture of its own to
-    // compete with it.
+    // true: the peek slides in from the right on a leftward drag (My Day -> Lists).
     // false: the peek slides in from the left on a rightward drag (Lists -> My Day). Lists
     // owns a HorizontalPager for its own folder strip, which claims horizontal drags across
     // its full width, so this direction only starts from a slim strip at the very left edge
@@ -62,8 +62,8 @@ fun SwipePeekHost(
     val scope = rememberCoroutineScope()
     var widthPx by remember { mutableStateOf(0f) }
     // The single source of truth for both screens' live position — written synchronously
-    // during the drag (no coroutine needed, onHorizontalDrag isn't suspend) and animated by
-    // `animate(...)` only once the gesture ends.
+    // during the drag (no coroutine needed, the callbacks below aren't suspend) and animated
+    // by `animate(...)` only once the gesture ends.
     var dragPx by remember { mutableStateOf(0f) }
     var armed by remember { mutableStateOf(false) }
     val thresholdPx = with(LocalDensity.current) { SwipeCommitDistance.toPx() }
@@ -93,12 +93,11 @@ fun SwipePeekHost(
         }
     }
 
-    fun onDrag(change: PointerInputChange, dragAmount: Float) {
+    fun onDrag(dragAmount: Float) {
         val next = (dragPx + dragAmount).let {
             if (peekFromRight) it.coerceIn(-widthPx, 0f) else it.coerceIn(0f, widthPx)
         }
         if (next != dragPx) {
-            change.consume()
             dragPx = next
             val shouldArm = abs(next) >= thresholdPx
             if (shouldArm != armed) {
@@ -108,7 +107,32 @@ fun SwipePeekHost(
         }
     }
 
-    Box(Modifier.fillMaxSize().onSizeChanged { widthPx = it.width.toFloat() }) {
+    // draggable, not a raw pointerInput/detectHorizontalDragGestures overlay sitting on top of
+    // everything: an early version did that, and an unconditional full-screen sibling Box —
+    // even an empty one — sits in the hit-test path for every touch on the screen, which
+    // blocked My Day's own vertical scrolling outright rather than just competing with it.
+    // draggable's orientation lock is what a plain pointerInput detector does not give for
+    // free: applied here as an ancestor of the real content rather than a topmost overlay, it
+    // performs axis-aware slop detection against the descendant LazyColumn's own vertical
+    // scrollable, so a vertical drag is never even claimed — the list scrolls exactly as if
+    // this modifier were not here, and only a drag that is unambiguously horizontal, starting
+    // from rest, ever reaches onDrag at all.
+    val horizontalDragModifier = if (peekFromRight) {
+        Modifier.draggable(
+            state = rememberDraggableState { delta -> onDrag(delta) },
+            orientation = Orientation.Horizontal,
+            onDragStopped = { onDragFinished() },
+        )
+    } else {
+        Modifier
+    }
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .onSizeChanged { widthPx = it.width.toFloat() }
+            .then(horizontalDragModifier),
+    ) {
         Box(Modifier.offset { IntOffset(dragPx.roundToInt(), 0) }) { content() }
         // Composed only while a drag is actually moving it — an off-screen live screen sitting
         // fully composed at rest would be a second Scaffold, LazyColumn and everything else
@@ -118,28 +142,19 @@ fun SwipePeekHost(
             Box(Modifier.offset { IntOffset((peekRestX + dragPx).roundToInt(), 0) }) { peekContent() }
         }
 
-        if (peekFromRight) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) {
-                        detectHorizontalDragGestures(
-                            onDragEnd = ::onDragFinished,
-                            onDragCancel = ::onDragFinished,
-                            onHorizontalDrag = ::onDrag,
-                        )
-                    },
-            )
-        } else {
-            // A drag that starts here still has to win the very first pixels of movement
-            // against the folder pager underneath, which sees the identical down event —
+        if (!peekFromRight) {
+            // Lists' own folder pager is horizontal too, so orientation-locking cannot settle
+            // this one the way it does My Day's vertical list — both this and the pager want
+            // the same axis. A drag starting here still has to win the very first pixels of
+            // movement against the pager underneath, which sees the identical down event;
             // being narrow doesn't exempt it from that race. Giving only this strip a much
             // smaller touch slop is what actually wins it: this detector decides "this is my
-            // gesture" and consumes almost immediately, before the pager's own (unscaled)
-            // slop has accumulated enough travel to claim it instead. Once consumed, the same
+            // gesture" and consumes almost immediately, before the pager's own (unscaled) slop
+            // has accumulated enough travel to claim it instead. Once consumed, the same
             // pointer keeps reporting to this handler for the rest of the gesture no matter
             // how far across the screen it then travels, so the strip itself only ever needs
-            // to catch the opening moment, not the whole drag.
+            // to catch the opening moment, not the whole drag — and being only 24dp wide, it
+            // costs Lists nothing outside that sliver, including its own vertical scrolling.
             val baseViewConfiguration = LocalViewConfiguration.current
             val edgeViewConfiguration = remember(baseViewConfiguration) {
                 object : ViewConfiguration by baseViewConfiguration {
@@ -156,7 +171,10 @@ fun SwipePeekHost(
                             detectHorizontalDragGestures(
                                 onDragEnd = ::onDragFinished,
                                 onDragCancel = ::onDragFinished,
-                                onHorizontalDrag = ::onDrag,
+                                onHorizontalDrag = { change, dragAmount ->
+                                    change.consume()
+                                    onDrag(dragAmount)
+                                },
                             )
                         },
                 )
