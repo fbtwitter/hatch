@@ -87,11 +87,21 @@ compileSdk 37 toolchain upgrade:
 A full authoring client (ADR-0007), not a viewer:
 
 - Local task list that works with no account and no network — add, complete, edit, delete.
-- Task detail sheet: title, notes, due date, Important, My Day, priority, repeat, list,
-  tags. Swipe a row to delete, with undo.
-- Navigation drawer with the same smart lists as the WinUI nav rail — My Day, Important,
-  Planned, All Tasks — plus custom lists (create, rename, pin, delete).
+- Task detail sheet: title, notes, due date (with the four Windows presets), Important,
+  My Day, priority, repeat, list, tags. Swipe a row to delete, with undo.
+- A bottom navigation bar as the navigation spine — My Day, Lists, Summary, Settings. The
+  Lists tab browses the same smart lists as the WinUI nav rail (All Tasks, Important,
+  Planned) plus custom lists (create, rename, pin, delete), and opens each as its own
+  destination, so every screen in the app highlights exactly one tab.
+- My Day suggestions: everything still open that today has not claimed, one tap to add.
+- Planned grouped by Overdue / Today / Tomorrow / This week / Later, as on Windows.
+- Tap a tag chip on a row to filter the list by that tag.
 - Search across every list and both completion states.
+- Export a copy as JSON, CSV or Markdown through the system document picker.
+- Hatch's own palette (seeded from `#0078D4`, the app icon's blue) on every Android version,
+  with light/dark/system and an optional Material You switch in Settings → Appearance. Colour
+  carries meaning rather than decoration: overdue is the error tone, starred is gold, and a
+  task's priority tints its checkbox.
 - Completing a repeating task spawns its next occurrence.
 - Opt-in sync: email/password or GitHub PKCE, TOTP two-factor with recovery codes, E2E
   encryption with the derived key held in the Keystore (ADR-0005), and record-level
@@ -100,6 +110,11 @@ A full authoring client (ADR-0007), not a viewer:
   when signed in; hourly background sync via WorkManager once signed in.
 - Due-date reminders scheduled on-device from the last decrypted pull (ADR-0002).
 
-Not built, and not planned for the companion: the mascot, the global capture hotkey, the tip
-engine and the Summary page. Those are what still make Windows the primary client — see
-ADR-0007, which is about permission, not reach.
+Not built, and not planned for the companion: the mascot, the global capture hotkey and the
+tip engine. Those are desktop paradigms and are what still make Windows the primary client —
+see ADR-0007, which is about permission, not reach. (The Summary page was in this list until
+it shipped as a tab.)
+
+Still Windows-only, but portable in principle: MFA *enrolment* (the phone can answer a
+challenge and redeem a recovery code, but not set two-factor up), and the use-local /
+use-server / merge conflict-resolution dialog on a fresh sign-in.

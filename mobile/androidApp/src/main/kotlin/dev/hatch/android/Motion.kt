@@ -6,6 +6,7 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -50,3 +51,21 @@ internal fun screenTransition(forward: Boolean): ContentTransform {
 // nothing moved, so nothing should slide.
 internal fun contentFade(): ContentTransform =
     fadeIn(tween(MotionMedium)) togetherWith fadeOut(tween(MotionShort))
+
+// Material's fade-through, for switching between peer destinations that share no elements —
+// the bottom bar's four tabs. Deliberately not the cross-fade this used to be: a cross-fade
+// draws both screens at half opacity through the middle of the transition, so two different
+// lists are legible on top of each other and the switch reads as a smear. Fade-through gets
+// the outgoing screen out first (90ms), then brings the incoming one up from 92% over 210ms,
+// so only one screen is ever really readable.
+private const val FadeThroughOut = 90
+private const val FadeThroughIn = 210
+
+internal fun fadeThrough(): ContentTransform =
+    (
+        fadeIn(tween(FadeThroughIn, delayMillis = FadeThroughOut)) +
+            scaleIn(
+                tween(FadeThroughIn, delayMillis = FadeThroughOut, easing = EmphasizedDecelerate),
+                initialScale = 0.92f,
+            )
+        ) togetherWith fadeOut(tween(FadeThroughOut))

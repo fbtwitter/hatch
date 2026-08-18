@@ -2,6 +2,7 @@ package dev.hatch.android
 
 import android.app.Application
 import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import dev.hatch.sync.PullResult
@@ -13,6 +14,7 @@ import dev.hatch.sync.SyncClient
 import dev.hatch.sync.SyncCrypto
 import dev.hatch.sync.SyncKey
 import dev.hatch.sync.SyncMerge
+import dev.hatch.sync.TaskExportFormatter
 import dev.hatch.sync.handleDeeplink
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -30,14 +32,20 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.toKotlinLocalDate
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 
-// Guid.Empty on Windows (§4) — the default list, shown as "Tasks".
-internal const val DEFAULT_LIST_ID = "00000000-0000-0000-0000-000000000000"
+// The three formats windows/Helpers/TaskExportFormatter.cs writes, and the MIME type the
+// system document picker needs for each.
+enum class ExportFormat(val label: String, val mimeType: String, val extension: String) {
+    Json("JSON", "application/json", "json"),
+    Csv("CSV", "text/csv", "csv"),
+    Markdown("Markdown", "text/markdown", "md"),
+}
 
 sealed interface SyncState {
     // Shown inline on the credentials form, so a failure never discards what was typed.
@@ -66,12 +74,7 @@ data class AppState(
     // write a near-empty file over the real one.
     val loaded: Boolean = false,
     val themeMode: ThemeMode = ThemeMode.System,
-    // Same vocabulary as MainViewModel.ActiveNavItem: a smart-list key, or a list GUID.
-    val activeNav: String = NAV_ALL_TASKS,
-    // Separate from searchQuery being non-empty: a real empty string has to be a valid,
-    // fully-typeable query, so "search mode is on" can't be inferred from the text alone.
-    val isSearchActive: Boolean = false,
-    val searchQuery: String = "",
+    val useDynamicColor: Boolean = false,
 )
 
 const val NAV_MY_DAY = "myday"
@@ -107,7 +110,9 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
     private var syncKey: SyncKey? = null
 
     // Seeded synchronously so the first frame paints in the chosen theme.
-    private val _state = MutableStateFlow(AppState(themeMode = prefs.themeMode))
+    private val _state = MutableStateFlow(
+        AppState(themeMode = prefs.themeMode, useDynamicColor = prefs.useDynamicColor)
+    )
     val state: StateFlow<AppState> = _state.asStateFlow()
 
     // An event, not state: in AppState, reopening Sync would replay a stale "Pulled — 17".
@@ -188,12 +193,15 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
     // --- Local, works with no account and no network ------------------------------------
 
     // Returns the new id so the list can scroll to it; null when nothing was added.
-    fun addTask(title: String): String? {
+    //
+    // `nav` is passed in rather than read from state: the screen showing the field is the
+    // only thing that knows which list the field belongs to, and while the two were tracked
+    // separately a task could be created against a list that was no longer on screen.
+    fun addTask(title: String, nav: String): String? {
         if (!_state.value.loaded) return null
         val trimmed = title.trim()
         if (trimmed.isEmpty()) return null
         val now = isoNow()
-        val nav = _state.value.activeNav
         // Picks up the property the open smart list is defined by, or it vanishes on create.
         val task = TodoItem(
             id = UUID.randomUUID().toString(),
@@ -244,23 +252,6 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
             dueDate = nextDue,
             createdAt = now,
             updatedAt = now,
-        )
-    }
-
-    fun setActiveNav(nav: String) {
-        _state.value = _state.value.copy(activeNav = nav)
-    }
-
-    fun setSearchQuery(query: String) {
-        _state.value = _state.value.copy(searchQuery = query)
-    }
-
-    // Deactivating also clears the query — leaving search always starts the next visit
-    // fresh, and drops the stale text rather than reopening on it.
-    fun setSearchActive(active: Boolean) {
-        _state.value = _state.value.copy(
-            isSearchActive = active,
-            searchQuery = if (active) _state.value.searchQuery else "",
         )
     }
 
@@ -338,8 +329,10 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
         deletedTasks = deletedTasks + orphaned.map { it.copy(isDeleted = true, updatedAt = now) }
         deletedLists = deletedLists + list.copy(isDeleted = true, updatedAt = now)
 
-        if (_state.value.activeNav == list.id) setActiveNav(NAV_ALL_TASKS)
-
+        // No "if this list was open, fall back to All Tasks" here any more: which list is
+        // open is the navigation back stack's business now, and the list route pops itself
+        // when its list stops existing — which also covers a delete arriving from a pull,
+        // something this fallback never did.
         persist(
             tasks = _state.value.tasks.filterNot { it.listId == list.id },
             lists = _state.value.lists.filterNot { it.id == list.id },
@@ -364,6 +357,46 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
             rescheduleReminders(appContext, tasks)
         }
         schedulePush()
+    }
+
+    // --- Export -------------------------------------------------------------------------
+
+    private val _exportFinished = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val exportFinished: SharedFlow<String> = _exportFinished.asSharedFlow()
+
+    // The uri comes from the system document picker, so this writes only where the user
+    // pointed it, and nothing leaves the device unless they choose a cloud folder themselves.
+    fun exportTo(uri: Uri, format: ExportFormat) {
+        viewModelScope.launch {
+            // Live tasks only — deliberately not wholeState(). Tombstones belong to the sync
+            // protocol; an export listing tasks the user deleted would be a bug wearing a
+            // feature's clothes. (Windows exports the raw file and does include them.)
+            val data = TasksFile(_state.value.tasks, _state.value.lists)
+            val today = LocalDate.now().toKotlinLocalDate()
+
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val text = when (format) {
+                        ExportFormat.Json -> TaskExportFormatter.toJson(data)
+                        ExportFormat.Csv -> TaskExportFormatter.toCsv(data)
+                        ExportFormat.Markdown -> TaskExportFormatter.toMarkdown(data, today)
+                    }
+                    appContext.contentResolver.openOutputStream(uri)?.use { out ->
+                        out.write(text.encodeToByteArray())
+                    } ?: error("That location could not be opened for writing.")
+                }
+            }
+
+            _exportFinished.emit(
+                result.fold(
+                    onSuccess = {
+                        val count = data.tasks.size
+                        "Exported $count task${if (count == 1) "" else "s"}"
+                    },
+                    onFailure = { "Export failed — ${it.message ?: "unknown error"}" },
+                )
+            )
+        }
     }
 
     // --- Sync, entirely opt-in ----------------------------------------------------------
@@ -453,6 +486,11 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
     fun setThemeMode(mode: ThemeMode) {
         prefs.themeMode = mode
         _state.value = _state.value.copy(themeMode = mode)
+    }
+
+    fun setDynamicColor(on: Boolean) {
+        prefs.useDynamicColor = on
+        _state.value = _state.value.copy(useDynamicColor = on)
     }
 
     fun showRecoveryCodeEntry(show: Boolean) {

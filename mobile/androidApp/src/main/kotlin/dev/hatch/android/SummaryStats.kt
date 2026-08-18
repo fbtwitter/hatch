@@ -19,6 +19,9 @@ data class SummaryTile(
     val description: String,
     val tone: SummaryTileTone,
     val navTarget: String,
+    // 0f..1f for a tile that measures completion, null for one that just counts. Only My Day
+    // has a denominator; "3 overdue" is not 3 out of anything.
+    val progress: Float? = null,
 )
 
 data class SummaryTaskRow(val task: TodoItem, val title: String, val detail: String)
@@ -57,6 +60,7 @@ fun computeSummary(tasks: List<TodoItem>, listNames: Map<String, String>): Summa
             description = if (myDayPlanned) "complete today" else "Nothing planned yet",
             tone = if (myDayPlanned) SummaryTileTone.Success else SummaryTileTone.Neutral,
             navTarget = NAV_MY_DAY,
+            progress = if (myDayPlanned) myDayCompleted.toFloat() / myDayTotal else null,
         ),
         SummaryTile(
             id = "duetoday",
