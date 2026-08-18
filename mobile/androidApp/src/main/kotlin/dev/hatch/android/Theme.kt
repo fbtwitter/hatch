@@ -16,10 +16,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-// Material You, but only where the OS actually has a wallpaper palette to read: below
-// Android 12 dynamicColorScheme does not exist, and stock lightColorScheme() is Material's
-// purple, which has nothing to do with Hatch. The fallback below is seeded from the same
-// #0078D4 the Windows app uses for a new list.
+// Hatch's own palette, seeded from #0078D4 — the app icon's background and the accent the
+// Windows app gives a new list. This is the default on every Android version; Material You
+// is offered alongside it (Settings → Appearance → Use wallpaper colours) rather than
+// instead of it. It used to be the other way around, which meant that from Android 12 on
+// nobody ever saw these colours and the app took its entire identity, including what
+// "overdue" looks like, from whatever wallpaper happened to be set.
+//
+// Tertiary is deliberately gold rather than the generated purple: it is the starred/Important
+// colour, and Windows already draws that in gold.
 private val BrandLight = lightColorScheme(
     primary = Color(0xFF0061A4),
     onPrimary = Color(0xFFFFFFFF),
@@ -29,14 +34,15 @@ private val BrandLight = lightColorScheme(
     onSecondary = Color(0xFFFFFFFF),
     secondaryContainer = Color(0xFFD7E3F7),
     onSecondaryContainer = Color(0xFF101C2B),
-    tertiary = Color(0xFF6B5778),
+    tertiary = Color(0xFF7A5900),
     onTertiary = Color(0xFFFFFFFF),
-    tertiaryContainer = Color(0xFFF2DAFF),
-    onTertiaryContainer = Color(0xFF251431),
+    tertiaryContainer = Color(0xFFFFDEA6),
+    onTertiaryContainer = Color(0xFF261A00),
     error = Color(0xFFBA1A1A),
     onError = Color(0xFFFFFFFF),
     errorContainer = Color(0xFFFFDAD6),
     onErrorContainer = Color(0xFF410002),
+    surfaceTint = Color(0xFF0061A4),
     background = Color(0xFFFDFCFF),
     onBackground = Color(0xFF1A1C1E),
     surface = Color(0xFFFDFCFF),
@@ -66,14 +72,15 @@ private val BrandDark = darkColorScheme(
     onSecondary = Color(0xFF253140),
     secondaryContainer = Color(0xFF3B4858),
     onSecondaryContainer = Color(0xFFD7E3F7),
-    tertiary = Color(0xFFD6BEE4),
-    onTertiary = Color(0xFF3B2948),
-    tertiaryContainer = Color(0xFF523F5F),
-    onTertiaryContainer = Color(0xFFF2DAFF),
+    tertiary = Color(0xFFF5BE48),
+    onTertiary = Color(0xFF412D00),
+    tertiaryContainer = Color(0xFF5D4200),
+    onTertiaryContainer = Color(0xFFFFDEA6),
     error = Color(0xFFFFB4AB),
     onError = Color(0xFF690005),
     errorContainer = Color(0xFF93000A),
     onErrorContainer = Color(0xFFFFDAD6),
+    surfaceTint = Color(0xFF9ECAFF),
     background = Color(0xFF1A1C1E),
     onBackground = Color(0xFFE2E2E6),
     surface = Color(0xFF1A1C1E),
@@ -98,16 +105,18 @@ private val BrandDark = darkColorScheme(
 // Kotlin-internal in material3 1.4.0 and ships in an artifact the pinned compose-bom does
 // not carry, so this stays on stable M3 until the compileSdk 37 toolchain lands.
 @Composable
-fun HatchTheme(mode: ThemeMode, content: @Composable () -> Unit) {
+fun HatchTheme(mode: ThemeMode, dynamicColor: Boolean, content: @Composable () -> Unit) {
     val dark = when (mode) {
         ThemeMode.System -> isSystemInDarkTheme()
         ThemeMode.Light -> false
         ThemeMode.Dark -> true
     }
     val context = LocalContext.current
+    // Below Android 12 there is no wallpaper palette to read, so the toggle simply has
+    // nothing to apply — the brand scheme is the only answer there either way.
+    val wallpaper = dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val scheme: ColorScheme = when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
-            if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+        wallpaper -> if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         dark -> BrandDark
         else -> BrandLight
     }

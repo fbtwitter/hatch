@@ -9,6 +9,11 @@ import kotlinx.serialization.json.Json
 // Timestamps stay String deliberately: the contract pins the wire text, and a date type
 // would risk re-formatting it on the way back out.
 
+// Guid.Empty on Windows (§4) — the default list, shown as "Tasks" in the UI and "Task" in an
+// export. Lives here rather than in the Android module because the wire types and the export
+// formatter both need it, and neither is allowed to know about the other.
+const val DEFAULT_LIST_ID = "00000000-0000-0000-0000-000000000000"
+
 @Serializable
 data class TasksFile(
     @SerialName("Tasks") val tasks: List<TodoItem> = emptyList(),
