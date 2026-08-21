@@ -4,6 +4,9 @@ plugins {
     id("com.android.application") version "8.13.2"
     kotlin("android") version "2.4.10"
     id("org.jetbrains.kotlin.plugin.compose") version "2.4.10"
+    // Consumes :baselineprofile. Creates the nonMinifiedRelease / benchmarkRelease variants
+    // the generator and the benchmarks run against, both derived from `release`.
+    id("androidx.baselineprofile") version "1.4.1"
 }
 
 // Supabase credentials come from mobile/local.properties, which is gitignored — mirroring
@@ -48,6 +51,21 @@ android {
                 "proguard-rules.pro",
             )
         }
+
+        // The baseline-profile plugin derives `nonMinifiedRelease` (profile generation) and
+        // `benchmarkRelease` (measurement) from `release` after this block is evaluated, so
+        // they are reached through the live collection rather than declared here. Both need to
+        // be installable and neither may be debuggable — Macrobenchmark refuses a debuggable
+        // build, and rightly: debug overhead is what made this app "feel laggy" once already.
+        //
+        // Only these two get a signing config. `release` itself stays unsigned: signing it is
+        // a distribution decision, not a benchmarking one, and a previous session had to add
+        // and immediately revert exactly that.
+        all {
+            if (name == "benchmarkRelease" || name == "nonMinifiedRelease") {
+                signingConfig = signingConfigs.getByName("debug")
+            }
+        }
     }
 
     compileOptions {
@@ -66,6 +84,13 @@ composeCompiler {
     stabilityConfigurationFiles.add(
         rootProject.layout.projectDirectory.file("compose_stability.conf")
     )
+
+    // Compose compiler metrics/reports are deliberately NOT wired up here. metricsDestination
+    // and reportsDestination were tried, exactly as documented, and on this toolchain
+    // (Kotlin 2.4.10, AGP 8.13.2) the compiler creates a single empty file named after the
+    // root project and writes no report at all — so the flag would look like it worked while
+    // proving nothing. See context/current-feature.md. Retry after a toolchain bump, or fall
+    // back to passing the plugin option through freeCompilerArgs.
 }
 
 dependencies {
@@ -107,4 +132,8 @@ dependencies {
 
     // supabase-kt needs an explicit Ktor engine per platform.
     implementation("io.ktor:ktor-client-okhttp:3.2.0")
+
+    // Generates src/release/generated/baselineProfiles/. profileinstaller above is what
+    // actually applies it at install time on a sideloaded build.
+    baselineProfile(project(":baselineprofile"))
 }

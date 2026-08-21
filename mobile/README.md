@@ -82,6 +82,50 @@ compileSdk 37 toolchain upgrade:
   `kotlin.Metadata` annotations it cannot parse. Harmless here: the app ships no
   kotlin-reflect and every serializer is compile-time generated.
 
+
+## Baseline profile and benchmarks
+
+`:baselineprofile` is a `com.android.test` module holding the profile generator and two
+Macrobenchmarks. The generated profile is **committed** — `androidApp/src/release/generated/
+baselineProfiles/` — because generating it needs a device, and nothing in CI has one.
+
+Regenerate it after a significant change to startup or navigation. A stale profile degrades
+quietly rather than breaking anything, so this is not part of an ordinary build:
+
+```powershell
+./gradlew :androidApp:generateBaselineProfile
+```
+
+Then run the benchmarks to check the change was worth it:
+
+```powershell
+# cold start, with the profile and with no AOT at all
+./gradlew :baselineprofile:connectedBenchmarkReleaseAndroidTest `
+  "-Pandroid.testInstrumentationRunnerArguments.class=dev.hatch.baselineprofile.StartupBenchmark"
+
+# frame timing across a bottom-nav tab drag
+./gradlew :baselineprofile:connectedBenchmarkReleaseAndroidTest `
+  "-Pandroid.testInstrumentationRunnerArguments.class=dev.hatch.baselineprofile.TabSwipeBenchmark"
+
+# results: baselineprofile/build/outputs/connected_android_test_additional_output/
+#          benchmarkRelease/connected/<device>/*-benchmarkData.json
+```
+
+Both run on a connected phone. No emulator or root is needed — profile generation dropped the
+root requirement at API 33, and Macrobenchmark refuses a debuggable build, so the plugin's
+`benchmarkRelease` and `nonMinifiedRelease` variants are the only ones it will touch. Those two
+are debug-signed purely so they can be installed; `release` itself stays unsigned.
+
+Two things to know before trusting a run:
+
+- **Stop the Gradle daemon between runs if a task fails on a locked file.** UTP leaves
+  `utp.N.log.lck` and a per-test logcat behind and Windows keeps them open, which shows up as
+  `FileSystemException ... being used by another process` *after* the tests have already
+  passed. `./gradlew --stop`, delete `baselineprofile/build/outputs/androidTest-results`, rerun.
+- **`CompilationMode.None()` is the control, not `Partial(Disable)`.** The latter needs warmup
+  iterations, and warmup JIT-compiles the app against the run being measured — which made the
+  "unprofiled" start measure *faster* than the profiled one.
+
 ## Scope of the Android app today
 
 A full authoring client (ADR-0007), not a viewer:
