@@ -109,7 +109,8 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
     // rather than here — the unwrap is too slow for onCreate.
     private var syncKey: SyncKey? = null
 
-    // Seeded synchronously so the first frame paints in the chosen theme.
+    // Seeded synchronously so the first frame paints in the chosen theme. The disk read this
+    // implies is deliberate and is declared inside AppPrefs itself, so nothing is needed here.
     private val _state = MutableStateFlow(
         AppState(themeMode = prefs.themeMode, useDynamicColor = prefs.useDynamicColor)
     )
@@ -357,6 +358,12 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
 
     private val saveMutex = Mutex()
 
+    private var reminderJob: Job? = null
+
+    // The write itself is deliberately NOT debounced, unlike Windows, whose coding standards
+    // mandate a 500ms idle delay. That rule does not port: a debounce window is a data-loss
+    // window, and Android kills backgrounded processes routinely where Windows almost never
+    // does. The write is off the main thread and mutex-guarded, so its only cost is I/O.
     private fun persist(tasks: List<TodoItem>, lists: List<TaskList> = _state.value.lists) {
         // State first so the row redraws this frame; the write follows off-thread.
         _state.value = _state.value.copy(tasks = tasks, lists = lists)
@@ -367,9 +374,24 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
             saveMutex.withLock {
                 store.save(wholeState())
             }
-            rescheduleReminders(appContext, tasks)
         }
+        scheduleReminderRebuild()
         schedulePush()
+    }
+
+    // Rescheduling walks every live task and issues one WorkManager cancel-or-enqueue each,
+    // and every one of those is a write into WorkManager's own database — so ticking a single
+    // checkbox in a 200-task list cost ~200 database operations, almost all of them rewriting
+    // an alarm to exactly what it already was. Coalesced rather than made incremental: the
+    // whole-snapshot rebuild is what makes drift impossible (see Reminders.kt), and tracking
+    // per-edit deltas would trade that guarantee away to save work that is already off the
+    // main thread. Reminders fire at 09:00, so arriving a second late means nothing.
+    private fun scheduleReminderRebuild() {
+        reminderJob?.cancel()
+        reminderJob = viewModelScope.launch(Dispatchers.IO) {
+            delay(REMINDER_REBUILD_DEBOUNCE_MS)
+            rescheduleReminders(appContext, _state.value.tasks)
+        }
     }
 
     // --- Export -------------------------------------------------------------------------
@@ -437,7 +459,14 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
     // Called from the activity for the hatch://auth-callback redirect.
     fun handleDeeplink(intent: Intent) {
         if (!configured) return
-        client.handleDeeplink(intent)
+        // Off the main thread for the same reason observeSession spells out below: touching
+        // `client` constructs it, and constructing it builds Ktor, OkHttp and supabase-kt,
+        // which read from disk. This is called straight from MainActivity.onCreate, so doing
+        // it inline put that whole stack on the critical path of every cold start — StrictMode
+        // reported it as a main-thread disk read on launch. Nothing here needs to be ordered
+        // against the rest of onCreate: the callback that matters is the session change
+        // observeSession is already collecting.
+        viewModelScope.launch(Dispatchers.IO) { client.handleDeeplink(intent) }
     }
 
     private fun observeSession() {
@@ -665,6 +694,9 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
 
     private companion object {
         const val PUSH_DEBOUNCE_MS = 3_000L
+        // Far shorter than the push debounce: this one only coalesces a burst of edits, and
+        // an alarm that is a second late is indistinguishable from one that is not.
+        const val REMINDER_REBUILD_DEBOUNCE_MS = 1_000L
         const val AUTO_PULL_INTERVAL_MS = 5 * 60 * 1_000L
         fun isoNow(): String =
             OffsetDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
