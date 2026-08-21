@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.StrictMode
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -85,6 +86,22 @@ class MainActivity : ComponentActivity() {
     private val vm: CompanionViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // A regression guard, not a diagnostic: there is no accidental main-thread I/O in this
+        // module today, and the point is to hear about it the moment there is. penaltyLog and
+        // not penaltyDeath because Ktor, OkHttp, supabase-kt and WorkManager all trip StrictMode
+        // in ways this app cannot fix, and crashing on a third party's violation would just mean
+        // switching the whole thing off again. The one deliberate main-thread read declares
+        // itself at its own call site — see allowingDiskReads in AppPrefs.kt.
+        if (BuildConfig.DEBUG) {
+            StrictMode.setThreadPolicy(
+                StrictMode.ThreadPolicy.Builder()
+                    .detectDiskReads()
+                    .detectDiskWrites()
+                    .detectNetwork()
+                    .penaltyLog()
+                    .build()
+            )
+        }
         // Must precede super.onCreate. Below Android 12 this draws the icon splash the
         // system only gained in 12; on 12+ it re-themes the one the system already shows.
         val splash = installSplashScreen()
