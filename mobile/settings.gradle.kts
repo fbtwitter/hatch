@@ -24,3 +24,4 @@ rootProject.name = "hatch-mobile"
 include(":shared")
 
 include(":androidApp")
+include(":baselineprofile")
