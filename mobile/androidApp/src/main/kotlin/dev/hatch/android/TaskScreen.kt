@@ -319,13 +319,22 @@ internal fun TaskListBody(
                     // bar's height with nothing left over. Added here rather than baked into
                     // TaskRow itself, which would double this gap for every row after the
                     // first.
+                    // Keyed on the four measured values, not on the PaddingValues object.
+                    // Keying on the object cached the very first measurement for the lifetime
+                    // of the list, so a top bar that changes height later — the Lists tab's
+                    // tag-filter row appearing above the list — never moved the content down,
+                    // and the first task's title ended up drawn underneath the bar.
                     val layoutDirection = LocalLayoutDirection.current
-                    val listContentPadding = remember(padding, layoutDirection) {
+                    val padStart = padding.calculateStartPadding(layoutDirection)
+                    val padTop = padding.calculateTopPadding()
+                    val padEnd = padding.calculateEndPadding(layoutDirection)
+                    val padBottom = padding.calculateBottomPadding()
+                    val listContentPadding = remember(padStart, padTop, padEnd, padBottom) {
                         PaddingValues(
-                            start = padding.calculateStartPadding(layoutDirection),
-                            top = padding.calculateTopPadding() + ScreenPadding,
-                            end = padding.calculateEndPadding(layoutDirection),
-                            bottom = padding.calculateBottomPadding(),
+                            start = padStart,
+                            top = padTop + ScreenPadding,
+                            end = padEnd,
+                            bottom = padBottom,
                         )
                     }
                     LazyColumn(

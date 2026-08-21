@@ -9,12 +9,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
@@ -22,9 +28,15 @@ import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -33,6 +45,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -45,6 +58,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
@@ -151,6 +165,12 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
     // A nullable TaskList alone could not tell "closed" from "creating".
     var listDialog by remember { mutableStateOf<ListDialog?>(null) }
 
+    // Owned here, not by ListsScreen, and wrapped around the whole app below (bottom nav bar
+    // included) — its scrim needs to sit above every tab so a tap meant for the drawer can
+    // never land on a nav item underneath. Only ListsScreen's hamburger ever opens it, but a
+    // drawer that only covered its own screen would leave the bar clickable right through it.
+    val listsDrawerState = rememberDrawerState(DrawerValue.Closed)
+
     // A tab tap (or a cross-tab pager drag committing) always has to land on Home first —
     // Search and Sync are pushed on top of it, not peers of it, so there may be nothing to
     // animate the pager onto until whatever's on top is popped back off.
@@ -158,7 +178,11 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
         if (navController.currentBackStackEntry?.destination?.route != Routes.Home) {
             navController.popBackStack(Routes.Home, false)
         }
-        scope.launch { pagerState.animateScrollToPage(page) }
+        // scrollToPage, not animateScrollToPage: a bottom-bar tap should land on the target
+        // page immediately, not slide through the pages between — that sliding is what a
+        // finger-drag on the pager itself is for, and stays untouched (HorizontalPager's own
+        // gesture handling, not this function).
+        scope.launch { pagerState.scrollToPage(page) }
     }
 
     // Opening a list always means the Lists tab, wherever it was asked for — a Summary tile
@@ -310,9 +334,10 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
             onDelete = deleteWithUndo,
             onCreateList = { listDialog = ListDialog.New },
             onEditList = { listDialog = ListDialog.Edit(it) },
-            // Same reasoning as My Day: Lists' own folder pager already competes with the
-            // outer one for the same axis, so a per-row dismiss on top would be a third
-            // competitor. Delete still works via the detail sheet and search results.
+            onOpenDrawer = { scope.launch { listsDrawerState.open() } },
+            // Same reasoning as My Day: the outer pager owns horizontal swipe on every page,
+            // so a per-row dismiss on top would compete with it. Delete still works via the
+            // detail sheet and search results.
             swipeToDeleteEnabled = false,
         )
     }
@@ -348,175 +373,251 @@ private fun HatchApp(vm: CompanionViewModel = viewModel()) {
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
-        // No manual BackHandler here: once composed inside a NavHost, the system/predictive
-        // back gesture is handled by the NavController itself.
-        Scaffold(
-            // Zeroed on purpose. With the default (systemBars) this Scaffold has no top bar
-            // of its own, so it handed the status-bar inset down as content padding — and
-            // then every screen's own TopAppBar applied that same inset again underneath it.
-            // Every title on every screen was sitting a full status bar too low. The bars
-            // that actually need insets apply their own: NavigationBar below, and each
-            // screen's TopAppBar above.
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            bottomBar = {
-                // Absent on search, which is a full-screen field rather than a peer of the
-                // tabs — leaving the bar up there with nothing highlighted is the exact
-                // state this navigation rework exists to remove.
-                if (currentRoute != Routes.Search) {
-                    NavigationBar {
-                        // Filled when selected, outlined when not: the icon swap is half of
-                        // what makes a Material bottom bar readable at a glance, and without
-                        // it the pill indicator is doing the work alone. Selected reads off
-                        // livePage, not pagerState.currentPage directly, so the highlight
-                        // moves with a drag in progress instead of only snapping at the end.
-                        NavTab(
-                            selected = currentRoute == Routes.Home && livePage == PageMyDay,
-                            filled = Icons.Rounded.CheckCircle,
-                            outlined = Icons.Outlined.CheckCircle,
-                            label = "My Day",
-                            onClick = { goToPage(PageMyDay) },
-                        )
-                        NavTab(
-                            selected = currentRoute == Routes.Home && livePage == PageLists,
-                            filled = Icons.AutoMirrored.Rounded.List,
-                            outlined = Icons.AutoMirrored.Outlined.List,
-                            label = "Lists",
-                            onClick = { goToPage(PageLists) },
-                        )
-                        NavTab(
-                            selected = currentRoute == Routes.Home && livePage == PageSummary,
-                            filled = HatchIcons.SummaryFilled,
-                            outlined = HatchIcons.SummaryOutlined,
-                            label = "Summary",
-                            onClick = { goToPage(PageSummary) },
-                        )
-                        NavTab(
-                            selected = (currentRoute == Routes.Home && livePage == PageSettings) ||
-                                currentRoute == Routes.Sync,
-                            filled = Icons.Rounded.Settings,
-                            outlined = Icons.Outlined.Settings,
-                            label = "Settings",
-                            onClick = { goToPage(PageSettings) },
-                        )
-                    }
-                }
-            },
-        ) { outerPadding ->
-            // fadeThrough no longer governs tab-to-tab motion — the pager's own drag-through
-            // transition replaces it for My Day/Lists/Summary/Settings. It still applies here
-            // for Home <-> Search, the one case left where the NavHost-level default is used
-            // rather than a composable(...)-level override.
-            NavHost(
-                navController = navController,
-                startDestination = Routes.Home,
-                // consumeWindowInsets alongside the padding, not padding alone. This Scaffold
-                // lifts its content by the navigation bar's height to clear the bottom bar,
-                // but without consuming the matching insets a descendant asking for
-                // imePadding() still sees the keyboard measured from the window's own bottom
-                // edge — and adds all of it on top of an offset it already has. That is why
-                // the composer floated a bar's height above the keyboard instead of resting
-                // on it. Consuming makes imePadding() apply only what is left over.
-                modifier = Modifier
-                    .padding(outerPadding)
-                    .consumeWindowInsets(outerPadding),
-                enterTransition = { fadeThrough().targetContentEnter },
-                exitTransition = { fadeThrough().initialContentExit },
-                popEnterTransition = { fadeThrough().targetContentEnter },
-                popExitTransition = { fadeThrough().initialContentExit },
-            ) {
-                composable(Routes.Home) {
-                    // beyondViewportPageCount stays at its default of 0: only the visible
-                    // page, plus whatever a swipe is actively dragging in, is composed — four
-                    // tabs do not mean four live screens running at once.
-                    //
-                    // userScrollEnabled is off while Lists is the current page: Lists owns its
-                    // own HorizontalPager for its folder strip, and nesting two pagers on the
-                    // same axis is not a priority dispute Compose resolves for free — the
-                    // outer one, being the ancestor, gets first claim on every drag via nested
-                    // scroll's pre-scroll pass, so a swipe meant to switch folders instead
-                    // always advanced this outer pager to the next tab. Folders are Lists'
-                    // own, already-shipped swipe feature, so it keeps full-width swipe there;
-                    // this pager still reaches Lists (and leaves it) via the bottom bar, just
-                    // not by dragging across Lists' own content.
-                    HorizontalPager(
-                        state = pagerState,
-                        userScrollEnabled = pagerState.currentPage != PageLists,
-                        modifier = Modifier.fillMaxSize(),
-                    ) { page ->
-                        when (page) {
-                            PageMyDay -> myDayContent()
-                            PageLists -> listsContent()
-                            PageSummary -> summaryContent()
-                            else -> settingsContent()
-                        }
-                    }
-                }
+    val customLists = remember(state.lists) { sortedCustomLists(state.lists) }
 
-                composable(
-                    Routes.Search,
-                    enterTransition = { screenTransition(forward = true).targetContentEnter },
-                    exitTransition = { screenTransition(forward = true).initialContentExit },
-                    popEnterTransition = { screenTransition(forward = false).targetContentEnter },
-                    popExitTransition = { screenTransition(forward = false).initialContentExit },
-                ) {
-                    SearchScreen(
-                        tasks = state.tasks,
-                        lists = state.lists,
-                        snackbar = snackbar,
-                        onBack = { navController.popBackStack() },
-                        onToggle = vm::toggleComplete,
-                        onOpen = openTask,
-                        onDelete = deleteWithUndo,
+    // True only while a custom list, opened from the Lists drawer, is the child screen showing
+    // on top of the Lists tab. Read off pagerState.currentPage (the settled page), not the
+    // live-drag-tracking livePage below — this only ever changes between gestures, since a
+    // custom list cannot be showing mid-swipe in the first place once this goes true.
+    val viewingCustomList = currentRoute == Routes.Home && pagerState.currentPage == PageLists &&
+        state.lists.any { it.id == selectedFolder }
+
+    ModalNavigationDrawer(
+        drawerState = listsDrawerState,
+        // Only while open: a closed drawer must not claim the left-edge swipe the outer
+        // bottom-nav pager below uses to move between tabs (an always-on edge-swipe-to-open
+        // would collide with it), but once open, the drawer itself should own every drag over
+        // it so an attempted swipe-to-close never leaks through and pages the app underneath.
+        gesturesEnabled = listsDrawerState.isOpen,
+        drawerContent = {
+            ModalDrawerSheet {
+                Text(
+                    "Lists",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(horizontal = 28.dp, vertical = 16.dp),
+                )
+                if (customLists.isEmpty()) {
+                    Text(
+                        "No custom lists yet",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
                     )
                 }
-
-                composable(
-                    Routes.Sync,
-                    enterTransition = { screenTransition(forward = true).targetContentEnter },
-                    exitTransition = { screenTransition(forward = true).initialContentExit },
-                    popEnterTransition = { screenTransition(forward = false).targetContentEnter },
-                    popExitTransition = { screenTransition(forward = false).initialContentExit },
+                customLists.forEach { list ->
+                    DrawerListRow(
+                        list = list,
+                        count = remember(state.tasks, list.id) { navCount(state.tasks, list.id) },
+                        selected = list.id == selectedFolder,
+                        onClick = {
+                            vm.selectFolder(list.id)
+                            scope.launch { listsDrawerState.close() }
+                        },
+                        // Telegram's own gesture for folder options, duplicated in the Lists
+                        // app-bar menu because a long press is not reachable for every input
+                        // method and list management cannot be gesture-only.
+                        onLongClick = { listDialog = ListDialog.Edit(list) },
+                    )
+                }
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            scope.launch { listsDrawerState.close() }
+                            listDialog = ListDialog.New
+                        }
+                        .padding(horizontal = 28.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    SyncScreen(
-                        sync = state.sync,
-                        onSignIn = vm::signIn,
-                        onSignUp = vm::signUp,
-                        onGithub = vm::signInWithGithub,
-                        onPassphrase = vm::submitPassphrase,
-                        onMfaCode = vm::submitMfaCode,
-                        onShowRecovery = vm::showRecoveryCodeEntry,
-                        onRedeemRecovery = vm::redeemRecoveryCode,
-                        onRefresh = vm::refresh,
-                        onPush = vm::push,
-                        onSignOut = vm::signOut,
-                        onBack = { navController.popBackStack() },
-                        snackbar = snackbar,
+                    Icon(
+                        Icons.Rounded.Add,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.width(16.dp))
+                    Text(
+                        "New list",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
-        }
+        },
+    ) {
+        Box(Modifier.fillMaxSize()) {
+            // No manual BackHandler here: once composed inside a NavHost, the system/predictive
+            // back gesture is handled by the NavController itself.
+            Scaffold(
+                // Zeroed on purpose. With the default (systemBars) this Scaffold has no top bar
+                // of its own, so it handed the status-bar inset down as content padding — and
+                // then every screen's own TopAppBar applied that same inset again underneath it.
+                // Every title on every screen was sitting a full status bar too low. The bars
+                // that actually need insets apply their own: NavigationBar below, and each
+                // screen's TopAppBar above.
+                contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                bottomBar = {
+                    // Absent on search (a full-screen field, not a peer of the tabs) and while a
+                    // custom list opened from the Lists drawer is showing — that view is its own
+                    // focused screen with a back arrow, same reasoning as search: leaving the bar
+                    // up there with nothing new to highlight is the exact state this navigation
+                    // rework exists to remove.
+                    if (currentRoute != Routes.Search && !viewingCustomList) {
+                        NavigationBar {
+                            // Filled when selected, outlined when not: the icon swap is half of
+                            // what makes a Material bottom bar readable at a glance, and without
+                            // it the pill indicator is doing the work alone. Selected reads off
+                            // livePage, not pagerState.currentPage directly, so the highlight
+                            // moves with a drag in progress instead of only snapping at the end.
+                            NavTab(
+                                selected = currentRoute == Routes.Home && livePage == PageMyDay,
+                                filled = Icons.Rounded.CheckCircle,
+                                outlined = Icons.Outlined.CheckCircle,
+                                label = "My Day",
+                                onClick = { goToPage(PageMyDay) },
+                            )
+                            NavTab(
+                                selected = currentRoute == Routes.Home && livePage == PageLists,
+                                filled = Icons.AutoMirrored.Rounded.List,
+                                outlined = Icons.AutoMirrored.Outlined.List,
+                                label = "Lists",
+                                onClick = { goToPage(PageLists) },
+                            )
+                            NavTab(
+                                selected = currentRoute == Routes.Home && livePage == PageSummary,
+                                filled = HatchIcons.SummaryFilled,
+                                outlined = HatchIcons.SummaryOutlined,
+                                label = "Summary",
+                                onClick = { goToPage(PageSummary) },
+                            )
+                            NavTab(
+                                selected = (currentRoute == Routes.Home && livePage == PageSettings) ||
+                                    currentRoute == Routes.Sync,
+                                filled = Icons.Rounded.Settings,
+                                outlined = Icons.Outlined.Settings,
+                                label = "Settings",
+                                onClick = { goToPage(PageSettings) },
+                            )
+                        }
+                    }
+                },
+            ) { outerPadding ->
+                // fadeThrough no longer governs tab-to-tab motion — the pager's own drag-through
+                // transition replaces it for My Day/Lists/Summary/Settings. It still applies here
+                // for Home <-> Search, the one case left where the NavHost-level default is used
+                // rather than a composable(...)-level override.
+                NavHost(
+                    navController = navController,
+                    startDestination = Routes.Home,
+                    // consumeWindowInsets alongside the padding, not padding alone. This Scaffold
+                    // lifts its content by the navigation bar's height to clear the bottom bar,
+                    // but without consuming the matching insets a descendant asking for
+                    // imePadding() still sees the keyboard measured from the window's own bottom
+                    // edge — and adds all of it on top of an offset it already has. That is why
+                    // the composer floated a bar's height above the keyboard instead of resting
+                    // on it. Consuming makes imePadding() apply only what is left over.
+                    modifier = Modifier
+                        .padding(outerPadding)
+                        .consumeWindowInsets(outerPadding),
+                    enterTransition = { fadeThrough().targetContentEnter },
+                    exitTransition = { fadeThrough().initialContentExit },
+                    popEnterTransition = { fadeThrough().targetContentEnter },
+                    popExitTransition = { fadeThrough().initialContentExit },
+                ) {
+                    composable(Routes.Home) {
+                        // beyondViewportPageCount stays at its default of 0: only the visible
+                        // page, plus whatever a swipe is actively dragging in, is composed — four
+                        // tabs do not mean four live screens running at once.
+                        //
+                        // Swipeable between the four root tabs — this pager is the one gesture
+                        // for "move to a different part of the app," matching WhatsApp's own
+                        // top-level swipe — but not while a child screen is showing on top of one
+                        // of them (currently only the Lists tab has one: a custom list opened
+                        // from its drawer). A root-level swipe reaching My Day/Summary/Settings
+                        // out from under a child screen would be confusing (which tab did that
+                        // just leave?) and is also the one case left where this pager and a
+                        // second gesture on the same axis could still compete — same reasoning
+                        // that made the folder strip itself tap-only (ListsScreen.kt).
+                        HorizontalPager(
+                            state = pagerState,
+                            userScrollEnabled = !viewingCustomList,
+                            modifier = Modifier.fillMaxSize(),
+                        ) { page ->
+                            when (page) {
+                                PageMyDay -> myDayContent()
+                                PageLists -> listsContent()
+                                PageSummary -> summaryContent()
+                                else -> settingsContent()
+                            }
+                        }
+                    }
 
-        // Both of these are modals in their own window, so they sit outside the Scaffold
-        // rather than inside a destination — and outside the NavHost, so a tab change while
-        // one is open does not tear it down mid-animation.
-        TaskDetailHost(
-            editingId = editingId,
-            tasks = state.tasks,
-            lists = state.lists,
-            onSave = vm::saveTask,
-            onDelete = deleteWithUndo,
-        )
+                    composable(
+                        Routes.Search,
+                        enterTransition = { screenTransition(forward = true).targetContentEnter },
+                        exitTransition = { screenTransition(forward = true).initialContentExit },
+                        popEnterTransition = { screenTransition(forward = false).targetContentEnter },
+                        popExitTransition = { screenTransition(forward = false).initialContentExit },
+                    ) {
+                        SearchScreen(
+                            tasks = state.tasks,
+                            lists = state.lists,
+                            snackbar = snackbar,
+                            onBack = { navController.popBackStack() },
+                            onToggle = vm::toggleComplete,
+                            onOpen = openTask,
+                            onDelete = deleteWithUndo,
+                        )
+                    }
 
-        listDialog?.let { dialog ->
-            ListEditorDialog(
-                existing = (dialog as? ListDialog.Edit)?.list,
-                onCreate = vm::createList,
-                onRename = vm::renameList,
-                onTogglePin = vm::togglePinList,
-                onDelete = vm::deleteList,
-                onDismiss = { listDialog = null },
+                    composable(
+                        Routes.Sync,
+                        enterTransition = { screenTransition(forward = true).targetContentEnter },
+                        exitTransition = { screenTransition(forward = true).initialContentExit },
+                        popEnterTransition = { screenTransition(forward = false).targetContentEnter },
+                        popExitTransition = { screenTransition(forward = false).initialContentExit },
+                    ) {
+                        SyncScreen(
+                            sync = state.sync,
+                            onSignIn = vm::signIn,
+                            onSignUp = vm::signUp,
+                            onGithub = vm::signInWithGithub,
+                            onPassphrase = vm::submitPassphrase,
+                            onMfaCode = vm::submitMfaCode,
+                            onShowRecovery = vm::showRecoveryCodeEntry,
+                            onRedeemRecovery = vm::redeemRecoveryCode,
+                            onRefresh = vm::refresh,
+                            onPush = vm::push,
+                            onSignOut = vm::signOut,
+                            onBack = { navController.popBackStack() },
+                            snackbar = snackbar,
+                        )
+                    }
+                }
+            }
+
+            // Both of these are modals in their own window, so they sit outside the Scaffold
+            // rather than inside a destination — and outside the NavHost, so a tab change while
+            // one is open does not tear it down mid-animation.
+            TaskDetailHost(
+                editingId = editingId,
+                tasks = state.tasks,
+                lists = state.lists,
+                onSave = vm::saveTask,
+                onDelete = deleteWithUndo,
             )
+
+            listDialog?.let { dialog ->
+                ListEditorDialog(
+                    existing = (dialog as? ListDialog.Edit)?.list,
+                    onCreate = vm::createList,
+                    onRename = vm::renameList,
+                    onTogglePin = vm::togglePinList,
+                    onDelete = vm::deleteList,
+                    onDismiss = { listDialog = null },
+                )
+            }
         }
     }
 }
