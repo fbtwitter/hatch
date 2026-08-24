@@ -31,15 +31,22 @@ fun MacrobenchmarkScope.openTab(label: String) {
 //
 // Kept clear of the bottom edge: the composer sits there, and on a gesture-nav device the
 // system takes the very bottom of the screen for itself.
-fun MacrobenchmarkScope.scrollTaskList() {
+fun MacrobenchmarkScope.scrollTaskList(cycles: Int = 1) {
     val w = device.displayWidth
     val h = device.displayHeight
-    repeat(2) {
-        device.swipe(w / 2, h * 3 / 4, w / 2, h / 4, 8)
-        device.waitForIdle()
+    repeat(cycles) {
+        // Down twice, back up twice: ending where it started keeps every iteration of a
+        // benchmark measuring the same travel, instead of each one beginning further down a
+        // list that has already run out.
+        repeat(2) {
+            device.swipe(w / 2, h * 3 / 4, w / 2, h / 4, 8)
+            device.waitForIdle()
+        }
+        repeat(2) {
+            device.swipe(w / 2, h / 4, w / 2, h * 3 / 4, 8)
+            device.waitForIdle()
+        }
     }
-    device.swipe(w / 2, h / 4, w / 2, h * 3 / 4, 8)
-    device.waitForIdle()
 }
 
 // A horizontal drag across the middle of the screen, which is what the outer bottom-nav pager

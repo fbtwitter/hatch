@@ -111,6 +111,18 @@ Then run the benchmarks to check the change was worth it:
 #          benchmarkRelease/connected/<device>/*-benchmarkData.json
 ```
 
+> **Benchmarking can erase the app's data on the device it runs against.**
+> These tasks install and swap between the `debug`, `nonMinifiedRelease` and `benchmarkRelease`
+> variants. Matching signing keys are not enough to guarantee an in-place update — a cycle of
+> them uninstalled and reinstalled the app on 2026-08-21, which deleted `tasks.json` along with
+> the sync tokens and the Keystore-wrapped sync key. Verify with `adb shell dumpsys package
+> dev.hatch.android | grep InstallTime`: if `firstInstallTime` equals `lastUpdateTime`, the data
+> directory was recreated.
+>
+> So: never benchmark against a device holding the only copy of anything. Sign in and push
+> first, or export from Settings, and treat re-signing in and pulling as part of the routine
+> afterwards.
+
 Both run on a connected phone. No emulator or root is needed — profile generation dropped the
 root requirement at API 33, and Macrobenchmark refuses a debuggable build, so the plugin's
 `benchmarkRelease` and `nonMinifiedRelease` variants are the only ones it will touch. Those two
