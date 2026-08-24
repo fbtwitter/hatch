@@ -32,9 +32,9 @@ git clone https://github.com/fbtwitter/hatch.git
 cd hatch/windows
 ```
 
-The repository holds one app per platform: `windows/` is the WinUI 3 app that every
-command below refers to, and `mobile/` is the Kotlin Multiplatform companion project
-(built with its own Gradle wrapper, `cd mobile && ./gradlew`).
+`windows/` is the WinUI 3 app that every command below refers to. The Kotlin Multiplatform
+companion project lives in its own repository,
+[hatch-mobile](https://github.com/fbtwitter/hatch-mobile).
 
 ### 2. Build
 
