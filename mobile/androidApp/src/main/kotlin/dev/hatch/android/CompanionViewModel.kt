@@ -18,6 +18,7 @@ import dev.hatch.sync.TaskExportFormatter
 import dev.hatch.sync.handleDeeplink
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import dev.hatch.sync.TaskList
@@ -168,9 +169,19 @@ class CompanionViewModel(app: Application) : AndroidViewModel(app) {
     init {
         // Off the main thread: a file read plus JSON parse and a Keystore unwrap cost
         // seconds on a mid-range device, and hundreds of skipped frames before first paint.
+        //
+        // The two loads are independent — keyStore.load() reads its own SharedPreferences file
+        // and its own Keystore-backed key, using nothing store.load() produces — but they used
+        // to run one after the other on the exact path that gates the splash screen
+        // (setKeepOnScreenCondition { !loaded }). The Keystore unwrap is the slower of the two,
+        // so a sequential await made every cold start pay for it on top of the JSON read
+        // instead of alongside it. async/awaitAll runs them concurrently on Dispatchers.IO;
+        // measured with StartupBenchmark, not asserted.
         viewModelScope.launch {
-            val local = withContext(Dispatchers.IO) { store.load() }
-            syncKey = withContext(Dispatchers.IO) { keyStore.load() }
+            val localDeferred = async(Dispatchers.IO) { store.load() }
+            val syncKeyDeferred = async(Dispatchers.IO) { keyStore.load() }
+            val local = localDeferred.await()
+            syncKey = syncKeyDeferred.await()
 
             deletedTasks = local.tasks.filter { it.isDeleted }
             deletedLists = local.lists.filter { it.isDeleted }
