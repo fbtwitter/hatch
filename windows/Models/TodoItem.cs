@@ -157,16 +157,32 @@ public sealed class TodoItem : INotifyPropertyChanged
         set { _notes = value; OnPropertyChanged(); }
     }
 
-    // ADR-0010. Ordered steps; array order is display order. No desktop UI yet — this
-    // property exists so a desktop pull → edit → push round-trips Steps written by another
-    // client untouched (System.Text.Json drops unknown properties on deserialize, so a
-    // model without this field would silently strip them).
+    // ADR-0010. Ordered steps; array order is display order. Reassigned wholesale when a
+    // step is added or removed; mutated in place (then NotifyStepsChanged) when a step is
+    // ticked or renamed. Either way the change routes through MainViewModel.TaskPropertyChanged
+    // (Steps is a RealEditProperty) so UpdatedAt is stamped and the save debounced.
     private List<Step> _steps = [];
     public List<Step> Steps
     {
         get => _steps;
-        set { _steps = value ?? []; OnPropertyChanged(); }
+        set
+        {
+            _steps = value ?? [];
+            NotifyStepsChanged();
+        }
     }
+
+    // Call after mutating a Step in place (Step raises its own PropertyChanged for the
+    // checklist bindings; this refreshes the derived row values and drives the save).
+    public void NotifyStepsChanged()
+    {
+        OnPropertyChanged(nameof(Steps));
+        OnPropertyChanged(nameof(HasSteps));
+        OnPropertyChanged(nameof(StepProgressLabel));
+    }
+
+    public bool HasSteps => _steps.Count > 0;
+    public string StepProgressLabel => $"{_steps.Count(s => s.IsCompleted)}/{_steps.Count}";
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

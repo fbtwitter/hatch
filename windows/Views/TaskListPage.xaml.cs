@@ -285,6 +285,9 @@ public sealed partial class TaskListPage : Page
         PaneUpdatedAtText.Text = _timestampFormatter.Format(task.UpdatedAt.ToLocalTime());
         PaneTagInput.Text = string.Empty;
         PaneTagChips.ItemsSource = task.Tags;
+        PaneStepInput.Text = string.Empty;
+        PaneStepsList.ItemsSource = task.Steps;
+        PaneStepsProgress.Text = task.HasSteps ? task.StepProgressLabel : string.Empty;
 
         // Deferred: DateChanged can fire on a later tick, and resetting the guard inline let it land after _updatingPane was already false.
         DispatcherQueue.TryEnqueue(() => _updatingPane = false);
@@ -306,6 +309,63 @@ public sealed partial class TaskListPage : Page
         PaneTagChips.ItemsSource = _paneTask.Tags;
         PaneTagInput.Text = string.Empty;
         e.Handled = true;
+    }
+
+    // ── Steps (ADR-0010) ────────────────────────────────────────────────────
+
+    private void RefreshPaneSteps()
+    {
+        if (_paneTask == null) return;
+        PaneStepsList.ItemsSource = _paneTask.Steps;
+        PaneStepsProgress.Text = _paneTask.HasSteps ? _paneTask.StepProgressLabel : string.Empty;
+    }
+
+    private void PaneStepInput_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key != VirtualKey.Enter || _paneTask == null || _updatingPane) return;
+        ViewModel.AddStepToTask(_paneTask, PaneStepInput.Text);
+        PaneStepInput.Text = string.Empty;
+        RefreshPaneSteps();
+        e.Handled = true;
+    }
+
+    private void PaneStepRemove_Click(object sender, RoutedEventArgs e)
+    {
+        if (_paneTask != null && sender is FrameworkElement { Tag: Step step })
+        {
+            ViewModel.RemoveStepFromTask(_paneTask, step);
+            RefreshPaneSteps();
+        }
+    }
+
+    // Click, not Checked/Unchecked: fires only on real user interaction, so realizing a
+    // completed row (x:Bind sets IsChecked) never re-enters here. Step raises its own
+    // PropertyChanged, so the checkbox and the title's dim update in place — no list rebuild.
+    private void PaneStepCheck_Click(object sender, RoutedEventArgs e)
+    {
+        if (_paneTask == null) return;
+        if (sender is CheckBox { Tag: Step step } cb)
+        {
+            ViewModel.SetStepCompleted(_paneTask, step, cb.IsChecked == true);
+            PaneStepsProgress.Text = _paneTask.HasSteps ? _paneTask.StepProgressLabel : string.Empty;
+        }
+    }
+
+    private void PaneStepText_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (_updatingPane || _paneTask == null) return;
+        if (sender is TextBox { Tag: Step step } tb)
+            ViewModel.RenameStep(_paneTask, step, tb.Text);
+    }
+
+    private void PaneStepText_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key != VirtualKey.Enter || _updatingPane || _paneTask == null) return;
+        if (sender is TextBox { Tag: Step step } tb)
+        {
+            ViewModel.RenameStep(_paneTask, step, tb.Text);
+            e.Handled = true;
+        }
     }
 
     // ── Pane field handlers ──────────────────────────────────────────────────

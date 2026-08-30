@@ -1,15 +1,37 @@
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
 namespace Hatch.Models;
 
 // ADR-0010 — one ordered step (subtask / checklist item) within a TodoItem.
-// Phase 1 on Windows: carried through load/save and sync untouched, no desktop UI yet.
-// Per-step Id/UpdatedAt are stored now even though v3 merges at parent granularity
-// (whole-record LWW on TodoItem.UpdatedAt) — it costs nothing, gives every client stable
-// list keys, and lets a later ADR move to per-step merge without another wire break.
-public sealed class Step
+// Carried through load/save and sync as its own object; per-step Id/UpdatedAt are stored
+// now even though the protocol merges at parent granularity (whole-record LWW on
+// TodoItem.UpdatedAt), so a later ADR can move to per-step merge without another wire break.
+// Title/IsCompleted raise PropertyChanged so the details-pane checklist updates in place
+// without rebuilding the list on every toggle.
+public sealed class Step : INotifyPropertyChanged
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    public string Title { get; set; } = string.Empty;
-    public bool IsCompleted { get; set; }
+
+    private string _title = string.Empty;
+    public string Title
+    {
+        get => _title;
+        set { _title = value; OnPropertyChanged(); }
+    }
+
+    private bool _isCompleted;
+    public bool IsCompleted
+    {
+        get => _isCompleted;
+        set { _isCompleted = value; OnPropertyChanged(); }
+    }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? name = null)
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }
