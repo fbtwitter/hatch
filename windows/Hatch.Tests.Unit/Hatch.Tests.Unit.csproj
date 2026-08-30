@@ -33,6 +33,7 @@
     <Compile Include="..\Helpers\TipSchedule.cs" Link="Source\Helpers\TipSchedule.cs" />
     <Compile Include="..\Helpers\RecurrenceHelper.cs" Link="Source\Helpers\RecurrenceHelper.cs" />
     <Compile Include="..\Helpers\TaskSorting.cs" Link="Source\Helpers\TaskSorting.cs" />
+    <Compile Include="..\Helpers\SummaryStats.cs" Link="Source\Helpers\SummaryStats.cs" />
     <Compile Include="..\Helpers\TaskSearchMatcher.cs" Link="Source\Helpers\TaskSearchMatcher.cs" />
     <Compile Include="..\Helpers\TaskExportFormatter.cs" Link="Source\Helpers\TaskExportFormatter.cs" />
     <Compile Include="..\Services\TipEngine.cs" Link="Source\Services\TipEngine.cs" />

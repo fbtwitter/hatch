@@ -65,6 +65,11 @@ internal static class Strings
     public static string Stats_Tile_Overdue_Description_Active => Get("Stats_Tile_Overdue_Description_Active");
     public static string Stats_Tile_Starred_Title              => Get("Stats_Tile_Starred_Title");
     public static string Stats_Tile_Starred_Description        => Get("Stats_Tile_Starred_Description");
+    public static string Stats_MyDay_Hero_Done(int done, int total) => string.Format(Get("Stats_MyDay_Hero_Done"), done, total);
+    public static string Stats_Week_Done(int count)  => string.Format(Get("Stats_Week_Done"), count);
+    public static string Stats_Week_NothingDone      => Get("Stats_Week_NothingDone");
+    public static string Stats_Week_Streak(int days) => string.Format(Get("Stats_Week_Streak"), days);
+    public static string Stats_Week_RhythmName(int count) => string.Format(Get("Stats_Week_RhythmName"), count);
 
     // ── Planned group headers ─────────────────────────────────
     public static string PlannedGroup_Overdue   => Get("PlannedGroup_Overdue");
