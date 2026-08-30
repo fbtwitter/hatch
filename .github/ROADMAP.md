@@ -8,6 +8,7 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.22.0** | Aug 30, 2026 | Task steps (subtasks / checklist) with sync protocol v3; Summary page reworked for mobile parity (My Day progress ring, meaning-tinted tiles, this-week completion strip + streak) |
 | **v0.21.4** | Aug 13, 2026 | Releases now publish to the Microsoft Store automatically |
 | **v0.21.3** | Aug 13, 2026 | Fix navigation badge counts flashing repeatedly during normal use while synced |
 | **v0.21.2** | Aug 13, 2026 | Fix GitHub sign-in always failing with a bad_oauth_state error |
@@ -93,7 +94,8 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 | Recurring tasks — Daily/Weekdays/Weekly/Monthly | ✅ Shipped (v0.13) |
 | Priority tiers — None/Low/Medium/High, Important sorts by priority | ✅ Shipped (v0.13) |
 | Proactive tip popup — opt-in, once/day | ✅ Shipped (v0.13, TeachingTip rework v0.15) |
-| Summary page — KPI tiles, Today/Upcoming, launchpad navigation | ✅ Shipped (v0.14–v0.15) |
+| Summary page — KPI tiles, Today/Upcoming, launchpad navigation | ✅ Shipped (v0.14–v0.15, mobile-parity rework v0.22) |
+| Task steps — ordered subtasks / checklist, sync protocol v3 | ✅ Shipped (v0.22) |
 | Task export — JSON, CSV, Markdown | ✅ Shipped (v0.14) |
 | Fully automatic sync — debounced push, periodic pull, conflict dialog with merge option | ✅ Shipped (v0.12.7, v0.14) |
 | End-to-end encrypted sync — `HATCHE2E.v1` envelope, PBKDF2 600k + AES-256-GCM | ✅ Shipped (v0.16) |
@@ -119,7 +121,7 @@ Larger scope, lower priority. Depends on user feedback post-v1.0.
 
 | Feature | Notes | Complexity |
 |---------|-------|------------|
-| Task dependencies | Subtask nesting, dependency chain visualization | High |
+| Task dependencies | Blocking relationships and dependency-chain visualization (steps shipped in v0.22 are flat, not nested) | High |
 | Custom mascot skins | Cosmetic pack: Bumblebee, Cat, Paperclip variants; animated packs. Free, like everything else. | Medium |
 | Custom animation packs | Idle bob/blink variants, wink, wave, thumbs-up reactions | Medium |
 | Time tracking | Per-task timer, daily log, weekly summary | Medium |
@@ -137,7 +139,6 @@ Features explicitly **not** on the roadmap:
 - ❌ **Teams integration** (scope creep, privacy risk)
 - ❌ **Reminders for all due dates** (only important/overdue today in v1.0)
 - ❌ **Calendar view** (out of scope for v1.0)
-- ❌ **Subtasks** (depends on dependencies feature; later if at all)
 - ❌ **Custom themes** (system light/dark only)
 - ❌ **Web version** (desktop-first product)
 

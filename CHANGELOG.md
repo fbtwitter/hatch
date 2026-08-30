@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+---
+
+## [0.22.0] - 2026-08-30
+
 ### Added
 - **Task steps (subtasks / checklist).** Break a task into ordered steps in the details
   pane — add, tick off, rename, remove — with a progress count (`2/5`) on the task row.
