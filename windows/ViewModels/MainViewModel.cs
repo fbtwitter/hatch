@@ -483,10 +483,10 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         => task.Tags = task.Tags.Where(t => t != tag).ToList();
 
     // ── Steps (ADR-0010) ────────────────────────────────────────────────────
-    // Every mutation reassigns task.Steps to a fresh list so the setter fires
-    // PropertyChanged — Step is a plain data class with no notification of its own,
-    // and TaskPropertyChanged is what stamps UpdatedAt (steps travel with the parent)
-    // and debounces the save.
+    // Add/remove reassign task.Steps; tick/rename mutate the Step (it raises its own
+    // PropertyChanged for the checklist bindings) and call NotifyStepsChanged(). Either
+    // way TaskPropertyChanged sees Steps — a RealEditProperty — and stamps UpdatedAt
+    // (steps travel with the parent) and debounces the save.
     public const int MaxStepsPerTask = 20; // soft cap, ADR-0010 §3
 
     public void AddStepToTask(TodoItem task, string title)
