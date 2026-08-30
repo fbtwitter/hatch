@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+### Added
+- **Sync protocol v3 — ordered steps on tasks** (ADR-0010, Phase 1). `TodoItem` gains a
+  `Steps` array (subtasks / checklist); Windows carries and round-trips it through load,
+  save and sync, and copies it forward when a recurring task repeats, but shows no step UI
+  yet — that lands once every client understands the field. Older clients read v3 payloads
+  fine (`Steps` defaults to empty); no server migration
+
 ### Changed
 - Summary page reworked for parity with the mobile companion: My Day is now a hero card
   with a progress ring, the Due today / Overdue / Starred tiles are tinted by meaning and

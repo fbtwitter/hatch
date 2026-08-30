@@ -16,7 +16,23 @@
       "Tags": ["home", "green"],
       "CreatedAt": "2026-01-02T03:04:05Z",
       "UpdatedAt": "2026-01-15T10:20:30+00:00",
-      "Notes": "Kitchen and balcony"
+      "Notes": "Kitchen and balcony",
+      "Steps": [
+        {
+          "Id": "33333333-3333-3333-3333-333333333331",
+          "Title": "Fill the watering can",
+          "IsCompleted": true,
+          "CreatedAt": "2026-01-02T03:04:05+00:00",
+          "UpdatedAt": "2026-01-02T03:10:00+00:00"
+        },
+        {
+          "Id": "33333333-3333-3333-3333-333333333332",
+          "Title": "Check the soil is dry",
+          "IsCompleted": false,
+          "CreatedAt": "2026-01-02T03:04:05+00:00",
+          "UpdatedAt": "2026-01-02T03:04:05+00:00"
+        }
+      ]
     },
     {
       "Id": "22222222-2222-2222-2222-222222222222",
@@ -34,7 +50,8 @@
       "Tags": [],
       "CreatedAt": "2026-01-01T00:00:00Z",
       "UpdatedAt": "2026-01-10T08:00:00+00:00",
-      "Notes": null
+      "Notes": null,
+      "Steps": []
     },
     {
       "Id": "44444444-4444-4444-4444-444444444444",
@@ -52,7 +69,8 @@
       "Tags": [],
       "CreatedAt": "2026-01-03T00:00:00Z",
       "UpdatedAt": "2026-01-12T09:30:00+00:00",
-      "Notes": null
+      "Notes": null,
+      "Steps": []
     }
   ],
   "Lists": [
