@@ -7,11 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 ## [Unreleased]
 
 ### Added
-- **Sync protocol v3 — ordered steps on tasks** (ADR-0010, Phase 1). `TodoItem` gains a
-  `Steps` array (subtasks / checklist); Windows carries and round-trips it through load,
-  save and sync, and copies it forward when a recurring task repeats, but shows no step UI
-  yet — that lands once every client understands the field. Older clients read v3 payloads
-  fine (`Steps` defaults to empty); no server migration
+- **Task steps (subtasks / checklist).** Break a task into ordered steps in the details
+  pane — add, tick off, rename, remove — with a progress count (`2/5`) on the task row.
+  Steps sync end-to-end encrypted like everything else and copy forward when a recurring
+  task repeats (ADR-0010). Wire protocol bumped to v3; older clients read v3 payloads fine
+  (`Steps` defaults to empty), no server migration
 
 ### Changed
 - Summary page reworked for parity with the mobile companion: My Day is now a hero card

@@ -241,7 +241,8 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     [
         nameof(TodoItem.Title), nameof(TodoItem.Notes), nameof(TodoItem.Tags),
         nameof(TodoItem.IsInMyDay), nameof(TodoItem.IsStarred), nameof(TodoItem.DueDate),
-        nameof(TodoItem.IsCompleted), nameof(TodoItem.Recurrence), nameof(TodoItem.Priority)
+        nameof(TodoItem.IsCompleted), nameof(TodoItem.Recurrence), nameof(TodoItem.Priority),
+        nameof(TodoItem.Steps)
     ];
 
     private void TaskPropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -480,6 +481,40 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
 
     public void RemoveTagFromTask(TodoItem task, string tag)
         => task.Tags = task.Tags.Where(t => t != tag).ToList();
+
+    // ── Steps (ADR-0010) ────────────────────────────────────────────────────
+    // Every mutation reassigns task.Steps to a fresh list so the setter fires
+    // PropertyChanged — Step is a plain data class with no notification of its own,
+    // and TaskPropertyChanged is what stamps UpdatedAt (steps travel with the parent)
+    // and debounces the save.
+    public const int MaxStepsPerTask = 20; // soft cap, ADR-0010 §3
+
+    public void AddStepToTask(TodoItem task, string title)
+    {
+        var trimmed = title.Trim();
+        if (trimmed.Length == 0 || task.Steps.Count >= MaxStepsPerTask) return;
+        task.Steps = [.. task.Steps, new Step { Title = trimmed }];
+    }
+
+    public void RemoveStepFromTask(TodoItem task, Step step)
+        => task.Steps = task.Steps.Where(s => s.Id != step.Id).ToList();
+
+    public void SetStepCompleted(TodoItem task, Step step, bool completed)
+    {
+        if (step.IsCompleted == completed) return;
+        step.IsCompleted = completed;
+        step.UpdatedAt = DateTimeOffset.UtcNow;
+        task.NotifyStepsChanged();
+    }
+
+    public void RenameStep(TodoItem task, Step step, string title)
+    {
+        var trimmed = title.Trim();
+        if (trimmed.Length == 0 || step.Title == trimmed) return;
+        step.Title = trimmed;
+        step.UpdatedAt = DateTimeOffset.UtcNow;
+        task.NotifyStepsChanged();
+    }
 
     public void DeleteTask(TodoItem task)
     {

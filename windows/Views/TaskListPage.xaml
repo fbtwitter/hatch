@@ -180,6 +180,22 @@
                                 </StackPanel>
                             </Border>
 
+                            <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                    CornerRadius="4"
+                                    Padding="6,2"
+                                    VerticalAlignment="Center"
+                                    ToolTipService.ToolTip="Steps"
+                                    Visibility="{x:Bind HasSteps, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                    <FontIcon Glyph="&#xE73A;"
+                                              FontSize="10"
+                                              Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <TextBlock Text="{x:Bind StepProgressLabel, Mode=OneWay}"
+                                               Style="{ThemeResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+                            </Border>
+
                             <Button Tag="{x:Bind}"
                                     AutomationProperties.AutomationId="Task_AddDateButton"
                                     Click="ChipDateButton_Click"
@@ -712,6 +728,81 @@
                                  HorizontalAlignment="Stretch"
                                  TextChanged="PaneNotesBox_TextChanged"
                                  KeyDown="PaneNotesBox_KeyDown" />
+
+                        <!-- Steps (ADR-0010) — plain data rows; edits route through
+                             MainViewModel, which reassigns TodoItem.Steps to trigger the
+                             save + parent UpdatedAt bump. -->
+                        <StackPanel Spacing="8">
+                            <Grid>
+                                <TextBlock x:Uid="Pane_StepsLabel"
+                                           Text="Steps"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                <TextBlock x:Name="PaneStepsProgress"
+                                           HorizontalAlignment="Right"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                            </Grid>
+                            <ItemsRepeater x:Name="PaneStepsList">
+                                <ItemsRepeater.Layout>
+                                    <StackLayout Orientation="Vertical" Spacing="2" />
+                                </ItemsRepeater.Layout>
+                                <ItemsRepeater.ItemTemplate>
+                                    <DataTemplate x:DataType="models:Step">
+                                        <Grid ColumnSpacing="4">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <!-- Checkbox collapsed to its 20px glyph and
+                                                 centred; the title field keeps a normal input
+                                                 height but with symmetric vertical padding so
+                                                 its text line sits on the same centre as the
+                                                 glyph and the remove icon (WinUI's TextBox
+                                                 top-anchors its text otherwise). Click, not
+                                                 Checked/Unchecked, so realizing a completed
+                                                 row doesn't re-enter the handler. -->
+                                            <CheckBox Grid.Column="0"
+                                                      Tag="{x:Bind}"
+                                                      MinWidth="0" MinHeight="0" Padding="0"
+                                                      VerticalAlignment="Center"
+                                                      IsChecked="{x:Bind IsCompleted, Mode=OneWay}"
+                                                      Click="PaneStepCheck_Click"
+                                                      AutomationProperties.Name="{x:Bind Title, Mode=OneWay}" />
+                                            <TextBox Grid.Column="1"
+                                                     Tag="{x:Bind}"
+                                                     Text="{x:Bind Title, Mode=OneWay}"
+                                                     BorderThickness="0"
+                                                     Background="Transparent"
+                                                     Padding="8,6"
+                                                     VerticalAlignment="Center"
+                                                     VerticalContentAlignment="Center"
+                                                     Opacity="{x:Bind IsCompleted, Converter={StaticResource BoolToOpacity}, Mode=OneWay}"
+                                                     LostFocus="PaneStepText_LostFocus"
+                                                     KeyDown="PaneStepText_KeyDown" />
+                                            <Button Grid.Column="2"
+                                                    Tag="{x:Bind}"
+                                                    x:Uid="PaneStepRemove"
+                                                    AutomationProperties.Name="Remove step"
+                                                    Click="PaneStepRemove_Click"
+                                                    Style="{ThemeResource SubtleButtonStyle}"
+                                                    VerticalAlignment="Center"
+                                                    Padding="6" MinWidth="32" MinHeight="32"
+                                                    IsTabStop="False">
+                                                <FontIcon Glyph="&#xE711;"
+                                                          FontSize="10"
+                                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            </Button>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsRepeater.ItemTemplate>
+                            </ItemsRepeater>
+                            <TextBox x:Name="PaneStepInput"
+                                     x:Uid="PaneStepInput"
+                                     PlaceholderText="Add a step, press Enter"
+                                     KeyDown="PaneStepInput_KeyDown" />
+                        </StackPanel>
 
                         <ToggleSwitch x:Name="PaneMyDayToggle"
                                       x:Uid="PaneMyDayToggle"
