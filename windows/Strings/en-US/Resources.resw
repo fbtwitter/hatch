@@ -203,6 +203,9 @@
   <data name="Pane_TagsLabel.Text" xml:space="preserve"><value>Tags</value></data>
   <data name="PaneTagInput.PlaceholderText" xml:space="preserve"><value>Add a tag, press Enter</value></data>
   <data name="PaneTagChipRemove.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Remove tag</value></data>
+  <data name="Pane_StepsLabel.Text" xml:space="preserve"><value>Steps</value></data>
+  <data name="PaneStepInput.PlaceholderText" xml:space="preserve"><value>Add a step, press Enter</value></data>
+  <data name="PaneStepRemove.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Remove step</value></data>
   <data name="Pane_CreatedLabel.Text" xml:space="preserve"><value>Created</value></data>
   <data name="Pane_UpdatedLabel.Text" xml:space="preserve"><value>Updated</value></data>
 
