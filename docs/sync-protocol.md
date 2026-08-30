@@ -1,4 +1,4 @@
-# Hatch Sync Protocol — v2
+# Hatch Sync Protocol — v3
 
 The wire contract every Hatch client (WinUI 3 and the Kotlin Multiplatform core) must
 obey. The C# implementation is the reference; the golden fixtures in
@@ -14,15 +14,23 @@ plan for rows already on the server.
 |---------|------------------------------------------------------------|
 | v1      | initial contract                                            |
 | v2      | `IsDeleted` tombstones on `TodoItem` and `TaskList` (§4, §5) |
+| v3      | ordered `Steps` (subtasks / checklist) on `TodoItem` (§4); ADR-0010 |
 
 **v1 → v2 migration: none required.** The envelope (§3) is unchanged, so no row on the
 server needs rewriting and no server-side migration runs. `IsDeleted` is optional and
 defaults to `false`, so a v2 client reads a v1 payload as entirely live.
 
+**v2 → v3 migration: none required.** Same story — the envelope is unchanged and `Steps`
+defaults to `[]`, so a v3 client reads a v1/v2 payload as a task with no steps.
+
 Compatibility is one-way, and deliberately so: a **v1 client reading a v2 payload** ignores
 the unknown `IsDeleted`, treats the tombstone as a live task, and revives it on its next
 push. A mixed-version fleet therefore loses delete propagation until every client is
-updated — but never loses data, which is the property §5 has always guaranteed.
+updated — but never loses data, which is the property §5 has always guaranteed. A **client
+older than v3 reading a v3 payload** likewise drops the unknown `Steps` array — and, being
+whole-record LWW (§5), **strips it from any task it then edits and pushes back**. Steps
+therefore must not be surfaced in any client's UI until every client understands the field
+(ADR-0010 Phase 1).
 
 ## 1. Transport and storage
 
@@ -125,6 +133,7 @@ Conventions (pinned by `Services/SyncWire.cs` and the golden fixture):
 | `CreatedAt`   | ISO-8601 date-time    | may carry `Z`, an offset, or no suffix (legacy local) |
 | `UpdatedAt`   | ISO-8601 offset date-time | stamped on real edits only; drives merge (§5) |
 | `Notes`       | string or null        |                                                  |
+| `Steps`       | `Step` array (v3)     | empty array when none; array order is display order |
 
 **`DueDate` is a calendar day, not an instant.** The task's day is the date portion of the
 value *as written* (in its own offset). Readers MUST NOT convert through a time zone before
@@ -134,6 +143,28 @@ instead carry midnight at the writer's local offset, and readers MUST accept bot
 Ordering by the raw string is safe: the `YYYY-MM-DD` prefix dominates. `CreatedAt`,
 `UpdatedAt` and `CompletedAt` are the opposite — real instants, compared as instants (§5),
 converted to local time only for display.
+
+### Step (v3)
+
+A step is part of its parent `TodoItem` — it has no row of its own and is **not**
+independently merged. Any step change (add, rename, tick, remove, reorder) bumps the parent
+`TodoItem.UpdatedAt`, exactly like editing `Notes`, and §5 resolves the whole task as one
+unit. The per-step `Id`/`UpdatedAt` are stored anyway so a future protocol version can move
+to per-step merge without another wire break (ADR-0010).
+
+| property      | type                  | notes                             |
+|---------------|-----------------------|-----------------------------------|
+| `Id`          | GUID string           | stable list key; kept as a string, round-trips verbatim |
+| `Title`       | string                |                                   |
+| `IsCompleted` | bool                  | independent of the parent's — completing every step does not complete the task (v3) |
+| `CreatedAt`   | ISO-8601 offset date-time |                               |
+| `UpdatedAt`   | ISO-8601 offset date-time | reserved for a future per-step merge; not consulted in v3 |
+
+- Removing a step drops it from the array — **no step tombstones**; the parent `UpdatedAt`
+  bump carries the deletion.
+- When a recurring task spawns its next occurrence, the new task gets a copy of the steps
+  with fresh `Id`s and `IsCompleted = false`.
+- Soft cap ~20 steps per task — UI-enforced only, not on the wire.
 
 ### TaskList
 

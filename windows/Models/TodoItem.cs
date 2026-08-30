@@ -157,6 +157,17 @@ public sealed class TodoItem : INotifyPropertyChanged
         set { _notes = value; OnPropertyChanged(); }
     }
 
+    // ADR-0010. Ordered steps; array order is display order. No desktop UI yet — this
+    // property exists so a desktop pull → edit → push round-trips Steps written by another
+    // client untouched (System.Text.Json drops unknown properties on deserialize, so a
+    // model without this field would silently strip them).
+    private List<Step> _steps = [];
+    public List<Step> Steps
+    {
+        get => _steps;
+        set { _steps = value ?? []; OnPropertyChanged(); }
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     private void OnPropertyChanged([CallerMemberName] string? name = null)

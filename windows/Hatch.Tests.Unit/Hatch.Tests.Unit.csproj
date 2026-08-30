@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <Compile Include="..\Models\TodoItem.cs" Link="Source\Models\TodoItem.cs" />
+    <Compile Include="..\Models\Step.cs" Link="Source\Models\Step.cs" />
     <Compile Include="..\Models\TaskList.cs" Link="Source\Models\TaskList.cs" />
     <Compile Include="..\Models\TasksFile.cs" Link="Source\Models\TasksFile.cs" />
     <Compile Include="..\Models\TaskRecurrence.cs" Link="Source\Models\TaskRecurrence.cs" />

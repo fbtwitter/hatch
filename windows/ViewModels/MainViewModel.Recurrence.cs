@@ -52,7 +52,9 @@ public sealed partial class MainViewModel
             IsStarred  = task.IsStarred,
             DueDate    = RecurrenceHelper.AdvanceDueDate(task.DueDate.Value, task.Recurrence),
             Recurrence = task.Recurrence,
-            Priority   = task.Priority
+            Priority   = task.Priority,
+            // ADR-0010: the next occurrence gets a fresh copy of the checklist, unticked.
+            Steps      = [.. task.Steps.Select(s => new Step { Title = s.Title })]
         };
 
         AttachTaskPropertyChangedHandler(next);

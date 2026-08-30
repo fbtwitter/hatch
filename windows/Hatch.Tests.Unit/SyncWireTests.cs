@@ -30,7 +30,26 @@ public class SyncWireTests
             Tags = ["home", "green"],
             CreatedAt = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc),
             UpdatedAt = new DateTimeOffset(2026, 1, 15, 10, 20, 30, TimeSpan.Zero),
-            Notes = "Kitchen and balcony"
+            Notes = "Kitchen and balcony",
+            Steps =
+            [
+                new Step
+                {
+                    Id = Guid.Parse("33333333-3333-3333-3333-333333333331"),
+                    Title = "Fill the watering can",
+                    IsCompleted = true,
+                    CreatedAt = new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero),
+                    UpdatedAt = new DateTimeOffset(2026, 1, 2, 3, 10, 0, TimeSpan.Zero)
+                },
+                new Step
+                {
+                    Id = Guid.Parse("33333333-3333-3333-3333-333333333332"),
+                    Title = "Check the soil is dry",
+                    IsCompleted = false,
+                    CreatedAt = new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero),
+                    UpdatedAt = new DateTimeOffset(2026, 1, 2, 3, 4, 5, TimeSpan.Zero)
+                }
+            ]
         };
 
         // IsCompleted's setter stamps CompletedAt with the current time — override after.
@@ -101,6 +120,12 @@ public class SyncWireTests
         Assert.AreEqual(new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc), full.CreatedAt);
         Assert.AreEqual(new DateTimeOffset(2026, 1, 15, 10, 20, 30, TimeSpan.Zero), full.UpdatedAt);
         Assert.AreEqual("Kitchen and balcony", full.Notes);
+        Assert.AreEqual(2, full.Steps.Count);
+        Assert.AreEqual(Guid.Parse("33333333-3333-3333-3333-333333333331"), full.Steps[0].Id);
+        Assert.AreEqual("Fill the watering can", full.Steps[0].Title);
+        Assert.IsTrue(full.Steps[0].IsCompleted);
+        Assert.AreEqual(new DateTimeOffset(2026, 1, 2, 3, 10, 0, TimeSpan.Zero), full.Steps[0].UpdatedAt);
+        Assert.IsFalse(full.Steps[1].IsCompleted);
 
         var completed = data.Tasks[1];
         Assert.IsTrue(completed.IsCompleted);
@@ -109,6 +134,7 @@ public class SyncWireTests
         Assert.AreEqual(TaskRecurrence.None, completed.Recurrence);
         Assert.AreEqual(0, completed.Tags.Count);
         Assert.IsNull(completed.Notes);
+        Assert.AreEqual(0, completed.Steps.Count);
 
         var deleted = data.Tasks[2];
         Assert.IsTrue(deleted.IsDeleted);
@@ -141,6 +167,8 @@ public class SyncWireTests
 
         Assert.IsFalse(data.Tasks[0].IsDeleted);
         Assert.IsFalse(data.Lists[0].IsDeleted);
+        // A pre-v3 payload has no "Steps" key — reads as a task with no steps.
+        Assert.AreEqual(0, data.Tasks[0].Steps.Count);
     }
 
     [TestMethod]
