@@ -10,7 +10,7 @@
     <Page.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
 
-        <Style x:Key="StatTileStyle" TargetType="Border">
+        <Style x:Key="StatCardStyle" TargetType="Border">
             <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
             <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
@@ -20,15 +20,12 @@
         </Style>
 
         <Style x:Key="StatTileButtonStyle" TargetType="Button" BasedOn="{StaticResource SubtleButtonStyle}">
-            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
             <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="{ThemeResource OverlayCornerRadius}"/>
             <Setter Property="Padding" Value="16"/>
-            <!-- Must match UniformGridLayout.MinItemHeight below — too small silently clips content instead of growing.
-                 124, not 112: at 112 the three text rows fit exactly with zero headroom, so a
-                 descender (the 'y' in "My Day" / "today") rendered a hair past its line box and
-                 got clipped flat by the tile's own bounds. -->
+            <!-- 124, not 112: at 112 a descender (the 'y' in "today") rendered a hair past
+                 its line box and got clipped flat by the tile's own bounds. -->
             <Setter Property="MinHeight" Value="124"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
             <Setter Property="VerticalAlignment" Value="Stretch"/>
@@ -71,37 +68,73 @@
     <ScrollViewer Padding="24" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="20" MaxWidth="{StaticResource PageMaxRowWidth}" HorizontalAlignment="Stretch">
 
-            <StackPanel Spacing="4">
-                <TextBlock x:Uid="Stats_TitleText" Text="Summary" Style="{ThemeResource TitleLargeTextBlockStyle}"/>
-            </StackPanel>
+            <TextBlock x:Uid="Stats_TitleText" Text="Summary" Style="{ThemeResource TitleLargeTextBlockStyle}"/>
 
-            <!-- Responsive KPI grid — UniformGridLayout reflows the column count to fill
-                 whatever width is available, instead of a fixed column count. -->
+            <!-- My Day hero — the day's progress, promoted out of the tile grid to a wide
+                 card with a determinate ring. -->
+            <Button Style="{StaticResource StatTileButtonStyle}"
+                    Background="{x:Bind ViewModel.MyDay.Background, Mode=OneWay}"
+                    MinHeight="0"
+                    AutomationProperties.Name="{x:Bind ViewModel.MyDay.AutomationName, Mode=OneWay}"
+                    Click="MyDayHero_Click">
+                <Grid ColumnSpacing="20">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Planned: ring with the percentage in the middle -->
+                    <Grid Grid.Column="0" Width="72" Height="72"
+                          Visibility="{x:Bind ViewModel.MyDay.HasPlan, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                        <ProgressRing IsIndeterminate="False"
+                                      Value="{x:Bind ViewModel.MyDay.RingValue, Mode=OneWay}"
+                                      Width="72" Height="72"
+                                      Foreground="{ThemeResource SystemFillColorSuccessBrush}"/>
+                        <TextBlock Text="{x:Bind ViewModel.MyDay.CenterLabel, Mode=OneWay}"
+                                   Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+
+                    <!-- Nothing planned: just the My Day glyph -->
+                    <FontIcon Grid.Column="0" Glyph="{x:Bind ViewModel.MyDay.IconGlyph, Mode=OneWay}"
+                              FontSize="32"
+                              Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                              Visibility="{x:Bind ViewModel.MyDay.HasPlan, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}"/>
+
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                        <TextBlock Text="{x:Bind ViewModel.MyDay.Title, Mode=OneWay}"
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                        <TextBlock Text="{x:Bind ViewModel.MyDay.Detail, Mode=OneWay}"
+                                   Style="{ThemeResource SubtitleTextBlockStyle}"
+                                   TextWrapping="WrapWholeWords"/>
+                    </StackPanel>
+                </Grid>
+            </Button>
+
+            <!-- Due today / Overdue / Starred — tinted by meaning via the container fill. -->
             <ItemsRepeater ItemsSource="{x:Bind ViewModel.Tiles}">
                 <ItemsRepeater.Layout>
-                    <UniformGridLayout MinItemWidth="220" MinItemHeight="124"
+                    <!-- MinItemWidth kept tiny + MaximumRowsOrColumns=3 so the three tiles
+                         always stay one row of thirds, never reflowing to a 2+1 at narrow
+                         widths. -->
+                    <UniformGridLayout MinItemWidth="1" MinItemHeight="124"
+                                       MaximumRowsOrColumns="3"
                                        MinRowSpacing="16" MinColumnSpacing="16"
                                        ItemsStretch="Fill"/>
                 </ItemsRepeater.Layout>
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate x:DataType="vm:StatTileInfo">
-                        <!-- Tiles without a NavTag stay visually identical but are inert:
-                             not clickable, not in the tab order. None currently ship
-                             without one, but Tile_Click / HasNav still guard for it. -->
                         <Button Style="{StaticResource StatTileButtonStyle}"
+                                Background="{x:Bind ContainerBackground}"
                                 Tag="{x:Bind}"
                                 AutomationProperties.Name="{x:Bind AutomationName}"
-                                IsHitTestVisible="{x:Bind local:StatsPage.HasNav(NavTag)}"
-                                IsTabStop="{x:Bind local:StatsPage.HasNav(NavTag)}"
                                 Click="Tile_Click"
                                 Translation="0,0,16">
                             <Button.Shadow>
                                 <ThemeShadow/>
                             </Button.Shadow>
                             <StackPanel VerticalAlignment="Center" Spacing="2">
-                                <!-- Icon rides on the title's own line at the title's size,
-                                     so the tile reads as one labelled figure rather than an
-                                     icon with a column of text parked beside it. -->
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <FontIcon Glyph="{x:Bind IconGlyph}" FontSize="14"
                                               Foreground="{x:Bind IconForeground}"
@@ -115,36 +148,70 @@
                                            Text="{x:Bind Value}"
                                            Style="{ThemeResource TitleTextBlockStyle}"
                                            FontSize="32"/>
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <TextBlock Text="{x:Bind SecondaryValue}"
-                                               Style="{ThemeResource BodyStrongTextBlockStyle}"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               VerticalAlignment="Bottom"
-                                               Visibility="{x:Bind local:StatsPage.SecondaryValueVisibility(SecondaryValue)}"/>
-                                    <TextBlock Text="{x:Bind Description}"
-                                               Style="{ThemeResource CaptionTextBlockStyle}"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               TextWrapping="WrapWholeWords"
-                                               VerticalAlignment="Bottom"/>
-                                </StackPanel>
+                                <TextBlock Text="{x:Bind Description}"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextWrapping="WrapWholeWords"/>
                             </StackPanel>
                         </Button>
                     </DataTemplate>
                 </ItemsRepeater.ItemTemplate>
             </ItemsRepeater>
 
-            <!-- Today — the daily-agenda glance: what's actually due right now, grouped
-                 apart from Upcoming so it reads as "do these today" not "coming up" -->
+            <!-- This week — a quiet momentum glance: one bar per day, height by tasks
+                 completed, today accented. No desktop equivalent before now (see
+                 SummaryStats.cs). -->
+            <Border Style="{StaticResource StatCardStyle}"
+                    AutomationProperties.Name="{x:Bind ViewModel.WeekRhythmAutomationName, Mode=OneWay}">
+                <StackPanel Spacing="10">
+                    <Grid>
+                        <TextBlock x:Uid="Stats_ThisWeekHeader" Text="This week"
+                                   Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                        <TextBlock Text="{x:Bind ViewModel.WeekTotalText, Mode=OneWay}"
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"/>
+                    </Grid>
+                    <TextBlock Text="{x:Bind ViewModel.StreakText, Mode=OneWay}"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                               Visibility="{x:Bind ViewModel.HasStreak, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"/>
+
+                    <ItemsRepeater ItemsSource="{x:Bind ViewModel.WeekRhythm}" HorizontalAlignment="Center">
+                        <ItemsRepeater.Layout>
+                            <StackLayout Orientation="Horizontal" Spacing="8"/>
+                        </ItemsRepeater.Layout>
+                        <ItemsRepeater.ItemTemplate>
+                            <DataTemplate x:DataType="vm:RhythmBarInfo">
+                                <StackPanel Width="32" Spacing="6">
+                                    <Grid Height="56">
+                                        <Border VerticalAlignment="Bottom"
+                                                Height="{x:Bind BarHeight}"
+                                                Background="{x:Bind Fill}"
+                                                CornerRadius="4,4,0,0"/>
+                                    </Grid>
+                                    <TextBlock Text="{x:Bind DayLabel}"
+                                               Style="{ThemeResource CaptionTextBlockStyle}"
+                                               Foreground="{x:Bind LabelForeground}"
+                                               HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsRepeater.ItemTemplate>
+                    </ItemsRepeater>
+                </StackPanel>
+            </Border>
+
+            <!-- Today — the daily-agenda glance: what's actually due right now -->
             <StackPanel Spacing="12">
                 <TextBlock x:Uid="Stats_TodayHeader" Text="Today" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
 
-                <Border Style="{StaticResource StatTileStyle}" Padding="4" MinHeight="0"
+                <Border Style="{StaticResource StatCardStyle}" Padding="4" MinHeight="0"
                         Visibility="{x:Bind ViewModel.HasTodayTasks, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                     <ItemsRepeater ItemsSource="{x:Bind ViewModel.TodayTasks}"
                                    ItemTemplate="{StaticResource TaskRowTemplate}"/>
                 </Border>
 
-                <Border Style="{StaticResource StatTileStyle}" MinHeight="0"
+                <Border Style="{StaticResource StatCardStyle}" MinHeight="0"
                         Visibility="{x:Bind ViewModel.HasTodayTasks, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
                     <TextBlock x:Uid="Stats_EmptyToday" Text="Nothing due today."
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -156,13 +223,13 @@
             <StackPanel Spacing="12">
                 <TextBlock x:Uid="Stats_UpcomingHeader" Text="Upcoming" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
 
-                <Border Style="{StaticResource StatTileStyle}" Padding="4" MinHeight="0"
+                <Border Style="{StaticResource StatCardStyle}" Padding="4" MinHeight="0"
                         Visibility="{x:Bind ViewModel.HasUpcomingTasks, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                     <ItemsRepeater ItemsSource="{x:Bind ViewModel.UpcomingTasks}"
                                    ItemTemplate="{StaticResource TaskRowTemplate}"/>
                 </Border>
 
-                <Border Style="{StaticResource StatTileStyle}" MinHeight="0"
+                <Border Style="{StaticResource StatCardStyle}" MinHeight="0"
                         Visibility="{x:Bind ViewModel.HasUpcomingTasks, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
                     <TextBlock x:Uid="Stats_EmptyUpcoming" Text="Nothing due soon."
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"

@@ -1,10 +1,12 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using Hatch.Converters;
 using Hatch.Helpers;
 using Hatch.Models;
 using Hatch.Views;
+using Microsoft.UI.Xaml.Media;
 
 namespace Hatch.ViewModels;
 
@@ -14,10 +16,16 @@ public sealed class StatsViewModel : INotifyPropertyChanged
     // it navigates to: Sun = My Day, Calendar = Planned (Due today routes there too),
     // Star = Important. StarredGlyph (U+E735) is the filled star, per BoolToStarGlyphConverter's
     // "starred" state — since this tile counts starred items, not the category itself.
-    private const string MyDayGlyph    = "\uE706";
-    private const string DueTodayGlyph = "\uED28";
-    private const string OverdueGlyph  = "\uE7BA";
-    private const string StarredGlyph  = "\uE735";
+    private const string MyDayGlyph    = "";
+    private const string DueTodayGlyph = "";
+    private const string OverdueGlyph  = "";
+    private const string StarredGlyph  = "";
+
+    // "This week" strip: the tallest bar is this many pixels, the shortest (a day with a
+    // completion but not the peak, or zero) never drops below the floor so the row stays
+    // legible as a row rather than a scatter of dots.
+    private const double RhythmBand  = 56;
+    private const double RhythmFloor = 6;
 
     private static readonly Windows.Globalization.DateTimeFormatting.DateTimeFormatter _dueLabelFormatter =
         new("dayofweek.abbreviated month.abbreviated day");
@@ -25,6 +33,37 @@ public sealed class StatsViewModel : INotifyPropertyChanged
     public ObservableCollection<StatTileInfo> Tiles { get; } = [];
     public ObservableCollection<UpcomingTaskInfo> TodayTasks { get; } = [];
     public ObservableCollection<UpcomingTaskInfo> UpcomingTasks { get; } = [];
+    public ObservableCollection<RhythmBarInfo> WeekRhythm { get; } = [];
+
+    private MyDayHeroInfo _myDay = new(false, 0, "0", "My Day", "", MyDayGlyph, new SolidColorBrush());
+    public MyDayHeroInfo MyDay
+    {
+        get => _myDay;
+        private set { _myDay = value; OnPropertyChanged(); }
+    }
+
+    private string _weekTotalText = "";
+    public string WeekTotalText
+    {
+        get => _weekTotalText;
+        private set { _weekTotalText = value; OnPropertyChanged(); }
+    }
+
+    private string? _streakText;
+    public string? StreakText
+    {
+        get => _streakText;
+        private set { _streakText = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasStreak)); }
+    }
+
+    public bool HasStreak => !string.IsNullOrEmpty(_streakText);
+
+    private string _weekRhythmAutomationName = "";
+    public string WeekRhythmAutomationName
+    {
+        get => _weekRhythmAutomationName;
+        private set { _weekRhythmAutomationName = value; OnPropertyChanged(); }
+    }
 
     private bool _hasTodayTasks;
     public bool HasTodayTasks
@@ -47,30 +86,45 @@ public sealed class StatsViewModel : INotifyPropertyChanged
     // since the task list and this page can't be visible at the same time.
     public void RefreshStats()
     {
-        // Icons sit inline on the title's line now, so the colour has to carry the tile's
-        // state on its own — there is no longer a badge fill behind it.
         var neutralFg  = ThemeResourceHelper.GetBrush("TextFillColorSecondaryBrush");
         var successFg  = ThemeResourceHelper.GetBrush("SystemFillColorSuccessBrush");
         var criticalFg = ThemeResourceHelper.GetBrush("SystemFillColorCriticalBrush");
         // No standard "starred/gold" theme token in this app's palette — same light/dark
-        // hardcoded pairing PriorityToForegroundConverter already uses for chip colors,
-        // via the ThemeResourceHelper.GetThemedBrush overload built for exactly this.
+        // hardcoded pairing PriorityToForegroundConverter already uses for chip colors.
         var starredFg = ThemeResourceHelper.GetThemedBrush(
             Windows.UI.Color.FromArgb(255, 157, 108,   0),
             Windows.UI.Color.FromArgb(255, 255, 200,  87));
 
+        var neutralBg  = ThemeResourceHelper.GetBrush("CardBackgroundFillColorDefaultBrush");
+        var successBg   = ThemeResourceHelper.GetBrush("SystemFillColorSuccessBackgroundBrush");
+        var criticalBg  = ThemeResourceHelper.GetBrush("SystemFillColorCriticalBackgroundBrush");
+        // A low-alpha gold wash — same hues as starredFg, thinned to a tile-fill tint.
+        var starredBg = ThemeResourceHelper.GetThemedBrush(
+            Windows.UI.Color.FromArgb(38, 157, 108,   0),
+            Windows.UI.Color.FromArgb(38, 255, 200,  87));
+
         var tasks = Tasks.ToList();
         var today = DateTime.Today;
 
-        // completed/total, not remaining/total: the percentage beneath it measures
-        // completion, so the fraction has to agree — remaining/total would render an
-        // untouched day as "2 / 2" against "0%". Completing a task does not clear
-        // IsInMyDay (only the daily reset does), so finished tasks stay in the
-        // denominator, which is what makes this a progress ratio at all.
+        // completed/total, not remaining/total: the percentage measures completion, so the
+        // fraction has to agree — remaining/total would render an untouched day as "2 / 2"
+        // against "0%". Completing a task does not clear IsInMyDay (only the daily reset
+        // does), so finished tasks stay in the denominator.
         int myDayTotal     = tasks.Count(t => t.IsInMyDay);
         int myDayCompleted = tasks.Count(t => t.IsInMyDay && t.IsCompleted);
         int myDayPercent   = myDayTotal > 0 ? (int)Math.Round(myDayCompleted * 100.0 / myDayTotal) : 0;
         bool myDayPlanned  = myDayTotal > 0;
+
+        MyDay = new MyDayHeroInfo(
+            myDayPlanned,
+            myDayPercent,
+            myDayPlanned ? $"{myDayPercent}%" : "0",
+            Strings.Stats_Tile_MyDay_Title,
+            myDayPlanned
+                ? Strings.Stats_MyDay_Hero_Done(myDayCompleted, myDayTotal)
+                : Strings.Stats_Tile_MyDay_Description_Empty,
+            MyDayGlyph,
+            myDayPlanned ? successBg : neutralBg);
 
         // Due dates: the day as written, never through ToLocalTime — see TipEngine.
         int dueToday = tasks.Count(t =>
@@ -85,32 +139,26 @@ public sealed class StatsViewModel : INotifyPropertyChanged
         int starred = tasks.Count(t => t.IsStarred && !t.IsCompleted);
 
         Tiles.Clear();
-        // An empty My Day has no ratio to report: "0 / 0" against "0%" in success-green
-        // reads as failure when the truth is that nothing has been planned yet. Drop to a
-        // plain count, a neutral icon, and a description that says so.
-        Tiles.Add(new StatTileInfo(
-            "Stats_MyDay", Strings.Stats_Tile_MyDay_Title,
-            myDayPlanned ? $"{myDayCompleted} / {myDayTotal}" : "0",
-            myDayPlanned ? $"{myDayPercent}%" : null,
-            myDayPlanned ? Strings.Stats_Tile_MyDay_Description : Strings.Stats_Tile_MyDay_Description_Empty,
-            MyDayGlyph,
-            myDayPlanned ? successFg : neutralFg,
-            "myday"));
         Tiles.Add(new StatTileInfo(
             "Stats_DueToday", Strings.Stats_Tile_DueToday_Title,
-            dueToday.ToString(), null,
+            dueToday.ToString(),
             Strings.Stats_Tile_DueToday_Description,
-            DueTodayGlyph, neutralFg, "planned"));
+            DueTodayGlyph, neutralFg, neutralBg, "planned"));
         Tiles.Add(new StatTileInfo(
             "Stats_Overdue", Strings.Stats_Tile_Overdue_Title,
-            overdue.ToString(), null,
+            overdue.ToString(),
             overdue > 0 ? Strings.Stats_Tile_Overdue_Description_Active : Strings.Stats_Tile_Overdue_Description_Clear,
-            OverdueGlyph, overdue > 0 ? criticalFg : neutralFg, "planned"));
+            OverdueGlyph,
+            overdue > 0 ? criticalFg : neutralFg,
+            overdue > 0 ? criticalBg : neutralBg,
+            "planned"));
         Tiles.Add(new StatTileInfo(
             "Stats_Starred", Strings.Stats_Tile_Starred_Title,
-            starred.ToString(), null,
+            starred.ToString(),
             Strings.Stats_Tile_Starred_Description,
-            StarredGlyph, starredFg, "important"));
+            StarredGlyph, starredFg, starredBg, "important"));
+
+        RefreshWeekRhythm(tasks, today);
 
         var tomorrow = today.AddDays(1);
 
@@ -139,6 +187,42 @@ public sealed class StatsViewModel : INotifyPropertyChanged
             UpcomingTasks.Add(new UpcomingTaskInfo(task, task.Title, dueLabel));
         }
         HasUpcomingTasks = UpcomingTasks.Count > 0;
+    }
+
+    private void RefreshWeekRhythm(IReadOnlyList<TodoItem> tasks, DateTime today)
+    {
+        var accentFill  = ThemeResourceHelper.GetBrush("AccentFillColorDefaultBrush");
+        var partialFill = ThemeResourceHelper.GetBrush("AccentFillColorSecondaryBrush");
+        var emptyFill   = ThemeResourceHelper.GetBrush("ControlFillColorSecondaryBrush");
+        var todayLabel  = ThemeResourceHelper.GetBrush("AccentTextFillColorPrimaryBrush");
+        var normalLabel = ThemeResourceHelper.GetBrush("TextFillColorSecondaryBrush");
+
+        var days = SummaryStats.WeekRhythm(tasks, today);
+        int peak = Math.Max(1, days.Max(d => d.Completed));
+        var dayNames = CultureInfo.CurrentCulture.DateTimeFormat;
+
+        WeekRhythm.Clear();
+        foreach (var day in days)
+        {
+            double fraction = (double)day.Completed / peak;
+            var fill = day.IsToday ? accentFill : day.Completed > 0 ? partialFill : emptyFill;
+            WeekRhythm.Add(new RhythmBarInfo(
+                RhythmFloor + (RhythmBand - RhythmFloor) * fraction,
+                fill,
+                dayNames.GetAbbreviatedDayName(day.Date.DayOfWeek)[..1],
+                day.IsToday ? todayLabel : normalLabel,
+                day.IsToday));
+        }
+
+        int total = days.Sum(d => d.Completed);
+        WeekTotalText = total == 0 ? Strings.Stats_Week_NothingDone : Strings.Stats_Week_Done(total);
+
+        int streak = SummaryStats.CurrentStreak(tasks, today);
+        // A 1-day streak is just "today" — not worth naming until it's actually a run.
+        StreakText = streak >= 2 ? Strings.Stats_Week_Streak(streak) : null;
+
+        WeekRhythmAutomationName = Strings.Stats_Week_RhythmName(total)
+            + (StreakText is { } s ? $", {s}" : "");
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
