@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+### Changed
+- Summary page reworked for parity with the mobile companion: My Day is now a hero card
+  with a progress ring, the Due today / Overdue / Starred tiles are tinted by meaning and
+  stay a single row of thirds, and a new "This week" strip shows the last seven days'
+  completions with an "N-day streak" line
+
 ---
 
 ## [0.21.4] - 2026-08-13

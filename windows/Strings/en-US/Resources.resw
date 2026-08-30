@@ -158,6 +158,12 @@
   <data name="Stats_Tile_Overdue_Description_Active" xml:space="preserve"><value>Catch up when you can</value></data>
   <data name="Stats_Tile_Starred_Title" xml:space="preserve"><value>Starred</value></data>
   <data name="Stats_Tile_Starred_Description" xml:space="preserve"><value>Important &amp; pinned</value></data>
+  <data name="Stats_ThisWeekHeader.Text" xml:space="preserve"><value>This week</value></data>
+  <data name="Stats_MyDay_Hero_Done" xml:space="preserve"><value>{0} of {1} done today</value><comment>{0} = completed count, {1} = total count</comment></data>
+  <data name="Stats_Week_Done" xml:space="preserve"><value>{0} done</value><comment>{0} = tasks completed this week</comment></data>
+  <data name="Stats_Week_NothingDone" xml:space="preserve"><value>Nothing done yet</value></data>
+  <data name="Stats_Week_Streak" xml:space="preserve"><value>{0}-day streak</value><comment>{0} = consecutive days with a completion</comment></data>
+  <data name="Stats_Week_RhythmName" xml:space="preserve"><value>This week: {0} completed</value><comment>screen-reader label for the completion strip; {0} = count</comment></data>
 
   <!-- ── Task row overflow menu (x:Uid mapped) ───────────────── -->
   <data name="TaskRow_FocusMenuItem.Text" xml:space="preserve"><value>Focus on this</value></data>

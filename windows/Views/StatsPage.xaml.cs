@@ -22,18 +22,14 @@ public sealed partial class StatsPage : Page
         _viewModel.RefreshStats();
     }
 
-    public static bool HasNav(string? navTag) => navTag != null;
-
-    // My Day is the only tile with a second value line ("0%") — collapse the row for
-    // every other tile rather than reserve blank space for it.
-    public static Visibility SecondaryValueVisibility(string? secondaryValue) =>
-        string.IsNullOrEmpty(secondaryValue) ? Visibility.Collapsed : Visibility.Visible;
-
     private void TaskRow_Click(object sender, RoutedEventArgs e)
     {
         if ((sender as FrameworkElement)?.Tag is UpcomingTaskInfo row)
             App.MainWindowInstance?.NavigateToTask(row.Task);
     }
+
+    private void MyDayHero_Click(object sender, RoutedEventArgs e)
+        => App.MainWindowInstance?.NavigateTo("myday");
 
     private void Tile_Click(object sender, RoutedEventArgs e)
     {
