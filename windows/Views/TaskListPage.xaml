@@ -770,12 +770,19 @@
                                                       IsChecked="{x:Bind IsCompleted, Mode=OneWay}"
                                                       Click="PaneStepCheck_Click"
                                                       AutomationProperties.Name="{x:Bind Title, Mode=OneWay}" />
+                                            <!-- Wraps instead of clipping: a long title stays
+                                                 fully readable without a drag-select to scroll
+                                                 the box, which stutters inside the repeater +
+                                                 pane ScrollViewer. Enter is caught in
+                                                 PaneStepText_KeyDown, so AcceptsReturn is moot. -->
                                             <TextBox Grid.Column="1"
                                                      Tag="{x:Bind}"
                                                      Text="{x:Bind Title, Mode=OneWay}"
                                                      BorderThickness="0"
                                                      Background="Transparent"
                                                      Padding="8,6"
+                                                     TextWrapping="Wrap"
+                                                     AcceptsReturn="False"
                                                      VerticalAlignment="Center"
                                                      VerticalContentAlignment="Center"
                                                      Opacity="{x:Bind IsCompleted, Converter={StaticResource BoolToOpacity}, Mode=OneWay}"
