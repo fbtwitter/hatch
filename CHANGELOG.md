@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+### Fixed
+- Details-pane step titles now wrap instead of clipping — a long title no longer needs a
+  drag-select to scroll it into view, which stuttered inside the steps list
+
 ---
 
 ## [0.22.0] - 2026-08-30
