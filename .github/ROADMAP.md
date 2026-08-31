@@ -8,6 +8,7 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.22.1** | Aug 31, 2026 | Fix details-pane step titles clipping instead of wrapping — reading a long step no longer needs a laggy drag-select |
 | **v0.22.0** | Aug 30, 2026 | Task steps (subtasks / checklist) with sync protocol v3; Summary page reworked for mobile parity (My Day progress ring, meaning-tinted tiles, this-week completion strip + streak) |
 | **v0.21.4** | Aug 13, 2026 | Releases now publish to the Microsoft Store automatically |
 | **v0.21.3** | Aug 13, 2026 | Fix navigation badge counts flashing repeatedly during normal use while synced |
