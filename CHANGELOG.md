@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.22.2] - 2026-09-02
+
+### Changed
+- Task export is now JSON only — the CSV and Markdown options have been removed
+
+---
+
 ## [0.22.1] - 2026-08-31
 
 ### Fixed

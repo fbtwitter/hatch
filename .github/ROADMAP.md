@@ -8,6 +8,7 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.22.2** | Sep 2, 2026 | Task export simplified to JSON only — CSV and Markdown removed |
 | **v0.22.1** | Aug 31, 2026 | Fix details-pane step titles clipping instead of wrapping — reading a long step no longer needs a laggy drag-select |
 | **v0.22.0** | Aug 30, 2026 | Task steps (subtasks / checklist) with sync protocol v3; Summary page reworked for mobile parity (My Day progress ring, meaning-tinted tiles, this-week completion strip + streak) |
 | **v0.21.4** | Aug 13, 2026 | Releases now publish to the Microsoft Store automatically |
@@ -97,7 +98,7 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 | Proactive tip popup — opt-in, once/day | ✅ Shipped (v0.13, TeachingTip rework v0.15) |
 | Summary page — KPI tiles, Today/Upcoming, launchpad navigation | ✅ Shipped (v0.14–v0.15, mobile-parity rework v0.22) |
 | Task steps — ordered subtasks / checklist, sync protocol v3 | ✅ Shipped (v0.22) |
-| Task export — JSON, CSV, Markdown | ✅ Shipped (v0.14) |
+| Task export — JSON | ✅ Shipped (v0.14, simplified to JSON only v0.22.2) |
 | Fully automatic sync — debounced push, periodic pull, conflict dialog with merge option | ✅ Shipped (v0.12.7, v0.14) |
 | End-to-end encrypted sync — `HATCHE2E.v1` envelope, PBKDF2 600k + AES-256-GCM | ✅ Shipped (v0.16) |
 | PKCE OAuth sign-in on Windows | ✅ Shipped (v0.16) |
