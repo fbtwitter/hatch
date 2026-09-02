@@ -8,6 +8,7 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.22.3** | Sep 2, 2026 | Export card icon corrected to "save a local copy" (was an upload icon) |
 | **v0.22.2** | Sep 2, 2026 | Task export simplified to JSON only — CSV and Markdown removed |
 | **v0.22.1** | Aug 31, 2026 | Fix details-pane step titles clipping instead of wrapping — reading a long step no longer needs a laggy drag-select |
 | **v0.22.0** | Aug 30, 2026 | Task steps (subtasks / checklist) with sync protocol v3; Summary page reworked for mobile parity (My Day progress ring, meaning-tinted tiles, this-week completion strip + streak) |
