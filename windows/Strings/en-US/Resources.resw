@@ -423,6 +423,7 @@
   <data name="Settings_LottieCardHeader.Text" xml:space="preserve"><value>Lottie Animation File</value></data>
   <data name="Settings_OpenDataFolderCardHeader.Text" xml:space="preserve"><value>Open data folder</value></data>
   <data name="Settings_ExportTasksCardHeader.Text" xml:space="preserve"><value>Export tasks</value></data>
+  <data name="Settings_ImportTasksCardHeader.Text" xml:space="preserve"><value>Import tasks</value></data>
 
   <data name="Settings_PageTitle.Text" xml:space="preserve"><value>Settings</value></data>
   <data name="Settings_SectionAppearance.Text" xml:space="preserve"><value>Appearance &amp; behavior</value></data>
@@ -557,6 +558,11 @@
   <data name="Settings_ExportTasksCardDescription.Text" xml:space="preserve"><value>Save your tasks as a JSON file you choose where to put — a full backup you can keep or move to another machine</value></data>
   <data name="Settings_ExportTasksCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Save your tasks as a JSON file you choose where to put — a full backup you can keep or move to another machine</value></data>
   <data name="Settings_ExportJson.Content" xml:space="preserve"><value>Export JSON</value></data>
+  <data name="Settings_ImportTasksCardDescription.Text" xml:space="preserve"><value>Merge in a Hatch JSON export — newer entries win, nothing is deleted</value></data>
+  <data name="Settings_ImportTasksCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Merge in a Hatch JSON export — newer entries win, nothing is deleted</value></data>
+  <data name="Settings_ImportJson.Content" xml:space="preserve"><value>Import JSON</value></data>
+  <data name="Settings_Import_BadFile" xml:space="preserve"><value>Import failed — that doesn't look like a Hatch JSON export</value></data>
+  <data name="Settings_Import_Count" xml:space="preserve"><value>Imported {0} task(s)</value></data>
 
   <data name="Settings_SectionAbout.Text" xml:space="preserve"><value>About</value></data>
   <data name="Settings_HatchExpander.Header" xml:space="preserve"><value>Hatch</value></data>

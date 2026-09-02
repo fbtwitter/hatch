@@ -216,6 +216,21 @@ public sealed partial class SettingsPage : Page
         await _viewModel.ExportAsync(file.Path);
     }
 
+    private async void ImportButton_Click(object sender, RoutedEventArgs e)
+    {
+        var picker = new FileOpenPicker();
+        WinRT.Interop.InitializeWithWindow.Initialize(
+            picker,
+            Win32Interop.GetWindowFromWindowId(App.MainWindowInstance!.AppWindow.Id));
+        picker.SuggestedStartLocation = PickerLocationId.Desktop;
+        picker.FileTypeFilter.Add(".json");
+
+        var file = await picker.PickSingleFileAsync();
+        if (file == null) return;
+
+        await _viewModel.ImportAsync(file.Path);
+    }
+
     private void SyncHotkeyKeySelector()
     {
         var vk = _viewModel.HotkeyVirtualKey;

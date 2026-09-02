@@ -954,6 +954,59 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         catch (Exception ex) { ExportError = ex.Message; }
     }
 
+    // ── Import ───────────────────────────────────────────────────────────────
+
+    private string? _importError;
+    public string? ImportError
+    {
+        get => _importError;
+        private set { _importError = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasImportError)); }
+    }
+
+    public bool HasImportError => !string.IsNullOrEmpty(_importError);
+
+    private string? _importResult;
+    public string? ImportResult
+    {
+        get => _importResult;
+        private set { _importResult = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasImportResult)); }
+    }
+
+    public bool HasImportResult => !string.IsNullOrEmpty(_importResult);
+
+    // Merges a JSON export into tasks.json with the same record-level LWW as sync (local wins
+    // ties). Reloads MainViewModel so the list — and, via ReloadAsync, due-date reminders —
+    // reflect the merge, and pushes when signed in so the merged state propagates.
+    public async Task ImportAsync(string path)
+    {
+        ImportError = null;
+        ImportResult = null;
+        try
+        {
+            var imported = TaskImport.Parse(await File.ReadAllTextAsync(path));
+            if (imported == null)
+            {
+                ImportError = Strings.Settings_Import_BadFile;
+                return;
+            }
+
+            var (merged, applied) = TaskImport.Merge(await new TaskStorageService().LoadAsync(), imported);
+            await new TaskStorageService().SaveAsync(merged);
+
+            if (App.MainWindowInstance?.ViewModel is { } vm)
+                await vm.ReloadAsync();
+
+            if (App.SyncService.IsSignedIn)
+                App.SyncService.SchedulePush(merged);
+
+            ImportResult = Strings.Settings_Import_Count(applied);
+        }
+        catch (Exception ex)
+        {
+            ImportError = ex.Message;
+        }
+    }
+
     public ICommand OpenGitHubCommand { get; } =
         new RelayCommand(_ => Process.Start(new ProcessStartInfo
             { FileName = "https://github.com/fbtwitter/hatch", UseShellExecute = true }));

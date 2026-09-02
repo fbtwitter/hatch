@@ -37,6 +37,7 @@
     <Compile Include="..\Helpers\SummaryStats.cs" Link="Source\Helpers\SummaryStats.cs" />
     <Compile Include="..\Helpers\TaskSearchMatcher.cs" Link="Source\Helpers\TaskSearchMatcher.cs" />
     <Compile Include="..\Helpers\TaskExportFormatter.cs" Link="Source\Helpers\TaskExportFormatter.cs" />
+    <Compile Include="..\Helpers\TaskImport.cs" Link="Source\Helpers\TaskImport.cs" />
     <Compile Include="..\Services\TipEngine.cs" Link="Source\Services\TipEngine.cs" />
     <Compile Include="..\Services\SyncCrypto.cs" Link="Source\Services\SyncCrypto.cs" />
     <Compile Include="..\Services\SyncWire.cs" Link="Source\Services\SyncWire.cs" />
