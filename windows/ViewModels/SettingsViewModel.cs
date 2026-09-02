@@ -943,19 +943,13 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
     // Reads directly from disk (not the live in-memory MainViewModel) so the export always
     // reflects the last-saved state, and Settings stays decoupled from MainViewModel.
-    public async Task ExportAsync(string format, string path)
+    public async Task ExportAsync(string path)
     {
         ExportError = null;
         try
         {
             var data = await new TaskStorageService().LoadAsync();
-            var content = format switch
-            {
-                "csv"      => TaskExportFormatter.ToCsv(data),
-                "markdown" => TaskExportFormatter.ToMarkdown(data),
-                _          => TaskExportFormatter.ToJson(data)
-            };
-            await File.WriteAllTextAsync(path, content);
+            await File.WriteAllTextAsync(path, TaskExportFormatter.ToJson(data));
         }
         catch (Exception ex) { ExportError = ex.Message; }
     }
