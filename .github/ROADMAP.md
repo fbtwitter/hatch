@@ -8,6 +8,7 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.23.0** | Sep 2, 2026 | Import tasks from a Hatch JSON export — record-level last-write-wins merge, nothing deleted (parity with hatch-mobile) |
 | **v0.22.3** | Sep 2, 2026 | Export card icon corrected to "save a local copy" (was an upload icon) |
 | **v0.22.2** | Sep 2, 2026 | Task export simplified to JSON only — CSV and Markdown removed |
 | **v0.22.1** | Aug 31, 2026 | Fix details-pane step titles clipping instead of wrapping — reading a long step no longer needs a laggy drag-select |
@@ -100,6 +101,7 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 | Summary page — KPI tiles, Today/Upcoming, launchpad navigation | ✅ Shipped (v0.14–v0.15, mobile-parity rework v0.22) |
 | Task steps — ordered subtasks / checklist, sync protocol v3 | ✅ Shipped (v0.22) |
 | Task export — JSON | ✅ Shipped (v0.14, simplified to JSON only v0.22.2) |
+| Task import — JSON, LWW merge | ✅ Shipped (v0.23.0) |
 | Fully automatic sync — debounced push, periodic pull, conflict dialog with merge option | ✅ Shipped (v0.12.7, v0.14) |
 | End-to-end encrypted sync — `HATCHE2E.v1` envelope, PBKDF2 600k + AES-256-GCM | ✅ Shipped (v0.16) |
 | PKCE OAuth sign-in on Windows | ✅ Shipped (v0.16) |

@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.23.0] - 2026-09-02
+
+### Added
+- Import tasks from a Hatch JSON export (Settings → Data) — merges into your existing tasks,
+  newer entries win, nothing is deleted
+
+---
+
 ## [0.22.3] - 2026-09-02
 
 ### Fixed
