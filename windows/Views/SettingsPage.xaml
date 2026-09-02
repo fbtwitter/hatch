@@ -1077,14 +1077,8 @@
                                        Margin="0,2,0,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                         <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                            <Button x:Uid="Settings_ExportJson" Tag="json"
+                            <Button x:Uid="Settings_ExportJson"
                                     AutomationProperties.AutomationId="Settings_ExportJson"
-                                    Click="ExportButton_Click"/>
-                            <Button x:Uid="Settings_ExportCsv" Tag="csv"
-                                    AutomationProperties.AutomationId="Settings_ExportCsv"
-                                    Click="ExportButton_Click"/>
-                            <Button x:Uid="Settings_ExportMarkdown" Tag="markdown"
-                                    AutomationProperties.AutomationId="Settings_ExportMarkdown"
                                     Click="ExportButton_Click"/>
                         </StackPanel>
                     </Grid>

@@ -202,26 +202,18 @@ public sealed partial class SettingsPage : Page
 
     private async void ExportButton_Click(object sender, RoutedEventArgs e)
     {
-        var format = (string)((Button)sender).Tag;
-        var (extension, description) = format switch
-        {
-            "csv"      => (".csv", "CSV file"),
-            "markdown" => (".md", "Markdown file"),
-            _          => (".json", "JSON file")
-        };
-
         var picker = new FileSavePicker();
         WinRT.Interop.InitializeWithWindow.Initialize(
             picker,
             Win32Interop.GetWindowFromWindowId(App.MainWindowInstance!.AppWindow.Id));
         picker.SuggestedStartLocation = PickerLocationId.Desktop;
         picker.SuggestedFileName = $"hatch-tasks-{DateTime.Now:yyyy-MM-dd}";
-        picker.FileTypeChoices.Add(description, new List<string> { extension });
+        picker.FileTypeChoices.Add("JSON file", new List<string> { ".json" });
 
         var file = await picker.PickSaveFileAsync();
         if (file == null) return;
 
-        await _viewModel.ExportAsync(format, file.Path);
+        await _viewModel.ExportAsync(file.Path);
     }
 
     private void SyncHotkeyKeySelector()
