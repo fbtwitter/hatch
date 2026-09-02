@@ -8,6 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.22.3] - 2026-09-02
+
+### Fixed
+- Export card now uses the "save a local copy" icon instead of an upload icon
+
+---
+
 ## [0.22.2] - 2026-09-02
 
 ### Changed
