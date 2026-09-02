@@ -1091,6 +1091,44 @@
                                TextWrapping="Wrap"/>
                 </toolkit:SettingsCard>
 
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE8B5;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock x:Uid="Settings_ImportTasksCardHeader"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock x:Uid="Settings_ImportTasksCardDescription"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" VerticalAlignment="Center"
+                                x:Uid="Settings_ImportJson"
+                                AutomationProperties.AutomationId="Settings_ImportJson"
+                                Click="ImportButton_Click"/>
+                    </Grid>
+                </Border>
+
+                <toolkit:SettingsCard
+                    Visibility="{x:Bind ViewModel.HasImportResult, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <TextBlock Text="{x:Bind ViewModel.ImportResult, Mode=OneWay}"
+                               TextWrapping="Wrap"/>
+                </toolkit:SettingsCard>
+
+                <toolkit:SettingsCard
+                    Visibility="{x:Bind ViewModel.HasImportError, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <TextBlock Text="{x:Bind ViewModel.ImportError, Mode=OneWay}"
+                               Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                               TextWrapping="Wrap"/>
+                </toolkit:SettingsCard>
+
                 <TextBlock x:Uid="Settings_SectionAbout"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"/>
 

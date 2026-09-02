@@ -148,4 +148,6 @@ internal static class Strings
     public static string Settings_OpenPage_Important    => Get("Settings_OpenPage_Important");
     public static string Settings_OpenPage_Planned      => Get("Settings_OpenPage_Planned");
     public static string Settings_OpenPage_AllTasks     => Get("Settings_OpenPage_AllTasks");
+    public static string Settings_Import_BadFile         => Get("Settings_Import_BadFile");
+    public static string Settings_Import_Count(int count) => string.Format(Get("Settings_Import_Count"), count);
 }
