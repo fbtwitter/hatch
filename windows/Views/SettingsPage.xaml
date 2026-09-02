@@ -1065,7 +1065,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <FontIcon Grid.Column="0" Glyph="&#xE898;" FontSize="16"
+                        <FontIcon Grid.Column="0" Glyph="&#xE78C;" FontSize="16"
                                   VerticalAlignment="Center" Margin="0,0,20,0"/>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center"
                                     Margin="0,14,16,14">
