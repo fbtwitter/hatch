@@ -179,27 +179,28 @@
   <data name="Suggestion_AddButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Add to My Day</value></data>
 
   <!-- ── Details pane (x:Uid mapped) ─────────────────────────── -->
-  <data name="Pane_Header.Text" xml:space="preserve"><value>Details</value></data>
   <data name="PaneCloseButton.ToolTipService.ToolTip" xml:space="preserve"><value>Close (Esc)</value></data>
   <data name="PaneCloseButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Close details</value></data>
-  <data name="PaneTitleBox.Header" xml:space="preserve"><value>Title</value></data>
   <data name="PaneTitleBox.PlaceholderText" xml:space="preserve"><value>Task title</value></data>
-  <data name="PaneNotesBox.Header" xml:space="preserve"><value>Notes</value></data>
-  <data name="PaneNotesBox.PlaceholderText" xml:space="preserve"><value>Add a note…</value></data>
-  <data name="PaneMyDayToggle.Header" xml:space="preserve"><value>My Day</value></data>
-  <data name="PanePriorityCombo.Header" xml:space="preserve"><value>Priority</value></data>
+  <data name="PaneNotesBox.PlaceholderText" xml:space="preserve"><value>Add notes…</value></data>
   <data name="PriorityItem_None.Content" xml:space="preserve"><value>None</value></data>
   <data name="PriorityItem_Low.Content" xml:space="preserve"><value>Low</value></data>
   <data name="PriorityItem_Medium.Content" xml:space="preserve"><value>Medium</value></data>
   <data name="PriorityItem_High.Content" xml:space="preserve"><value>High</value></data>
-  <data name="PaneDueDatePicker.Header" xml:space="preserve"><value>Due date</value></data>
-  <data name="PaneDueDatePicker.PlaceholderText" xml:space="preserve"><value>No due date</value></data>
-  <data name="PaneRepeatCombo.Header" xml:space="preserve"><value>Repeat</value></data>
+  <data name="PaneDueDatePicker.PlaceholderText" xml:space="preserve"><value>Set date</value></data>
   <data name="RepeatItem_None.Content" xml:space="preserve"><value>Doesn't repeat</value></data>
   <data name="RepeatItem_Daily.Content" xml:space="preserve"><value>Daily</value></data>
   <data name="RepeatItem_Weekdays.Content" xml:space="preserve"><value>Weekdays</value></data>
   <data name="RepeatItem_Weekly.Content" xml:space="preserve"><value>Weekly</value></data>
   <data name="RepeatItem_Monthly.Content" xml:space="preserve"><value>Monthly</value></data>
+  <data name="Pane_DetailsSection.Text" xml:space="preserve"><value>Details</value></data>
+  <data name="Pane_ScheduleSection.Text" xml:space="preserve"><value>Schedule</value></data>
+  <data name="Pane_OrganizeSection.Text" xml:space="preserve"><value>Organize</value></data>
+  <data name="Pane_FocusLabel.Text" xml:space="preserve"><value>Focus</value></data>
+  <data name="Pane_DueDateLabel.Text" xml:space="preserve"><value>Due date</value></data>
+  <data name="Pane_MyDayLabel.Text" xml:space="preserve"><value>My Day</value></data>
+  <data name="Pane_RepeatLabel.Text" xml:space="preserve"><value>Repeat</value></data>
+  <data name="Pane_PriorityLabel.Text" xml:space="preserve"><value>Priority</value></data>
   <data name="Pane_TagsLabel.Text" xml:space="preserve"><value>Tags</value></data>
   <data name="PaneTagInput.PlaceholderText" xml:space="preserve"><value>Add a tag, press Enter</value></data>
   <data name="PaneTagChipRemove.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Remove tag</value></data>
@@ -229,6 +230,8 @@
   <data name="FocusMode_MarkDoneButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mark done</value></data>
   <data name="FocusMode_ExitButton.ToolTipService.ToolTip" xml:space="preserve"><value>Exit focus</value></data>
   <data name="FocusMode_ExitButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Exit focus</value></data>
+  <data name="FocusMode_Pause" xml:space="preserve"><value>Pause</value></data>
+  <data name="FocusMode_Resume" xml:space="preserve"><value>Resume</value></data>
 
   <!-- ── Tips ────────────────────────────────────────────────── -->
   <data name="Tip_SampleTaskTitle" xml:space="preserve"><value>Example: Click to edit task name</value></data>

@@ -245,6 +245,40 @@ public sealed partial class TaskListPage : Page
     private void PaneScrim_Tapped(object sender, TappedRoutedEventArgs e)
         => ViewModel.SelectedTask = null;
 
+    // Completion from the pane sets the same TodoItem property the row's checkbox binds to,
+    // so MainViewModel stamps CompletedAt, saves, and spawns the next occurrence of a
+    // recurring task — the pane must not grow its own completion path. Closing afterwards
+    // matches the mobile sheet: the task has just left the group the pane was opened from.
+    private void PaneCompleteCheck_Click(object sender, RoutedEventArgs e)
+    {
+        if (_paneTask is null) return;
+        _paneTask.IsCompleted = PaneCompleteCheck.IsChecked == true;
+        ViewModel.SelectedTask = null;
+    }
+
+    private void PaneStarButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_paneTask is null) return;
+        _paneTask.IsStarred = !_paneTask.IsStarred;
+        ApplyPaneStarState(_paneTask);
+    }
+
+    private void PaneFocusRow_Click(object sender, RoutedEventArgs e)
+    {
+        if (_paneTask is null) return;
+        App.MascotWindowInstance?.ShowFocusMode(_paneTask);
+    }
+
+    // Same two glyphs as BoolToStarGlyphConverter; the pane sets them in code because its
+    // fields are populated imperatively rather than bound to the selected task.
+    private void ApplyPaneStarState(TodoItem task)
+    {
+        PaneStarIcon.Glyph = task.IsStarred ? "\xE735" : "\xE734";
+        var label = task.IsStarred ? Strings.Task_Tooltip_Star_Remove : Strings.Task_Tooltip_Star_Add;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(PaneStarButton, label);
+        ToolTipService.SetToolTip(PaneStarButton, label);
+    }
+
     private void AnimatePane(double from, double to, int durationMs, bool easeOut, Action? onComplete = null)
     {
         _paneStoryboard?.Stop();
@@ -270,6 +304,11 @@ public sealed partial class TaskListPage : Page
     {
         _updatingPane = true;
         PaneTitleBox.Text = task.Title;
+        PaneCompleteCheck.IsChecked = task.IsCompleted;
+        // TextBox has no TextDecorations, so a completed title dims instead of
+        // striking through — the same 0.5 the row uses via BoolToOpacityConverter.
+        PaneTitleBox.Opacity = task.IsCompleted ? 0.5 : 1.0;
+        ApplyPaneStarState(task);
         PaneNotesBox.Text = task.Notes ?? string.Empty;
         PaneMyDayToggle.IsOn = task.IsInMyDay;
         PanePriorityCombo.SelectedIndex = (int)task.Priority;

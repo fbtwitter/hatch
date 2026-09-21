@@ -90,6 +90,11 @@ public partial class App : Application
             {
                 MainWindowInstance?.ViewModel.CompleteTaskById(completeGuid);
             }
+            else if (uri.Host == "snooze" && TryGetQueryParam(uri, "id", out var snoozeId) &&
+                     Guid.TryParse(snoozeId, out var snoozeGuid))
+            {
+                MainWindowInstance?.ViewModel.SnoozeReminderById(snoozeGuid);
+            }
         });
     }
 

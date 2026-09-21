@@ -9,10 +9,27 @@ public sealed class NotificationSchedulerService
     private const int DueHour = 9;
     private const int WarnMinutes = 30;
 
+    public static readonly TimeSpan SnoozeDuration = TimeSpan.FromHours(1);
+
+    // Two tag namespaces, deliberately not one prefix. "task-{id}" and "task-{id}-warn" are the
+    // due-date pair, rebuilt from scratch on any edit; "snooze-{id}" is a one-off the user asked
+    // for by hand. Keeping them apart is what lets a snooze survive an unrelated rebuild — a
+    // signed-in client re-schedules every five minutes on the sync pull, so a shared prefix
+    // would quietly cancel the snooze long before it fired. Same reasoning as hatch-mobile's
+    // separate hatch-due-snooze-$id work name (92f57fb).
+    private static string ReminderPrefix(Guid taskId) => $"task-{taskId}";
+    private static string SnoozeTag(Guid taskId) => $"snooze-{taskId}";
+
     public void ScheduleForTask(TodoItem task)
     {
-        UnscheduleForTask(task.Id);
-        if (task.DueDate == null || task.IsCompleted) return;
+        UnscheduleReminders(task.Id);
+        if (task.DueDate == null || task.IsCompleted)
+        {
+            // The one branch every mutation path funnels through, so a completed task or one
+            // that lost its due date can never re-notify — snoozed or not.
+            CancelSnooze(task.Id);
+            return;
+        }
 
         var dueTime = GetDueTime(task.DueDate.Value);
         var warnTime = dueTime.AddMinutes(-WarnMinutes);
@@ -22,23 +39,30 @@ public sealed class NotificationSchedulerService
         {
             var notifier = ToastNotificationManager.CreateToastNotifier();
             if (dueTime > now.AddSeconds(30))
-                notifier.AddToSchedule(BuildToast(task, dueTime, "Due now", $"task-{task.Id}"));
+                notifier.AddToSchedule(BuildToast(task.Id, task.Title, dueTime, "Due now", ReminderPrefix(task.Id)));
             if (warnTime > now.AddSeconds(30))
-                notifier.AddToSchedule(BuildToast(task, warnTime, "Due in 30 minutes", $"task-{task.Id}-warn"));
+                notifier.AddToSchedule(BuildToast(task.Id, task.Title, warnTime, "Due in 30 minutes", $"{ReminderPrefix(task.Id)}-warn"));
         }
         catch { }
     }
 
+    // Cancels everything pending for a task, snooze included — the delete and complete paths.
     public void UnscheduleForTask(Guid taskId)
     {
+        UnscheduleReminders(taskId);
+        CancelSnooze(taskId);
+    }
+
+    // Re-fires the same reminder later, leaving the due date alone (which is what the task row's
+    // own "Snooze" submenu moves instead). Replaces any pending snooze rather than queuing a
+    // second one, so snoozing again from the re-fired toast just pushes it out another hour.
+    public void SnoozeReminder(Guid taskId, string title, TimeSpan delay)
+    {
+        CancelSnooze(taskId);
         try
         {
-            var notifier = ToastNotificationManager.CreateToastNotifier();
-            var prefix = $"task-{taskId}";
-            foreach (var n in notifier.GetScheduledToastNotifications()
-                                       .Where(n => n.Tag.StartsWith(prefix, StringComparison.Ordinal))
-                                       .ToList())
-                notifier.RemoveFromSchedule(n);
+            ToastNotificationManager.CreateToastNotifier()
+                .AddToSchedule(BuildToast(taskId, title, DateTimeOffset.Now + delay, "Due now", SnoozeTag(taskId)));
         }
         catch { }
     }
@@ -47,11 +71,38 @@ public sealed class NotificationSchedulerService
     {
         try
         {
+            var list = tasks as IList<TodoItem> ?? tasks.ToList();
+
             var notifier = ToastNotificationManager.CreateToastNotifier();
+            // Live snoozes survive; orphans (a task deleted on another device, so absent from
+            // this list) do not — the same clean-up the blanket removal used to give.
+            var live = list.Where(t => !t.IsCompleted).Select(t => SnoozeTag(t.Id)).ToHashSet(StringComparer.Ordinal);
             foreach (var n in notifier.GetScheduledToastNotifications().ToList())
+            {
+                if (n.Tag.StartsWith("snooze-", StringComparison.Ordinal) && live.Contains(n.Tag))
+                    continue;
                 notifier.RemoveFromSchedule(n);
-            foreach (var task in tasks)
+            }
+
+            foreach (var task in list)
                 ScheduleForTask(task);
+        }
+        catch { }
+    }
+
+    private static void UnscheduleReminders(Guid taskId) => RemoveByTag(t =>
+        t.StartsWith(ReminderPrefix(taskId), StringComparison.Ordinal));
+
+    private static void CancelSnooze(Guid taskId) => RemoveByTag(t =>
+        string.Equals(t, SnoozeTag(taskId), StringComparison.Ordinal));
+
+    private static void RemoveByTag(Func<string, bool> match)
+    {
+        try
+        {
+            var notifier = ToastNotificationManager.CreateToastNotifier();
+            foreach (var n in notifier.GetScheduledToastNotifications().Where(n => match(n.Tag)).ToList())
+                notifier.RemoveFromSchedule(n);
         }
         catch { }
     }
@@ -72,12 +123,12 @@ public sealed class NotificationSchedulerService
     }
 
     private static ScheduledToastNotification BuildToast(
-        TodoItem task, DateTimeOffset deliveryTime, string body, string tag)
+        Guid taskId, string taskTitle, DateTimeOffset deliveryTime, string body, string tag)
     {
-        var title = EscapeXml(task.Title);
+        var title = EscapeXml(taskTitle);
         var xml = new XmlDocument();
         xml.LoadXml($"""
-            <toast activationType="protocol" launch="hatch://opentask?id={task.Id}">
+            <toast activationType="protocol" launch="hatch://opentask?id={taskId}">
               <visual>
                 <binding template="ToastGeneric">
                   <text>{title}</text>
@@ -86,7 +137,10 @@ public sealed class NotificationSchedulerService
               </visual>
               <actions>
                 <action content="Mark complete"
-                        arguments="hatch://complete?id={task.Id}"
+                        arguments="hatch://complete?id={taskId}"
+                        activationType="protocol" />
+                <action content="Remind me in 1 hour"
+                        arguments="hatch://snooze?id={taskId}"
                         activationType="protocol" />
               </actions>
             </toast>

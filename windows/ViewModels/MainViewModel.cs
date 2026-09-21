@@ -195,6 +195,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(IsPlannedEmpty));
 
             App.NotificationScheduler.RescheduleAll(Tasks);
+            TasksLoaded?.Invoke();
         }
         catch { _isBulkLoading = false; }
     }
@@ -606,6 +607,10 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         task.DueDate = newDueDate;
     }
 
+    // Raised at the end of every load, including a sync-pull reload. MascotWindow uses it
+    // to restore a persisted focus session once the task it names actually exists.
+    public event Action? TasksLoaded;
+
     public TodoItem? FindTaskById(Guid id) => Tasks.FirstOrDefault(t => t.Id == id);
 
     public void CompleteTaskById(Guid id)
@@ -613,6 +618,16 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         var task = Tasks.FirstOrDefault(t => t.Id == id);
         if (task != null && !task.IsCompleted)
             task.IsCompleted = true;
+    }
+
+    // The "Remind me in 1 hour" toast action. Moves the reminder, not the due date —
+    // the row's own Snooze submenu is the one that moves the date.
+    public void SnoozeReminderById(Guid id)
+    {
+        var task = Tasks.FirstOrDefault(t => t.Id == id);
+        if (task != null && !task.IsCompleted)
+            App.NotificationScheduler.SnoozeReminder(
+                task.Id, task.Title, NotificationSchedulerService.SnoozeDuration);
     }
 
     public void SaveAsync()
