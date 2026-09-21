@@ -38,6 +38,10 @@ internal static class Strings
     public static string Task_Chip_AddDate          => Get("Task_Chip_AddDate");
     public static string Task_Tooltip_Star_Add      => Get("Task_Tooltip_Star_Add");
     public static string Task_Tooltip_Star_Remove   => Get("Task_Tooltip_Star_Remove");
+
+    // ── Focus mode ───────────────────────────────────────────
+    public static string FocusMode_Pause  => Get("FocusMode_Pause");
+    public static string FocusMode_Resume => Get("FocusMode_Resume");
     public static string Task_Tooltip_Edit          => Get("Task_Tooltip_Edit");
     public static string Task_Tooltip_More          => Get("Task_Tooltip_More");
     public static string Task_Menu_Delete           => Get("Task_Menu_Delete");

@@ -59,6 +59,14 @@ public sealed class AppSettings
     public List<string> CustomTips { get; set; } = [];
     public DateTime? LastInspirationDate { get; set; } = null;        // daily QOTD slot
 
+    // Focus mode — the per-task stopwatch (Helpers/FocusTimer.cs). Local and ephemeral:
+    // never written to TodoItem, tasks.json or the wire model, so it stays out of the
+    // cross-repo sync contract, matching hatch-mobile.
+    public Guid? FocusTaskId { get; set; } = null;
+    public long FocusStartedAtUtcTicks { get; set; } = 0;
+    public long FocusAccumulatedTicks { get; set; } = 0;
+    public bool FocusPaused { get; set; } = false;
+
     // Optional sync — null when not signed in.
     // Tokens now live in the Credential Locker (SyncTokenStore); these two properties
     // remain only so values written by older versions can be migrated, then nulled.
