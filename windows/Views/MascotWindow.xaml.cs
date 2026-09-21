@@ -49,6 +49,10 @@ public sealed partial class MascotWindow : Window
     private FocusModeViewModel? _focusViewModel;
     private DispatcherTimer? _proactiveTipDismissTimer;
     private Tip? _currentProactiveTip;
+    private bool _proactiveTipProgrammaticClose;
+    private bool _placingPopups;
+    private XamlRoot? _mascotXamlRoot;
+    private double _popupScale;
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
@@ -94,7 +98,22 @@ public sealed partial class MascotWindow : Window
 
         InitializeComponent();
 
-        ProactiveTip.Target = MascotGrid;
+        FocusPopupBorder.SizeChanged += (_, _) => PositionMascotPopups();
+        ProactiveTipContent.SizeChanged += (_, _) => PositionMascotPopups();
+        MascotGrid.Loaded += (_, _) =>
+        {
+            if (_mascotXamlRoot != null) return;
+            _mascotXamlRoot = MascotGrid.XamlRoot;
+            _popupScale = _mascotXamlRoot.RasterizationScale;
+            _mascotXamlRoot.Changed += OnMascotXamlRootChanged;
+        };
+        AppWindow.Changed += (_, args) =>
+        {
+            if (!args.DidPositionChange && !args.DidSizeChange) return;
+            PositionMascotPopups();
+            if (ViewModel.IsBubbleOpen)
+                _bubbleWindow?.PositionRelativeToMascot(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width);
+        };
 
         _idleAnimation = MascotGrid.Resources["IdleAnimation"] as Storyboard;
         _idleFadeOut   = MascotGrid.Resources["IdleFadeOut"]   as Storyboard;
@@ -163,7 +182,8 @@ public sealed partial class MascotWindow : Window
             {
                 if (ViewModel.IsBubbleOpen)
                 {
-                    ProactiveTip.IsOpen = false;
+                    CloseProactiveTip();
+                    FocusPopup.IsOpen = false;
                     _wigglePlayed = false;
                     bool wasNull = _bubbleWindow == null;
                     var bubble = EnsureBubbleWindowCreated();
@@ -183,6 +203,8 @@ public sealed partial class MascotWindow : Window
                 else
                 {
                     _bubbleWindow?.HideWindow();
+                    if (_focusViewModel != null && ViewModel.IsVisible && !ViewModel.IsMascotHidden)
+                        FocusPopup.IsOpen = true;
                 }
             }
             else if (e.PropertyName == nameof(MascotViewModel.IsMascotHidden))
@@ -193,11 +215,13 @@ public sealed partial class MascotWindow : Window
                 if (ViewModel.IsMascotHidden)
                 {
                     _bubbleWindow?.HideWindow();
-                    ProactiveTip.IsOpen = false;
+                    CloseProactiveTip();
+                    FocusPopup.IsOpen = false;
                 }
                 else
                 {
                     TryPlayEntrance();
+                    if (_focusViewModel != null) FocusPopup.IsOpen = true;
                 }
             }
             else if (e.PropertyName == nameof(MascotViewModel.WindowSize))
@@ -215,6 +239,9 @@ public sealed partial class MascotWindow : Window
         {
             _inactivityTimer?.Stop();
             _proactiveTipDismissTimer?.Stop();
+            _focusViewModel?.Dispose();
+            if (_mascotXamlRoot != null) _mascotXamlRoot.Changed -= OnMascotXamlRootChanged;
+            App.MainWindowInstance?.ViewModel.TasksLoaded -= OnTasksLoadedForFocusRestore;
             UnregisterHotKey();
             _bubbleWindow?.Close();
             ViewModel.Dispose();
@@ -241,12 +268,14 @@ public sealed partial class MascotWindow : Window
 
     private void OnProactiveTipDue(Tip tip)
     {
-        if (ViewModel.IsBubbleOpen) return; // real bubble already open — don't interrupt
+        if (ViewModel.IsBubbleOpen || _focusViewModel != null) return;
 
         _currentProactiveTip = tip;
 
-        ProactiveTip.Subtitle = tip.Message;
-        ProactiveTip.ActionButtonContent = tip.Action?.Label;
+        ProactiveTipText.Text = tip.Message;
+        ProactiveTipActionText.Text = tip.Action?.Label ?? string.Empty;
+        ProactiveTipAction.Visibility = tip.Action == null ? Visibility.Collapsed : Visibility.Visible;
+        _proactiveTipProgrammaticClose = false;
         ProactiveTip.IsOpen = true;
 
         _proactiveTipDismissTimer?.Stop();
@@ -261,18 +290,28 @@ public sealed partial class MascotWindow : Window
     private void ProactiveTipDismissTimer_Tick(object? sender, object e)
     {
         _proactiveTipDismissTimer?.Stop();
+        CloseProactiveTip();
+    }
+
+    private void CloseProactiveTip()
+    {
+        _proactiveTipProgrammaticClose = true;
         ProactiveTip.IsOpen = false;
     }
 
-    private void ProactiveTip_ActionButtonClick(TeachingTip sender, object args)
+    private void ProactiveTip_Opened(object? sender, object args) => PositionMascotPopups();
+
+    private void ProactiveTip_CloseClick(object sender, RoutedEventArgs args) => ProactiveTip.IsOpen = false;
+
+    private void ProactiveTip_ActionButtonClick(object sender, RoutedEventArgs args)
     {
         var actionType = _currentProactiveTip?.Action?.Type;
-        ProactiveTip.IsOpen = false;
+        CloseProactiveTip();
         if (actionType.HasValue)
             ExecuteTipAction(actionType.Value);
     }
 
-    private void ProactiveTip_Closed(TeachingTip sender, TeachingTipClosedEventArgs args)
+    private void ProactiveTip_Closed(object? sender, object args)
     {
         _proactiveTipDismissTimer?.Stop();
         ViewModel.HideDailyTipIndicator();
@@ -289,7 +328,7 @@ public sealed partial class MascotWindow : Window
             return;
         }
 
-        if (args.Reason == TeachingTipCloseReason.Programmatic)
+        if (_proactiveTipProgrammaticClose)
             ViewModel.ResetProactiveTipDismissalCounter();
         else
             ViewModel.RecordProactiveTipDismissal();
@@ -349,12 +388,15 @@ public sealed partial class MascotWindow : Window
                 {
                     _lottieStarted = false;
                     _inactivityTimer?.Stop();
-                    ProactiveTip.IsOpen = false;
+                    CloseProactiveTip();
+                    FocusPopup.IsOpen = false;
                 }
                 else
                 {
                     ResetInactivity();
                     TryPlayEntrance();
+                    if (_focusViewModel != null && !ViewModel.IsBubbleOpen && !ViewModel.IsMascotHidden)
+                        FocusPopup.IsOpen = true;
                 }
                 UpdateAnimationState();
                 break;
@@ -807,6 +849,8 @@ public sealed partial class MascotWindow : Window
 
     private void ShowFocusMode(TodoItem task, FocusSession? restored)
     {
+        ViewModel.CloseBubble();
+        CloseProactiveTip();
         _focusViewModel?.Dispose();
         var vm = new FocusModeViewModel(task, restored);
         _focusViewModel = vm;
@@ -815,20 +859,17 @@ public sealed partial class MascotWindow : Window
         // main window also ends the session, and the 1 s tick would otherwise outlive it.
         vm.ExitRequested += () => DispatcherQueue.TryEnqueue(() =>
         {
-            FocusPopup.IsOpen = false;
             if (!ReferenceEquals(_focusViewModel, vm)) return;
+            FocusPopup.IsOpen = false;
             vm.Dispose();
             _focusViewModel = null;
         });
         vm.SessionChanged += PersistFocusSession;
-        vm.PropertyChanged += (_, e) => DispatcherQueue.TryEnqueue(() => ApplyFocusState(vm, e.PropertyName));
+        vm.PropertyChanged += (_, e) => ApplyFocusState(vm, e.PropertyName);
+        PersistFocusSession(vm.Session);
 
         ApplyFocusState(vm, null);
 
-        // One-shot: position popup once on first measure, then stop listening so
-        // the hover scale animation can't shift it on subsequent layout passes.
-        FocusPopupBorder.SizeChanged -= OnFocusPopupFirstMeasure;
-        FocusPopupBorder.SizeChanged += OnFocusPopupFirstMeasure;
         FocusPopup.IsOpen = true;
     }
 
@@ -869,15 +910,50 @@ public sealed partial class MascotWindow : Window
         App.SettingsService.SaveDebounced();
     }
 
-    private void OnFocusPopupFirstMeasure(object sender, SizeChangedEventArgs e)
+    private void OnMascotXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs args)
     {
-        FocusPopupBorder.SizeChanged -= OnFocusPopupFirstMeasure;
-        FocusPopup.HorizontalOffset = (ViewModel.WindowSize - e.NewSize.Width) / 2.0;
-        FocusPopup.VerticalOffset   = -(e.NewSize.Height + 8);
+        if (_popupScale == sender.RasterizationScale) return;
+        _popupScale = sender.RasterizationScale;
+        PositionMascotPopups();
+    }
+
+    private void PositionMascotPopups()
+    {
+        if (_placingPopups || MascotGrid.XamlRoot == null) return;
+        if (!FocusPopup.IsOpen && !ProactiveTip.IsOpen) return;
+        var monitor = NativeMethods.MonitorFromWindow(_hwnd, NativeMethods.MONITOR_DEFAULTTONEAREST);
+        var info = new NativeMethods.MONITORINFO { cbSize = Marshal.SizeOf<NativeMethods.MONITORINFO>() };
+        if (!NativeMethods.GetMonitorInfo(monitor, ref info)) return;
+        var work = System.Drawing.Rectangle.FromLTRB(info.rcWork.left, info.rcWork.top, info.rcWork.right, info.rcWork.bottom);
+        var mascot = new System.Drawing.Rectangle(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width, AppWindow.Size.Height);
+        double scale = MascotGrid.XamlRoot.RasterizationScale;
+        _placingPopups = true;
+        try
+        {
+            if (FocusPopup.IsOpen) PositionPopup(FocusPopup, FocusPopupViewport, FocusPopupBorder, 280);
+            if (ProactiveTip.IsOpen) PositionPopup(ProactiveTip, ProactiveTipViewport, ProactiveTipContent, 320);
+        }
+        finally { _placingPopups = false; }
+
+        void PositionPopup(Popup popup, ScrollViewer viewport, FrameworkElement content, double width)
+        {
+            int gap = (int)Math.Ceiling(12 * scale);
+            content.Width = Math.Max(1, Math.Min(width, (work.Width - 2 * gap) / scale));
+            content.Measure(new Windows.Foundation.Size(content.Width, double.PositiveInfinity));
+            var desired = new System.Drawing.Size((int)Math.Ceiling(content.DesiredSize.Width * scale),
+                (int)Math.Ceiling(content.DesiredSize.Height * scale));
+            var placement = MascotPopupPlacement.Place(work, mascot, desired, gap, preferAbove: true);
+            content.Width = placement.Width / scale;
+            viewport.Width = placement.Width / scale;
+            viewport.Height = placement.Height / scale;
+            popup.HorizontalOffset = (placement.X - mascot.X) / scale;
+            popup.VerticalOffset = (placement.Y - mascot.Y) / scale;
+        }
     }
 
     private void FocusPopup_Opened(object? sender, object e)
     {
+        PositionMascotPopups();
         // Fade in + slide up from 6 px below final position
         FocusPopupBorder.Opacity = 0;
         FocusPopupTranslate.Y = 6;
@@ -943,4 +1019,3 @@ public sealed partial class MascotWindow : Window
         win.NavigateToSettings();
     }
 }
-

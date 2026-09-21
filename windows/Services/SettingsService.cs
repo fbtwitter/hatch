@@ -18,8 +18,7 @@ public sealed class SettingsService
 
     public SettingsService()
     {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var folder = Path.Combine(appData, "Hatch");
+        var folder = Hatch.Helpers.AppDataPath.Folder;
         Directory.CreateDirectory(folder);
         _filePath = Path.Combine(folder, "settings.json");
     }
