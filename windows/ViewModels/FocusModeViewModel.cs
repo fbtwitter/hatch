@@ -49,11 +49,10 @@ public sealed class FocusModeViewModel : INotifyPropertyChanged, IDisposable
         // properties, so firing on the dispatcher avoids a marshal per second.
         _tick = DispatcherQueue.GetForCurrentThread().CreateTimer();
         _tick.Interval = TimeSpan.FromSeconds(1);
-        _tick.Tick += (_, _) => Refresh();
-        _tick.Start();
+        _tick.Tick += OnTick;
+        if (!IsPaused) _tick.Start();
 
         Refresh();
-        Persist();
     }
 
     // The session as it should be written to settings.json — the mascot window persists it
@@ -66,6 +65,8 @@ public sealed class FocusModeViewModel : INotifyPropertyChanged, IDisposable
     {
         var now = DateTimeOffset.UtcNow;
         _session = _session.Paused ? FocusTimer.Resume(_session, now) : FocusTimer.Pause(_session, now);
+        if (IsPaused) _tick.Stop();
+        else _tick.Start();
         OnPropertyChanged(nameof(IsPaused));
         OnPropertyChanged(nameof(PauseResumeGlyph));
         OnPropertyChanged(nameof(PauseResumeLabel));
@@ -84,9 +85,15 @@ public sealed class FocusModeViewModel : INotifyPropertyChanged, IDisposable
             OnPropertyChanged(nameof(ElapsedText));
         }
 
-        MinuteProgress = FocusTimer.MinuteFraction(elapsed);
-        OnPropertyChanged(nameof(MinuteProgress));
+        var progress = FocusTimer.MinuteFraction(elapsed);
+        if (progress != MinuteProgress)
+        {
+            MinuteProgress = progress;
+            OnPropertyChanged(nameof(MinuteProgress));
+        }
     }
+
+    private void OnTick(DispatcherQueueTimer sender, object args) => Refresh();
 
     private void Persist() => SessionChanged?.Invoke(_session);
 
@@ -107,6 +114,7 @@ public sealed class FocusModeViewModel : INotifyPropertyChanged, IDisposable
     {
         if (_exiting) return;
         _exiting = true;
+        _tick.Stop();
         SessionChanged?.Invoke(null);
         ExitRequested?.Invoke();
     }
@@ -114,6 +122,7 @@ public sealed class FocusModeViewModel : INotifyPropertyChanged, IDisposable
     public void Dispose()
     {
         _tick.Stop();
+        _tick.Tick -= OnTick;
         _task.PropertyChanged -= OnTaskPropertyChanged;
     }
 

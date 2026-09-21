@@ -282,18 +282,19 @@ public class TipEngineTests
     [TestMethod]
     public void CustomTips_JoinTheInspirationPool()
     {
-        // Enough custom lines to outnumber the built-ins, so the date-seeded index lands
-        // on one of them regardless of which day the suite runs.
         var mine = Enumerable.Range(0, 60).Select(i => $"mine-{i}").ToList();
-
-        var tip = Engine().GetTip(
-            FallbackReachableTasks(),
-            now: Morning,
-            customTips: mine,
-            lastInspiration: Morning.AddDays(-1));
-
-        Assert.IsNotNull(tip);
-        StringAssert.StartsWith(tip!.Message, "mine-");
+        var seen = new HashSet<string>();
+        var engine = Engine();
+        // A single day can select a built-in; sample a full rotation of the mixed pool.
+        for (int day = 0; day < 72; day++)
+        {
+            var now = new DateTime(2026, 1, 1, 10, 0, 0).AddDays(day);
+            var tip = engine.GetTip([Task(inMyDay: true, createdAt: now)],
+                now: now, customTips: mine, lastInspiration: now.AddDays(-1));
+            Assert.IsNotNull(tip);
+            seen.Add(tip.Message);
+        }
+        Assert.IsTrue(mine.All(seen.Contains), "Every custom tip should participate in the daily rotation.");
     }
 
     [TestMethod]

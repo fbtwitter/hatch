@@ -12,10 +12,6 @@
           PointerMoved="OnPointerMoved"
           PointerReleased="OnPointerReleased"
           Tapped="OnTapped">
-        <Grid.RenderTransform>
-            <CompositeTransform x:Name="MascotGridTransform" />
-        </Grid.RenderTransform>
-
         <Grid.Resources>
             <!-- 4-second idle cycle: 2 gentle bobs + 1 blink at 2.8 s -->
             <Storyboard x:Key="IdleAnimation" RepeatBehavior="Forever">
@@ -116,7 +112,7 @@
         </Grid.Resources>
 
         <Grid.ContextFlyout>
-            <MenuFlyout>
+            <MenuFlyout ShouldConstrainToRootBounds="False">
                 <MenuFlyoutItem x:Uid="Mascot_MenuShowMain" Text="Show Main Window"
                                 Command="{x:Bind ViewModel.ShowMainWindowCommand}" />
                 <MenuFlyoutItem x:Uid="Mascot_MenuResetPosition" Text="Reset Position"
@@ -137,6 +133,11 @@
             </MenuFlyout>
         </Grid.ContextFlyout>
 
+        <!-- Keep mascot hover/wiggle transforms out of the popup coordinate system. -->
+        <Grid>
+            <Grid.RenderTransform>
+                <CompositeTransform x:Name="MascotGridTransform" />
+            </Grid.RenderTransform>
         <!-- Lottie player — hidden until a .json file is set in Settings -->
         <AnimatedVisualPlayer x:Name="LottiePlayer"
                               Width="{x:Bind ViewModel.WindowSize, Mode=OneWay}"
@@ -225,18 +226,23 @@
                  Margin="4,4,4,4"
                  Visibility="Collapsed" />
 
+        </Grid>
         <!-- Focus mode overlay — ShouldConstrainToRootBounds=False lets the popup
              render outside the mascot window bounds. Shaped like a now-playing bar
              (hatch-mobile d9ef4ac): what is running on top, the transport below.
-             Fixed 220px rather than tracking MascotSize — the stopwatch row needs a
-             readout and three controls, which does not fit a 120px mascot. -->
+             Sized independently of the mascot; code-behind fits the viewport to the
+             monitor work area so the readout and controls remain reachable. -->
         <Popup x:Name="FocusPopup"
                ShouldConstrainToRootBounds="False"
                IsLightDismissEnabled="False"
                Opened="FocusPopup_Opened">
+            <ScrollViewer x:Name="FocusPopupViewport"
+                          AutomationProperties.AutomationId="FocusMode_Viewport"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Auto">
             <Border x:Name="FocusPopupBorder"
                     Padding="12,8"
-                    Width="220"
+                    Width="280"
                     CornerRadius="8"
                     Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
@@ -322,18 +328,44 @@
                     </Grid>
                 </Grid>
             </Border>
+            </ScrollViewer>
         </Popup>
 
-        <!-- Proactive contextual tip ("Show Tips Automatically" setting) — floats above
-             the mascot using TeachingTip's own tail + placement logic, escaping the tiny
-             120x120 mascot window bounds via ShouldConstrainToRootBounds, same as
-             FocusPopup above. -->
-        <TeachingTip x:Name="ProactiveTip"
-                     PreferredPlacement="Top"
-                     ShouldConstrainToRootBounds="False"
-                     IsLightDismissEnabled="True"
-                     ActionButtonClick="ProactiveTip_ActionButtonClick"
-                     Closed="ProactiveTip_Closed" />
+        <Popup x:Name="ProactiveTip"
+               ShouldConstrainToRootBounds="False"
+               IsLightDismissEnabled="True"
+               Opened="ProactiveTip_Opened"
+               Closed="ProactiveTip_Closed">
+            <ScrollViewer x:Name="ProactiveTipViewport"
+                          AutomationProperties.AutomationId="ProactiveTip_Viewport"
+                          HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <Border x:Name="ProactiveTipContent" Width="320" Padding="12"
+                        CornerRadius="8"
+                        Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
+                        BorderThickness="1">
+                    <StackPanel Spacing="8">
+                        <Button HorizontalAlignment="Right"
+                                AutomationProperties.AutomationId="ProactiveTip_Close"
+                                AutomationProperties.Name="Dismiss tip"
+                                Style="{ThemeResource SubtleButtonStyle}"
+                                MinWidth="0" Padding="8"
+                                Click="ProactiveTip_CloseClick">
+                            <FontIcon Glyph="&#xE711;" FontSize="12" />
+                        </Button>
+                        <TextBlock x:Name="ProactiveTipText" TextWrapping="Wrap"
+                                   AutomationProperties.AutomationId="ProactiveTip_Message"
+                                   Style="{ThemeResource BodyTextBlockStyle}" />
+                        <Button x:Name="ProactiveTipAction" HorizontalAlignment="Stretch"
+                                Style="{ThemeResource AccentButtonStyle}"
+                                Click="ProactiveTip_ActionButtonClick">
+                            <TextBlock x:Name="ProactiveTipActionText" TextWrapping="Wrap" />
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </ScrollViewer>
+        </Popup>
 
     </Grid>
 

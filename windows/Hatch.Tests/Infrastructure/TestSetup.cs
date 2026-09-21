@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 
 namespace Hatch.Tests.Infrastructure;
 
@@ -12,15 +13,42 @@ public static class TestSetup
     public static Application? App { get; private set; }
     public static UIA3Automation? Auto { get; private set; }
     public static Window? MainWindow { get; private set; }
+    public static string DataDirectory { get; private set; } = string.Empty;
 
     [AssemblyInitialize]
     public static void Initialize(TestContext _)
     {
         Auto = new UIA3Automation();
 
+        DataDirectory = Environment.GetEnvironmentVariable("HATCH_UI_TEST_DATA_DIR")
+            ?? Path.Combine(Path.GetTempPath(), "Hatch.UiTests", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(DataDirectory);
+        bool longTip = Environment.GetEnvironmentVariable("HATCH_TEST_LONG_TIP") == "1";
+        int customCount = 1;
+        long dayNumber = DateTime.Today.Ticks / TimeSpan.TicksPerDay;
+        while (dayNumber % (12 + customCount) < 12) customCount++;
+        var customTips = longTip ? Enumerable.Repeat(string.Join("\n", Enumerable.Range(1, 45)
+            .Select(i => $"Runtime layout test line {i}: this deliberately long tip must scroll without hiding controls.")), customCount).ToArray() : [];
+        File.WriteAllText(Path.Combine(DataDirectory, "settings.json"), JsonSerializer.Serialize(new
+        {
+            FirstRunComplete = true,
+            MascotX = int.TryParse(Environment.GetEnvironmentVariable("HATCH_TEST_MASCOT_X"), out var x) ? x : 700,
+            MascotY = int.TryParse(Environment.GetEnvironmentVariable("HATCH_TEST_MASCOT_Y"), out var y) ? y : 500,
+            MascotSize = 120, HideWhenFullscreen = false, MinimizeToTray = true,
+            ShowTipsAutomatically = Environment.GetEnvironmentVariable("HATCH_TEST_PROACTIVE") == "1",
+            ActiveNavItem = "alltasks", MuteAnimation = Environment.GetEnvironmentVariable("HATCH_TEST_MUTE") == "1",
+            CustomTips = customTips
+        }));
+        File.WriteAllText(Path.Combine(DataDirectory, "tasks.json"), JsonSerializer.Serialize(new
+        {
+            Tasks = new[] { new { Id = Guid.NewGuid(), Title = "_RuntimeProbe_", CreatedAt = DateTimeOffset.UtcNow } },
+            Lists = new[] { new { Id = Guid.NewGuid(), Name = "Runtime test list" } }
+        }));
+
         // HATCH_UI_TEST=1 is inherited by the child process and forces the
         // main window to activate even when RunAtStartup=true suppresses it.
         Environment.SetEnvironmentVariable("HATCH_UI_TEST", "1");
+        Environment.SetEnvironmentVariable("HATCH_UI_TEST_DATA_DIR", DataDirectory);
         App = Application.Launch(ResolveAppExe());
         Environment.SetEnvironmentVariable("HATCH_UI_TEST", null);
 
@@ -33,7 +61,13 @@ public static class TestSetup
     [AssemblyCleanup]
     public static void Cleanup()
     {
-        App?.Close();
+        if (App != null)
+        {
+            var process = Process.GetProcessById(App.ProcessId);
+            App.Close();
+            if (!process.WaitForExit(3000)) process.Kill();
+            process.Dispose();
+        }
         Auto?.Dispose();
     }
 
