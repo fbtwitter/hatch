@@ -15,6 +15,8 @@ using Windows.Storage.Streams;
 using WinUIEx;
 using Hatch.Models;
 using Hatch.ViewModels;
+using Hatch.Helpers;
+using Microsoft.UI.Xaml.Automation;
 
 namespace Hatch.Views;
 
@@ -115,6 +117,12 @@ public sealed partial class MascotWindow : Window
 
         // Defer idle animation until after the window is shown to avoid startup lag
         Activated += OnFirstActivated;
+
+        // A focus session persisted from the last run is restored once two things are true:
+        // the task it names has loaded, and this window has been shown. Opening the popup from
+        // the constructor crashed the app in combase (E_UNEXPECTED) — a
+        // ShouldConstrainToRootBounds popup has no root to escape before the window is mapped.
+        App.MainWindowInstance?.ViewModel.TasksLoaded += OnTasksLoadedForFocusRestore;
 
         // Non-resizable, no title bar chrome. hasBorder=true to avoid DWM injecting
         // WS_DLGFRAME on Windows 10 22H2 (which produces a thin white border).
@@ -710,6 +718,9 @@ public sealed partial class MascotWindow : Window
         }
         ApplyLottieSource();
 
+        _mascotWindowShown = true;
+        TryRestoreFocusSession();
+
         // Auto-open bubble on first run with intro copy, but not on startup launch
         if (!App.Settings.FirstRunComplete && !App.IsStartupLaunch)
         {
@@ -744,19 +755,118 @@ public sealed partial class MascotWindow : Window
         return sb;
     }
 
-    public void ShowFocusMode(TodoItem task)
+
+    private bool _mascotWindowShown;
+    private bool _focusRestoreDone;
+
+    private void OnTasksLoadedForFocusRestore()
+        => DispatcherQueue.TryEnqueue(TryRestoreFocusSession);
+
+    private void TryRestoreFocusSession()
+    {
+        if (!_mascotWindowShown || _focusRestoreDone) return;
+
+        var settings = App.Settings;
+        if (settings.FocusTaskId is not { } taskId) { _focusRestoreDone = true; return; }
+
+        var mainVm = App.MainWindowInstance?.ViewModel;
+        if (mainVm == null) return;
+
+        var task = mainVm.FindTaskById(taskId);
+        // Nothing has loaded yet — wait for TasksLoaded rather than concluding the task is gone.
+        if (task == null && mainVm.Tasks.Count == 0) return;
+
+        _focusRestoreDone = true;
+        mainVm.TasksLoaded -= OnTasksLoadedForFocusRestore;
+
+        // Tasks are loaded and this one isn't among them (deleted, or completed on another
+        // device), so the session can never be resumed — drop it.
+        if (task == null || task.IsCompleted)
+        {
+            PersistFocusSession(null);
+            return;
+        }
+
+        RestoreFocusSession(task, new FocusSession(
+            task.Id,
+            task.Title,
+            new DateTimeOffset(settings.FocusStartedAtUtcTicks, TimeSpan.Zero),
+            TimeSpan.FromTicks(settings.FocusAccumulatedTicks),
+            settings.FocusPaused));
+    }
+
+    public void ShowFocusMode(TodoItem task) => ShowFocusMode(task, restored: null);
+
+    // Restores a session left running when the app closed. Deliberately restored PAUSED, unlike
+    // hatch-mobile: elapsed is wall-clock, and mobile can let it keep running because its ongoing
+    // notification keeps the session visible the whole time. Here the mascot goes away with the
+    // process, so a session left overnight would otherwise reappear reading nine hours. The time
+    // is banked; resuming is the user's call.
+    public void RestoreFocusSession(TodoItem task, FocusSession session)
+        => ShowFocusMode(task, FocusTimer.Pause(session, DateTimeOffset.UtcNow) with { TaskTitle = task.Title });
+
+    private void ShowFocusMode(TodoItem task, FocusSession? restored)
     {
         _focusViewModel?.Dispose();
-        _focusViewModel = new FocusModeViewModel(task);
-        _focusViewModel.ExitRequested += () =>
-            DispatcherQueue.TryEnqueue(() => FocusPopup.IsOpen = false);
-        FocusTaskTitle.Text = task.Title;
-        ToolTipService.SetToolTip(FocusTaskTitle, task.Title);
+        var vm = new FocusModeViewModel(task, restored);
+        _focusViewModel = vm;
+
+        // Disposing here, not only in the Exit button's handler: completing the task from the
+        // main window also ends the session, and the 1 s tick would otherwise outlive it.
+        vm.ExitRequested += () => DispatcherQueue.TryEnqueue(() =>
+        {
+            FocusPopup.IsOpen = false;
+            if (!ReferenceEquals(_focusViewModel, vm)) return;
+            vm.Dispose();
+            _focusViewModel = null;
+        });
+        vm.SessionChanged += PersistFocusSession;
+        vm.PropertyChanged += (_, e) => DispatcherQueue.TryEnqueue(() => ApplyFocusState(vm, e.PropertyName));
+
+        ApplyFocusState(vm, null);
+
         // One-shot: position popup once on first measure, then stop listening so
         // the hover scale animation can't shift it on subsequent layout passes.
         FocusPopupBorder.SizeChanged -= OnFocusPopupFirstMeasure;
         FocusPopupBorder.SizeChanged += OnFocusPopupFirstMeasure;
         FocusPopup.IsOpen = true;
+    }
+
+    // Pushes the ViewModel onto the popup's named elements. The popup's content is created
+    // before any focus session exists, so there is nothing for x:Bind to bind to; the title
+    // was already set this way. A null propertyName applies everything.
+    private void ApplyFocusState(FocusModeViewModel vm, string? propertyName)
+    {
+        if (!ReferenceEquals(vm, _focusViewModel)) return;
+
+        if (propertyName is null or nameof(FocusModeViewModel.Title))
+        {
+            FocusTaskTitle.Text = vm.Title;
+            ToolTipService.SetToolTip(FocusTaskTitle, vm.Title);
+        }
+        if (propertyName is null or nameof(FocusModeViewModel.ElapsedText))
+        {
+            FocusElapsedText.Text = vm.ElapsedText;
+            AutomationProperties.SetName(FocusElapsedText, $"Focus time {vm.ElapsedText}");
+        }
+        if (propertyName is null or nameof(FocusModeViewModel.MinuteProgress))
+            FocusMinuteRing.Value = vm.MinuteProgress * 100;
+        if (propertyName is null or nameof(FocusModeViewModel.IsPaused))
+        {
+            FocusPauseIcon.Glyph = vm.PauseResumeGlyph;
+            AutomationProperties.SetName(FocusPauseButton, vm.PauseResumeLabel);
+            ToolTipService.SetToolTip(FocusPauseButton, vm.PauseResumeLabel);
+        }
+    }
+
+    private static void PersistFocusSession(FocusSession? session)
+    {
+        var settings = App.Settings;
+        settings.FocusTaskId            = session?.TaskId;
+        settings.FocusStartedAtUtcTicks = session?.StartedAtUtc.UtcTicks ?? 0;
+        settings.FocusAccumulatedTicks  = session?.Accumulated.Ticks ?? 0;
+        settings.FocusPaused            = session?.Paused ?? false;
+        App.SettingsService.SaveDebounced();
     }
 
     private void OnFocusPopupFirstMeasure(object sender, SizeChangedEventArgs e)
@@ -792,11 +902,12 @@ public sealed partial class MascotWindow : Window
     private void FocusMarkDone_Click(object sender, RoutedEventArgs e)
         => _focusViewModel?.MarkDoneCommand.Execute(null);
 
+    private void FocusPauseResume_Click(object sender, RoutedEventArgs e)
+        => _focusViewModel?.PauseResumeCommand.Execute(null);
+
     private void FocusExit_Click(object sender, RoutedEventArgs e)
     {
-        FocusPopup.IsOpen = false;
-        _focusViewModel?.Dispose();
-        _focusViewModel = null;
+        _focusViewModel?.ExitCommand.Execute(null);
     }
 
     public void PlayWiggleAnimation()
