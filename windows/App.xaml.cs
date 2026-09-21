@@ -152,7 +152,8 @@ public partial class App : Application
         {
             // Single-instance: if another Hatch is already running, redirect this activation
             // to it (e.g. hatch:// OAuth callback) and exit without showing a window.
-            var mainInstance = AppInstance.FindOrRegisterForKey("hatch-main");
+            var mainInstance = AppInstance.FindOrRegisterForKey(
+                Helpers.AppDataPath.IsUiTest ? "hatch-ui-test" : "hatch-main");
             if (!mainInstance.IsCurrent)
             {
                 await mainInstance.RedirectActivationToAsync(
@@ -210,7 +211,7 @@ public partial class App : Application
             // Sync runs off the launch path — a slow network round-trip must not delay
             // the mascot past the cold-start budget. A pull that lands after LoadAsync
             // reaches MainViewModel via TasksReceived → ReloadAsync.
-            _ = InitializeSyncAsync();
+            if (!Helpers.AppDataPath.IsUiTest) _ = InitializeSyncAsync();
         }
         catch (Exception ex)
         {

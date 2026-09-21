@@ -30,10 +30,17 @@
             </Storyboard>
         </Grid.Resources>
 
+        <ScrollViewer x:Name="BubbleViewport" HorizontalScrollMode="Disabled"
+                      AutomationProperties.AutomationId="Bubble_Viewport"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+        <Grid>
+
         <!-- Confirmation overlay (initially hidden, driven by ShowConfirmationAsync) -->
         <StackPanel x:Name="ConfirmationOverlay"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"
+                    Padding="16"
                     Spacing="16"
                     Opacity="0"
                     Visibility="Collapsed">
@@ -53,6 +60,7 @@
 
             <!-- Dynamic subtitle set by code-behind; kept as ConfirmationText for compat -->
             <TextBlock x:Name="ConfirmationText"
+                       TextWrapping="Wrap"
                        TextAlignment="Center"
                        Style="{ThemeResource CaptionTextBlockStyle}"
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
@@ -109,11 +117,17 @@
             <!-- Quick-add form — collapsed entirely for a tip-only proactive popup -->
             <StackPanel x:Name="QuickAddFormPanel" Spacing="12">
 
-                <Grid>
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
                     <TextBlock x:Uid="QuickAdd_Header"
+                               TextWrapping="Wrap"
                                Style="{ThemeResource BodyStrongTextBlockStyle}"
                                VerticalAlignment="Center"/>
                     <StackPanel Orientation="Horizontal"
+                                Grid.Column="1"
                                 HorizontalAlignment="Right"
                                 Spacing="2">
                         <Button x:Name="OpenMainWindowButton"
@@ -183,6 +197,9 @@
             </StackPanel>
 
         </StackPanel>
+
+        </Grid>
+        </ScrollViewer>
 
     </Grid>
 

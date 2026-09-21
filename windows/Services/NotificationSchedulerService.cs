@@ -22,35 +22,43 @@ public sealed class NotificationSchedulerService
 
     public void ScheduleForTask(TodoItem task)
     {
-        UnscheduleReminders(task.Id);
+        if (Hatch.Helpers.AppDataPath.IsUiTest) return;
         if (task.DueDate == null || task.IsCompleted)
         {
-            // The one branch every mutation path funnels through, so a completed task or one
-            // that lost its due date can never re-notify — snoozed or not.
-            CancelSnooze(task.Id);
+            UnscheduleForTask(task.Id);
             return;
         }
 
-        var dueTime = GetDueTime(task.DueDate.Value);
-        var warnTime = dueTime.AddMinutes(-WarnMinutes);
-        var now = DateTimeOffset.Now;
-
+        var prefix = ReminderPrefix(task.Id);
+        RemoveByTag(t => t.StartsWith(prefix, StringComparison.Ordinal));
         try
         {
-            var notifier = ToastNotificationManager.CreateToastNotifier();
-            if (dueTime > now.AddSeconds(30))
-                notifier.AddToSchedule(BuildToast(task.Id, task.Title, dueTime, "Due now", ReminderPrefix(task.Id)));
-            if (warnTime > now.AddSeconds(30))
-                notifier.AddToSchedule(BuildToast(task.Id, task.Title, warnTime, "Due in 30 minutes", $"{ReminderPrefix(task.Id)}-warn"));
+            AddReminders(ToastNotificationManager.CreateToastNotifier(), task);
         }
         catch { }
+    }
+
+    private static void AddReminders(ToastNotifier notifier, TodoItem task)
+    {
+        if (task.DueDate == null || task.IsCompleted) return;
+
+        var dueTime = GetDueTime(task.DueDate.Value);
+        var warnTime = dueTime.AddMinutes(-WarnMinutes);
+        var earliest = DateTimeOffset.Now.AddSeconds(30);
+        var prefix = ReminderPrefix(task.Id);
+        if (dueTime > earliest)
+            notifier.AddToSchedule(BuildToast(task.Id, task.Title, dueTime, "Due now", prefix));
+        if (warnTime > earliest)
+            notifier.AddToSchedule(BuildToast(task.Id, task.Title, warnTime, "Due in 30 minutes", $"{prefix}-warn"));
     }
 
     // Cancels everything pending for a task, snooze included — the delete and complete paths.
     public void UnscheduleForTask(Guid taskId)
     {
-        UnscheduleReminders(taskId);
-        CancelSnooze(taskId);
+        var prefix = ReminderPrefix(taskId);
+        var snooze = SnoozeTag(taskId);
+        RemoveByTag(t => t.StartsWith(prefix, StringComparison.Ordinal) ||
+                         string.Equals(t, snooze, StringComparison.Ordinal));
     }
 
     // Re-fires the same reminder later, leaving the due date alone (which is what the task row's
@@ -58,6 +66,7 @@ public sealed class NotificationSchedulerService
     // second one, so snoozing again from the re-fired toast just pushes it out another hour.
     public void SnoozeReminder(Guid taskId, string title, TimeSpan delay)
     {
+        if (Hatch.Helpers.AppDataPath.IsUiTest) return;
         CancelSnooze(taskId);
         try
         {
@@ -69,6 +78,7 @@ public sealed class NotificationSchedulerService
 
     public void RescheduleAll(IEnumerable<TodoItem> tasks)
     {
+        if (Hatch.Helpers.AppDataPath.IsUiTest) return;
         try
         {
             var list = tasks as IList<TodoItem> ?? tasks.ToList();
@@ -76,7 +86,8 @@ public sealed class NotificationSchedulerService
             var notifier = ToastNotificationManager.CreateToastNotifier();
             // Live snoozes survive; orphans (a task deleted on another device, so absent from
             // this list) do not — the same clean-up the blanket removal used to give.
-            var live = list.Where(t => !t.IsCompleted).Select(t => SnoozeTag(t.Id)).ToHashSet(StringComparer.Ordinal);
+            var live = list.Where(t => !t.IsCompleted && t.DueDate != null)
+                .Select(t => SnoozeTag(t.Id)).ToHashSet(StringComparer.Ordinal);
             foreach (var n in notifier.GetScheduledToastNotifications().ToList())
             {
                 if (n.Tag.StartsWith("snooze-", StringComparison.Ordinal) && live.Contains(n.Tag))
@@ -85,19 +96,23 @@ public sealed class NotificationSchedulerService
             }
 
             foreach (var task in list)
-                ScheduleForTask(task);
+            {
+                try { AddReminders(notifier, task); }
+                catch { }
+            }
         }
         catch { }
     }
 
-    private static void UnscheduleReminders(Guid taskId) => RemoveByTag(t =>
-        t.StartsWith(ReminderPrefix(taskId), StringComparison.Ordinal));
-
-    private static void CancelSnooze(Guid taskId) => RemoveByTag(t =>
-        string.Equals(t, SnoozeTag(taskId), StringComparison.Ordinal));
+    private static void CancelSnooze(Guid taskId)
+    {
+        var tag = SnoozeTag(taskId);
+        RemoveByTag(t => string.Equals(t, tag, StringComparison.Ordinal));
+    }
 
     private static void RemoveByTag(Func<string, bool> match)
     {
+        if (Hatch.Helpers.AppDataPath.IsUiTest) return;
         try
         {
             var notifier = ToastNotificationManager.CreateToastNotifier();

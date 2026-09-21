@@ -21,7 +21,10 @@ public sealed partial class QuickAddBubbleWindow : Window
     private Storyboard? _tipFadeIn;
     private Storyboard? _tipFadeOut;
     private bool _isClosed = false;
-    private bool _initialLayoutDone = false;
+    private bool _positionKnown;
+    private bool _fitting;
+    private XamlRoot? _bubbleXamlRoot;
+    private double _lastRasterizationScale;
     private const int SW_HIDE = 0;
     private const int SW_SHOWNOACTIVATE = 4;
 
@@ -69,6 +72,20 @@ public sealed partial class QuickAddBubbleWindow : Window
 
         // Resize dynamically to content after each layout pass
         BubbleContent.SizeChanged += (_, _) => FitWindowToContent();
+        BubbleRoot.Loaded += (_, _) =>
+        {
+            if (_bubbleXamlRoot == null)
+            {
+                _bubbleXamlRoot = BubbleRoot.XamlRoot;
+                _lastRasterizationScale = _bubbleXamlRoot.RasterizationScale;
+                _bubbleXamlRoot.Changed += OnBubbleXamlRootChanged;
+            }
+            FitWindowToContent();
+        };
+        Closed += (_, _) =>
+        {
+            if (_bubbleXamlRoot != null) _bubbleXamlRoot.Changed -= OnBubbleXamlRootChanged;
+        };
 
         // Initialize list selector
         var mainVm = GetMainViewModel();
@@ -174,11 +191,8 @@ public sealed partial class QuickAddBubbleWindow : Window
         _mascotX = mascotX;
         _mascotY = mascotY;
         _mascotWidth = mascotWidth;
-        // Don't move yet — FitWindowToContent will call UpdatePosition after the first
-        // layout pass when the window size is known. Moving here would use the WinUI 3
-        // default window width and place the bubble at the wrong X position.
-        if (_initialLayoutDone)
-            UpdatePosition();
+        _positionKnown = true;
+        FitWindowToContent();
     }
 
     public void HideWindow()
@@ -230,7 +244,8 @@ public sealed partial class QuickAddBubbleWindow : Window
         _mascotX = mascotX;
         _mascotY = mascotY;
         _mascotWidth = mascotWidth;
-        UpdatePosition();
+        _positionKnown = true;
+        FitWindowToContent();
 
         // Show without stealing focus first, then bring to front
         NativeMethods.ShowWindow(_hwnd, SW_SHOWNOACTIVATE);
@@ -239,7 +254,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         // Re-fit after layout pass so the window is never stuck at confirmation height.
         // SizeChanged alone is unreliable here because SW_HIDE can suspend layout updates.
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal,
-            () => { FitWindowToContent(); UpdatePosition(); });
+            FitWindowToContent);
 
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
             () => TaskTitleBox.Focus(FocusState.Programmatic));
@@ -247,10 +262,16 @@ public sealed partial class QuickAddBubbleWindow : Window
         ShowContextualTip();
     }
 
-    private void UpdatePosition()
+    private void OnBubbleXamlRootChanged(XamlRoot sender, XamlRootChangedEventArgs args)
     {
-        const int gap = 12;
+        if (sender.RasterizationScale == _lastRasterizationScale) return;
+        _lastRasterizationScale = sender.RasterizationScale;
+        FitWindowToContent();
+    }
 
+    private void FitWindowToContent()
+    {
+        if (_fitting || !_positionKnown || BubbleRoot.XamlRoot == null) return;
         var pt       = new NativeMethods.POINT { X = _mascotX + _mascotWidth / 2, Y = _mascotY + _mascotWidth / 2 };
         var hMonitor = NativeMethods.MonitorFromPoint(pt, NativeMethods.MONITOR_DEFAULTTONEAREST);
         var mi       = new NativeMethods.MONITORINFO { cbSize = Marshal.SizeOf<NativeMethods.MONITORINFO>() };
@@ -258,43 +279,26 @@ public sealed partial class QuickAddBubbleWindow : Window
             return;
 
         NativeMethods.GetDpiForMonitor(hMonitor, NativeMethods.MDT_EFFECTIVE_DPI, out uint dpiX, out _);
-        double scale  = dpiX / 96.0;
-        int scaledGap = (int)Math.Round(gap * scale);
-
-        // Use the window's current physical size (already correct after FitWindowToContent)
-        int bubbleWidth  = AppWindow.Size.Width;
-        int bubbleHeight = AppWindow.Size.Height;
-
-        var w = mi.rcWork;
-
-        // Prefer left of mascot; flip to right if it doesn't fit.
-        int bubbleX = _mascotX - bubbleWidth - scaledGap;
-        if (bubbleX < w.left)
-            bubbleX = _mascotX + _mascotWidth + scaledGap;
-        bubbleX = Math.Clamp(bubbleX, w.left, w.right - bubbleWidth);
-
-        // Vertically centre on the mascot, clamp to work area.
-        int mascotCenterY = _mascotY + _mascotWidth / 2;
-        int bubbleY       = mascotCenterY - bubbleHeight / 2;
-        if (bubbleY + bubbleHeight > w.bottom - scaledGap)
-            bubbleY = w.bottom - bubbleHeight - scaledGap;
-        bubbleY = Math.Clamp(bubbleY, w.top + scaledGap, w.bottom - bubbleHeight);
-
-        AppWindow.Move(new PointInt32(bubbleX, bubbleY));
-    }
-
-    private void FitWindowToContent()
-    {
-        if (BubbleContent.Visibility != Visibility.Visible) return;
-        var scale = Content?.XamlRoot?.RasterizationScale ?? 1.0;
-        int physW = (int)Math.Round(340 * scale);
-        int contentH = (int)Math.Round(BubbleContent.ActualHeight * scale);
-        if (contentH <= 0) return;
-        // Add non-client border overhead (border frame not included in client/content area)
-        int ncOverhead = Math.Max(0, AppWindow.Size.Height - AppWindow.ClientSize.Height);
-        AppWindow.Resize(new SizeInt32(physW, contentH + ncOverhead));
-        UpdatePosition();
-        _initialLayoutDone = true;
+        double scale = dpiX > 0 ? dpiX / 96.0 : BubbleRoot.XamlRoot.RasterizationScale;
+        int gap = (int)Math.Ceiling(12 * scale);
+        var work = System.Drawing.Rectangle.FromLTRB(mi.rcWork.left, mi.rcWork.top, mi.rcWork.right, mi.rcWork.bottom);
+        var mascot = new System.Drawing.Rectangle(_mascotX, _mascotY, _mascotWidth, _mascotWidth);
+        _fitting = true;
+        try
+        {
+            int borderW = Math.Max(0, AppWindow.Size.Width - AppWindow.ClientSize.Width);
+            int borderH = Math.Max(0, AppWindow.Size.Height - AppWindow.ClientSize.Height);
+            int width = Math.Max(1, Math.Min((int)Math.Ceiling(340 * scale) + borderW, work.Width - 2 * gap));
+            var content = BubbleContent.Visibility == Visibility.Visible ? BubbleContent : ConfirmationOverlay;
+            content.Measure(new Windows.Foundation.Size(Math.Max(1, (width - borderW) / scale), double.PositiveInfinity));
+            int height = (int)Math.Ceiling(content.DesiredSize.Height * scale) + borderH;
+            var placement = MascotPopupPlacement.Place(work, mascot, new System.Drawing.Size(width, height), gap);
+            BubbleViewport.Height = Math.Max(1, (placement.Height - borderH) / scale);
+            if (AppWindow.Size.Width != placement.Width || AppWindow.Size.Height != placement.Height ||
+                AppWindow.Position.X != placement.X || AppWindow.Position.Y != placement.Y)
+                AppWindow.MoveAndResize(new RectInt32(placement.X, placement.Y, placement.Width, placement.Height));
+        }
+        finally { _fitting = false; }
     }
 
     private MainViewModel? GetMainViewModel()
@@ -372,11 +376,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         BubbleContent.Visibility = Visibility.Collapsed;
         ConfirmationOverlay.Visibility = Visibility.Visible;
 
-        // Shrink to a compact confirmation size
-        var scale = Content?.XamlRoot?.RasterizationScale ?? 1.0;
-        int ncOverhead = Math.Max(0, AppWindow.Size.Height - AppWindow.ClientSize.Height);
-        AppWindow.Resize(new SizeInt32((int)Math.Round(340 * scale), (int)Math.Round(180 * scale) + ncOverhead));
-        UpdatePosition();
+        FitWindowToContent();
 
         _fadeIn?.Begin();
 

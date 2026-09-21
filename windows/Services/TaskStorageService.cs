@@ -16,8 +16,7 @@ public sealed class TaskStorageService
 
     public TaskStorageService()
     {
-        var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var folder = Path.Combine(appData, "Hatch");
+        var folder = Hatch.Helpers.AppDataPath.Folder;
         Directory.CreateDirectory(folder);
         _filePath = Path.Combine(folder, "tasks.json");
     }
