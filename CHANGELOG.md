@@ -8,6 +8,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.23.1] - 2026-09-23
+
+### Changed
+- Mascot-only startup now defers the main task page until the main window is shown or navigation requires it, reducing startup memory use
+
+### Fixed
+- My Day and Important now show open tasks without an unnecessary collapsible header
+
+---
+
 ## [0.23.0] - 2026-09-02
 
 ### Added

@@ -61,9 +61,7 @@ public sealed class CompletedTaskGroup : INotifyPropertyChanged
         }
     }
 
-    // False on the Open group when the current nav item can never show a Completed
-    // group alongside it (Important) — there's nothing to collapse it in favor of,
-    // so the header/chevron is dropped and the items render as a plain list.
+    // My Day and Important show open tasks directly, without a header or chevron.
     public bool IsCollapsible
     {
         get => _isCollapsible;
