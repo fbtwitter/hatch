@@ -22,6 +22,7 @@ public sealed partial class MainWindow : Window
     private NativeMethods.SUBCLASSPROC? _subclassProc;
     private IntPtr _hwnd;
     private bool _isExiting;
+    private bool _contentInitialized;
 
     public MainViewModel ViewModel { get; } = new MainViewModel();
 
@@ -68,10 +69,6 @@ public sealed partial class MainWindow : Window
             throw new InvalidOperationException(
                 "RootFrame was not initialized by InitializeComponent. " +
                 "Clean and rebuild the solution to regenerate XAML code-behind files.");
-        if (!App.Settings.FirstRunComplete)
-            RootFrame.Navigate(typeof(OnboardingPage), ViewModel);
-        else
-            RootFrame.Navigate(typeof(MainPage), ViewModel);
         RootFrame.Navigated += OnFrameNavigated;
 
         // Defer backdrop and theme application to first Activated so the compositor
@@ -86,6 +83,7 @@ public sealed partial class MainWindow : Window
     private void OnFirstActivated(object sender, WindowActivatedEventArgs e)
     {
         Activated -= OnFirstActivated;
+        EnsureContent();
         var settings = App.Settings;
         try
         {
@@ -96,6 +94,18 @@ public sealed partial class MainWindow : Window
             System.Diagnostics.Debug.WriteLine($"ApplyBackdrop failed: {ex}");
         }
         ApplyTheme(settings.Theme);
+    }
+
+    private void EnsureContent()
+    {
+        if (_contentInitialized || RootFrame.Content != null) return;
+
+        if (!App.Settings.FirstRunComplete)
+            RootFrame.Navigate(typeof(OnboardingPage), ViewModel);
+        else
+            RootFrame.Navigate(typeof(MainPage), ViewModel);
+
+        _contentInitialized = true;
     }
 
     private void OnPositionNearMascot(object sender, WindowActivatedEventArgs e)
@@ -168,6 +178,7 @@ public sealed partial class MainWindow : Window
 
     public void NavigateToSettings()
     {
+        EnsureContent();
         // RootFrame holds MainPage; ask it to navigate its ContentFrame to SettingsPage
         if (RootFrame.Content is MainPage mainPage)
             mainPage.NavigateToSettingsPage();
@@ -175,6 +186,7 @@ public sealed partial class MainWindow : Window
 
     public void NavigateTo(string tag)
     {
+        EnsureContent();
         if (RootFrame.Content is MainPage mainPage)
             mainPage.NavigateTo(tag);
     }
@@ -184,12 +196,14 @@ public sealed partial class MainWindow : Window
 
     public void NavigateToTask(TodoItem task)
     {
+        EnsureContent();
         if (RootFrame.Content is MainPage mainPage)
             mainPage.NavigateToTask(task);
     }
 
     public void ShowAndSelectTask(Guid taskId)
     {
+        EnsureContent();
         ShowWindow(_hwnd, SW_RESTORE);
         AppWindow.Show(true);
         Activate();
@@ -205,6 +219,7 @@ public sealed partial class MainWindow : Window
     {
         DispatcherQueue.TryEnqueue(() =>
         {
+            EnsureContent();
             // Put the released list bindings back before the window is shown again —
             // see OnWindowClosing's tray-hide branch and MainPage.RestoreTaskListMemory.
             (RootFrame?.Content as MainPage)?.RestoreTaskListMemory();
