@@ -8,6 +8,7 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.23.1** | Sep 23, 2026 | Lower mascot-only startup memory by deferring the main task page; simplify My Day and Important open-task presentation |
 | **v0.23.0** | Sep 2, 2026 | Import tasks from a Hatch JSON export — record-level last-write-wins merge, nothing deleted (parity with hatch-mobile) |
 | **v0.22.3** | Sep 2, 2026 | Export card icon corrected to "save a local copy" (was an upload icon) |
 | **v0.22.2** | Sep 2, 2026 | Task export simplified to JSON only — CSV and Markdown removed |

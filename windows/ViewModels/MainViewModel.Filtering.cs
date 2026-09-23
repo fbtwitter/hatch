@@ -57,7 +57,7 @@ public sealed partial class MainViewModel
             OnPropertyChanged(nameof(EmptyStateHeadline));
             OnPropertyChanged(nameof(EmptyStateSubtext));
             _completedGroup.IsExpanded = IsCompletedGroupExpanded(value);
-            _openGroup.IsCollapsible = value != "important";
+            _openGroup.IsCollapsible = value is not ("important" or "myday");
             App.Settings.ActiveNavItem = value;
             App.SettingsService.SaveDebounced();
             OnPropertyChanged(nameof(SuggestionsVisible));
