@@ -15,15 +15,12 @@
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
         <converters:BoolToStarGlyphConverter x:Key="BoolToStarGlyph" />
         <converters:DueDateToChipVisibilityConverter x:Key="DueDateToChipVisibility" />
-        <converters:DueDateToChipBrushConverter x:Key="DueDateToChipBrush" />
         <converters:DueDateToChipForegroundConverter x:Key="DueDateToChipForeground" />
         <converters:DueDateToChipGlyphConverter x:Key="DueDateToChipGlyph" />
         <converters:PlannedGroupNameToForegroundConverter x:Key="PlannedGroupNameToForeground" />
         <converters:BoolToStarTooltipConverter x:Key="BoolToStarTooltip" />
         <converters:TagsToVisibilityConverter x:Key="TagsToVisibility" />
-        <converters:TagsPreviewConverter x:Key="TagsPreview" />
-        <converters:TagsOverflowCountConverter x:Key="TagsOverflowCount" />
-        <converters:TagsOverflowVisibilityConverter x:Key="TagsOverflowVisibility" />
+        <converters:TagsPreviewConverter x:Key="TaskTagsPreview" />
         <converters:PriorityToBrushConverter x:Key="PriorityToBrush" />
         <converters:PriorityToForegroundConverter x:Key="PriorityToForeground" />
         <converters:PriorityToLabelConverter x:Key="PriorityToLabel" />
@@ -139,169 +136,156 @@
                           VerticalAlignment="Center"
                           x:Uid="Task_CheckBox" />
 
-                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2"
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3"
                             Opacity="{x:Bind IsCompleted, Converter={StaticResource BoolToOpacity}, Mode=OneWay}">
                     <TextBlock Text="{x:Bind Title, Mode=OneWay}"
                                TextDecorations="{x:Bind IsCompleted, Converter={StaticResource BoolToStrikethrough}, Mode=OneWay}"
                                TextTrimming="CharacterEllipsis" />
 
-                    <StackPanel Orientation="Horizontal" Spacing="4">
-
-                        <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}"
-                                CornerRadius="4"
-                                Padding="6,2"
-                                Visibility="{x:Bind HasListName, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                VerticalAlignment="Center">
-                            <TextBlock Text="{x:Bind ListName, Mode=OneWay}"
-                                       Style="{ThemeResource CaptionTextBlockStyle}"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                       VerticalAlignment="Center" />
-                        </Border>
-
-                        <!--
-                            Everything below is extra context that only matters for an open
-                            task — a completed row keeps just the list name chip above.
-                        -->
-                        <StackPanel Orientation="Horizontal" Spacing="4"
-                                    Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
-
-                            <TextBlock Text="·"
-                                       Visibility="{x:Bind HasListNameToDateSeparator, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                       Style="{ThemeResource CaptionTextBlockStyle}"
-                                       VerticalAlignment="Center" />
+                    <!-- The horizontal viewport keeps a dense metadata line inside the text
+                         column on narrow windows while preserving horizontal access to its tail. -->
+                    <ScrollViewer HorizontalScrollBarVisibility="Hidden"
+                                  HorizontalScrollMode="Enabled"
+                                  VerticalScrollBarVisibility="Disabled"
+                                  VerticalScrollMode="Disabled"
+                                  IsTabStop="False">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon FontFamily="Segoe MDL2 Assets"
+                                      Glyph="&#xE8A5;"
+                                      FontSize="12"
+                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                      ToolTipService.ToolTip="Has notes"
+                                      AutomationProperties.Name="Has notes"
+                                      VerticalAlignment="Center"
+                                      Visibility="{x:Bind HasNotes, Converter={StaticResource BoolToVisibility}, Mode=OneWay}" />
 
                             <Button Tag="{x:Bind}"
                                     AutomationProperties.AutomationId="Task_DateChipButton"
                                     Click="ChipDateButton_Click"
                                     Visibility="{x:Bind DueDate, Converter={StaticResource DueDateToChipVisibility}, Mode=OneWay}"
-                                    Background="{x:Bind DueDate, Converter={StaticResource DueDateToChipBrush}, Mode=OneWay}"
+                                    Background="Transparent"
                                     Style="{StaticResource ChipButtonStyle}"
+                                    Padding="0"
                                     VerticalAlignment="Center"
                                     x:Uid="Task_DateChipButton">
-                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                    <FontIcon
-                                        Glyph="{x:Bind DueDate, Converter={StaticResource DueDateToChipGlyph}, Mode=OneWay}"
-                                        FontSize="11"
-                                        Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
-                                        VerticalAlignment="Center" />
-                                    <TextBlock
-                                        Text="{x:Bind DueDate, Converter={StaticResource DueDateToString}, Mode=OneWay}"
-                                        Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
-                                        Style="{ThemeResource CaptionTextBlockStyle}"
-                                        VerticalAlignment="Center" />
-                                </StackPanel>
-                            </Button>
-
-                            <Border x:Uid="Task_RepeatChip"
-                                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
-                                    CornerRadius="4"
-                                    Padding="6,2"
-                                    VerticalAlignment="Center"
-                                    Visibility="{x:Bind HasRecurrence, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                                <FontIcon Glyph="&#xE895;"
-                                          FontSize="10"
-                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                            </Border>
-
-                            <Border
-                                Background="{x:Bind Priority, Converter={StaticResource PriorityToBrush}, Mode=OneWay}"
-                                CornerRadius="4"
-                                Padding="6,2"
-                                VerticalAlignment="Center"
-                                ToolTipService.ToolTip="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, Mode=OneWay}"
-                                Visibility="{x:Bind HasPriority, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                    <FontIcon Glyph="&#xE7C1;"
-                                              FontSize="10"
-                                              Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
-                                    <TextBlock
-                                        Text="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, Mode=OneWay}"
-                                        Style="{ThemeResource CaptionTextBlockStyle}"
-                                        Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
-                                </StackPanel>
-                            </Border>
-
-                            <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}"
-                                    CornerRadius="4"
-                                    Padding="6,2"
-                                    VerticalAlignment="Center"
-                                    ToolTipService.ToolTip="Steps"
-                                    Visibility="{x:Bind HasSteps, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                    <FontIcon Glyph="&#xE73A;"
-                                              FontSize="10"
-                                              Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                    <TextBlock Text="{x:Bind StepProgressLabel, Mode=OneWay}"
-                                               Style="{ThemeResource CaptionTextBlockStyle}"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                </StackPanel>
-                            </Border>
-
-                            <Button Tag="{x:Bind}"
-                                    AutomationProperties.AutomationId="Task_AddDateButton"
-                                    Click="ChipDateButton_Click"
-                                    Visibility="{x:Bind ShowAddDateHint, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                    Padding="6,2" MinWidth="0" MinHeight="0"
-                                    Background="Transparent" BorderThickness="0"
-                                    VerticalAlignment="Center"
-                                    IsTabStop="False"
-                                    x:Uid="Task_AddDateButton">
-                                <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                    <FontIcon Glyph="&#xE787;" FontSize="11"
-                                              Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                    <FontIcon Glyph="{x:Bind DueDate, Converter={StaticResource DueDateToChipGlyph}, Mode=OneWay}"
+                                              FontSize="11"
+                                              Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
                                               VerticalAlignment="Center" />
-                                    <TextBlock x:Uid="Task_AddDateText"
-                                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                    <TextBlock Text="{x:Bind DueDate, Converter={StaticResource DueDateToString}, Mode=OneWay}"
                                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                               Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
                                                VerticalAlignment="Center" />
                                 </StackPanel>
                             </Button>
 
-                            <TextBlock Text="·"
-                                       Visibility="{x:Bind HasMetaSeparator, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
-                                       Style="{ThemeResource CaptionTextBlockStyle}"
-                                       VerticalAlignment="Center" />
+                            <StackPanel Orientation="Horizontal" Spacing="3"
+                                        VerticalAlignment="Center"
+                                        ToolTipService.ToolTip="Steps"
+                                        Visibility="{x:Bind HasSteps, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                                <FontIcon Glyph="&#xE73A;" FontSize="12"
+                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center" />
+                                <TextBlock Text="{x:Bind StepProgressLabel, Mode=OneWay}"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
 
-                            <ItemsRepeater
-                                ItemsSource="{x:Bind Tags, Converter={StaticResource TagsPreview}, Mode=OneWay}"
-                                Visibility="{x:Bind Tags, Converter={StaticResource TagsToVisibility}, Mode=OneWay}"
-                                VerticalAlignment="Center">
+                            <FontIcon Glyph="&#xE895;"
+                                      FontSize="12"
+                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                      ToolTipService.ToolTip="Repeats"
+                                      AutomationProperties.Name="Repeats"
+                                      Visibility="{x:Bind HasRecurrence, Converter={StaticResource BoolToVisibility}, Mode=OneWay}" />
+
+                            <StackPanel Orientation="Horizontal" Spacing="3"
+                                        VerticalAlignment="Center"
+                                        Visibility="{x:Bind HasCustomListName, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                                <FontIcon Glyph="&#xE8FD;" FontSize="12"
+                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center" />
+                                <TextBlock Text="{x:Bind ListName, Mode=OneWay}"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxWidth="96"
+                                           VerticalAlignment="Center" />
+                            </StackPanel>
+
+                            <ItemsRepeater ItemsSource="{x:Bind Tags, Converter={StaticResource TaskTagsPreview}, Mode=OneWay}"
+                                           Visibility="{x:Bind Tags, Converter={StaticResource TagsToVisibility}, Mode=OneWay}"
+                                           VerticalAlignment="Center">
                                 <ItemsRepeater.Layout>
-                                    <StackLayout Orientation="Horizontal" Spacing="4" />
+                                    <StackLayout Orientation="Horizontal" Spacing="8" />
                                 </ItemsRepeater.Layout>
                                 <ItemsRepeater.ItemTemplate>
                                     <DataTemplate x:DataType="x:String">
                                         <Button Tag="{x:Bind}"
                                                 Click="TagChipInRow_Click"
-                                                Background="{ThemeResource SubtleFillColorSecondaryBrush}"
-                                                Style="{StaticResource ChipButtonStyle}"
-                                                Padding="6,1">
-                                            <TextBlock Text="{x:Bind}"
-                                                       Style="{ThemeResource CaptionTextBlockStyle}"
-                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                Background="Transparent"
+                                                BorderThickness="0"
+                                                Padding="0"
+                                                MinWidth="0"
+                                                MinHeight="0"
+                                                MaxWidth="96"
+                                                IsTabStop="False"
+                                                VerticalAlignment="Center">
+                                            <TextBlock Style="{ThemeResource CaptionTextBlockStyle}"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       MaxLines="1">
+                                                <Run Text="#" />
+                                                <Run Text="{x:Bind}" />
+                                            </TextBlock>
                                         </Button>
                                     </DataTemplate>
                                 </ItemsRepeater.ItemTemplate>
                             </ItemsRepeater>
 
-                            <!-- +N overflow → tapping opens details pane to show all tags -->
-                            <Button Tag="{x:Bind}"
-                                    Click="TagOverflowButton_Click"
-                                    Visibility="{x:Bind Tags, Converter={StaticResource TagsOverflowVisibility}, Mode=OneWay}"
-                                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
-                                    Style="{StaticResource ChipButtonStyle}"
-                                    VerticalAlignment="Center"
-                                    Padding="6,1">
-                                <TextBlock
-                                    Text="{x:Bind Tags, Converter={StaticResource TagsOverflowCount}, Mode=OneWay}"
-                                    Style="{ThemeResource CaptionTextBlockStyle}"
-                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                            </Button>
+                            <!-- Desktop-only priority and quick add-date affordances follow the
+                                 shared mobile metadata marks. -->
+                            <StackPanel Orientation="Horizontal" Spacing="8"
+                                        Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
+                                <Border Background="{x:Bind Priority, Converter={StaticResource PriorityToBrush}, Mode=OneWay}"
+                                        CornerRadius="4"
+                                        Padding="6,2"
+                                        VerticalAlignment="Center"
+                                        ToolTipService.ToolTip="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, Mode=OneWay}"
+                                        Visibility="{x:Bind HasPriority, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                                        <FontIcon Glyph="&#xE7C1;"
+                                                  FontSize="10"
+                                                  Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
+                                        <TextBlock Text="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, Mode=OneWay}"
+                                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                                   Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
+                                    </StackPanel>
+                                </Border>
 
+                                <Button Tag="{x:Bind}"
+                                        AutomationProperties.AutomationId="Task_AddDateButton"
+                                        Click="ChipDateButton_Click"
+                                        Visibility="{x:Bind ShowAddDateHint, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                        Padding="0" MinWidth="0" MinHeight="0"
+                                        Background="Transparent" BorderThickness="0"
+                                        VerticalAlignment="Center"
+                                        IsTabStop="False"
+                                        x:Uid="Task_AddDateButton">
+                                    <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
+                                        <FontIcon Glyph="&#xE787;" FontSize="11"
+                                                  Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                  VerticalAlignment="Center" />
+                                        <TextBlock x:Uid="Task_AddDateText"
+                                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                                   VerticalAlignment="Center" />
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
                         </StackPanel>
-                    </StackPanel>
+                    </ScrollViewer>
                 </StackPanel>
 
                 <!--
@@ -567,6 +551,10 @@
                                             <ListView ItemsSource="{x:Bind Items, Mode=OneWay}"
                                                       ItemTemplate="{StaticResource TaskItemTemplate}"
                                                       ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
+                                                      AllowDrop="{x:Bind CanReorderItems, Mode=OneWay}"
+                                                      CanDragItems="{x:Bind CanReorderItems, Mode=OneWay}"
+                                                      CanReorderItems="{x:Bind CanReorderItems, Mode=OneWay}"
+                                                      DragItemsCompleted="MyDayTasks_DragItemsCompleted"
                                                       SelectionMode="Single"
                                                       SelectionChanged="TaskListView_SelectionChanged"
                                                       IsTabStop="False"
@@ -613,11 +601,100 @@
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="Auto" />
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0"
-                                                           Text="{x:Bind Title, Mode=OneWay}"
-                                                           VerticalAlignment="Center"
-                                                           TextTrimming="CharacterEllipsis"
-                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                                    <TextBlock Text="{x:Bind Title, Mode=OneWay}"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                                        <FontIcon FontFamily="Segoe MDL2 Assets"
+                                                                  Glyph="&#xE8A5;"
+                                                                  FontSize="12"
+                                                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                  ToolTipService.ToolTip="Has notes"
+                                                                  AutomationProperties.Name="Has notes"
+                                                                  VerticalAlignment="Center"
+                                                                  Visibility="{x:Bind HasNotes, Converter={StaticResource BoolToVisibility}, Mode=OneWay}" />
+
+                                                        <StackPanel Orientation="Horizontal" Spacing="3"
+                                                                    VerticalAlignment="Center"
+                                                                    Visibility="{x:Bind DueDate, Converter={StaticResource DueDateToChipVisibility}, Mode=OneWay}">
+                                                            <FontIcon Glyph="{x:Bind DueDate, Converter={StaticResource DueDateToChipGlyph}, Mode=OneWay}"
+                                                                      FontSize="11"
+                                                                      Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
+                                                                      VerticalAlignment="Center" />
+                                                            <TextBlock Text="{x:Bind DueDate, Converter={StaticResource DueDateToString}, Mode=OneWay}"
+                                                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                                                       Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
+                                                                       VerticalAlignment="Center" />
+                                                        </StackPanel>
+
+                                                        <StackPanel Orientation="Horizontal" Spacing="3"
+                                                                    VerticalAlignment="Center"
+                                                                    ToolTipService.ToolTip="Steps"
+                                                                    Visibility="{x:Bind HasSteps, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                                                            <FontIcon Glyph="&#xE73A;"
+                                                                      FontSize="12"
+                                                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                      VerticalAlignment="Center" />
+                                                            <TextBlock Text="{x:Bind StepProgressLabel, Mode=OneWay}"
+                                                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                       VerticalAlignment="Center" />
+                                                        </StackPanel>
+
+                                                        <FontIcon Glyph="&#xE895;"
+                                                                  FontSize="12"
+                                                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                  ToolTipService.ToolTip="Repeats"
+                                                                  AutomationProperties.Name="Repeats"
+                                                                  Visibility="{x:Bind HasRecurrence, Converter={StaticResource BoolToVisibility}, Mode=OneWay}" />
+
+                                                        <StackPanel Orientation="Horizontal" Spacing="3"
+                                                                    VerticalAlignment="Center"
+                                                                    Visibility="{x:Bind HasCustomListName, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                                                            <FontIcon Glyph="&#xE8FD;"
+                                                                      FontSize="12"
+                                                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                      VerticalAlignment="Center" />
+                                                            <TextBlock Text="{x:Bind ListName, Mode=OneWay}"
+                                                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                       TextTrimming="CharacterEllipsis"
+                                                                       MaxWidth="96"
+                                                                       VerticalAlignment="Center" />
+                                                        </StackPanel>
+
+                                                        <ItemsRepeater ItemsSource="{x:Bind Tags, Converter={StaticResource TaskTagsPreview}, Mode=OneWay}"
+                                                                       Visibility="{x:Bind Tags, Converter={StaticResource TagsToVisibility}, Mode=OneWay}"
+                                                                       VerticalAlignment="Center">
+                                                            <ItemsRepeater.Layout>
+                                                                <StackLayout Orientation="Horizontal" Spacing="8" />
+                                                            </ItemsRepeater.Layout>
+                                                            <ItemsRepeater.ItemTemplate>
+                                                                <DataTemplate x:DataType="x:String">
+                                                                    <Button Tag="{x:Bind}"
+                                                                            Click="TagChipInRow_Click"
+                                                                            Background="Transparent"
+                                                                            BorderThickness="0"
+                                                                            Padding="0"
+                                                                            MinWidth="0"
+                                                                            MinHeight="0"
+                                                                            MaxWidth="96"
+                                                                            IsTabStop="False"
+                                                                            VerticalAlignment="Center">
+                                                                        <TextBlock Style="{ThemeResource CaptionTextBlockStyle}"
+                                                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                                   TextTrimming="CharacterEllipsis"
+                                                                                   MaxLines="1">
+                                                                            <Run Text="#" />
+                                                                            <Run Text="{x:Bind}" />
+                                                                        </TextBlock>
+                                                                    </Button>
+                                                                </DataTemplate>
+                                                            </ItemsRepeater.ItemTemplate>
+                                                        </ItemsRepeater>
+                                                    </StackPanel>
+                                                </StackPanel>
                                                 <Button Grid.Column="1" Tag="{x:Bind}"
                                                         x:Uid="Suggestion_AddButton"
                                                         AutomationProperties.Name="Add to My Day"
@@ -834,9 +911,11 @@
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <FontIcon Grid.Column="0" Glyph="&#xE160;"
+                                        <FontIcon Grid.Column="0"
+                                                  FontFamily="Segoe MDL2 Assets"
+                                                  Glyph="&#xE8A5;"
                                                   Style="{StaticResource PaneRowGlyphStyle}"
-                                                  VerticalAlignment="Top" Margin="0,6,0,0" />
+                                                  VerticalAlignment="Top" Margin="0,8,0,0" />
                                         <TextBox x:Name="PaneNotesBox"
                                                  x:Uid="PaneNotesBox"
                                                  Grid.Column="1"
@@ -844,6 +923,7 @@
                                                  PlaceholderText="Add notes…"
                                                  AcceptsReturn="True"
                                                  TextWrapping="Wrap"
+                                                 VerticalContentAlignment="Top"
                                                  BorderThickness="0"
                                                  Background="Transparent"
                                                  Padding="8,6"

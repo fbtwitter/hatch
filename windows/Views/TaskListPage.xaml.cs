@@ -552,6 +552,9 @@ public sealed partial class TaskListPage : Page
         }
     }
 
+    private void MyDayTasks_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs e)
+        => ViewModel.ReorderMyDayTasks(sender.Items.OfType<TodoItem>());
+
     private void SyncListViewSelection(TodoItem? task)
     {
         _suppressSelectionChanged = true;
@@ -742,12 +745,6 @@ public sealed partial class TaskListPage : Page
     {
         if (sender is Button btn && btn.Tag is string tag)
             ViewModel.ActiveTagFilter = tag;
-    }
-
-    private void TagOverflowButton_Click(object sender, RoutedEventArgs e)
-    {
-        var task = (TodoItem)((FrameworkElement)sender).Tag;
-        ViewModel.SelectedTask = task;
     }
 
     private void FocusMenuItem_Click(object sender, RoutedEventArgs e)
