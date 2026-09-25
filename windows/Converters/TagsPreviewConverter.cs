@@ -7,7 +7,7 @@ public sealed class TagsPreviewConverter : IValueConverter
     public object Convert(object value, Type targetType, object parameter, string language)
     {
         if (value is List<string> tags)
-            return tags.Count <= 2 ? tags : tags.Take(2).ToList();
+            return tags.Count <= 3 ? tags : tags.Take(3).ToList();
         return Array.Empty<string>();
     }
 

@@ -11,6 +11,7 @@ public sealed class TodoItem : INotifyPropertyChanged
     private bool _isStarred;
     private bool _isInMyDay;
     private DateTimeOffset? _dueDate;
+    private long _myDayOrder;
 
     public Guid Id { get; set; } = Guid.NewGuid();
 
@@ -65,6 +66,18 @@ public sealed class TodoItem : INotifyPropertyChanged
     {
         get => _myDayDate;
         set { _myDayDate = value; OnPropertyChanged(); }
+    }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public long MyDayOrder
+    {
+        get => _myDayOrder;
+        set
+        {
+            if (_myDayOrder == value) return;
+            _myDayOrder = value;
+            OnPropertyChanged();
+        }
     }
 
     // The one place the My Day membership/date pairing rule lives: adding stamps
@@ -132,12 +145,15 @@ public sealed class TodoItem : INotifyPropertyChanged
             _listName = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasListName));
+            OnPropertyChanged(nameof(HasCustomListName));
             OnPropertyChanged(nameof(HasListNameToDateSeparator));
             OnPropertyChanged(nameof(HasMetaSeparator));
         }
     }
 
     public bool HasListName => _listName != null;
+    [JsonIgnore]
+    public bool HasCustomListName => ListId != Guid.Empty && _listName != null;
     public bool HasListNameToDateSeparator => _listName != null && _dueDate != null;
     public bool HasMetaSeparator => (_dueDate != null || _listName != null) && _tags.Count > 0;
     public bool ShowAddDateHint => !IsCompleted && DueDate == null;
@@ -154,8 +170,11 @@ public sealed class TodoItem : INotifyPropertyChanged
     public string? Notes
     {
         get => _notes;
-        set { _notes = value; OnPropertyChanged(); }
+        set { _notes = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasNotes)); }
     }
+
+    [JsonIgnore]
+    public bool HasNotes => !string.IsNullOrWhiteSpace(_notes);
 
     // ADR-0010. Ordered steps; array order is display order. Reassigned wholesale when a
     // step is added or removed; mutated in place (then NotifyStepsChanged) when a step is
