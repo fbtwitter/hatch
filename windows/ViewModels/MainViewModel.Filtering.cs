@@ -46,6 +46,7 @@ public sealed partial class MainViewModel
             if (_activeNavItem == value) return;
             _activeNavItem = value;
             _activeTagFilter = null;
+            _openGroup.CanReorderItems = value == "myday";
             OnPropertyChanged();
             OnPropertyChanged(nameof(ActiveTagFilter));
             OnPropertyChanged(nameof(IsTagFilterActive));
@@ -120,7 +121,8 @@ public sealed partial class MainViewModel
         {
             "myday" => Tasks
                 .Where(t => t.IsInMyDay)
-                .OrderByDescending(TaskSorting.CreatedInstant)
+                .OrderBy(t => t.MyDayOrder)
+                .ThenByDescending(TaskSorting.CreatedInstant)
                 .ThenBy(t => t.IsCompleted),
             // Important excludes completed tasks entirely, like Planned — a done task
             // isn't something to act on anymore, even if it's still starred.
@@ -139,6 +141,38 @@ public sealed partial class MainViewModel
         OnPropertyChanged(nameof(BadgeVersion));
     }
 
+    public void ReorderMyDayTasks(IEnumerable<TodoItem> reorderedOpenTasks)
+    {
+        if (_activeNavItem != "myday") return;
+
+        var reordered = reorderedOpenTasks.Where(task => !task.IsCompleted).ToList();
+        var current = ActiveTasks.Where(task => !task.IsCompleted).ToList();
+        if (reordered.Count != current.Count || reordered.Any(task => !current.Contains(task))) return;
+        if (reordered.SequenceEqual(current)) return;
+
+        for (int i = 0; i < reordered.Count; i++)
+        {
+            var task = reordered[i];
+            task.MyDayOrder = i;
+
+            int groupIndex = _openGroup.Items.IndexOf(task);
+            if (groupIndex >= 0 && groupIndex != i)
+                _openGroup.Items.Move(groupIndex, i);
+        }
+
+        var sorted = ActiveTasks
+            .OrderBy(task => task.MyDayOrder)
+            .ThenByDescending(TaskSorting.CreatedInstant)
+            .ThenBy(task => task.IsCompleted)
+            .ToList();
+        for (int i = 0; i < sorted.Count; i++)
+        {
+            int currentIndex = ActiveTasks.IndexOf(sorted[i]);
+            if (currentIndex != i)
+                ActiveTasks.Move(currentIndex, i);
+        }
+    }
+
     private void RebuildFlatGroups()
     {
         _openGroup.Items.Clear();
@@ -153,6 +187,20 @@ public sealed partial class MainViewModel
 
     private void MoveBetweenFlatGroups(TodoItem task)
     {
+        if (_activeNavItem == "myday")
+        {
+            var source = task.IsCompleted ? _openGroup.Items : _completedGroup.Items;
+            var target = task.IsCompleted ? _completedGroup.Items : _openGroup.Items;
+            source.Remove(task);
+            target.Remove(task);
+
+            int index = 0;
+            while (index < target.Count && CompareMyDayOrder(target[index], task) <= 0)
+                index++;
+            target.Insert(index, task);
+            return;
+        }
+
         if (task.IsCompleted)
         {
             _openGroup.Items.Remove(task);
@@ -165,6 +213,15 @@ public sealed partial class MainViewModel
             if (!_openGroup.Items.Contains(task))
                 _openGroup.Items.Insert(0, task);
         }
+    }
+
+    private static int CompareMyDayOrder(TodoItem left, TodoItem right)
+    {
+        int order = left.MyDayOrder.CompareTo(right.MyDayOrder);
+        if (order != 0) return order;
+
+        order = TaskSorting.CreatedInstant(right).CompareTo(TaskSorting.CreatedInstant(left));
+        return order != 0 ? order : left.IsCompleted.CompareTo(right.IsCompleted);
     }
 
     public IList<PlannedGroup> PlannedGroups => _cachedPlannedGroups ??= BuildPlannedGroups();

@@ -243,6 +243,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         nameof(TodoItem.Title), nameof(TodoItem.Notes), nameof(TodoItem.Tags),
         nameof(TodoItem.IsInMyDay), nameof(TodoItem.IsStarred), nameof(TodoItem.DueDate),
         nameof(TodoItem.IsCompleted), nameof(TodoItem.Recurrence), nameof(TodoItem.Priority),
+        nameof(TodoItem.MyDayOrder),
         nameof(TodoItem.Steps)
     ];
 

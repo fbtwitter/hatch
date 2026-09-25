@@ -1,4 +1,4 @@
-# Hatch Sync Protocol — v3
+# Hatch Sync Protocol — v4
 
 The wire contract every Hatch client (WinUI 3 and the Kotlin Multiplatform core) must
 obey. The C# implementation is the reference; the golden fixtures in
@@ -15,6 +15,7 @@ plan for rows already on the server.
 | v1      | initial contract                                            |
 | v2      | `IsDeleted` tombstones on `TodoItem` and `TaskList` (§4, §5) |
 | v3      | ordered `Steps` (subtasks / checklist) on `TodoItem` (§4); ADR-0010 |
+| v4      | optional `MyDayOrder` on `TodoItem` for manual My Day ordering (§4); ADR-0012 |
 
 **v1 → v2 migration: none required.** The envelope (§3) is unchanged, so no row on the
 server needs rewriting and no server-side migration runs. `IsDeleted` is optional and
@@ -23,14 +24,18 @@ defaults to `false`, so a v2 client reads a v1 payload as entirely live.
 **v2 → v3 migration: none required.** Same story — the envelope is unchanged and `Steps`
 defaults to `[]`, so a v3 client reads a v1/v2 payload as a task with no steps.
 
+**v3 → v4 migration: none required.** `MyDayOrder` is optional and absent means `0`, so a
+v4 client reads older task records with the existing newest-first My Day order. Writers omit
+the field at `0`; only a task with a manually assigned rank adds it to the payload.
+
 Compatibility is one-way, and deliberately so: a **v1 client reading a v2 payload** ignores
 the unknown `IsDeleted`, treats the tombstone as a live task, and revives it on its next
 push. A mixed-version fleet therefore loses delete propagation until every client is
 updated — but never loses data, which is the property §5 has always guaranteed. A **client
 older than v3 reading a v3 payload** likewise drops the unknown `Steps` array — and, being
-whole-record LWW (§5), **strips it from any task it then edits and pushes back**. Steps
-therefore must not be surfaced in any client's UI until every client understands the field
-(ADR-0010 Phase 1).
+whole-record LWW (§5), **strips it from any task it then edits and pushes back**. The same
+applies to `MyDayOrder` for clients older than v4. Clients should be updated together before
+users rely on cross-device steps or manual My Day ordering (ADR-0010, ADR-0012).
 
 ## 1. Transport and storage
 
@@ -107,7 +112,8 @@ Conventions (pinned by `Services/SyncWire.cs` and the golden fixture):
 - Property names are **PascalCase**, exactly as listed below.
 - Enums serialize as **integers**.
 - Absent optional values serialize as JSON `null` (writers include them; readers must
-  accept both `null` and missing).
+  accept both `null` and missing), except `MyDayOrder`: missing means `0`, and writers omit
+  it while it is `0`.
 - Readers MUST ignore unknown properties (older writers emitted derived fields like
   `HasRecurrence`, `ShowAddDateHint`; they are noise).
 - GUIDs: lowercase hyphenated (`"11111111-1111-1111-1111-111111111111"`).
@@ -125,6 +131,7 @@ Conventions (pinned by `Services/SyncWire.cs` and the golden fixture):
 | `IsStarred`   | bool                  | "Important"                                      |
 | `IsInMyDay`   | bool                  | cleared client-side each new day                 |
 | `MyDayDate`   | `YYYY-MM-DD` or null  | last date added to My Day                        |
+| `MyDayOrder`  | integer               | optional, absent means `0`; ascending order among My Day tasks; omitted while `0` |
 | `DueDate`     | ISO-8601 offset date-time or null | calendar day, read as written — see note below |
 | `ListId`      | GUID string           | `00000000-…` = default list                      |
 | `Recurrence`  | int                   | 0 None, 1 Daily, 2 Weekdays, 3 Weekly, 4 Monthly |
