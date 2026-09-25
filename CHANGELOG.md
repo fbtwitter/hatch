@@ -8,6 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.24.0] - 2026-09-25
+
+### Added
+- Open My Day tasks can be reordered by drag, with their order synchronized across clients through protocol v4.
+
+### Changed
+- Task and Suggested rows now show mobile-parity notes, due-date, steps, repeat, list, and tag metadata.
+- Details-pane editing now keeps scroll and input focus in step with user interaction.
+
+---
+
 ## [0.23.1] - 2026-09-23
 
 ### Changed

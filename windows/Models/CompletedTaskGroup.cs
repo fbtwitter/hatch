@@ -13,6 +13,7 @@ public sealed class CompletedTaskGroup : INotifyPropertyChanged
     private string? _countLabel;
     private bool _isExpanded = true;
     private bool _isCollapsible = true;
+    private bool _canReorderItems;
 
     public string Name
     {
@@ -79,6 +80,17 @@ public sealed class CompletedTaskGroup : INotifyPropertyChanged
     // on Important, which can never gain items) renders nothing, not an empty shell.
     public bool ShowExpander => HasItems && IsCollapsible;
     public bool ShowFlatList => HasItems && !IsCollapsible;
+
+    public bool CanReorderItems
+    {
+        get => _canReorderItems;
+        set
+        {
+            if (_canReorderItems == value) return;
+            _canReorderItems = value;
+            OnPropertyChanged();
+        }
+    }
 
     // Non-null on the Completed group; updated as items are added/removed.
     // Null on the Open group so no count chip is rendered.
