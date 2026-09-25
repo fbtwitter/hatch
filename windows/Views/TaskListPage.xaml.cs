@@ -28,7 +28,6 @@ public sealed partial class TaskListPage : Page
     private Storyboard? _paneStoryboard;
     private bool _suppressSelectionChanged;
     private TodoItem? _preTapSelectedTask;
-    private bool _suppressPaneFocusOnOpen;
     private List<ListView>? _cachedTaskListViews;
 
     // Cached date flyout controls — built once, reused on every chip tap.
@@ -226,8 +225,7 @@ public sealed partial class TaskListPage : Page
             DetailsPaneTranslate.X = 0;
         }
 
-        if (!_suppressPaneFocusOnOpen)
-            PaneTitleBox.Focus(FocusState.Programmatic);
+        DetailsPaneScrollViewer.ChangeView(0, 0, null, true);
     }
 
     private void ClosePane()
@@ -473,6 +471,24 @@ public sealed partial class TaskListPage : Page
 
     private void OnPagePointerPressed(object sender, PointerRoutedEventArgs e)
     {
+        var focusedInput = FocusManager.GetFocusedElement(XamlRoot) as Control;
+        if (focusedInput is TextBox or PasswordBox or RichEditBox)
+        {
+            var source = e.OriginalSource as DependencyObject;
+            while (source != null && !ReferenceEquals(source, focusedInput))
+                source = VisualTreeHelper.GetParent(source);
+
+            if (source == null)
+            {
+                // Let the pressed control receive focus before clearing stale text-input focus.
+                DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, () =>
+                {
+                    if (ReferenceEquals(FocusManager.GetFocusedElement(XamlRoot), focusedInput))
+                        this.Focus(FocusState.Programmatic);
+                });
+            }
+        }
+
         if (ViewModel.SelectedTask == null) return;
         if (DetailsPaneRoot.Visibility != Visibility.Visible) return;
         // In side-by-side mode task card taps switch pane content via TaskCard_Tapped —
@@ -669,17 +685,13 @@ public sealed partial class TaskListPage : Page
                 break;
 
             case VirtualKey.Up when !isCtrl && !IsTextInputFocused():
-                _suppressPaneFocusOnOpen = true;
                 MoveSelection(-1);
-                _suppressPaneFocusOnOpen = false;
                 this.Focus(FocusState.Programmatic);
                 e.Handled = true;
                 break;
 
             case VirtualKey.Down when !isCtrl && !IsTextInputFocused():
-                _suppressPaneFocusOnOpen = true;
                 MoveSelection(1);
-                _suppressPaneFocusOnOpen = false;
                 this.Focus(FocusState.Programmatic);
                 e.Handled = true;
                 break;
