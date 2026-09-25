@@ -753,7 +753,8 @@
                 <!-- The title is the pane's heading, inline and borderless between the
                      completion mark and the sections below — not a labelled field under a
                      "Details" caption that named the type rather than the thing. -->
-                <Grid Grid.Row="1" Padding="16,0,16,12" ColumnSpacing="8">
+                <!-- Use the existing gap for the title's inner inset so its text stays aligned. -->
+                <Grid Grid.Row="1" Padding="16,0,16,12" ColumnSpacing="0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
@@ -764,8 +765,7 @@
                               AutomationProperties.AutomationId="PaneCompleteCheck"
                               AutomationProperties.Name="Mark complete"
                               MinWidth="0" MinHeight="0" Padding="0"
-                              VerticalAlignment="Top"
-                              Margin="0,6,0,0"
+                              VerticalAlignment="Center"
                               Click="PaneCompleteCheck_Click" />
 
                     <TextBox x:Name="PaneTitleBox"
@@ -776,14 +776,15 @@
                              FontWeight="SemiBold"
                              BorderThickness="0"
                              Background="Transparent"
-                             Padding="0,2"
+                             Padding="8,6"
                              TextWrapping="Wrap"
                              AcceptsReturn="False"
                              HorizontalAlignment="Stretch"
                              TextChanged="PaneTitleBox_TextChanged" />
                 </Grid>
 
-                <ScrollViewer Grid.Row="2"
+                <ScrollViewer x:Name="DetailsPaneScrollViewer"
+                              Grid.Row="2"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
                     <StackPanel Padding="16,0,16,24" Spacing="16">
@@ -826,7 +827,9 @@
 
                                     <!-- Notes carry their own meaning; the gutter glyph says
                                          "notes" so the row needs no label of its own. -->
-                                    <Grid Style="{StaticResource PaneRowGridStyle}">
+                                    <!-- Keep the notes text aligned with its existing icon gutter. -->
+                                    <Grid Style="{StaticResource PaneRowGridStyle}"
+                                          ColumnSpacing="2">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
@@ -843,9 +846,8 @@
                                                  TextWrapping="Wrap"
                                                  BorderThickness="0"
                                                  Background="Transparent"
-                                                 Padding="0,4"
-                                                 MinHeight="100"
-                                                 MaxHeight="220"
+                                                 Padding="8,6"
+                                                 MinHeight="32"
                                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                  HorizontalAlignment="Stretch"
                                                  TextChanged="PaneNotesBox_TextChanged"
@@ -913,6 +915,7 @@
                                                                  BorderThickness="0"
                                                                  Background="Transparent"
                                                                  Padding="8,6"
+                                                                 MinHeight="32"
                                                                  TextWrapping="Wrap"
                                                                  AcceptsReturn="False"
                                                                  VerticalAlignment="Center"
@@ -942,7 +945,10 @@
                                                  BorderThickness="0"
                                                  Background="Transparent"
                                                  Padding="8,6"
+                                                 MinHeight="32"
                                                  PlaceholderText="Add a step, press Enter"
+                                                 TextWrapping="Wrap"
+                                                 AcceptsReturn="False"
                                                  KeyDown="PaneStepInput_KeyDown" />
                                     </StackPanel>
 
