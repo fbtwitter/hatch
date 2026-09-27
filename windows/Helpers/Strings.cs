@@ -154,4 +154,13 @@ internal static class Strings
     public static string Settings_OpenPage_AllTasks     => Get("Settings_OpenPage_AllTasks");
     public static string Settings_Import_BadFile         => Get("Settings_Import_BadFile");
     public static string Settings_Import_Count(int count) => string.Format(Get("Settings_Import_Count"), count);
+    public static string Settings_Update_Description     => Get("Settings_Update_Description");
+    public static string Settings_Update_Checking        => Get("Settings_Update_Checking");
+    public static string Settings_Update_UpToDate        => Get("Settings_Update_UpToDate");
+    public static string Settings_Update_Available       => Get("Settings_Update_Available");
+    public static string Settings_Update_ManagedBySource => Get("Settings_Update_ManagedBySource");
+    public static string Settings_Update_CheckFailed     => Get("Settings_Update_CheckFailed");
+    public static string Settings_Update_Installing      => Get("Settings_Update_Installing");
+    public static string Settings_Update_Restarting       => Get("Settings_Update_Restarting");
+    public static string Settings_Update_InstallFailed   => Get("Settings_Update_InstallFailed");
 }

@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using Windows.Management.Deployment;
 using Hatch.Helpers;
 using Hatch.Models;
 using Hatch.Services;
@@ -18,6 +19,11 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private readonly SettingsService _settings = App.SettingsService;
     private readonly StartupRegistryService _startupRegistry = new();
     private bool _wasSignedIn;
+    private Uri? _appInstallerUri;
+    private bool _isCheckingForUpdates;
+    private bool _isApplyingUpdate;
+    private bool _hasAvailableUpdate;
+    private string _updateStatus = Strings.Settings_Update_Description;
 
     // Raised on the UI thread when both local and server have tasks after a fresh sign-in.
     // Subscriber (SettingsPage) shows the conflict dialog and calls ResolveConflictAsync.
@@ -25,6 +31,9 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
     public SettingsViewModel()
     {
+        CheckForUpdatesCommand = new RelayCommand(async _ => await CheckForUpdatesAsync());
+        InstallUpdateCommand = new RelayCommand(async _ => await InstallUpdateAsync());
+
         _wasSignedIn = App.SyncService.IsSignedIn;
         App.SyncService.StateChanged += OnSyncStateChanged;
 
@@ -663,6 +672,129 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
                 var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
                 return v is null ? "v0.0.0" : $"v{v.Major}.{v.Minor}.{v.Build}";
             }
+        }
+    }
+
+    public ICommand CheckForUpdatesCommand { get; }
+    public ICommand InstallUpdateCommand { get; }
+
+    public bool IsCheckingForUpdates
+    {
+        get => _isCheckingForUpdates;
+        private set
+        {
+            if (_isCheckingForUpdates == value) return;
+            _isCheckingForUpdates = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CanCheckForUpdates));
+        }
+    }
+
+    public bool IsApplyingUpdate
+    {
+        get => _isApplyingUpdate;
+        private set
+        {
+            if (_isApplyingUpdate == value) return;
+            _isApplyingUpdate = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CanCheckForUpdates));
+            OnPropertyChanged(nameof(CanInstallUpdate));
+        }
+    }
+
+    public bool HasAvailableUpdate
+    {
+        get => _hasAvailableUpdate;
+        private set
+        {
+            if (_hasAvailableUpdate == value) return;
+            _hasAvailableUpdate = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(CanInstallUpdate));
+        }
+    }
+
+    public bool CanCheckForUpdates => !IsCheckingForUpdates && !IsApplyingUpdate;
+    public bool CanInstallUpdate => HasAvailableUpdate && !IsApplyingUpdate;
+
+    public string UpdateStatus
+    {
+        get => _updateStatus;
+        private set
+        {
+            if (_updateStatus == value) return;
+            _updateStatus = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private async Task CheckForUpdatesAsync()
+    {
+        IsCheckingForUpdates = true;
+        HasAvailableUpdate = false;
+        _appInstallerUri = null;
+        UpdateStatus = Strings.Settings_Update_Checking;
+
+        try
+        {
+            var package = Windows.ApplicationModel.Package.Current;
+            var result = await package.CheckUpdateAvailabilityAsync();
+            switch (result.Availability)
+            {
+                case Windows.ApplicationModel.PackageUpdateAvailability.Available:
+                case Windows.ApplicationModel.PackageUpdateAvailability.Required:
+                    _appInstallerUri = package.GetAppInstallerInfo().Uri;
+                    HasAvailableUpdate = _appInstallerUri != null;
+                    UpdateStatus = HasAvailableUpdate
+                        ? Strings.Settings_Update_Available
+                        : Strings.Settings_Update_ManagedBySource;
+                    break;
+                case Windows.ApplicationModel.PackageUpdateAvailability.NoUpdates:
+                    UpdateStatus = Strings.Settings_Update_UpToDate;
+                    break;
+                case Windows.ApplicationModel.PackageUpdateAvailability.Unknown:
+                    UpdateStatus = Strings.Settings_Update_ManagedBySource;
+                    break;
+                default:
+                    UpdateStatus = Strings.Settings_Update_CheckFailed;
+                    break;
+            }
+        }
+        catch
+        {
+            UpdateStatus = Strings.Settings_Update_CheckFailed;
+        }
+        finally
+        {
+            IsCheckingForUpdates = false;
+        }
+    }
+
+    private async Task InstallUpdateAsync()
+    {
+        if (_appInstallerUri is not { } appInstallerUri) return;
+
+        IsApplyingUpdate = true;
+        UpdateStatus = Strings.Settings_Update_Installing;
+        try
+        {
+            if (NativeMethods.RegisterApplicationRestart(null, 0) != 0)
+                throw new InvalidOperationException("Windows could not register Hatch for restart.");
+
+            await new PackageManager().AddPackageByAppInstallerFileAsync(
+                appInstallerUri,
+                AddPackageByAppInstallerOptions.ForceTargetAppShutdown,
+                null);
+            UpdateStatus = Strings.Settings_Update_Restarting;
+        }
+        catch
+        {
+            UpdateStatus = Strings.Settings_Update_InstallFailed;
+        }
+        finally
+        {
+            IsApplyingUpdate = false;
         }
     }
 
