@@ -583,7 +583,7 @@
   <data name="Settings_UpdateCard.Header" xml:space="preserve"><value>Updates</value></data>
   <data name="Settings_CheckForUpdates.Content" xml:space="preserve"><value>Check for updates</value></data>
   <data name="Settings_InstallUpdate.Content" xml:space="preserve"><value>Install update</value></data>
-  <data name="Settings_Update_Description" xml:space="preserve"><value>Check for updates from the source you installed Hatch from.</value></data>
+  <data name="Settings_Update_Description" xml:space="preserve"><value>Check for the latest Hatch version.</value></data>
   <data name="Settings_Update_Checking" xml:space="preserve"><value>Checking for updates…</value></data>
   <data name="Settings_Update_UpToDate" xml:space="preserve"><value>Hatch is up to date.</value></data>
   <data name="Settings_Update_Available" xml:space="preserve"><value>A new update is available.</value></data>

@@ -10,7 +10,7 @@ Your tasks, always one click away.
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=.net)
 ![WinUI 3](https://img.shields.io/badge/WinUI-3-0078D4?style=flat-square)
 ![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![v0.25.1](https://img.shields.io/badge/Version-v0.25.1-blue?style=flat-square)
+![v0.25.2](https://img.shields.io/badge/Version-v0.25.2-blue?style=flat-square)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?style=flat-square&logo=github-sponsors)](https://github.com/sponsors/fbtwitter)
 
 </div>
@@ -64,8 +64,9 @@ Your tasks, always one click away.
 2. Open **<https://fbtwitter.github.io/hatch/Hatch.appinstaller>** and choose **Install** — Windows picks the right architecture automatically
 
 Installing this way registers Hatch with Windows App Installer, which checks daily for
-new versions and updates in the background. Windows performs those checks — Hatch itself
-still makes no outbound calls outside the opt-in sync path.
+new versions and updates in the background. Windows performs those checks. Hatch also
+contacts its published App Installer feed when you press **Check for updates** in Settings
+on a direct `.msixbundle` installation; it does not check automatically.
 
 Subsequent releases don't need the certificate step again.
 
@@ -77,8 +78,9 @@ Subsequent releases don't need the certificate step again.
 <summary>One-off install without automatic updates</summary>
 
 Download `Hatch_x.x.x.x_bundle.msixbundle` from [Releases](../../releases) and
-double-click it. Installs done this way will not update themselves — including any
-install made before v0.18.0, which must be reinstalled once via the link above to
+double-click it. Installs done this way will not update themselves, but Settings → About
+can check for an update when you press **Check for updates**. Install through the link above
+to enable automatic updates. Older installs made before v0.18.0 must also use that link to
 join the update channel.
 </details>
 

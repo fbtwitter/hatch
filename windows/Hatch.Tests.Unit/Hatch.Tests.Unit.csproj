@@ -38,6 +38,7 @@
     <Compile Include="..\Helpers\TaskSearchMatcher.cs" Link="Source\Helpers\TaskSearchMatcher.cs" />
     <Compile Include="..\Helpers\TaskExportFormatter.cs" Link="Source\Helpers\TaskExportFormatter.cs" />
     <Compile Include="..\Helpers\TaskImport.cs" Link="Source\Helpers\TaskImport.cs" />
+    <Compile Include="..\Helpers\AppInstallerFeed.cs" Link="Source\Helpers\AppInstallerFeed.cs" />
     <Compile Include="..\Helpers\FocusTimer.cs" Link="Source\Helpers\FocusTimer.cs" />
     <Compile Include="..\Helpers\MascotPopupPlacement.cs" Link="Source\Helpers\MascotPopupPlacement.cs" />
     <Compile Include="..\Services\TipEngine.cs" Link="Source\Services\TipEngine.cs" />

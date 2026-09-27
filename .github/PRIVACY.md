@@ -92,20 +92,21 @@ Nothing hidden. It's plain JSON — open it in Notepad.
 
 **By default: none.** Hatch does not:
 - Connect to Microsoft servers
-- Check for updates
+- Check for updates automatically
 - Send crash reports
 - Report feature usage
 
-**Optional Supabase sync** (off by default) connects to a Supabase instance when you explicitly sign in via Settings → Sync. If you never enable it, no network traffic occurs.
+**Optional Supabase sync** (off by default) connects to a Supabase instance when you explicitly sign in via Settings → Sync. If you never enable sync or press the update-check button, Hatch makes no network requests.
 
-**Verification:** Open Windows Firewall → Advanced Settings → Outbound Rules → sort by Application. Hatch has no outbound rules unless you enabled sync.
+**Manual update check** contacts Hatch's published App Installer feed only when you press **Check for updates** on a direct `.msixbundle` installation. Windows handles automatic checks for installations made through the `.appinstaller` file.
+
+**Verification:** Open Windows Firewall → Advanced Settings → Outbound Rules → sort by Application. Hatch does not need a persistent outbound rule to perform a manual update check or optional sync.
 
 ---
 
 ## File Access
 
-- **Package manifest:** `Package.appxmanifest` does not request `internetClient` or `internetClientServer` capabilities for general use
-- **CI check:** Build fails automatically if any unintended outbound connection is detected
+- **Package manifest:** `Package.appxmanifest` requests `internetClient` for optional sync and manual update checks; it does not request `internetClientServer`.
 
 ---
 
