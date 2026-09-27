@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.24.1] - 2026-09-27
+
+### Changed
+- Refined task and Suggested rows, moved Summary to the footer with a live Suggested count, and moved startup reminder reconciliation off the UI thread.
+
 ---
 
 ## [0.24.0] - 2026-09-25
