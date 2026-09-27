@@ -150,8 +150,8 @@
                                   VerticalScrollMode="Disabled"
                                   IsTabStop="False">
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                            <FontIcon FontFamily="Segoe MDL2 Assets"
-                                      Glyph="&#xE8A5;"
+                            <FontIcon FontFamily="Segoe Fluent Icons"
+                                      Glyph="&#xE70B;"
                                       FontSize="12"
                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                       ToolTipService.ToolTip="Has notes"
@@ -184,7 +184,7 @@
                                         VerticalAlignment="Center"
                                         ToolTipService.ToolTip="Steps"
                                         Visibility="{x:Bind HasSteps, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                                <FontIcon Glyph="&#xE73A;" FontSize="12"
+                                <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE9D5;" FontSize="12"
                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" />
                                 <TextBlock Text="{x:Bind StepProgressLabel, Mode=OneWay}"
@@ -479,7 +479,7 @@
                                Style="{ThemeResource CaptionTextBlockStyle}" />
                 </StackPanel>
 
-                <!-- Flat list with grouping — My Day, Important, All Tasks -->
+                <!-- Open and completed task groups; only completed tasks collapse. -->
                 <!-- Full width (no side margin) so the scrollbar tracks the column's true right
                      edge. The wrapper's Width is pinned to the viewport because this
                      ScrollViewer's extent runs wider than its viewport once the per-group
@@ -502,7 +502,7 @@
                                     <DataTemplate x:DataType="models:CompletedTaskGroup">
                                         <StackPanel Spacing="4" HorizontalAlignment="Stretch">
 
-                                            <!-- Completed groups, plus Open in All Tasks and custom lists. -->
+                                            <!-- Completed groups render in an expander; open tasks render directly. -->
                                             <Expander IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
                                                       HorizontalAlignment="Stretch"
                                                       HorizontalContentAlignment="Stretch"
@@ -547,7 +547,7 @@
                                                 </ListView>
                                             </Expander>
 
-                                            <!-- Open tasks in My Day and Important. -->
+                                            <!-- Open tasks across every task list. -->
                                             <ListView ItemsSource="{x:Bind Items, Mode=OneWay}"
                                                       ItemTemplate="{StaticResource TaskItemTemplate}"
                                                       ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
@@ -572,14 +572,17 @@
                             </ItemsControl>
 
                             <!-- Suggestions — My Day only, shows tasks from previous days not yet completed -->
-                            <StackPanel Margin="24,8,24,24"
+                            <StackPanel Margin="20,8,20,24"
                                         Spacing="4"
                                         Visibility="{x:Bind ViewModel.SuggestionsVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                                <TextBlock x:Uid="Suggestions_Header"
-                                           Text="Suggested"
-                                           Style="{ThemeResource CaptionTextBlockStyle}"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           Margin="8,0,0,4" />
+                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,0,0,4">
+                                    <TextBlock x:Uid="Suggestions_Header"
+                                               Text="Suggested"
+                                               Style="{ThemeResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <InfoBadge Value="{x:Bind ViewModel.SuggestionsCount, Mode=OneWay}"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
                                 <!-- Native ListView, not a Button ItemsRepeater — gets the selection indicator for free. Background must stay Transparent or it masks it. -->
                                 <ListView ItemsSource="{x:Bind ViewModel.MySuggestions, Mode=OneWay}"
                                           ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
@@ -605,9 +608,9 @@
                                                     <TextBlock Text="{x:Bind Title, Mode=OneWay}"
                                                                TextTrimming="CharacterEllipsis"
                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <FontIcon FontFamily="Segoe MDL2 Assets"
-                                                                  Glyph="&#xE8A5;"
+                                                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                        <FontIcon FontFamily="Segoe Fluent Icons"
+                                                                  Glyph="&#xE70B;"
                                                                   FontSize="12"
                                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                                   ToolTipService.ToolTip="Has notes"
@@ -632,7 +635,7 @@
                                                                     VerticalAlignment="Center"
                                                                     ToolTipService.ToolTip="Steps"
                                                                     Visibility="{x:Bind HasSteps, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                                                            <FontIcon Glyph="&#xE73A;"
+                                                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE9D5;"
                                                                       FontSize="12"
                                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                                       VerticalAlignment="Center" />
@@ -647,6 +650,7 @@
                                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                                   ToolTipService.ToolTip="Repeats"
                                                                   AutomationProperties.Name="Repeats"
+                                                                  VerticalAlignment="Center"
                                                                   Visibility="{x:Bind HasRecurrence, Converter={StaticResource BoolToVisibility}, Mode=OneWay}" />
 
                                                         <StackPanel Orientation="Horizontal" Spacing="3"
@@ -912,8 +916,8 @@
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
                                         <FontIcon Grid.Column="0"
-                                                  FontFamily="Segoe MDL2 Assets"
-                                                  Glyph="&#xE8A5;"
+                                                  FontFamily="Segoe Fluent Icons"
+                                                  Glyph="&#xE70B;"
                                                   Style="{StaticResource PaneRowGlyphStyle}"
                                                   VerticalAlignment="Top" Margin="0,8,0,0" />
                                         <TextBox x:Name="PaneNotesBox"
@@ -948,7 +952,7 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <FontIcon Grid.Column="0" Glyph="&#xE73A;"
+                                            <FontIcon Grid.Column="0" FontFamily="Segoe Fluent Icons" Glyph="&#xE9D5;"
                                                       Style="{StaticResource PaneRowGlyphStyle}" />
                                             <TextBlock Grid.Column="1" x:Uid="Pane_StepsLabel" Text="Steps"
                                                        Style="{StaticResource PaneRowLabelStyle}" />
