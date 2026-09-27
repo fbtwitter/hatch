@@ -10,7 +10,7 @@ Your tasks, always one click away.
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=.net)
 ![WinUI 3](https://img.shields.io/badge/WinUI-3-0078D4?style=flat-square)
 ![MIT License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![v0.17.0](https://img.shields.io/badge/Version-v0.17.0-blue?style=flat-square)
+![v0.25.0](https://img.shields.io/badge/Version-v0.25.0-blue?style=flat-square)
 [![Sponsor](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?style=flat-square&logo=github-sponsors)](https://github.com/sponsors/fbtwitter)
 
 </div>
@@ -58,11 +58,7 @@ Your tasks, always one click away.
 
 ## Installation
 
-### Microsoft Store *(recommended)*
-
-No certificate setup needed — get it directly from the Store.
-
-### Direct download *(sideload, with automatic updates)*
+### Direct download *(latest release, with automatic updates)*
 
 1. Download `install-cert.cer` from [Releases](../../releases) → double-click → **Install Certificate** → **Local Machine** → **Trusted People** → **Finish** *(first time only)*
 2. Open **<https://fbtwitter.github.io/hatch/Hatch.appinstaller>** and choose **Install** — Windows picks the right architecture automatically
@@ -72,6 +68,10 @@ new versions and updates in the background. Windows performs those checks — Ha
 still makes no outbound calls outside the opt-in sync path.
 
 Subsequent releases don't need the certificate step again.
+
+### Microsoft Store
+
+[Get Hatch on the Microsoft Store](https://apps.microsoft.com/detail/9PKTQFG9S3K8) without certificate setup. Store releases are published separately and may lag the latest GitHub release.
 
 <details>
 <summary>One-off install without automatic updates</summary>
