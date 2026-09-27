@@ -278,23 +278,22 @@ jobs:
             ${{ env.APPINSTALLER_PATH }}
             install-cert.cer
 
-      # Same signed bundle the GitHub release above ships — no separate build.
-      # msstore-cli's GitHub Actions publishing only supports free listings; Hatch is free.
-      - name: Publish to Microsoft Store
-        if: github.event_name == 'push'
-        uses: microsoft/microsoft-store-apppublisher@v1.1
-
-      - name: Reconfigure Microsoft Store CLI
-        if: github.event_name == 'push'
-        shell: pwsh
-        run: |
-          msstore reconfigure `
-            --tenantId "${{ secrets.AZURE_AD_TENANT_ID }}" `
-            --sellerId "${{ secrets.SELLER_ID }}" `
-            --clientId "${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}" `
-            --clientSecret "${{ secrets.AZURE_AD_APPLICATION_SECRET }}"
-
-      - name: Submit to Microsoft Store
-        if: github.event_name == 'push'
-        shell: pwsh
-        run: msstore publish "${{ env.BUNDLE_PATH }}" -id "${{ secrets.STORE_PRODUCT_ID }}"
+      # Microsoft Store publication is manual for now.
+      # - name: Publish to Microsoft Store
+      #   if: github.event_name == 'push'
+      #   uses: microsoft/microsoft-store-apppublisher@v1.1
+      #
+      # - name: Reconfigure Microsoft Store CLI
+      #   if: github.event_name == 'push'
+      #   shell: pwsh
+      #   run: |
+      #     msstore reconfigure `
+      #       --tenantId "${{ secrets.AZURE_AD_TENANT_ID }}" `
+      #       --sellerId "${{ secrets.SELLER_ID }}" `
+      #       --clientId "${{ secrets.AZURE_AD_APPLICATION_CLIENT_ID }}" `
+      #       --clientSecret "${{ secrets.AZURE_AD_APPLICATION_SECRET }}"
+      #
+      # - name: Submit to Microsoft Store
+      #   if: github.event_name == 'push'
+      #   shell: pwsh
+      #   run: msstore publish "${{ env.BUNDLE_PATH }}" -id "${{ secrets.STORE_PRODUCT_ID }}"
