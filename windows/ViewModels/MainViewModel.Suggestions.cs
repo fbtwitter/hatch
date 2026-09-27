@@ -12,6 +12,7 @@ public sealed partial class MainViewModel
     public ICommand AddSuggestionToMyDayCommand { get; private set; } = null!;
 
     public bool HasSuggestions => MySuggestions.Count > 0;
+    public int SuggestionsCount => MySuggestions.Count;
     public bool SuggestionsVisible => _activeNavItem == "myday" && HasSuggestions;
     public bool ShowEmptyState => IsTaskListEmpty && !SuggestionsVisible;
 
@@ -26,6 +27,7 @@ public sealed partial class MainViewModel
             MySuggestions.Add(s);
 
         OnPropertyChanged(nameof(HasSuggestions));
+        OnPropertyChanged(nameof(SuggestionsCount));
         OnPropertyChanged(nameof(SuggestionsVisible));
         OnPropertyChanged(nameof(ShowEmptyState));
     }
