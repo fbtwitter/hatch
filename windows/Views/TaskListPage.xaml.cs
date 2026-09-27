@@ -778,6 +778,8 @@ public sealed partial class TaskListPage : Page
             ViewModel.AddTaskCommand.Execute(null);
     }
 
+    public void FocusNewTask() => NewTaskTextBox.Focus(FocusState.Programmatic);
+
     private void DeleteButton_Click(object sender, RoutedEventArgs e)
     {
         var task = (TodoItem)((FrameworkElement)sender).Tag;

@@ -64,9 +64,12 @@ public partial class App : Application
         if (args.Kind != ExtendedActivationKind.Protocol) return;
         if (args.Data is not ProtocolActivatedEventArgs protocol) return;
 
-        var uri = protocol.Uri;
-        var queue = MainWindowInstance?.DispatcherQueue;
+        HandleProtocolUri(protocol.Uri);
+    }
 
+    private void HandleProtocolUri(Uri uri)
+    {
+        var queue = MainWindowInstance?.DispatcherQueue;
         if (uri.Host == "auth-callback")
         {
             if (queue != null)
@@ -76,26 +79,53 @@ public partial class App : Application
             return;
         }
 
-        if (queue == null) return;
+        queue?.TryEnqueue(() => HandleProtocolOnUiThread(uri));
+    }
 
-        queue.TryEnqueue(() =>
+    private void HandleProtocolOnUiThread(Uri uri)
+    {
+        var window = MainWindowInstance;
+        if (window == null) return;
+
+        if (uri.Host == "myday")
         {
-            if (uri.Host == "opentask" && TryGetQueryParam(uri, "id", out var openId) &&
-                Guid.TryParse(openId, out var openGuid))
+            window.ShowMyDay();
+            return;
+        }
+        if (uri.Host == "add")
+        {
+            window.ShowMyDay(focusNewTask: true);
+            return;
+        }
+
+        var viewModel = window.ViewModel;
+        if ((uri.Host is "opentask" or "complete" or "snooze") && !viewModel.IsLoaded)
+        {
+            Action retry = null!;
+            retry = () =>
             {
-                MainWindowInstance?.ShowAndSelectTask(openGuid);
-            }
-            else if (uri.Host == "complete" && TryGetQueryParam(uri, "id", out var completeId) &&
-                     Guid.TryParse(completeId, out var completeGuid))
-            {
-                MainWindowInstance?.ViewModel.CompleteTaskById(completeGuid);
-            }
-            else if (uri.Host == "snooze" && TryGetQueryParam(uri, "id", out var snoozeId) &&
-                     Guid.TryParse(snoozeId, out var snoozeGuid))
-            {
-                MainWindowInstance?.ViewModel.SnoozeReminderById(snoozeGuid);
-            }
-        });
+                viewModel.TasksLoaded -= retry;
+                window.DispatcherQueue.TryEnqueue(() => HandleProtocolOnUiThread(uri));
+            };
+            viewModel.TasksLoaded += retry;
+            return;
+        }
+
+        if (uri.Host == "opentask" && TryGetQueryParam(uri, "id", out var openId) &&
+            Guid.TryParse(openId, out var openGuid))
+        {
+            window.ShowAndSelectTask(openGuid);
+        }
+        else if (uri.Host == "complete" && TryGetQueryParam(uri, "id", out var completeId) &&
+                 Guid.TryParse(completeId, out var completeGuid))
+        {
+            viewModel.CompleteTaskById(completeGuid);
+        }
+        else if (uri.Host == "snooze" && TryGetQueryParam(uri, "id", out var snoozeId) &&
+                 Guid.TryParse(snoozeId, out var snoozeGuid))
+        {
+            viewModel.SnoozeReminderById(snoozeGuid);
+        }
     }
 
     private static void CenterOnWorkArea(AppWindow window)
@@ -150,6 +180,16 @@ public partial class App : Application
     {
         try
         {
+            // The packaged executable also runs as an out-of-process widget provider.
+            // That process must not create Hatch's regular windows or join its singleton.
+            if (MyDayWidgetComServer.IsActivation)
+            {
+                MyDayWidgetComServer.Run();
+                Application.Current.Exit();
+                return;
+            }
+
+            var activationArgs = AppInstance.GetCurrent().GetActivatedEventArgs();
             // Single-instance: if another Hatch is already running, redirect this activation
             // to it (e.g. hatch:// OAuth callback) and exit without showing a window.
             var mainInstance = AppInstance.FindOrRegisterForKey(
@@ -157,7 +197,7 @@ public partial class App : Application
             if (!mainInstance.IsCurrent)
             {
                 await mainInstance.RedirectActivationToAsync(
-                    AppInstance.GetCurrent().GetActivatedEventArgs());
+                    activationArgs);
                 Application.Current.Exit();
                 return;
             }
@@ -176,9 +216,7 @@ public partial class App : Application
             // Never infer startup from empty args — that would suppress the window on every manual launch.
             IsStartupLaunch =
                 args.Arguments.Contains(Services.StartupRegistryService.StartupArg, StringComparison.Ordinal) ||
-                Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent()
-                    .GetActivatedEventArgs().Kind ==
-                    Microsoft.Windows.AppLifecycle.ExtendedActivationKind.StartupTask;
+                activationArgs.Kind == ExtendedActivationKind.StartupTask;
 
             // Initialize mascot position if unset, so main window can position relative to it
             if (Settings.MascotX < 0 || Settings.MascotY < 0)
@@ -207,6 +245,10 @@ public partial class App : Application
 
             MascotWindowInstance = new MascotWindow();
             MascotWindowInstance.Activate(); // focus returns to MascotWindow last
+
+            if (activationArgs.Kind == ExtendedActivationKind.Protocol &&
+                activationArgs.Data is ProtocolActivatedEventArgs initialProtocol)
+                HandleProtocolUri(initialProtocol.Uri);
 
             // Sync runs off the launch path — a slow network round-trip must not delay
             // the mascot past the cold-start budget. A pull that lands after LoadAsync

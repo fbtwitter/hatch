@@ -213,6 +213,17 @@ public sealed partial class MainWindow : Window
             ViewModel.SelectedTask = task;
     }
 
+    public void ShowMyDay(bool focusNewTask = false)
+    {
+        EnsureContent();
+        ShowWindow(_hwnd, SW_RESTORE);
+        AppWindow.Show(true);
+        Activate();
+        NavigateTo("myday");
+        if (focusNewTask)
+            DispatcherQueue.TryEnqueue(() => (RootFrame.Content as MainPage)?.FocusNewTask());
+    }
+
     public SystemTrayService? GetTrayService() => _trayService;
 
     private void RestoreWindow()
