@@ -180,6 +180,9 @@ internal static class NativeMethods
     [DllImport("kernel32.dll", SetLastError = true)]
     internal static extern bool EmptyWorkingSet(IntPtr proc);
 
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    internal static extern uint RegisterApplicationRestart(string? commandLine, uint flags);
+
     internal delegate bool EnumChildProc(IntPtr hwnd, IntPtr lParam);
 
     [DllImport("user32.dll")]
