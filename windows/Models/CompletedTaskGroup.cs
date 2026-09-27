@@ -62,7 +62,7 @@ public sealed class CompletedTaskGroup : INotifyPropertyChanged
         }
     }
 
-    // My Day and Important show open tasks directly, without a header or chevron.
+    // Open tasks can render directly, without a header or chevron.
     public bool IsCollapsible
     {
         get => _isCollapsible;

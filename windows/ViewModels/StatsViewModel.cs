@@ -92,7 +92,7 @@ public sealed class StatsViewModel : INotifyPropertyChanged
         // No standard "starred/gold" theme token in this app's palette — same light/dark
         // hardcoded pairing PriorityToForegroundConverter already uses for chip colors.
         var starredFg = ThemeResourceHelper.GetThemedBrush(
-            Windows.UI.Color.FromArgb(255, 157, 108,   0),
+            Windows.UI.Color.FromArgb(255, 117,  67,   0),
             Windows.UI.Color.FromArgb(255, 255, 200,  87));
 
         var neutralBg  = ThemeResourceHelper.GetBrush("CardBackgroundFillColorDefaultBrush");

@@ -194,7 +194,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             NotifyPlannedGroupsChanged();
             OnPropertyChanged(nameof(IsPlannedEmpty));
 
-            App.NotificationScheduler.RescheduleAll(Tasks);
+            await App.NotificationScheduler.RescheduleAllAsync(Tasks);
             TasksLoaded?.Invoke();
         }
         catch { _isBulkLoading = false; }
