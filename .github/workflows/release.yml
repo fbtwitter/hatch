@@ -254,15 +254,15 @@ jobs:
           body: |
             ## Install
 
-            **[Get Hatch on the Microsoft Store](https://apps.microsoft.com/detail/9PKTQFG9S3K8)** — recommended, no setup required.
-
-            Or install directly, and get future updates automatically:
+            Install this release directly and get future updates automatically:
             1. **First time only** — download `install-cert.cer`, double-click → Install Certificate → Local Machine → Trusted People → Finish
             2. Open **<https://fbtwitter.github.io/hatch/Hatch.appinstaller>** and choose Install
 
             Installing that way registers Hatch with Windows App Installer, which
             checks for new versions daily and updates in the background — no need to
             come back here for the next release.
+
+            [Microsoft Store](https://apps.microsoft.com/detail/9PKTQFG9S3K8) installs do not need certificate setup. Store releases are published separately and may lag this GitHub release.
 
             <details>
             <summary>One-off install without auto-updates</summary>
