@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Windows.Management.Deployment;
@@ -15,6 +16,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 {
     private static readonly Windows.Globalization.DateTimeFormatting.DateTimeFormatter _lastSyncedFormatter =
         new("month.abbreviated day hour minute");
+    private static readonly Uri _releaseFeedUri = new("https://fbtwitter.github.io/hatch/Hatch.appinstaller");
+    private static readonly HttpClient _updateClient = new() { Timeout = TimeSpan.FromSeconds(15) };
 
     private readonly SettingsService _settings = App.SettingsService;
     private readonly StartupRegistryService _startupRegistry = new();
@@ -738,17 +741,52 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
         try
         {
-            var package = Windows.ApplicationModel.Package.Current;
+            Windows.ApplicationModel.Package current;
+            try
+            {
+                current = Windows.ApplicationModel.Package.Current;
+            }
+            catch
+            {
+                UpdateStatus = Strings.Settings_Update_ManagedBySource;
+                return;
+            }
+
+            var appInstallerUri = current.GetAppInstallerInfo()?.Uri;
+            if (appInstallerUri is null)
+            {
+                if (current.SignatureKind == Windows.ApplicationModel.PackageSignatureKind.Store)
+                {
+                    UpdateStatus = Strings.Settings_Update_ManagedBySource;
+                    return;
+                }
+
+                using var stream = await _updateClient.GetStreamAsync(_releaseFeedUri);
+                var latest = AppInstallerFeed.ReadVersion(stream, current.Id.Name, current.Id.Publisher);
+
+                var installed = current.Id.Version;
+                if (latest > new Version(installed.Major, installed.Minor, installed.Build, installed.Revision))
+                {
+                    _appInstallerUri = _releaseFeedUri;
+                    HasAvailableUpdate = true;
+                    UpdateStatus = Strings.Settings_Update_Available;
+                }
+                else
+                {
+                    UpdateStatus = Strings.Settings_Update_UpToDate;
+                }
+                return;
+            }
+
+            var package = new PackageManager().FindPackageForUser(string.Empty, current.Id.FullName);
             var result = await package.CheckUpdateAvailabilityAsync();
             switch (result.Availability)
             {
                 case Windows.ApplicationModel.PackageUpdateAvailability.Available:
                 case Windows.ApplicationModel.PackageUpdateAvailability.Required:
-                    _appInstallerUri = package.GetAppInstallerInfo().Uri;
-                    HasAvailableUpdate = _appInstallerUri != null;
-                    UpdateStatus = HasAvailableUpdate
-                        ? Strings.Settings_Update_Available
-                        : Strings.Settings_Update_ManagedBySource;
+                    _appInstallerUri = appInstallerUri;
+                    HasAvailableUpdate = true;
+                    UpdateStatus = Strings.Settings_Update_Available;
                     break;
                 case Windows.ApplicationModel.PackageUpdateAvailability.NoUpdates:
                     UpdateStatus = Strings.Settings_Update_UpToDate;

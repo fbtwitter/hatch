@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.25.2] - 2026-09-27
+
+### Fixed
+- Check for updates now works for direct bundle installs and clearly reports the result.
+
+---
+
 ## [0.25.1] - 2026-09-27
 
 ### Fixed
