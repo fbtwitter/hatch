@@ -154,6 +154,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
 
     public async Task ReloadAsync()
     {
+        IsLoaded = false;
         DismissUndoBar();
         _isBulkLoading = true;
         Tasks.Clear();
@@ -195,9 +196,20 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(IsPlannedEmpty));
 
             await App.NotificationScheduler.RescheduleAllAsync(Tasks);
+            MyDayWidgetUpdater.Refresh(new TasksFile
+            {
+                Tasks = [.. Tasks, .. _deletedTasks],
+                Lists = [.. CustomLists, .. _deletedLists]
+            });
+            IsLoaded = true;
             TasksLoaded?.Invoke();
         }
-        catch { _isBulkLoading = false; }
+        catch
+        {
+            _isBulkLoading = false;
+            IsLoaded = true;
+            TasksLoaded?.Invoke();
+        }
     }
 
     private void AddTask()
@@ -611,6 +623,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     // Raised at the end of every load, including a sync-pull reload. MascotWindow uses it
     // to restore a persisted focus session once the task it names actually exists.
     public event Action? TasksLoaded;
+    public bool IsLoaded { get; private set; }
 
     public TodoItem? FindTaskById(Guid id) => Tasks.FirstOrDefault(t => t.Id == id);
 
@@ -652,6 +665,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             };
             await _storage.SaveAsync(data);
             App.SyncService.SchedulePush(data);
+            MyDayWidgetUpdater.Refresh(data);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)

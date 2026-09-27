@@ -655,6 +655,8 @@ public sealed partial class MainPage : Page
         NavigateToTaskList();
     }
 
+    public void FocusNewTask() => (ContentFrame.Content as TaskListPage)?.FocusNewTask();
+
     // Called from SearchPage when a result is tapped. "All Tasks" is the one nav item
     // guaranteed to contain the task regardless of which list/state it actually belongs
     // to — the details pane itself opens from SelectedTask alone, independent of the
