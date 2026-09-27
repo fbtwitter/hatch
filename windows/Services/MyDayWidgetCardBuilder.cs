@@ -52,7 +52,7 @@ internal static class MyDayWidgetCardBuilder
         var header = new JsonObject
         {
             ["type"] = "ColumnSet",
-            ["selectAction"] = OpenUrl("hatch://myday"),
+            ["selectAction"] = Execute("myday", "Open My Day"),
             ["columns"] = new JsonArray
             {
                 new JsonObject
@@ -70,6 +70,7 @@ internal static class MyDayWidgetCardBuilder
                     ["type"] = "Column",
                     ["width"] = "auto",
                     ["verticalContentAlignment"] = "center",
+                    ["selectAction"] = Execute("add", "Add a task"),
                     ["items"] = new JsonArray
                     {
                         new JsonObject
@@ -78,8 +79,7 @@ internal static class MyDayWidgetCardBuilder
                             ["text"] = "+",
                             ["size"] = "large",
                             ["weight"] = "bolder",
-                            ["color"] = "accent",
-                            ["selectAction"] = Execute("add", "Add a task")
+                            ["color"] = "accent"
                         }
                     }
                 }
@@ -131,8 +131,7 @@ internal static class MyDayWidgetCardBuilder
                 ["type"] = "TextBlock",
                 ["text"] = task.Title,
                 ["wrap"] = true,
-                ["maxLines"] = 2,
-                ["selectAction"] = Execute($"open:{task.Id}", $"Open {task.Title}")
+                ["maxLines"] = 2
             }
         };
         if (task.Metadata != null)
@@ -145,6 +144,7 @@ internal static class MyDayWidgetCardBuilder
                 ["type"] = "Column",
                 ["width"] = "auto",
                 ["verticalContentAlignment"] = "center",
+                ["selectAction"] = Execute($"complete:{task.Id}", $"Complete {task.Title}"),
                 ["items"] = new JsonArray
                 {
                     new JsonObject
@@ -152,8 +152,7 @@ internal static class MyDayWidgetCardBuilder
                         ["type"] = "TextBlock",
                         ["text"] = "○",
                         ["size"] = "medium",
-                        ["color"] = task.PriorityColor,
-                        ["selectAction"] = Execute($"complete:{task.Id}", $"Complete {task.Title}")
+                        ["color"] = task.PriorityColor
                     }
                 }
             },
@@ -161,6 +160,7 @@ internal static class MyDayWidgetCardBuilder
             {
                 ["type"] = "Column",
                 ["width"] = "stretch",
+                ["selectAction"] = Execute($"open:{task.Id}", $"Open {task.Title}"),
                 ["items"] = details
             }
         };
@@ -172,14 +172,14 @@ internal static class MyDayWidgetCardBuilder
                 ["type"] = "Column",
                 ["width"] = "auto",
                 ["verticalContentAlignment"] = "center",
+                ["selectAction"] = Execute($"open:{task.Id}", $"Open {task.Title}"),
                 ["items"] = new JsonArray
                 {
                     new JsonObject
                     {
                         ["type"] = "TextBlock",
                         ["text"] = "★",
-                        ["color"] = "warning",
-                        ["selectAction"] = Execute($"open:{task.Id}", $"Open {task.Title}")
+                        ["color"] = "warning"
                     }
                 }
             });
@@ -246,11 +246,5 @@ internal static class MyDayWidgetCardBuilder
         ["verb"] = verb,
         ["title"] = title,
         ["associatedInputs"] = "none"
-    };
-
-    private static JsonObject OpenUrl(string url) => new()
-    {
-        ["type"] = "Action.OpenUrl",
-        ["url"] = url
     };
 }

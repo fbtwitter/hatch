@@ -11,7 +11,7 @@
   <Identity
     Name="RezaFauziAugusdi.HatchAlways-OnTo-Do"
     Publisher="CN=9D1F8C40-115A-44D9-94E5-BA0ECC194C4C"
-    Version="0.25.0.0" />
+    Version="0.25.1.0" />
 
   <Properties>
     <DisplayName>Hatch: Always-On To-Do</DisplayName>
@@ -73,6 +73,10 @@
                       <Capability><Size Name="medium" /></Capability>
                       <Capability><Size Name="large" /></Capability>
                     </Capabilities>
+                    <ThemeResources>
+                      <Icons><Icon Path="Assets\StoreLogo.png" /></Icons>
+                      <Screenshots><Screenshot Path="Assets\MyDayWidgetPreview.png" DisplayAltText="My Day widget showing today's tasks and progress" /></Screenshots>
+                    </ThemeResources>
                   </Definition>
                 </Definitions>
               </WidgetProvider>

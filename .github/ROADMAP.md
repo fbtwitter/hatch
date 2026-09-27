@@ -8,6 +8,7 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.25.1** | Sep 27, 2026 | Fix My Day widget picker registration and task actions |
 | **v0.25.0** | Sep 27, 2026 | Manual update check for App Installer installs and Windows 11 My Day widget with task actions |
 | **v0.24.1** | Sep 27, 2026 | Task and Suggested row refinements, Summary navigation/count parity, and faster startup reminder reconciliation |
 | **v0.24.0** | Sep 25, 2026 | Mobile task parity: synced manual My Day ordering, row metadata for notes/due dates/steps/repeats/lists/tags, and details-pane editing refinements |

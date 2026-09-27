@@ -123,6 +123,9 @@ foreach (var size in targetSizes)
 }
 Save("Wide310x150Logo.png",   620, 300);
 Save("StoreLogo.png",         100, 100);
+var preview = SvgDocument.Open(Path.Combine(Path.GetDirectoryName(logoPath)!, "widget-preview.svg"));
+using (var bitmap = preview.Draw(300, 304))
+    bitmap.Save(Path.Combine(outDir, "MyDayWidgetPreview.png"), ImageFormat.Png);
 // Splash screen keeps a little breathing room on a white background
 Save("SplashScreen.png",     1240, 600, padding: 0.15f, whiteBg: true);
 // Multi-resolution ICO for taskbar / title bar / Alt+Tab switcher
