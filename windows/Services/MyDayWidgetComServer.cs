@@ -8,6 +8,9 @@ internal static class MyDayWidgetComServer
 {
     private static readonly Guid ClassId = Guid.Parse("8F0AEEA3-75D7-4B2C-8BF0-4238E0042B16");
     private const string ServerArgument = "-RegisterProcessAsComServer";
+    private const uint CoWaitInfinite = uint.MaxValue;
+    private const uint CoWaitDispatchCalls = 0x8;
+    private const uint CoWaitDispatchWindowMessages = 0x10;
 
     internal static bool IsActivation => Environment.GetCommandLineArgs()
         .Any(argument => argument.Equals(ServerArgument, StringComparison.OrdinalIgnoreCase));
@@ -23,7 +26,17 @@ internal static class MyDayWidgetComServer
 
         try
         {
-            MyDayWidgetProvider.EmptyWidgetListEvent.WaitOne();
+            var handles = new[]
+            {
+                MyDayWidgetProvider.EmptyWidgetListEvent.SafeWaitHandle.DangerousGetHandle()
+            };
+            // The class factory lives on WinUI's STA, so this wait must pump COM activation calls.
+            Marshal.ThrowExceptionForHR(CoWaitForMultipleHandles(
+                CoWaitDispatchCalls | CoWaitDispatchWindowMessages,
+                CoWaitInfinite,
+                1,
+                handles,
+                out _));
         }
         finally
         {
@@ -44,6 +57,14 @@ internal static class MyDayWidgetComServer
 
     [DllImport("ole32.dll", PreserveSig = true)]
     private static extern int CoRevokeClassObject(uint registrationCookie);
+
+    [DllImport("ole32.dll", PreserveSig = true)]
+    private static extern int CoWaitForMultipleHandles(
+        uint flags,
+        uint timeout,
+        uint handleCount,
+        [In] IntPtr[] handles,
+        out uint index);
 
     [ComImport]
     [ComVisible(false)]
