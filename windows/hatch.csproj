@@ -14,7 +14,7 @@
     <!-- Keep in sync with Package.appxmanifest's Identity Version and the release tag.
          Packaged builds read the manifest; unpackaged Debug builds have no package
          identity and fall back to this via SettingsViewModel.AppVersion. -->
-    <Version>0.25.0</Version>
+    <Version>0.25.1</Version>
     <!-- Signing and package generation are handled by CI; disabled locally -->
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
     <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>
@@ -82,7 +82,7 @@
        logo.svg lives at the repo root (shared with mobile/ and README.md), not under
        windows/ — everything else this target touches (AssetGen.csproj, the Assets
        output dir) stays windows-local. -->
-  <Target Name="EnsureAssets" BeforeTargets="PrepareForBuild" Condition="!Exists('$(MSBuildProjectDirectory)\Assets\Hatch.ico')">
+  <Target Name="EnsureAssets" BeforeTargets="PrepareForBuild" Condition="!Exists('$(MSBuildProjectDirectory)\Assets\Hatch.ico') Or !Exists('$(MSBuildProjectDirectory)\Assets\MyDayWidgetPreview.png')">
     <Exec Command="dotnet run --project &quot;$(MSBuildProjectDirectory)\scripts\AssetGen\AssetGen.csproj&quot; -- &quot;$(MSBuildProjectDirectory)\..\assets\logo.svg&quot; &quot;$(MSBuildProjectDirectory)\Assets&quot;" WorkingDirectory="$(MSBuildProjectDirectory)" />
   </Target>
 
@@ -92,6 +92,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Assets\HatchHidden.ico" Condition="Exists('Assets\HatchHidden.ico')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\MyDayWidgetPreview.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Remove="bug.png" />

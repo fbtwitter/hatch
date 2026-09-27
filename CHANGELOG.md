@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.25.1] - 2026-09-27
+
+### Fixed
+- My Day widget now appears in the Windows 11 widget picker; widget task actions use supported click targets.
+
+---
+
 ## [0.25.0] - 2026-09-27
 
 ### Added
