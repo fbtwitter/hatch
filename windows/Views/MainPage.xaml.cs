@@ -22,8 +22,8 @@ public sealed partial class MainPage : Page
     private readonly Dictionary<Guid, TextBlock> _customNavItemNameBlocks = new();
     private readonly Dictionary<Guid, StackPanel> _innerContentPanels = new();
 
-    // Static menu item count (Summary, Separator, My Day, Important, Planned, All Tasks, Separator)
-    private const int StaticMenuItemCount = 7;
+    // Static menu item count (My Day, Important, Planned, All Tasks, Separator)
+    private const int StaticMenuItemCount = 5;
 
     public MainViewModel ViewModel => _viewModel;
 

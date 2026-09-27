@@ -13,6 +13,7 @@ public sealed partial class StatsPage : Page
     {
         InitializeComponent();
         _viewModel = new StatsViewModel();
+        ActualThemeChanged += (_, _) => _viewModel.RefreshStats();
         DataContext = _viewModel;
     }
 
