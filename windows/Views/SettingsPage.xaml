@@ -1160,20 +1160,29 @@
                         </toolkit:SettingsCard>
 
                         <toolkit:SettingsCard x:Uid="Settings_UpdateCard">
-                            <StackPanel Spacing="8">
-                                <StackPanel Orientation="Horizontal" Spacing="8">
-                                    <Button x:Uid="Settings_CheckForUpdates"
-                                            AutomationProperties.AutomationId="Settings_CheckForUpdates"
-                                            IsEnabled="{x:Bind ViewModel.CanCheckForUpdates, Mode=OneWay}"
-                                            Command="{x:Bind ViewModel.CheckForUpdatesCommand}"/>
-                                    <Button x:Uid="Settings_InstallUpdate"
-                                            AutomationProperties.AutomationId="Settings_InstallUpdate"
-                                            Visibility="{x:Bind ViewModel.HasAvailableUpdate, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                            IsEnabled="{x:Bind ViewModel.CanInstallUpdate, Mode=OneWay}"
-                                            Command="{x:Bind ViewModel.InstallUpdateCommand}"/>
-                                </StackPanel>
-                                <TextBlock Text="{x:Bind ViewModel.UpdateStatus, Mode=OneWay}"
-                                           TextWrapping="Wrap"/>
+                            <toolkit:SettingsCard.Description>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{x:Bind ViewModel.UpdateStatus, Mode=OneWay}"
+                                               TextWrapping="Wrap"/>
+                                    <ProgressRing Grid.Column="1" Width="16" Height="16"
+                                                  IsActive="{x:Bind ViewModel.IsCheckingForUpdates, Mode=OneWay}"
+                                                  Visibility="{x:Bind ViewModel.IsCheckingForUpdates, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"/>
+                                </Grid>
+                            </toolkit:SettingsCard.Description>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Button x:Uid="Settings_CheckForUpdates"
+                                        AutomationProperties.AutomationId="Settings_CheckForUpdates"
+                                        IsEnabled="{x:Bind ViewModel.CanCheckForUpdates, Mode=OneWay}"
+                                        Command="{x:Bind ViewModel.CheckForUpdatesCommand}"/>
+                                <Button x:Uid="Settings_InstallUpdate"
+                                        AutomationProperties.AutomationId="Settings_InstallUpdate"
+                                        Visibility="{x:Bind ViewModel.HasAvailableUpdate, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                        IsEnabled="{x:Bind ViewModel.CanInstallUpdate, Mode=OneWay}"
+                                        Command="{x:Bind ViewModel.InstallUpdateCommand}"/>
                             </StackPanel>
                         </toolkit:SettingsCard>
 

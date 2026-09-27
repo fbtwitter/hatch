@@ -76,21 +76,29 @@
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
-                    CornerRadius="8"
-                    Padding="12"
+                    CornerRadius="{ThemeResource ControlCornerRadius}"
+                    Padding="14"
                     Opacity="0"
                     Visibility="Collapsed"
                     PointerEntered="TipBubble_PointerEntered"
                     PointerExited="TipBubble_PointerExited">
-                <StackPanel Spacing="8">
+                <StackPanel Spacing="10">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <FontIcon Glyph="&#xE82F;" FontSize="16"
+                                  Foreground="{ThemeResource AccentFillColorDefaultBrush}"/>
+                        <TextBlock x:Uid="QuickAdd_TipHeading"
+                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
                     <TextBlock x:Name="TipTextBlock"
                                TextWrapping="Wrap"
                                Style="{ThemeResource BodyTextBlockStyle}"/>
                     <Button x:Name="TipActionButton"
                             AutomationProperties.AutomationId="Bubble_TipAction"
                             Visibility="Collapsed"
-                            HorizontalAlignment="Stretch"
-                            Padding="8,6"
+                            HorizontalAlignment="Left"
+                            Padding="12,6"
                             Click="TipActionButton_Click"
                             Style="{ThemeResource AccentButtonStyle}"/>
                 </StackPanel>
