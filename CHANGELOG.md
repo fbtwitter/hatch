@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.25.4] - 2026-09-28
+
+### Fixed
+- Kept widget-provider COM activation responsive while waiting for the last widget to close.
+
 ## [0.25.3] - 2026-09-28
 
 ### Changed
