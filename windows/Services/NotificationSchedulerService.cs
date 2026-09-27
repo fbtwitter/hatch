@@ -9,6 +9,9 @@ public sealed class NotificationSchedulerService
     private const int DueHour = 9;
     private const int WarnMinutes = 30;
 
+    private readonly record struct ReminderTask(
+        Guid Id, string Title, bool IsCompleted, DateTimeOffset? DueDate);
+
     public static readonly TimeSpan SnoozeDuration = TimeSpan.FromHours(1);
 
     // Two tag namespaces, deliberately not one prefix. "task-{id}" and "task-{id}-warn" are the
@@ -19,6 +22,9 @@ public sealed class NotificationSchedulerService
     // separate hatch-due-snooze-$id work name (92f57fb).
     private static string ReminderPrefix(Guid taskId) => $"task-{taskId}";
     private static string SnoozeTag(Guid taskId) => $"snooze-{taskId}";
+
+    private static ReminderTask Snapshot(TodoItem task) =>
+        new(task.Id, task.Title, task.IsCompleted, task.DueDate);
 
     public void ScheduleForTask(TodoItem task)
     {
@@ -33,12 +39,12 @@ public sealed class NotificationSchedulerService
         RemoveByTag(t => t.StartsWith(prefix, StringComparison.Ordinal));
         try
         {
-            AddReminders(ToastNotificationManager.CreateToastNotifier(), task);
+            AddReminders(ToastNotificationManager.CreateToastNotifier(), Snapshot(task));
         }
         catch { }
     }
 
-    private static void AddReminders(ToastNotifier notifier, TodoItem task)
+    private static void AddReminders(ToastNotifier notifier, ReminderTask task)
     {
         if (task.DueDate == null || task.IsCompleted) return;
 
@@ -76,17 +82,23 @@ public sealed class NotificationSchedulerService
         catch { }
     }
 
-    public void RescheduleAll(IEnumerable<TodoItem> tasks)
+    public Task RescheduleAllAsync(IEnumerable<TodoItem> tasks)
     {
-        if (Hatch.Helpers.AppDataPath.IsUiTest) return;
+        if (Hatch.Helpers.AppDataPath.IsUiTest) return Task.CompletedTask;
+
+        // TodoItem is observable UI state; copy reminder fields before leaving the caller thread.
+        var reminders = tasks.Select(Snapshot).ToArray();
+        return Task.Run(() => RescheduleAll(reminders));
+    }
+
+    private static void RescheduleAll(IReadOnlyList<ReminderTask> reminders)
+    {
         try
         {
-            var list = tasks as IList<TodoItem> ?? tasks.ToList();
-
             var notifier = ToastNotificationManager.CreateToastNotifier();
             // Live snoozes survive; orphans (a task deleted on another device, so absent from
             // this list) do not — the same clean-up the blanket removal used to give.
-            var live = list.Where(t => !t.IsCompleted && t.DueDate != null)
+            var live = reminders.Where(t => !t.IsCompleted && t.DueDate != null)
                 .Select(t => SnoozeTag(t.Id)).ToHashSet(StringComparer.Ordinal);
             foreach (var n in notifier.GetScheduledToastNotifications().ToList())
             {
@@ -95,7 +107,7 @@ public sealed class NotificationSchedulerService
                 notifier.RemoveFromSchedule(n);
             }
 
-            foreach (var task in list)
+            foreach (var task in reminders)
             {
                 try { AddReminders(notifier, task); }
                 catch { }
