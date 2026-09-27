@@ -14,7 +14,7 @@ public sealed partial class MainViewModel
     private List<PlannedGroup>? _cachedPlannedGroups;
     private readonly Dictionary<string, bool> _completedGroupExpandedState = new();
 
-    private readonly CompletedTaskGroup _openGroup = new() { Name = "Open" };
+    private readonly CompletedTaskGroup _openGroup = new() { Name = "Open", IsCollapsible = false };
     private readonly CompletedTaskGroup _completedGroup = new() { Name = "Completed", TrackCount = true };
     private readonly IList<CompletedTaskGroup> _flatGroupedTasks;
 
@@ -58,7 +58,6 @@ public sealed partial class MainViewModel
             OnPropertyChanged(nameof(EmptyStateHeadline));
             OnPropertyChanged(nameof(EmptyStateSubtext));
             _completedGroup.IsExpanded = IsCompletedGroupExpanded(value);
-            _openGroup.IsCollapsible = value is not ("important" or "myday");
             App.Settings.ActiveNavItem = value;
             App.SettingsService.SaveDebounced();
             OnPropertyChanged(nameof(SuggestionsVisible));
