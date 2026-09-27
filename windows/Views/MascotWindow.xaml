@@ -340,24 +340,38 @@
                           AutomationProperties.AutomationId="ProactiveTip_Viewport"
                           HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <Border x:Name="ProactiveTipContent" Width="320" Padding="12"
-                        CornerRadius="8"
+                <Border x:Name="ProactiveTipContent" Width="320" Padding="14"
+                        CornerRadius="{ThemeResource ControlCornerRadius}"
                         Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
                         BorderBrush="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
                         BorderThickness="1">
-                    <StackPanel Spacing="8">
-                        <Button HorizontalAlignment="Right"
+                    <StackPanel Spacing="10">
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <FontIcon Grid.Column="0" Glyph="&#xE82F;" FontSize="16"
+                                      Foreground="{ThemeResource AccentFillColorDefaultBrush}"/>
+                            <TextBlock Grid.Column="1" x:Uid="QuickAdd_TipHeading"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"/>
+                            <Button Grid.Column="2"
                                 AutomationProperties.AutomationId="ProactiveTip_Close"
                                 AutomationProperties.Name="Dismiss tip"
                                 Style="{ThemeResource SubtleButtonStyle}"
                                 MinWidth="0" Padding="8"
                                 Click="ProactiveTip_CloseClick">
                             <FontIcon Glyph="&#xE711;" FontSize="12" />
-                        </Button>
+                            </Button>
+                        </Grid>
                         <TextBlock x:Name="ProactiveTipText" TextWrapping="Wrap"
                                    AutomationProperties.AutomationId="ProactiveTip_Message"
                                    Style="{ThemeResource BodyTextBlockStyle}" />
-                        <Button x:Name="ProactiveTipAction" HorizontalAlignment="Stretch"
+                        <Button x:Name="ProactiveTipAction" HorizontalAlignment="Left"
+                                Padding="12,6"
                                 Style="{ThemeResource AccentButtonStyle}"
                                 Click="ProactiveTip_ActionButtonClick">
                             <TextBlock x:Name="ProactiveTipActionText" TextWrapping="Wrap" />

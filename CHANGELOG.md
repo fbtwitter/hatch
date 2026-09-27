@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.25.3] - 2026-09-28
+
+### Changed
+- Polished contextual tips and aligned the Settings update card with the surrounding components.
+
 ## [0.25.2] - 2026-09-27
 
 ### Fixed
