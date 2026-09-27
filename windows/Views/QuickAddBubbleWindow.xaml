@@ -137,7 +137,7 @@
                                 Style="{ThemeResource SubtleButtonStyle}"
                                 Padding="8"
                                 MinWidth="0">
-                            <FontIcon Glyph="&#xEB91;" FontSize="12"
+                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE8A7;" FontSize="12"
                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                         </Button>
                         <Button x:Name="CloseButton"
