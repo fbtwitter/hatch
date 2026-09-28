@@ -17,6 +17,8 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     private const int EdgePadding = 20;
 
     private readonly DispatcherQueue _dispatcher;
+    private readonly SettingsService _settings;
+    private readonly TipCoordinator _tipCoordinator;
     private PeriodicTimer? _pollTimer;
     private CancellationTokenSource? _cts;
     private PeriodicTimer? _hideRestoreTimer;
@@ -45,38 +47,38 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
     public int X
     {
-        get => App.Settings.MascotX;
+        get => _settings.Current.MascotX;
         set
         {
-            if (App.Settings.MascotX == value) return;
-            App.Settings.MascotX = value;
-            if (!_isDragging) App.SettingsService.SaveDebounced();
+            if (_settings.Current.MascotX == value) return;
+            _settings.Current.MascotX = value;
+            if (!_isDragging) _settings.SaveDebounced();
             OnPropertyChanged();
         }
     }
 
     public int Y
     {
-        get => App.Settings.MascotY;
+        get => _settings.Current.MascotY;
         set
         {
-            if (App.Settings.MascotY == value) return;
-            App.Settings.MascotY = value;
-            if (!_isDragging) App.SettingsService.SaveDebounced();
+            if (_settings.Current.MascotY == value) return;
+            _settings.Current.MascotY = value;
+            if (!_isDragging) _settings.SaveDebounced();
             OnPropertyChanged();
         }
     }
 
-    public int WindowSize => App.Settings.MascotSize;
+    public int WindowSize => _settings.Current.MascotSize;
 
     public int Size
     {
-        get => App.Settings.MascotSize;
+        get => _settings.Current.MascotSize;
         set
         {
-            if (App.Settings.MascotSize == value) return;
-            App.Settings.MascotSize = Math.Max(40, value);
-            App.SettingsService.SaveDebounced();
+            if (_settings.Current.MascotSize == value) return;
+            _settings.Current.MascotSize = Math.Max(40, value);
+            _settings.SaveDebounced();
             OnPropertyChanged();
             OnPropertyChanged(nameof(WindowSize));
         }
@@ -84,12 +86,12 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
     public bool MuteAnimation
     {
-        get => App.Settings.MuteAnimation;
+        get => _settings.Current.MuteAnimation;
         set
         {
-            if (App.Settings.MuteAnimation == value) return;
-            App.Settings.MuteAnimation = value;
-            App.SettingsService.SaveDebounced();
+            if (_settings.Current.MuteAnimation == value) return;
+            _settings.Current.MuteAnimation = value;
+            _settings.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -101,12 +103,12 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     // re-evaluates within 5 s, so a plain assignment is enough here.
     public void ApplyShowMascotChanged()
     {
-        var show = App.Settings.ShowMascot;
+        var show = _settings.Current.ShowMascot;
         if (!show && IsBubbleOpen) CloseBubble();
         IsVisible = show;
     }
 
-    public string? LottieFilePath => App.Settings.LottieFilePath;
+    public string? LottieFilePath => _settings.Current.LottieFilePath;
     public void RaiseLottieFileChanged() => OnPropertyChanged(nameof(LottieFilePath));
 
     // Called by SettingsViewModel after saving MascotSize so MascotWindow responds without re-saving.
@@ -200,7 +202,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         var mainVm = App.MainWindowInstance?.ViewModel;
         if (mainVm == null) return;
 
-        var tip = App.TipCoordinator.TryGetProactiveTip(mainVm.Tasks, out var isNewDailyTip);
+        var tip = _tipCoordinator.TryGetProactiveTip(mainVm.Tasks, out var isNewDailyTip);
         if (tip == null) return;
 
         if (isNewDailyTip)
@@ -222,14 +224,16 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     // Called by MascotWindow when the proactive TeachingTip closes. Reason.Programmatic
     // means we closed it ourselves (auto-dismiss timer elapsed or action button clicked) —
     // both count as engagement. CloseButton/LightDismiss means the user waved it off.
-    public void ResetProactiveTipDismissalCounter() => App.TipCoordinator.RecordEngagement();
+    public void ResetProactiveTipDismissalCounter() => _tipCoordinator.RecordEngagement();
 
-    public void RecordProactiveTipDismissal() => App.TipCoordinator.RecordDismissal();
+    public void RecordProactiveTipDismissal() => _tipCoordinator.RecordDismissal();
 
-    public MascotViewModel(DispatcherQueue dispatcher)
+    public MascotViewModel(SettingsService settings, TipCoordinator tipCoordinator, DispatcherQueue dispatcher)
     {
+        _settings = settings;
+        _tipCoordinator = tipCoordinator;
         _dispatcher = dispatcher;
-        _isVisible = App.Settings.ShowMascot;
+        _isVisible = _settings.Current.ShowMascot;
         ResetPositionCommand     = new RelayCommand(_ => ResetPosition());
         ShowMainWindowCommand    = new RelayCommand(_ => ShowMainWindow());
         ToggleMainWindowCommand  = new RelayCommand(_ => ToggleMainWindow());
@@ -247,12 +251,12 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
     public bool LockPosition
     {
-        get => App.Settings.LockMascotPosition;
+        get => _settings.Current.LockMascotPosition;
         set
         {
-            if (App.Settings.LockMascotPosition == value) return;
-            App.Settings.LockMascotPosition = value;
-            App.SettingsService.SaveDebounced();
+            if (_settings.Current.LockMascotPosition == value) return;
+            _settings.Current.LockMascotPosition = value;
+            _settings.SaveDebounced();
             OnPropertyChanged();
         }
     }
@@ -261,7 +265,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
     public void BeginDrag(int windowX, int windowY)
     {
-        if (App.Settings.LockMascotPosition) return;
+        if (_settings.Current.LockMascotPosition) return;
         NativeMethods.GetCursorPos(out _dragStartCursor);
         _dragStartWindowX = windowX;
         _dragStartWindowY = windowY;
@@ -295,7 +299,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     {
         if (!_isDragging) return;
         _isDragging = false;
-        App.SettingsService.SaveDebounced();
+        _settings.SaveDebounced();
     }
 
     private void ResetPosition()
@@ -304,7 +308,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         var size = WindowSize;
         X = workArea.X + workArea.Width  - size - EdgePadding;
         Y = workArea.Y + workArea.Height - size - EdgePadding;
-        App.SettingsService.SaveDebounced();
+        _settings.SaveDebounced();
     }
 
     private void OpenResize()
@@ -318,7 +322,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         ClampToWorkArea();
     }
 
-    private static void ShowMainWindow()
+    private void ShowMainWindow()
     {
         var win = App.MainWindowInstance;
         if (win == null) return;
@@ -338,22 +342,22 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         }
 
         // Coming from tray — restore default size and position near mascot.
-        PositionMainWindowNearMascot(win, resetSize: true);
+        PositionMainWindowNearMascot(win, _settings, resetSize: true);
         win.AppWindow.Show();
         NavigateToPinnedPage(win);
         win.Activate();
     }
 
-    private static void NavigateToPinnedPage(MainWindow win)
+    private void NavigateToPinnedPage(MainWindow win)
     {
-        var storedTag = App.Settings.MascotOpenPageTag;
+        var storedTag = _settings.Current.MascotOpenPageTag;
         var tag = MascotOpenPageHelper.Resolve(storedTag, win.ViewModel.CustomLists);
         if (string.IsNullOrEmpty(tag)) return;
 
         if (tag != storedTag)
         {
-            App.Settings.MascotOpenPageTag = tag;
-            App.SettingsService.SaveDebounced();
+            _settings.Current.MascotOpenPageTag = tag;
+            _settings.SaveDebounced();
         }
 
         if (win.IsShowingPage(tag)) return;
@@ -361,7 +365,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         win.NavigateTo(tag);
     }
 
-    private static void ToggleMainWindow()
+    private void ToggleMainWindow()
     {
         var win = App.MainWindowInstance;
         if (win == null) return;
@@ -381,7 +385,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         if (App.MascotWindowInstance?.ViewModel.IsBubbleOpen == true)
             App.MascotWindowInstance.ViewModel.CloseBubble();
 
-        PositionMainWindowNearMascot(win, resetSize: true);
+        PositionMainWindowNearMascot(win, _settings, resetSize: true);
         win.AppWindow.Show();
         NavigateToPinnedPage(win);
 
@@ -389,15 +393,15 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         NativeMethods.SetWindowPos(mainHwnd, NativeMethods.HWND_NOTOPMOST, 0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
     }
 
-    internal static void PositionMainWindowNearMascot(MainWindow win, bool resetSize = false)
+    internal static void PositionMainWindowNearMascot(MainWindow win, SettingsService settings, bool resetSize = false)
     {
         const int logicalWidth  = 620;
         const int logicalHeight = 640;
         const int gap           = 12;
 
-        int mascotX = App.Settings.MascotX;
-        int mascotY = App.Settings.MascotY;
-        int windowSize = App.Settings.MascotSize;
+        int mascotX = settings.Current.MascotX;
+        int mascotY = settings.Current.MascotY;
+        int windowSize = settings.Current.MascotSize;
 
         var pt       = new NativeMethods.POINT { X = mascotX + windowSize / 2, Y = mascotY + windowSize / 2 };
         var hMonitor = NativeMethods.MonitorFromPoint(pt, NativeMethods.MONITOR_DEFAULTTONEAREST);
@@ -449,13 +453,13 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     }
     private void InitializePosition()
     {
-        if (App.Settings.MascotX < 0 || App.Settings.MascotY < 0)
+        if (_settings.Current.MascotX < 0 || _settings.Current.MascotY < 0)
         {
             var workArea = DisplayArea.Primary.WorkArea;
             var size = WindowSize;
-            App.Settings.MascotX = workArea.X + workArea.Width  - size - EdgePadding;
-            App.Settings.MascotY = workArea.Y + workArea.Height - size - EdgePadding;
-            App.SettingsService.SaveDebounced();
+            _settings.Current.MascotX = workArea.X + workArea.Width  - size - EdgePadding;
+            _settings.Current.MascotY = workArea.Y + workArea.Height - size - EdgePadding;
+            _settings.SaveDebounced();
         }
         else
         {
@@ -465,7 +469,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
     private void ClampToWorkArea()
     {
-        var pt = new NativeMethods.POINT { X = App.Settings.MascotX, Y = App.Settings.MascotY };
+        var pt = new NativeMethods.POINT { X = _settings.Current.MascotX, Y = _settings.Current.MascotY };
         var hMonitor = NativeMethods.MonitorFromPoint(pt, NativeMethods.MONITOR_DEFAULTTONEAREST);
         var mi = new NativeMethods.MONITORINFO { cbSize = Marshal.SizeOf<NativeMethods.MONITORINFO>() };
         if (!NativeMethods.GetMonitorInfo(hMonitor, ref mi)) return;
@@ -474,8 +478,8 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         var size = WindowSize;
         // Route through the property setters so PropertyChanged fires and
         // MascotWindow.AppWindow.Move() is invoked for the live window.
-        X = Math.Clamp(App.Settings.MascotX, w.left, w.right  - size);
-        Y = Math.Clamp(App.Settings.MascotY, w.top,  w.bottom - size);
+        X = Math.Clamp(_settings.Current.MascotX, w.left, w.right  - size);
+        Y = Math.Clamp(_settings.Current.MascotY, w.top,  w.bottom - size);
     }
 
     private void StartFullscreenPolling()
@@ -491,11 +495,11 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         {
             while (await _pollTimer!.WaitForNextTickAsync(ct))
             {
-                var isFull = App.Settings.HideWhenFullscreen &&
-                             IsForegroundWindowFullscreen(App.Settings.MascotAlwaysOnTop);
+                var isFull = _settings.Current.HideWhenFullscreen &&
+                             IsForegroundWindowFullscreen(_settings.Current.MascotAlwaysOnTop);
                 _dispatcher.TryEnqueue(() =>
                 {
-                    IsVisible = App.Settings.ShowMascot && !isFull;
+                    IsVisible = _settings.Current.ShowMascot && !isFull;
                     CheckProactiveTipDue();
                 });
             }
@@ -554,8 +558,8 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     private void HideFor(TimeSpan duration)
     {
         var hideUntil = DateTime.UtcNow.Add(duration);
-        App.Settings.HideUntilTicks = hideUntil.Ticks;
-        App.SettingsService.SaveDebounced();
+        _settings.Current.HideUntilTicks = hideUntil.Ticks;
+        _settings.SaveDebounced();
 
         IsMascotHidden = true;
 
@@ -575,8 +579,8 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     private void HideUntilRestart()
     {
         // No expiry tick — stays hidden until the app is restarted
-        App.Settings.HideUntilTicks = long.MaxValue;
-        App.SettingsService.SaveDebounced();
+        _settings.Current.HideUntilTicks = long.MaxValue;
+        _settings.SaveDebounced();
 
         IsMascotHidden = true;
 
@@ -615,8 +619,8 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
     private void RestoreFromHide()
     {
-        App.Settings.HideUntilTicks = null;
-        App.SettingsService.SaveDebounced();
+        _settings.Current.HideUntilTicks = null;
+        _settings.SaveDebounced();
 
         IsMascotHidden = false;
         StopHideRestoreTimer();
@@ -630,21 +634,21 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
     private void CheckHideExpiration()
     {
-        if (App.Settings.HideUntilTicks == null)
+        if (_settings.Current.HideUntilTicks == null)
         {
             IsMascotHidden = false;
             return;
         }
 
         // long.MaxValue means "until restart" — stay hidden, no timer needed
-        if (App.Settings.HideUntilTicks.Value == long.MaxValue)
+        if (_settings.Current.HideUntilTicks.Value == long.MaxValue)
         {
             IsMascotHidden = true;
             ApplyHiddenTrayState();
             return;
         }
 
-        var hideUntil = new DateTime(App.Settings.HideUntilTicks.Value, DateTimeKind.Utc);
+        var hideUntil = new DateTime(_settings.Current.HideUntilTicks.Value, DateTimeKind.Utc);
         if (DateTime.UtcNow >= hideUntil)
         {
             RestoreFromHide();
@@ -679,10 +683,10 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         {
             while (await _hideRestoreTimer!.WaitForNextTickAsync(ct))
             {
-                if (App.Settings.HideUntilTicks != null &&
-                    App.Settings.HideUntilTicks.Value != long.MaxValue)
+                if (_settings.Current.HideUntilTicks != null &&
+                    _settings.Current.HideUntilTicks.Value != long.MaxValue)
                 {
-                    var hideUntil = new DateTime(App.Settings.HideUntilTicks.Value, DateTimeKind.Utc);
+                    var hideUntil = new DateTime(_settings.Current.HideUntilTicks.Value, DateTimeKind.Utc);
                     if (DateTime.UtcNow >= hideUntil)
                     {
                         _dispatcher.TryEnqueue(() => RestoreFromHide());

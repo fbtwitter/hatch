@@ -246,7 +246,7 @@ public partial class App : Application
                 MainWindowInstance.Activate();
             }
 
-            MascotWindowInstance = new MascotWindow();
+            MascotWindowInstance = new MascotWindow(SettingsService, TipCoordinator);
             MascotWindowInstance.Activate(); // focus returns to MascotWindow last
 
             if (activationArgs.Kind == ExtendedActivationKind.Protocol &&

@@ -116,7 +116,7 @@ public sealed partial class MainWindow : Window
         {
             try
             {
-                MascotViewModel.PositionMainWindowNearMascot(this);
+                MascotViewModel.PositionMainWindowNearMascot(this, App.SettingsService);
                 App.Settings.FirstRunComplete = true;
                 App.SettingsService.SaveDebounced();
             }
