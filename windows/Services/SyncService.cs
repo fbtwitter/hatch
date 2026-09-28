@@ -678,7 +678,14 @@ public sealed class SyncService
         catch { return null; }
     }
 
-    public async Task<string?> ResolveConflictUseLocalAsync()
+    public Task<string?> ResolveConflictAsync(SyncConflictResolution resolution) => resolution switch
+    {
+        SyncConflictResolution.UseLocal  => ResolveConflictUseLocalAsync(),
+        SyncConflictResolution.UseServer => ResolveConflictUseServerAsync(),
+        _                                 => ResolveConflictMergeAsync()
+    };
+
+    private async Task<string?> ResolveConflictUseLocalAsync()
     {
         var data = await new TaskStorageService().LoadAsync();
         // "Use local" means replace the server copy — merging here would silently do the
@@ -686,12 +693,12 @@ public sealed class SyncService
         return await PushAsync(data, mergeFirst: false);
     }
 
-    public Task<string?> ResolveConflictUseServerAsync()
+    private Task<string?> ResolveConflictUseServerAsync()
         => PullIfNewerAsync(force: true);
 
     // Non-destructive alternative to picking a side: unions both datasets (see SyncMerge),
     // saves the result locally, and pushes it back so both sides converge.
-    public async Task<string?> ResolveConflictMergeAsync()
+    private async Task<string?> ResolveConflictMergeAsync()
     {
         if (!IsSignedIn || _client == null) return Strings.Sync_Error_NotSignedIn;
         try
