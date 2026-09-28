@@ -79,9 +79,12 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_FRAMECHANGED);
     }
 
-    public MascotWindow(SettingsService settings, TipCoordinator tipCoordinator)
+    public MascotWindow(
+        SettingsService settings,
+        TipCoordinator tipCoordinator,
+        IReadOnlyList<TodoItem> tasks)
     {
-        ViewModel = new MascotViewModel(settings, tipCoordinator, DispatcherQueue);
+        ViewModel = new MascotViewModel(settings, tipCoordinator, DispatcherQueue, tasks);
 
         // Set WS_EX_NOREDIRECTIONBITMAP before InitializeComponent so it takes effect
         // before the XAML island allocates a GDI redirection bitmap. Setting it after
