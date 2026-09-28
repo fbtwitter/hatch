@@ -19,6 +19,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private static readonly HttpClient _updateClient = new() { Timeout = TimeSpan.FromSeconds(15) };
 
     private readonly SettingsService _settings;
+    private readonly SyncAccountService _syncAccountService;
     private readonly SyncService _syncService;
 
     public SyncAccountViewModel SyncAccount { get; }
@@ -29,13 +30,19 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private bool _hasAvailableUpdate;
     private string _updateStatus = Strings.Settings_Update_Description;
 
-    public SettingsViewModel(SettingsService settings, SyncService syncService, DispatcherQueue dispatcherQueue)
+    public SettingsViewModel(
+        SettingsService settings,
+        SyncAccountService syncAccountService,
+        SyncService syncService,
+        DispatcherQueue dispatcherQueue)
     {
         _settings = settings;
+        _syncAccountService = syncAccountService;
         _syncService = syncService;
         CheckForUpdatesCommand = new RelayCommand(async _ => await CheckForUpdatesAsync());
         InstallUpdateCommand = new RelayCommand(async _ => await InstallUpdateAsync());
-        SyncAccount = new SyncAccountViewModel(_syncService, _settings, dispatcherQueue);
+        SyncAccount = new SyncAccountViewModel(
+            syncAccountService, _syncService, _settings, dispatcherQueue);
 
         foreach (var line in _settings.Current.CustomTips)
             CustomTips.Add(line);
@@ -688,7 +695,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             if (App.MainWindowInstance?.ViewModel is { } vm)
                 await vm.ReloadAsync();
 
-            if (_syncService.IsSignedIn)
+            if (_syncAccountService.IsSignedIn)
                 _syncService.SchedulePush(merged);
 
             ImportResult = Strings.Settings_Import_Count(applied);
