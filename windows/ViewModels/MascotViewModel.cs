@@ -2,15 +2,19 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
-using Microsoft.UI;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
-using Hatch.Helpers;
 using Hatch.Models;
 using Hatch.Services;
-using Hatch.Views;
 
 namespace Hatch.ViewModels;
+
+internal enum MainWindowAction
+{
+    Show,
+    Toggle,
+    Hide
+}
 
 public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 {
@@ -193,6 +197,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     // into proactive tips, the mascot is currently visible/not hidden, and TipEngine
     // actually has something to say. MascotWindow owns the TeachingTip that displays it.
     public event Action<Tip>? ProactiveTipDue;
+    internal event Action<MainWindowAction>? MainWindowActionRequested;
 
     // Called from the dispatcher-queued fullscreen-poll tick — already on the UI thread.
     private void CheckProactiveTipDue()
@@ -322,83 +327,16 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         ClampToWorkArea();
     }
 
-    private void ShowMainWindow()
-    {
-        var win = App.MainWindowInstance;
-        if (win == null) return;
+    private void ShowMainWindow() => MainWindowActionRequested?.Invoke(MainWindowAction.Show);
 
-        if (App.MascotWindowInstance?.ViewModel.IsBubbleOpen == true)
-            App.MascotWindowInstance.ViewModel.CloseBubble();
-
-        var hwnd = Win32Interop.GetWindowFromWindowId(win.AppWindow.Id);
-
-        if (win.AppWindow.IsVisible)
-        {
-            // Already on screen — raise without repositioning or resizing.
-            NativeMethods.SetWindowPos(hwnd, NativeMethods.HWND_TOPMOST,   0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
-            NativeMethods.SetWindowPos(hwnd, NativeMethods.HWND_NOTOPMOST, 0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
-            win.Activate();
-            return;
-        }
-
-        // Coming from tray — restore default size and position near mascot.
-        win.PositionNearMascot(resetSize: true);
-        win.AppWindow.Show();
-        NavigateToPinnedPage(win);
-        win.Activate();
-    }
-
-    private void NavigateToPinnedPage(MainWindow win)
-    {
-        var storedTag = _settings.Current.MascotOpenPageTag;
-        var tag = MascotOpenPageHelper.Resolve(storedTag, win.ViewModel.CustomLists);
-        if (string.IsNullOrEmpty(tag)) return;
-
-        if (tag != storedTag)
-        {
-            _settings.Current.MascotOpenPageTag = tag;
-            _settings.SaveDebounced();
-        }
-
-        if (win.IsShowingPage(tag)) return;
-
-        win.NavigateTo(tag);
-    }
-
-    private void ToggleMainWindow()
-    {
-        var win = App.MainWindowInstance;
-        if (win == null) return;
-
-        var mainHwnd = Win32Interop.GetWindowFromWindowId(win.AppWindow.Id);
-
-        if (win.AppWindow.IsVisible)
-        {
-            // Already on screen — raise to front without repositioning or resizing.
-            NativeMethods.SetWindowPos(mainHwnd, NativeMethods.HWND_TOPMOST,   0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
-            NativeMethods.SetWindowPos(mainHwnd, NativeMethods.HWND_NOTOPMOST, 0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
-            win.Activate();
-            return;
-        }
-
-        // Coming from tray — restore default size and position near mascot.
-        if (App.MascotWindowInstance?.ViewModel.IsBubbleOpen == true)
-            App.MascotWindowInstance.ViewModel.CloseBubble();
-
-        win.PositionNearMascot(resetSize: true);
-        win.AppWindow.Show();
-        NavigateToPinnedPage(win);
-
-        NativeMethods.SetWindowPos(mainHwnd, NativeMethods.HWND_TOPMOST,   0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
-        NativeMethods.SetWindowPos(mainHwnd, NativeMethods.HWND_NOTOPMOST, 0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
-    }
+    private void ToggleMainWindow() => MainWindowActionRequested?.Invoke(MainWindowAction.Toggle);
 
     private void ToggleBubble()
     {
         // If the main window is visible, tapping the mascot dismisses it — no bubble.
-        if (App.MainWindowInstance?.AppWindow != null && App.MainWindowInstance.AppWindow.IsVisible)
+        if (App.MainWindowInstance?.AppWindow.IsVisible == true)
         {
-            App.MainWindowInstance.AppWindow.Hide();
+            MainWindowActionRequested?.Invoke(MainWindowAction.Hide);
             return;
         }
 
