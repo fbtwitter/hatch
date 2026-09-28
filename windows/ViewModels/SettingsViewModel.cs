@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using Microsoft.UI.Dispatching;
 using Windows.Management.Deployment;
 using Hatch.Helpers;
 using Hatch.Models;
@@ -28,13 +29,13 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private bool _hasAvailableUpdate;
     private string _updateStatus = Strings.Settings_Update_Description;
 
-    public SettingsViewModel(SettingsService settings, SyncService syncService)
+    public SettingsViewModel(SettingsService settings, SyncService syncService, DispatcherQueue dispatcherQueue)
     {
         _settings = settings;
         _syncService = syncService;
         CheckForUpdatesCommand = new RelayCommand(async _ => await CheckForUpdatesAsync());
         InstallUpdateCommand = new RelayCommand(async _ => await InstallUpdateAsync());
-        SyncAccount = new SyncAccountViewModel(_syncService, _settings);
+        SyncAccount = new SyncAccountViewModel(_syncService, _settings, dispatcherQueue);
 
         foreach (var line in _settings.Current.CustomTips)
             CustomTips.Add(line);

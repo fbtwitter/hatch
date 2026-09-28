@@ -1,4 +1,5 @@
 using Microsoft.UI;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -21,7 +22,10 @@ public sealed partial class SettingsPage : Page
     public SettingsPage()
     {
         InitializeComponent();
-        _viewModel = new SettingsViewModel(App.SettingsService, App.SyncService);
+        _viewModel = new SettingsViewModel(
+            App.SettingsService,
+            App.SyncService,
+            DispatcherQueue.GetForCurrentThread());
         DataContext = _viewModel;
         NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
 

@@ -4,6 +4,7 @@ using System.Windows.Input;
 using Hatch.Helpers;
 using Hatch.Models;
 using Hatch.Services;
+using Microsoft.UI.Dispatching;
 
 namespace Hatch.ViewModels;
 
@@ -14,15 +15,17 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
 
     private readonly SyncService _syncService;
     private readonly SettingsService _settings;
+    private readonly DispatcherQueue _dispatcherQueue;
     private bool _wasSignedIn;
 
     public event PropertyChangedEventHandler? PropertyChanged;
     public event Action<SyncConflict>? ConflictDetected;
 
-    public SyncAccountViewModel(SyncService syncService, SettingsService settings)
+    public SyncAccountViewModel(SyncService syncService, SettingsService settings, DispatcherQueue dispatcherQueue)
     {
         _syncService = syncService;
         _settings = settings;
+        _dispatcherQueue = dispatcherQueue;
         _wasSignedIn = syncService.IsSignedIn;
         _syncService.StateChanged += OnSyncStateChanged;
     }
@@ -222,9 +225,7 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
 
     private void OnSyncStateChanged()
     {
-        var queue = App.MainWindowInstance?.DispatcherQueue;
-        if (queue == null) return;
-        queue.TryEnqueue(async () =>
+        _dispatcherQueue.TryEnqueue(async () =>
         {
             bool isNowSignedIn = _syncService.IsSignedIn;
             bool justSignedIn  = isNowSignedIn && !_wasSignedIn;
