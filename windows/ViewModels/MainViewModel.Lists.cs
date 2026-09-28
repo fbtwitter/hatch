@@ -122,7 +122,7 @@ public sealed partial class MainViewModel
         foreach (var task in tasksToRemove)
         {
             task.PropertyChanged -= TaskPropertyChanged;
-            App.NotificationScheduler.UnscheduleForTask(task.Id);
+            _notificationScheduler.UnscheduleForTask(task.Id);
             Tombstone(task);
             Tasks.Remove(task);
         }

@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Windowing;
 using Hatch.Models;
 using Hatch.Services;
+using Hatch.ViewModels;
 using Hatch.Views;
 using Microsoft.UI.Dispatching;
 using Microsoft.Windows.AppLifecycle;
@@ -228,7 +229,9 @@ public partial class App : Application
                 SettingsService.SaveDebounced();
             }
 
-            MainWindowInstance = new MainWindow();
+            var mainViewModel = new MainViewModel(
+                new TaskStorageService(), SettingsService, SyncService, NotificationScheduler);
+            MainWindowInstance = new MainWindow(mainViewModel);
             // HATCH_UI_TEST=1 forces main window visible even during startup-launch suppression
             var uiTest = Environment.GetEnvironmentVariable("HATCH_UI_TEST") == "1";
             // Mascot-only launch: the main window opens on demand (mascot click, tray,
