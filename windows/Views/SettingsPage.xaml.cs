@@ -21,7 +21,7 @@ public sealed partial class SettingsPage : Page
     public SettingsPage()
     {
         InitializeComponent();
-        _viewModel = new SettingsViewModel();
+        _viewModel = new SettingsViewModel(App.SettingsService, App.SyncService);
         DataContext = _viewModel;
         NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
 
