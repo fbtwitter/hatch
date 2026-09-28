@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
+using Hatch.Helpers;
 using Hatch.Models;
 using Hatch.Services;
 using Hatch.ViewModels;
@@ -165,6 +166,81 @@ public sealed partial class MainWindow : Window
         if (resetSize)
             AppWindow.Resize(new SizeInt32(winWidth, winHeight));
         AppWindow.Move(new PointInt32(x, y));
+    }
+
+    internal void ShowFromMascot()
+    {
+        if (AppWindow.IsVisible)
+        {
+            RaiseAndActivate();
+            return;
+        }
+
+        RestoreNearMascot();
+        Activate();
+    }
+
+    internal void ToggleFromMascot()
+    {
+        if (AppWindow.IsVisible)
+        {
+            RaiseAndActivate();
+            return;
+        }
+
+        RestoreNearMascot();
+        RaiseWithoutActivation();
+    }
+
+    internal void HideFromMascot() => AppWindow.Hide();
+
+    internal void ShowSettingsFromMascot()
+    {
+        if (!AppWindow.IsVisible)
+        {
+            PositionNearMascot(resetSize: true);
+            AppWindow.Show();
+        }
+
+        RaiseAndActivate();
+        NavigateToSettings();
+    }
+
+    private void RestoreNearMascot()
+    {
+        PositionNearMascot(resetSize: true);
+        AppWindow.Show();
+        NavigateToPinnedPage();
+    }
+
+    private void NavigateToPinnedPage()
+    {
+        var storedTag = App.Settings.MascotOpenPageTag;
+        var tag = MascotOpenPageHelper.Resolve(storedTag, ViewModel.CustomLists);
+        if (string.IsNullOrEmpty(tag)) return;
+
+        if (tag != storedTag)
+        {
+            App.Settings.MascotOpenPageTag = tag;
+            App.SettingsService.SaveDebounced();
+        }
+
+        if (!IsShowingPage(tag))
+            NavigateTo(tag);
+    }
+
+    private void RaiseAndActivate()
+    {
+        RaiseWithoutActivation();
+        Activate();
+    }
+
+    private void RaiseWithoutActivation()
+    {
+        NativeMethods.SetWindowPos(_hwnd, NativeMethods.HWND_TOPMOST, 0, 0, 0, 0,
+            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+        NativeMethods.SetWindowPos(_hwnd, NativeMethods.HWND_NOTOPMOST, 0, 0, 0, 0,
+            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
     }
 
     private const int MinW = 560;
