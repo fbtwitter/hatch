@@ -29,11 +29,14 @@ public sealed class SyncService
     private static readonly string SupabaseUrl = SyncDecisions.NormalizeSupabaseUrl(Secrets.SupabaseUrl);
     private const string SupabaseKey = Secrets.SupabaseKey;
 
+    private readonly SettingsService _settings;
     private SupabaseClient? _client;
     private PeriodicTimer? _autoSyncTimer;
     private CancellationTokenSource? _autoSyncCts;
     private CancellationTokenSource? _pushDebounce;
     private string? _pkceVerifier;
+
+    public SyncService(SettingsService settings) => _settings = settings;
 
     // Set by the OAuth callback so the Settings UI can show why sign-in failed instead of
     // the browser closing and nothing happening.
@@ -175,7 +178,7 @@ public sealed class SyncService
 
     private async Task RestoreSessionAsync()
     {
-        var (access, refresh) = SyncTokenStore.Load();
+        var (access, refresh) = SyncTokenStore.Load(_settings);
         if (string.IsNullOrEmpty(access) || string.IsNullOrEmpty(refresh)) return;
         try
         {
@@ -187,7 +190,7 @@ public sealed class SyncService
             when (ex.Reason != Supabase.Gotrue.Exceptions.FailureHint.Reason.Offline)
         {
             ClearTokens();
-            App.SettingsService.SaveDebounced();
+            _settings.SaveDebounced();
         }
         catch
         {
@@ -236,7 +239,7 @@ public sealed class SyncService
         IsMfaChallengePending = false;
         SyncPassphraseStore.Clear();
         ClearTokens();
-        await App.SettingsService.SaveAsync();
+        await _settings.SaveAsync();
         StateChanged?.Invoke();
     }
 
@@ -281,8 +284,8 @@ public sealed class SyncService
                 TasksJson = SyncCrypto.Encrypt(json, passphrase, salt),
                 UpdatedAt = DateTime.UtcNow
             });
-            App.Settings.LastSyncedAt = DateTime.UtcNow;
-            App.SettingsService.SaveDebounced();
+            _settings.Current.LastSyncedAt = DateTime.UtcNow;
+            _settings.SaveDebounced();
             StateChanged?.Invoke();
             return null;
         }
@@ -300,7 +303,7 @@ public sealed class SyncService
         var row = response.Models.FirstOrDefault();
         if (string.IsNullOrEmpty(row?.TasksJson)) return (null, null);
 
-        if (!SyncDecisions.IsServerNewer(row.UpdatedAt, App.Settings.LastSyncedAt))
+        if (!SyncDecisions.IsServerNewer(row.UpdatedAt, _settings.Current.LastSyncedAt))
             return (null, null);
 
         var (server, readError) = ReadServerTasks(row);
@@ -608,7 +611,7 @@ public sealed class SyncService
             var row = response.Models.FirstOrDefault();
             if (row?.TasksJson == null) return null;
 
-            if (!force && !SyncDecisions.IsServerNewer(row.UpdatedAt, App.Settings.LastSyncedAt))
+            if (!force && !SyncDecisions.IsServerNewer(row.UpdatedAt, _settings.Current.LastSyncedAt))
                 return null;
 
             var (data, readError) = ReadServerTasks(row);
@@ -616,8 +619,8 @@ public sealed class SyncService
             if (data == null) return null;
 
             await new TaskStorageService().SaveAsync(data);
-            App.Settings.LastSyncedAt = row.UpdatedAt;
-            App.SettingsService.SaveDebounced();
+            _settings.Current.LastSyncedAt = row.UpdatedAt;
+            _settings.SaveDebounced();
             TasksReceived?.Invoke();
             return null;
         }
@@ -720,14 +723,14 @@ public sealed class SyncService
     private async Task PersistSessionAsync(Supabase.Gotrue.Session session)
     {
         SyncTokenStore.Save(session.AccessToken, session.RefreshToken);
-        App.Settings.SyncUserEmail = _client?.Auth.CurrentUser?.Email;
-        await App.SettingsService.SaveAsync();
+        _settings.Current.SyncUserEmail = _client?.Auth.CurrentUser?.Email;
+        await _settings.SaveAsync();
     }
 
-    private static void ClearTokens()
+    private void ClearTokens()
     {
         SyncTokenStore.Clear();
-        App.Settings.SyncUserEmail = null;
-        App.Settings.LastSyncedAt  = null;
+        _settings.Current.SyncUserEmail = null;
+        _settings.Current.LastSyncedAt  = null;
     }
 }
