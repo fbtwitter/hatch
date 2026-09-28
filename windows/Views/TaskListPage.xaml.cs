@@ -250,14 +250,13 @@ public sealed partial class TaskListPage : Page
     private void PaneCompleteCheck_Click(object sender, RoutedEventArgs e)
     {
         if (_paneTask is null) return;
-        _paneTask.IsCompleted = PaneCompleteCheck.IsChecked == true;
-        ViewModel.SelectedTask = null;
+        ViewModel.SetTaskCompletedFromPane(_paneTask, PaneCompleteCheck.IsChecked == true);
     }
 
     private void PaneStarButton_Click(object sender, RoutedEventArgs e)
     {
         if (_paneTask is null) return;
-        _paneTask.IsStarred = !_paneTask.IsStarred;
+        ViewModel.ToggleTaskStarred(_paneTask);
         ApplyPaneStarState(_paneTask);
     }
 
@@ -413,25 +412,25 @@ public sealed partial class TaskListPage : Page
     private void PaneTitleBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (_updatingPane || _paneTask == null) return;
-        _paneTask.Title = PaneTitleBox.Text;
+        ViewModel.UpdateTaskTitle(_paneTask, PaneTitleBox.Text);
     }
 
     private void PaneNotesBox_TextChanged(object sender, TextChangedEventArgs e)
     {
         if (_updatingPane || _paneTask == null) return;
-        _paneTask.Notes = PaneNotesBox.Text.Length > 0 ? PaneNotesBox.Text : null;
+        ViewModel.SetTaskNotes(_paneTask, PaneNotesBox.Text);
     }
 
     private void PaneMyDayToggle_Toggled(object sender, RoutedEventArgs e)
     {
         if (_updatingPane || _paneTask == null) return;
-        _paneTask.SetMyDay(PaneMyDayToggle.IsOn);
+        ViewModel.SetTaskInMyDay(_paneTask, PaneMyDayToggle.IsOn);
     }
 
     private void PanePriorityCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_updatingPane || _paneTask == null) return;
-        _paneTask.Priority = (TaskPriority)PanePriorityCombo.SelectedIndex;
+        ViewModel.SetTaskPriority(_paneTask, (TaskPriority)PanePriorityCombo.SelectedIndex);
     }
 
     private void SuggestionAddButton_Click(object sender, RoutedEventArgs e)
@@ -443,16 +442,16 @@ public sealed partial class TaskListPage : Page
     private void PaneDueDatePicker_DateChanged(CalendarDatePicker sender, CalendarDatePickerDateChangedEventArgs args)
     {
         if (_updatingPane || _paneTask == null) return;
-        _paneTask.DueDate = args.NewDate.HasValue
+        ViewModel.UpdateTaskDueDate(_paneTask, args.NewDate.HasValue
             ? (DateTimeOffset?)new DateTimeOffset(args.NewDate.Value.ToLocalTime().Date, TimeSpan.Zero)
-            : null;
+            : null);
         PaneRepeatCombo.IsEnabled = _paneTask.DueDate.HasValue;
     }
 
     private void PaneRepeatCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_updatingPane || _paneTask == null) return;
-        _paneTask.Recurrence = (TaskRecurrence)PaneRepeatCombo.SelectedIndex;
+        ViewModel.SetTaskRecurrence(_paneTask, (TaskRecurrence)PaneRepeatCombo.SelectedIndex);
     }
 
     // ── Keyboard / pointer close triggers ───────────────────────────────────
@@ -676,7 +675,7 @@ public sealed partial class TaskListPage : Page
             case VirtualKey.M when isCtrl && !IsTextInputFocused():
                 if (ViewModel.SelectedTask is { } mTask)
                 {
-                    mTask.SetMyDay(!mTask.IsInMyDay);
+                    ViewModel.SetTaskInMyDay(mTask, !mTask.IsInMyDay);
                     if (_paneTask == mTask)
                     {
                         _updatingPane = true;
@@ -792,7 +791,7 @@ public sealed partial class TaskListPage : Page
     {
         var task = (TodoItem)((Button)sender).Tag;
         if (task is null) return;
-        task.IsStarred = !task.IsStarred;
+        ViewModel.ToggleTaskStarred(task);
     }
 
     private void ChipDateButton_Click(object sender, RoutedEventArgs e)

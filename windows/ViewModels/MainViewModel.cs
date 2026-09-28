@@ -610,9 +610,27 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     }
 
     public void UpdateTaskTitle(TodoItem task, string newTitle)
+        => task.Title = newTitle;
+
+    public void SetTaskNotes(TodoItem task, string notes)
+        => task.Notes = notes.Length > 0 ? notes : null;
+
+    public void SetTaskInMyDay(TodoItem task, bool isInMyDay)
+        => task.SetMyDay(isInMyDay);
+
+    public void SetTaskPriority(TodoItem task, TaskPriority priority)
+        => task.Priority = priority;
+
+    public void SetTaskRecurrence(TodoItem task, TaskRecurrence recurrence)
+        => task.Recurrence = recurrence;
+
+    public void ToggleTaskStarred(TodoItem task)
+        => task.IsStarred = !task.IsStarred;
+
+    public void SetTaskCompletedFromPane(TodoItem task, bool isCompleted)
     {
-        task.Title = newTitle;
-        SaveAsync();
+        task.IsCompleted = isCompleted;
+        SelectedTask = null;
     }
 
     public void UpdateTaskDueDate(TodoItem task, DateTimeOffset? newDueDate)
