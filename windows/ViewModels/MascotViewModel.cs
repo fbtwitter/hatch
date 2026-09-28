@@ -23,6 +23,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     private readonly DispatcherQueue _dispatcher;
     private readonly SettingsService _settings;
     private readonly TipCoordinator _tipCoordinator;
+    private readonly IReadOnlyList<TodoItem> _tasks;
     private PeriodicTimer? _pollTimer;
     private CancellationTokenSource? _cts;
     private PeriodicTimer? _hideRestoreTimer;
@@ -204,10 +205,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     {
         if (!IsVisible || IsMascotHidden || IsBubbleOpen) return;
 
-        var mainVm = App.MainWindowInstance?.ViewModel;
-        if (mainVm == null) return;
-
-        var tip = _tipCoordinator.TryGetProactiveTip(mainVm.Tasks, out var isNewDailyTip);
+        var tip = _tipCoordinator.TryGetProactiveTip(_tasks, out var isNewDailyTip);
         if (tip == null) return;
 
         if (isNewDailyTip)
@@ -233,11 +231,16 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
     public void RecordProactiveTipDismissal() => _tipCoordinator.RecordDismissal();
 
-    public MascotViewModel(SettingsService settings, TipCoordinator tipCoordinator, DispatcherQueue dispatcher)
+    public MascotViewModel(
+        SettingsService settings,
+        TipCoordinator tipCoordinator,
+        DispatcherQueue dispatcher,
+        IReadOnlyList<TodoItem> tasks)
     {
         _settings = settings;
         _tipCoordinator = tipCoordinator;
         _dispatcher = dispatcher;
+        _tasks = tasks;
         _isVisible = _settings.Current.ShowMascot;
         ResetPositionCommand     = new RelayCommand(_ => ResetPosition());
         ShowMainWindowCommand    = new RelayCommand(_ => ShowMainWindow());
