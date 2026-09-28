@@ -42,7 +42,7 @@ public sealed partial class SettingsPage : Page
         if (choice == null)
         {
             // User cancelled: sign out so state is clean.
-            await App.SyncService.SignOutAsync();
+            await _viewModel.SignOutAsync();
             return;
         }
         await _viewModel.ResolveConflictAsync(choice.Value);

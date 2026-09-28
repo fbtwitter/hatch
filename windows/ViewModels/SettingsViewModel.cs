@@ -223,11 +223,13 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         if (msg != null) SyncError = msg;
     }
 
-    public ICommand SignOutCommand => new RelayCommand(async _ =>
+    public async Task SignOutAsync()
     {
         await App.SyncService.SignOutAsync();
         SyncError = null;
-    });
+    }
+
+    public ICommand SignOutCommand => new RelayCommand(async _ => await SignOutAsync());
 
     public async Task SignInWithGitHubAsync()
     {
