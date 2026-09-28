@@ -21,6 +21,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private readonly SettingsService _settings;
     private readonly SyncAccountService _syncAccountService;
     private readonly SyncService _syncService;
+    private readonly TaskStorageService _taskStorage;
 
     public SyncAccountViewModel SyncAccount { get; }
     private readonly StartupRegistryService _startupRegistry = new();
@@ -34,11 +35,13 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         SettingsService settings,
         SyncAccountService syncAccountService,
         SyncService syncService,
+        TaskStorageService taskStorage,
         DispatcherQueue dispatcherQueue)
     {
         _settings = settings;
         _syncAccountService = syncAccountService;
         _syncService = syncService;
+        _taskStorage = taskStorage;
         CheckForUpdatesCommand = new RelayCommand(async _ => await CheckForUpdatesAsync());
         InstallUpdateCommand = new RelayCommand(async _ => await InstallUpdateAsync());
         SyncAccount = new SyncAccountViewModel(
@@ -647,7 +650,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         ExportError = null;
         try
         {
-            var data = await new TaskStorageService().LoadAsync();
+            var data = await _taskStorage.LoadAsync();
             await File.WriteAllTextAsync(path, TaskExportFormatter.ToJson(data));
         }
         catch (Exception ex) { ExportError = ex.Message; }
@@ -689,8 +692,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
                 return;
             }
 
-            var (merged, applied) = TaskImport.Merge(await new TaskStorageService().LoadAsync(), imported);
-            await new TaskStorageService().SaveAsync(merged);
+            var (merged, applied) = TaskImport.Merge(await _taskStorage.LoadAsync(), imported);
+            await _taskStorage.SaveAsync(merged);
 
             if (App.MainWindowInstance?.ViewModel is { } vm)
                 await vm.ReloadAsync();
