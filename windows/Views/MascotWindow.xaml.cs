@@ -572,10 +572,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         MascotGridTransform.CenterX = newSize / 2.0;
         MascotGridTransform.CenterY = newSize / 2.0;
 
-        // Reposition the window to the (already clamped) stored coordinates.
-        // ResizeByValue → ClampToWorkArea updates X/Y in settings but the
-        // PropertyChanged for X/Y fires before the window is resized, so we
-        // apply the final move here once the new size is committed.
+        // Reapply the persisted position after the native size change.
         AppWindow.Move(new PointInt32(ViewModel.X, ViewModel.Y));
     }
 
