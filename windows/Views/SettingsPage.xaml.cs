@@ -25,7 +25,7 @@ public sealed partial class SettingsPage : Page
         DataContext = _viewModel;
         NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
 
-        _viewModel.ConflictDetected += OnConflictDetected;
+        _viewModel.SyncAccount.ConflictDetected += OnConflictDetected;
 
         // Pre-select the currently saved hotkey key in the ComboBox
         // and initialise the mascot size slider/label
@@ -42,10 +42,10 @@ public sealed partial class SettingsPage : Page
         if (choice == null)
         {
             // User cancelled: sign out so state is clean.
-            await _viewModel.SignOutAsync();
+            await _viewModel.SyncAccount.SignOutAsync();
             return;
         }
-        await _viewModel.ResolveConflictAsync(choice.Value);
+        await _viewModel.SyncAccount.ResolveConflictAsync(choice.Value);
     }
 
     private async Task<SyncConflictResolution?> ShowConflictDialogAsync(SyncConflict conflict)
@@ -280,23 +280,23 @@ public sealed partial class SettingsPage : Page
 
     // PasswordBox.Password cannot be bound via x:Bind — pass directly to ViewModel.
     private async void SyncSignIn_Click(object sender, RoutedEventArgs e)
-        => await _viewModel.SignInAsync(SyncPasswordBox.Password);
+        => await _viewModel.SyncAccount.SignInAsync(SyncPasswordBox.Password);
 
     private async void SyncSignUp_Click(object sender, RoutedEventArgs e)
-        => await _viewModel.SignUpAsync(SyncPasswordBox.Password);
+        => await _viewModel.SyncAccount.SignUpAsync(SyncPasswordBox.Password);
 
     private async void SyncSetPassphrase_Click(object sender, RoutedEventArgs e)
     {
-        await _viewModel.SetSyncPassphraseAsync(SyncPassphraseBox.Password);
+        await _viewModel.SyncAccount.SetSyncPassphraseAsync(SyncPassphraseBox.Password);
         SyncPassphraseBox.Password = "";
     }
 
     private void ChangePassphraseStart_Click(object sender, RoutedEventArgs e)
-        => ViewModel.StartChangePassphrase();
+        => ViewModel.SyncAccount.StartChangePassphrase();
 
     private void ChangePassphraseCancel_Click(object sender, RoutedEventArgs e)
     {
-        ViewModel.CancelChangePassphrase();
+        ViewModel.SyncAccount.CancelChangePassphrase();
         ChangePassphraseOldBox.Password = "";
         ChangePassphraseNewBox.Password = "";
         ChangePassphraseConfirmBox.Password = "";
@@ -304,7 +304,7 @@ public sealed partial class SettingsPage : Page
 
     private async void ChangePassphraseSubmit_Click(object sender, RoutedEventArgs e)
     {
-        await ViewModel.ChangePassphraseAsync(
+        await ViewModel.SyncAccount.ChangePassphraseAsync(
             ChangePassphraseOldBox.Password,
             ChangePassphraseNewBox.Password,
             ChangePassphraseConfirmBox.Password);
@@ -315,8 +315,8 @@ public sealed partial class SettingsPage : Page
 
     private async void MfaEnable_Click(object sender, RoutedEventArgs e)
     {
-        await ViewModel.StartMfaEnrollmentAsync();
-        await ShowMfaQrAsync(ViewModel.MfaQrSvg);
+        await ViewModel.SyncAccount.StartMfaEnrollmentAsync();
+        await ShowMfaQrAsync(ViewModel.SyncAccount.MfaQrSvg);
     }
 
     // Imaging is a View concern, so the SVG-to-image step lives here rather than in the
@@ -366,59 +366,59 @@ public sealed partial class SettingsPage : Page
     private async void MfaConfirm_Click(object sender, RoutedEventArgs e)
     {
         var code = MfaCodeBox.Text;
-        await ViewModel.ConfirmMfaEnrollmentAsync(code);
+        await ViewModel.SyncAccount.ConfirmMfaEnrollmentAsync(code);
         MfaCodeBox.Text = string.Empty;
     }
 
     private async void MfaCancel_Click(object sender, RoutedEventArgs e)
-        => await ViewModel.CancelMfaEnrollmentAsync();
+        => await ViewModel.SyncAccount.CancelMfaEnrollmentAsync();
 
     private async void MfaDisable_Click(object sender, RoutedEventArgs e)
-        => await ViewModel.DisableMfaAsync();
+        => await ViewModel.SyncAccount.DisableMfaAsync();
 
     private async void MfaChallengeSubmit_Click(object sender, RoutedEventArgs e)
     {
         var code = MfaChallengeCodeBox.Text;
         MfaChallengeCodeBox.Text = string.Empty;
-        await ViewModel.SubmitMfaChallengeAsync(code);
+        await ViewModel.SyncAccount.SubmitMfaChallengeAsync(code);
     }
 
     private void MfaUseRecovery_Click(object sender, RoutedEventArgs e)
-        => ViewModel.StartRecoveryCodeEntry();
+        => ViewModel.SyncAccount.StartRecoveryCodeEntry();
 
     private void RecoveryCancel_Click(object sender, RoutedEventArgs e)
-        => ViewModel.CancelRecoveryCodeEntry();
+        => ViewModel.SyncAccount.CancelRecoveryCodeEntry();
 
     private async void RecoveryRedeem_Click(object sender, RoutedEventArgs e)
     {
         var code = RecoveryCodeBox.Text;
         RecoveryCodeBox.Text = string.Empty;
-        await ViewModel.RedeemRecoveryCodeAsync(code);
+        await ViewModel.SyncAccount.RedeemRecoveryCodeAsync(code);
     }
 
     private void RecoveryCopy_Click(object sender, RoutedEventArgs e)
     {
         var package = new DataPackage();
-        package.SetText(ViewModel.RecoveryCodesText);
+        package.SetText(ViewModel.SyncAccount.RecoveryCodesText);
         Clipboard.SetContent(package);
     }
 
     private void RecoveryDone_Click(object sender, RoutedEventArgs e)
-        => ViewModel.DismissRecoveryCodes();
+        => ViewModel.SyncAccount.DismissRecoveryCodes();
 
     private void SyncNotice_Close(InfoBar sender, object args)
-        => ViewModel.DismissSyncNotice();
+        => ViewModel.SyncAccount.DismissSyncNotice();
 
     private void RecoveryKitShow_Click(object sender, RoutedEventArgs e)
-        => ViewModel.ShowRecoveryKit();
+        => ViewModel.SyncAccount.ShowRecoveryKit();
 
     private void RecoveryKitDone_Click(object sender, RoutedEventArgs e)
-        => ViewModel.DismissRecoveryKit();
+        => ViewModel.SyncAccount.DismissRecoveryKit();
 
     private void RecoveryKitCopy_Click(object sender, RoutedEventArgs e)
     {
         var package = new DataPackage();
-        package.SetText(ViewModel.RecoveryKitText ?? "");
+        package.SetText(ViewModel.SyncAccount.RecoveryKitText ?? "");
         Clipboard.SetContent(package);
     }
 
@@ -429,15 +429,15 @@ public sealed partial class SettingsPage : Page
             picker,
             Win32Interop.GetWindowFromWindowId(App.MainWindowInstance!.AppWindow.Id));
         picker.SuggestedStartLocation = PickerLocationId.Desktop;
-        picker.SuggestedFileName = ViewModel.RecoveryKitFileName;
+        picker.SuggestedFileName = ViewModel.SyncAccount.RecoveryKitFileName;
         picker.FileTypeChoices.Add("Text file", new List<string> { ".txt" });
 
         var file = await picker.PickSaveFileAsync();
         if (file == null) return;
 
-        await File.WriteAllTextAsync(file.Path, ViewModel.RecoveryKitText ?? "");
+        await File.WriteAllTextAsync(file.Path, ViewModel.SyncAccount.RecoveryKitText ?? "");
     }
 
     private async void SyncGitHubSignIn_Click(object sender, RoutedEventArgs e)
-        => await _viewModel.SignInWithGitHubAsync();
+        => await _viewModel.SyncAccount.SignInWithGitHubAsync();
 }
