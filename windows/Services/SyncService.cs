@@ -22,14 +22,16 @@ public sealed class SyncService
 {
     private readonly SettingsService _settings;
     private readonly SyncAccountService _account;
+    private readonly TaskStorageService _storage;
     private PeriodicTimer? _autoSyncTimer;
     private CancellationTokenSource? _autoSyncCts;
     private CancellationTokenSource? _pushDebounce;
 
-    public SyncService(SettingsService settings, SyncAccountService account)
+    public SyncService(SettingsService settings, SyncAccountService account, TaskStorageService storage)
     {
         _settings = settings;
         _account = account;
+        _storage = storage;
         _account.SigningOut += StopAutoSync;
     }
 
@@ -148,7 +150,7 @@ public sealed class SyncService
                     if (!SyncWire.IsEquivalent(merged, data))
                     {
                         // Reloading rebuilds task collections and nav badges, so skip it for an unchanged union.
-                        await new TaskStorageService().SaveAsync(merged);
+                        await _storage.SaveAsync(merged);
                         TasksReceived?.Invoke();
                     }
                     data = merged;
@@ -221,7 +223,7 @@ public sealed class SyncService
             if (readError != null) return readError;
             if (data == null) return null;
 
-            await new TaskStorageService().SaveAsync(data);
+            await _storage.SaveAsync(data);
             _settings.Current.LastSyncedAt = row.UpdatedAt;
             _settings.SaveDebounced();
             TasksReceived?.Invoke();
@@ -236,7 +238,7 @@ public sealed class SyncService
         if (!_account.IsSignedIn || client == null || _account.IsMfaChallengePending) return null;
         try
         {
-            var localData = await new TaskStorageService().LoadAsync();
+            var localData = await _storage.LoadAsync();
             var response = await client.From<UserDataRow>().Get();
             var row = response.Models.FirstOrDefault();
 
@@ -289,7 +291,7 @@ public sealed class SyncService
 
     private async Task<string?> ResolveConflictUseLocalAsync()
     {
-        var data = await new TaskStorageService().LoadAsync();
+        var data = await _storage.LoadAsync();
         // The explicit choice replaces server state, so this push skips merge-before-push.
         return await PushAsync(data, mergeFirst: false);
     }
@@ -303,7 +305,7 @@ public sealed class SyncService
         if (!_account.IsSignedIn || client == null) return Strings.Sync_Error_NotSignedIn;
         try
         {
-            var local = await new TaskStorageService().LoadAsync();
+            var local = await _storage.LoadAsync();
             var response = await client.From<UserDataRow>().Get();
             var row = response.Models.FirstOrDefault();
             var (server, readError) = ReadServerTasks(row);
@@ -311,7 +313,7 @@ public sealed class SyncService
 
             // Unlike choosing a side, merge keeps records from both datasets.
             var merged = SyncMerge.Merge(local, server ?? new TasksFile());
-            await new TaskStorageService().SaveAsync(merged);
+            await _storage.SaveAsync(merged);
             TasksReceived?.Invoke();
             return await PushAsync(merged, mergeFirst: false);
         }

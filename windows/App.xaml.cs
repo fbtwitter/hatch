@@ -15,7 +15,8 @@ public partial class App : Application
     public static SettingsService SettingsService { get; } = new();
     public static AppSettings Settings => SettingsService.Current;
     public static SyncAccountService SyncAccountService { get; } = new(SettingsService);
-    public static SyncService SyncService { get; } = new(SettingsService, SyncAccountService);
+    public static TaskStorageService TaskStorage { get; } = new();
+    public static SyncService SyncService { get; } = new(SettingsService, SyncAccountService, TaskStorage);
     public static NotificationSchedulerService NotificationScheduler { get; } = new();
     public static TipCoordinator TipCoordinator { get; } = new(SettingsService);
     public static MainWindow? MainWindowInstance { get; private set; }
@@ -231,7 +232,7 @@ public partial class App : Application
             }
 
             var mainViewModel = new MainViewModel(
-                new TaskStorageService(), SettingsService, SyncService, NotificationScheduler);
+                TaskStorage, SettingsService, SyncService, NotificationScheduler);
             MainWindowInstance = new MainWindow(mainViewModel);
             // HATCH_UI_TEST=1 forces main window visible even during startup-launch suppression
             var uiTest = Environment.GetEnvironmentVariable("HATCH_UI_TEST") == "1";
