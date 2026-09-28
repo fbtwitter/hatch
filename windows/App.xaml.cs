@@ -16,6 +16,7 @@ public partial class App : Application
     public static AppSettings Settings => SettingsService.Current;
     public static SyncAccountService SyncAccountService { get; } = new(SettingsService);
     public static TaskStorageService TaskStorage { get; } = new();
+    public static UpdateService UpdateService { get; } = new();
     public static SyncService SyncService { get; } = new(SettingsService, SyncAccountService, TaskStorage);
     public static NotificationSchedulerService NotificationScheduler { get; } = new();
     public static TipCoordinator TipCoordinator { get; } = new(SettingsService);
