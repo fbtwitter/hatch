@@ -116,7 +116,7 @@ public sealed partial class MainWindow : Window
         {
             try
             {
-                MascotViewModel.PositionMainWindowNearMascot(this, App.SettingsService);
+                PositionNearMascot();
                 App.Settings.FirstRunComplete = true;
                 App.SettingsService.SaveDebounced();
             }
@@ -125,6 +125,46 @@ public sealed partial class MainWindow : Window
                 System.Diagnostics.Debug.WriteLine($"Position error: {ex}");
             }
         }
+    }
+
+    internal void PositionNearMascot(bool resetSize = false)
+    {
+        const int logicalWidth  = 620;
+        const int logicalHeight = 640;
+        const int gap           = 12;
+
+        var settings = App.Settings;
+        int mascotX = settings.MascotX;
+        int mascotY = settings.MascotY;
+        int windowSize = settings.MascotSize;
+
+        var pt       = new NativeMethods.POINT { X = mascotX + windowSize / 2, Y = mascotY + windowSize / 2 };
+        var hMonitor = NativeMethods.MonitorFromPoint(pt, NativeMethods.MONITOR_DEFAULTTONEAREST);
+        var mi       = new NativeMethods.MONITORINFO { cbSize = Marshal.SizeOf<NativeMethods.MONITORINFO>() };
+        if (!NativeMethods.GetMonitorInfo(hMonitor, ref mi)) return;
+
+        NativeMethods.GetDpiForMonitor(hMonitor, NativeMethods.MDT_EFFECTIVE_DPI, out uint dpiX, out _);
+        double scale       = dpiX / 96.0;
+        int winWidth       = (int)Math.Round(logicalWidth  * scale);
+        int winHeight      = (int)Math.Round(logicalHeight * scale);
+        int scaledGap      = (int)Math.Round(gap * scale);
+
+        var workArea = mi.rcWork;
+
+        // Prefer left of mascot; flip to right if it doesn't fit
+        int x = mascotX - winWidth - scaledGap;
+        if (x < workArea.left)
+            x = mascotX + windowSize + scaledGap;
+
+        // Vertically centre the main window on the mascot
+        int mascotCenterY = mascotY + windowSize / 2;
+        int y = mascotCenterY - winHeight / 2;
+        y = Math.Clamp(y, workArea.top + scaledGap, workArea.bottom - winHeight);
+        x = Math.Clamp(x, workArea.left, workArea.right - winWidth);
+
+        if (resetSize)
+            AppWindow.Resize(new SizeInt32(winWidth, winHeight));
+        AppWindow.Move(new PointInt32(x, y));
     }
 
     private const int MinW = 560;
