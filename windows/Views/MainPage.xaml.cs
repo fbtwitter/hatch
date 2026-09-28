@@ -528,7 +528,7 @@ public sealed partial class MainPage : Page
             }
             if (item.Tag as string == "summary")
             {
-                ContentFrame.Navigate(typeof(StatsPage), null, new EntranceNavigationTransitionInfo());
+                ContentFrame.Navigate(typeof(StatsPage), _viewModel, new EntranceNavigationTransitionInfo());
                 return;
             }
         }
@@ -606,7 +606,7 @@ public sealed partial class MainPage : Page
 
         if (tag == "summary")
         {
-            ContentFrame.Navigate(typeof(StatsPage), null, args.RecommendedNavigationTransitionInfo);
+            ContentFrame.Navigate(typeof(StatsPage), _viewModel, args.RecommendedNavigationTransitionInfo);
             return;
         }
 
@@ -648,7 +648,7 @@ public sealed partial class MainPage : Page
 
         if (tag == "summary")
         {
-            ContentFrame.Navigate(typeof(StatsPage), null, new EntranceNavigationTransitionInfo());
+            ContentFrame.Navigate(typeof(StatsPage), _viewModel, new EntranceNavigationTransitionInfo());
             return;
         }
 

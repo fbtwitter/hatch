@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 using Hatch.Converters;
 using Hatch.Helpers;
 using Hatch.Models;
-using Hatch.Views;
 using Microsoft.UI.Xaml.Media;
 
 namespace Hatch.ViewModels;
@@ -79,12 +78,9 @@ public sealed class StatsViewModel : INotifyPropertyChanged
         private set { _hasUpcomingTasks = value; OnPropertyChanged(); }
     }
 
-    private IEnumerable<TodoItem> Tasks =>
-        (App.MainWindowInstance as MainWindow)?.ViewModel.Tasks ?? Enumerable.Empty<TodoItem>();
-
     // Called from StatsPage.OnNavigatedTo — computed on demand, no live binding needed
     // since the task list and this page can't be visible at the same time.
-    public void RefreshStats()
+    public void RefreshStats(IEnumerable<TodoItem> sourceTasks)
     {
         var neutralFg  = ThemeResourceHelper.GetBrush("TextFillColorSecondaryBrush");
         var successFg  = ThemeResourceHelper.GetBrush("SystemFillColorSuccessBrush");
@@ -103,7 +99,7 @@ public sealed class StatsViewModel : INotifyPropertyChanged
             Windows.UI.Color.FromArgb(38, 157, 108,   0),
             Windows.UI.Color.FromArgb(38, 255, 200,  87));
 
-        var tasks = Tasks.ToList();
+        var tasks = sourceTasks.ToList();
         var today = DateTime.Today;
 
         // completed/total, not remaining/total: the percentage measures completion, so the
