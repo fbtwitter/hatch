@@ -465,12 +465,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         if (IsBubbleOpen)
             CloseBubble();
 
-        if (App.MainWindowInstance?.GetTrayService() is { } tray)
-        {
-            tray.SetTooltip("Hatch is hidden — right-click to restore");
-            tray.SetHiddenState(true);
-            tray.ShowBalloon("Hatch hidden", FormatHideDuration(duration));
-        }
+        App.MainWindowInstance?.ShowMascotHiddenInTray(FormatHideDuration(duration));
 
         StartHideRestoreTimer();
     }
@@ -486,12 +481,8 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         if (IsBubbleOpen)
             CloseBubble();
 
-        if (App.MainWindowInstance?.GetTrayService() is { } tray)
-        {
-            tray.SetTooltip("Hatch is hidden — right-click to restore");
-            tray.SetHiddenState(true);
-            tray.ShowBalloon("Hatch hidden", "Hidden until restart. Right-click the tray icon to restore.");
-        }
+        App.MainWindowInstance?.ShowMascotHiddenInTray(
+            "Hidden until restart. Right-click the tray icon to restore.");
 
         // No timer needed — only restores via RestoreFromHide()
     }
@@ -509,11 +500,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     // No balloon here — the user didn't just take an action.
     private static void ApplyHiddenTrayState()
     {
-        if (App.MainWindowInstance?.GetTrayService() is { } tray)
-        {
-            tray.SetTooltip("Hatch is hidden — right-click to restore");
-            tray.SetHiddenState(true);
-        }
+        App.MainWindowInstance?.ShowMascotHiddenInTray();
     }
 
     private void RestoreFromHide()
@@ -524,11 +511,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         IsMascotHidden = false;
         StopHideRestoreTimer();
 
-        if (App.MainWindowInstance?.GetTrayService() is { } tray)
-        {
-            tray.SetTooltip("Hatch");
-            tray.SetHiddenState(false);
-        }
+        App.MainWindowInstance?.ShowMascotRestoredInTray();
     }
 
     private void CheckHideExpiration()

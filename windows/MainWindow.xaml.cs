@@ -341,7 +341,23 @@ public sealed partial class MainWindow : Window
             DispatcherQueue.TryEnqueue(() => (RootFrame.Content as MainPage)?.FocusNewTask());
     }
 
-    public SystemTrayService? GetTrayService() => _trayService;
+    public void ShowMascotHiddenInTray(string? notificationMessage = null)
+    {
+        if (_trayService is not { } tray) return;
+
+        tray.SetTooltip("Hatch is hidden — right-click to restore");
+        tray.SetHiddenState(true);
+        if (notificationMessage is not null)
+            tray.ShowBalloon("Hatch hidden", notificationMessage);
+    }
+
+    public void ShowMascotRestoredInTray()
+    {
+        if (_trayService is not { } tray) return;
+
+        tray.SetTooltip("Hatch");
+        tray.SetHiddenState(false);
+    }
 
     private void RestoreWindow()
     {
