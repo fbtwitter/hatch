@@ -1,11 +1,9 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Microsoft.UI.Dispatching;
-using Windows.Management.Deployment;
 using Hatch.Helpers;
 using Hatch.Models;
 using Hatch.Services;
@@ -15,13 +13,11 @@ namespace Hatch.ViewModels;
 
 public sealed class SettingsViewModel : INotifyPropertyChanged
 {
-    private static readonly Uri _releaseFeedUri = new("https://fbtwitter.github.io/hatch/Hatch.appinstaller");
-    private static readonly HttpClient _updateClient = new() { Timeout = TimeSpan.FromSeconds(15) };
-
     private readonly SettingsService _settings;
     private readonly SyncAccountService _syncAccountService;
     private readonly SyncService _syncService;
     private readonly TaskStorageService _taskStorage;
+    private readonly UpdateService _updateService;
     private readonly IHotkeyRegistration? _hotkeyRegistration;
     private bool _isHotkeyRegistered;
 
@@ -38,6 +34,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         SyncAccountService syncAccountService,
         SyncService syncService,
         TaskStorageService taskStorage,
+        UpdateService updateService,
         IReadOnlyList<TaskList> customLists,
         IHotkeyRegistration? hotkeyRegistration,
         DispatcherQueue dispatcherQueue)
@@ -46,6 +43,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         _syncAccountService = syncAccountService;
         _syncService = syncService;
         _taskStorage = taskStorage;
+        _updateService = updateService;
         _hotkeyRegistration = hotkeyRegistration;
         // Registration happens at mascot startup, before the Settings page is created.
         _isHotkeyRegistered = hotkeyRegistration?.IsRegistered ?? true;
@@ -278,63 +276,16 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
         try
         {
-            Windows.ApplicationModel.Package current;
-            try
+            var result = await _updateService.CheckForUpdatesAsync();
+            _appInstallerUri = result.AppInstallerUri;
+            HasAvailableUpdate = result.Status == UpdateCheckStatus.Available;
+            UpdateStatus = result.Status switch
             {
-                current = Windows.ApplicationModel.Package.Current;
-            }
-            catch
-            {
-                UpdateStatus = Strings.Settings_Update_ManagedBySource;
-                return;
-            }
-
-            var appInstallerUri = current.GetAppInstallerInfo()?.Uri;
-            if (appInstallerUri is null)
-            {
-                if (current.SignatureKind == Windows.ApplicationModel.PackageSignatureKind.Store)
-                {
-                    UpdateStatus = Strings.Settings_Update_ManagedBySource;
-                    return;
-                }
-
-                using var stream = await _updateClient.GetStreamAsync(_releaseFeedUri);
-                var latest = AppInstallerFeed.ReadVersion(stream, current.Id.Name, current.Id.Publisher);
-
-                var installed = current.Id.Version;
-                if (latest > new Version(installed.Major, installed.Minor, installed.Build, installed.Revision))
-                {
-                    _appInstallerUri = _releaseFeedUri;
-                    HasAvailableUpdate = true;
-                    UpdateStatus = Strings.Settings_Update_Available;
-                }
-                else
-                {
-                    UpdateStatus = Strings.Settings_Update_UpToDate;
-                }
-                return;
-            }
-
-            var package = new PackageManager().FindPackageForUser(string.Empty, current.Id.FullName);
-            var result = await package.CheckUpdateAvailabilityAsync();
-            switch (result.Availability)
-            {
-                case Windows.ApplicationModel.PackageUpdateAvailability.Available:
-                case Windows.ApplicationModel.PackageUpdateAvailability.Required:
-                    _appInstallerUri = appInstallerUri;
-                    HasAvailableUpdate = true;
-                    UpdateStatus = Strings.Settings_Update_Available;
-                    break;
-                case Windows.ApplicationModel.PackageUpdateAvailability.NoUpdates:
-                    UpdateStatus = Strings.Settings_Update_UpToDate;
-                    break;
-                case Windows.ApplicationModel.PackageUpdateAvailability.Unknown:
-                    UpdateStatus = Strings.Settings_Update_ManagedBySource;
-                    break;
-                default:
-                    UpdateStatus = Strings.Settings_Update_CheckFailed;
-                    break;
-            }
+                UpdateCheckStatus.Available => Strings.Settings_Update_Available,
+                UpdateCheckStatus.UpToDate => Strings.Settings_Update_UpToDate,
+                UpdateCheckStatus.ManagedBySource => Strings.Settings_Update_ManagedBySource,
+                _ => Strings.Settings_Update_CheckFailed
+            };
         }
         catch
         {
@@ -354,13 +305,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         UpdateStatus = Strings.Settings_Update_Installing;
         try
         {
-            if (NativeMethods.RegisterApplicationRestart(null, 0) != 0)
-                throw new InvalidOperationException("Windows could not register Hatch for restart.");
-
-            await new PackageManager().AddPackageByAppInstallerFileAsync(
-                appInstallerUri,
-                AddPackageByAppInstallerOptions.ForceTargetAppShutdown,
-                null);
+            await _updateService.InstallUpdateAsync(appInstallerUri);
             UpdateStatus = Strings.Settings_Update_Restarting;
         }
         catch
