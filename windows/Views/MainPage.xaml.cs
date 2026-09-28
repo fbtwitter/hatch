@@ -99,7 +99,8 @@ public sealed partial class MainPage : Page
             }
             _viewModel = vm;
         }
-        _viewModel ??= new MainViewModel();
+        if (_viewModel is null)
+            throw new InvalidOperationException("MainPage must be navigated to with its MainViewModel.");
 
         _viewModel.CustomLists.CollectionChanged += CustomLists_CollectionChanged;
         _viewModel.PropertyChanged -= ViewModel_PropertyChanged;

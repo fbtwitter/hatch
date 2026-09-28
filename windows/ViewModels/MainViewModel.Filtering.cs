@@ -58,8 +58,8 @@ public sealed partial class MainViewModel
             OnPropertyChanged(nameof(EmptyStateHeadline));
             OnPropertyChanged(nameof(EmptyStateSubtext));
             _completedGroup.IsExpanded = IsCompletedGroupExpanded(value);
-            App.Settings.ActiveNavItem = value;
-            App.SettingsService.SaveDebounced();
+            _settingsService.Current.ActiveNavItem = value;
+            _settingsService.SaveDebounced();
             OnPropertyChanged(nameof(SuggestionsVisible));
             OnPropertyChanged(nameof(ShowEmptyState));
             // Defer one frame so the page shell renders before the list rebuilds,

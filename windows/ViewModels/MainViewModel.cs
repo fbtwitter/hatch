@@ -16,6 +16,9 @@ namespace Hatch.ViewModels;
 public sealed partial class MainViewModel : INotifyPropertyChanged
 {
     private readonly TaskStorageService _storage;
+    private readonly SettingsService _settingsService;
+    private readonly SyncService _syncService;
+    private readonly NotificationSchedulerService _notificationScheduler;
     private readonly DispatcherQueue _dispatcherQueue;
     private string _newTaskText = string.Empty;
     private CancellationTokenSource? _saveCancelToken;
@@ -74,9 +77,16 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
 
     public ICommand AddTaskCommand { get; }
 
-    public MainViewModel()
+    public MainViewModel(
+        TaskStorageService storage,
+        SettingsService settingsService,
+        SyncService syncService,
+        NotificationSchedulerService notificationScheduler)
     {
-        _storage = new TaskStorageService();
+        _storage = storage;
+        _settingsService = settingsService;
+        _syncService = syncService;
+        _notificationScheduler = notificationScheduler;
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
         AddTaskCommand = new RelayCommand(
@@ -148,7 +158,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
 
         _ = LoadAsync();
 
-        App.SyncService.TasksReceived += () =>
+        _syncService.TasksReceived += () =>
             _dispatcherQueue.TryEnqueue(async () => await ReloadAsync());
     }
 
@@ -195,7 +205,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             NotifyPlannedGroupsChanged();
             OnPropertyChanged(nameof(IsPlannedEmpty));
 
-            await App.NotificationScheduler.RescheduleAllAsync(Tasks);
+            await _notificationScheduler.RescheduleAllAsync(Tasks);
             MyDayWidgetUpdater.Refresh(new TasksFile
             {
                 Tasks = [.. Tasks, .. _deletedTasks],
@@ -237,7 +247,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         }
 
         AttachTaskPropertyChangedHandler(task);
-        App.NotificationScheduler.ScheduleForTask(task);
+        _notificationScheduler.ScheduleForTask(task);
         Tasks.Insert(0, task);
         NewTaskText = string.Empty;
         SaveAsync();
@@ -319,12 +329,12 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
                 if (task.IsCompleted)
                 {
                     ActiveTasks.Remove(task);
-                    App.NotificationScheduler.UnscheduleForTask(task.Id);
+                    _notificationScheduler.UnscheduleForTask(task.Id);
                     ShowCompletionUndoBar(task, spawned);
                 }
                 else
                 {
-                    App.NotificationScheduler.ScheduleForTask(task);
+                    _notificationScheduler.ScheduleForTask(task);
                     if (!ActiveTasks.Contains(task) && task.DueDate != null)
                         ActiveTasks.Add(task);   // unchecked: re-insert (order refresh below)
                 }
@@ -343,12 +353,12 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
                 {
                     ActiveTasks.Remove(task);
                     _openGroup.Items.Remove(task);
-                    App.NotificationScheduler.UnscheduleForTask(task.Id);
+                    _notificationScheduler.UnscheduleForTask(task.Id);
                     ShowCompletionUndoBar(task, spawned);
                 }
                 else
                 {
-                    App.NotificationScheduler.ScheduleForTask(task);
+                    _notificationScheduler.ScheduleForTask(task);
                     if (!ActiveTasks.Contains(task) && task.IsStarred)
                     {
                         ActiveTasks.Add(task);
@@ -384,12 +394,12 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
 
                     if (task.IsCompleted && Tasks.Contains(task))
                     {
-                        App.NotificationScheduler.UnscheduleForTask(task.Id);
+                        _notificationScheduler.UnscheduleForTask(task.Id);
                         ShowCompletionUndoBar(task, spawned);
                     }
                     else
                     {
-                        App.NotificationScheduler.ScheduleForTask(task);
+                        _notificationScheduler.ScheduleForTask(task);
                     }
                 };
                 timer.Tick += onTick;
@@ -406,7 +416,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     // touch ActiveTasks when the view's filter/membership actually changes.
     private void ApplyDueDateChange(TodoItem task)
     {
-        App.NotificationScheduler.ScheduleForTask(task);
+        _notificationScheduler.ScheduleForTask(task);
         switch (_activeNavItem)
         {
             case "planned":
@@ -542,7 +552,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     private void TombstoneTask(TodoItem task)
     {
         task.PropertyChanged -= TaskPropertyChanged;
-        App.NotificationScheduler.UnscheduleForTask(task.Id);
+        _notificationScheduler.UnscheduleForTask(task.Id);
         Tombstone(task);
         Tasks.Remove(task);
         SaveAsync();
@@ -555,7 +565,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         _deletedTasks.Remove(task);
         AttachTaskPropertyChangedHandler(task);
         Tasks.Insert(0, task);
-        App.NotificationScheduler.ScheduleForTask(task);
+        _notificationScheduler.ScheduleForTask(task);
         SaveAsync();
     }
 
@@ -586,7 +596,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         task.UpdatedAt = DateTimeOffset.UtcNow; // handler is detached above — stamp explicitly
 
         task.PropertyChanged += TaskPropertyChanged;
-        App.NotificationScheduler.ScheduleForTask(task);
+        _notificationScheduler.ScheduleForTask(task);
 
         // Apply in-place: keep scroll position by only removing/adding when membership
         // actually changes. x:Bind handles the visual update for title/date/star glyph.
@@ -658,7 +668,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     {
         var task = Tasks.FirstOrDefault(t => t.Id == id);
         if (task != null && !task.IsCompleted)
-            App.NotificationScheduler.SnoozeReminder(
+            _notificationScheduler.SnoozeReminder(
                 task.Id, task.Title, NotificationSchedulerService.SnoozeDuration);
     }
 
@@ -682,7 +692,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
                 Lists = [.. CustomLists, .. _deletedLists]
             };
             await _storage.SaveAsync(data);
-            App.SyncService.SchedulePush(data);
+            _syncService.SchedulePush(data);
             MyDayWidgetUpdater.Refresh(data);
         }
         catch (OperationCanceledException) { }
