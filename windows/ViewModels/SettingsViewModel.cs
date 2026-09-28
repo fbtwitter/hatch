@@ -22,6 +22,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private readonly SyncAccountService _syncAccountService;
     private readonly SyncService _syncService;
     private readonly TaskStorageService _taskStorage;
+    private readonly IHotkeyRegistration? _hotkeyRegistration;
+    private bool _isHotkeyRegistered;
 
     public SyncAccountViewModel SyncAccount { get; }
     private readonly StartupRegistryService _startupRegistry = new();
@@ -37,12 +39,16 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         SyncService syncService,
         TaskStorageService taskStorage,
         IReadOnlyList<TaskList> customLists,
+        IHotkeyRegistration? hotkeyRegistration,
         DispatcherQueue dispatcherQueue)
     {
         _settings = settings;
         _syncAccountService = syncAccountService;
         _syncService = syncService;
         _taskStorage = taskStorage;
+        _hotkeyRegistration = hotkeyRegistration;
+        // Registration happens at mascot startup, before the Settings page is created.
+        _isHotkeyRegistered = hotkeyRegistration?.IsRegistered ?? true;
         CheckForUpdatesCommand = new RelayCommand(async _ => await CheckForUpdatesAsync());
         InstallUpdateCommand = new RelayCommand(async _ => await InstallUpdateAsync());
         SyncAccount = new SyncAccountViewModel(
@@ -585,15 +591,10 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
 
     private void ReRegisterHotKey()
     {
-        var mascot = App.MascotWindowInstance;
-        if (mascot is null) return;
-        mascot.UnregisterHotKey();
-        IsHotkeyRegistered = mascot.RegisterHotKey();
+        if (_hotkeyRegistration is null) return;
+        IsHotkeyRegistered = _hotkeyRegistration.ReRegister(
+            HotkeyModifiers, HotkeyVirtualKey);
     }
-
-    // Seeded from the mascot window rather than assumed true: the hotkey is registered at
-    // startup, so a conflict already exists by the time Settings is first opened.
-    private bool _isHotkeyRegistered = App.MascotWindowInstance?.IsHotkeyRegistered ?? true;
 
     // Windows reports a taken combination only through RegisterHotKey's return value; the
     // key then silently does nothing. Previously that result was discarded, so Settings
