@@ -24,6 +24,13 @@ public partial class App : Application
     public static QuickAddBubbleWindow? BubbleWindowInstance { get; set; }
     public static bool IsStartupLaunch { get; private set; } = false;
 
+    public static void ApplyThemeToWindows(AppTheme theme)
+    {
+        MainWindowInstance?.ApplyTheme(theme);
+        MainWindowInstance?.ViewModel.NotifyThemeChanged();
+        BubbleWindowInstance?.ApplyCurrentTheme();
+    }
+
     public App()
     {
         InitializeComponent();
