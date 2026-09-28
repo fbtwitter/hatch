@@ -27,6 +27,7 @@ public sealed partial class SettingsPage : Page
             App.SyncAccountService,
             App.SyncService,
             App.TaskStorage,
+            App.UpdateService,
             App.MainWindowInstance?.ViewModel.CustomLists.ToArray() ?? Array.Empty<TaskList>(),
             App.MascotWindowInstance,
             DispatcherQueue.GetForCurrentThread());
