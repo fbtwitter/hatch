@@ -10,15 +10,15 @@ internal static class SyncTokenStore
     private const string AccessName  = "access_token";
     private const string RefreshName = "refresh_token";
 
-    public static (string? Access, string? Refresh) Load()
+    public static (string? Access, string? Refresh) Load(SettingsService settingsService)
     {
-        var settings = App.Settings;
+        var settings = settingsService.Current;
         if (!string.IsNullOrEmpty(settings.SyncAccessToken))
         {
             Save(settings.SyncAccessToken, settings.SyncRefreshToken);
             settings.SyncAccessToken  = null;
             settings.SyncRefreshToken = null;
-            App.SettingsService.SaveDebounced();
+            settingsService.SaveDebounced();
         }
         return (Retrieve(AccessName), Retrieve(RefreshName));
     }

@@ -14,7 +14,7 @@ public partial class App : Application
 {
     public static SettingsService SettingsService { get; } = new();
     public static AppSettings Settings => SettingsService.Current;
-    public static SyncService SyncService { get; } = new();
+    public static SyncService SyncService { get; } = new(SettingsService);
     public static NotificationSchedulerService NotificationScheduler { get; } = new();
     public static TipCoordinator TipCoordinator { get; } = new(SettingsService);
     public static MainWindow? MainWindowInstance { get; private set; }
