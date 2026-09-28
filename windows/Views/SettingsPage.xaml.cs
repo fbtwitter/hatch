@@ -27,6 +27,7 @@ public sealed partial class SettingsPage : Page
             App.SyncAccountService,
             App.SyncService,
             App.TaskStorage,
+            App.MainWindowInstance?.ViewModel.CustomLists.ToArray() ?? Array.Empty<TaskList>(),
             DispatcherQueue.GetForCurrentThread());
         DataContext = _viewModel;
         NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;

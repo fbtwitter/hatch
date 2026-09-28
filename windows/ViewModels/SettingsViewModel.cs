@@ -36,6 +36,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         SyncAccountService syncAccountService,
         SyncService syncService,
         TaskStorageService taskStorage,
+        IReadOnlyList<TaskList> customLists,
         DispatcherQueue dispatcherQueue)
     {
         _settings = settings;
@@ -50,7 +51,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         foreach (var line in _settings.Current.CustomTips)
             CustomTips.Add(line);
 
-        InitializeMascotOpenPageOptions();
+        InitializeMascotOpenPageOptions(customLists);
     }
 
     // ── Sync ─────────────────────────────────────────────────────────────────
@@ -397,7 +398,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         }
     }
 
-    private void InitializeMascotOpenPageOptions()
+    private void InitializeMascotOpenPageOptions(IReadOnlyList<TaskList> customLists)
     {
         MascotOpenPageOptions.Add(new(null, Strings.Settings_OpenPage_RememberLast));
         MascotOpenPageOptions.Add(new(MascotOpenPageHelper.SummaryFallbackTag, Strings.Settings_OpenPage_Summary));
@@ -406,7 +407,6 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         MascotOpenPageOptions.Add(new("planned", Strings.Settings_OpenPage_Planned));
         MascotOpenPageOptions.Add(new("alltasks", Strings.Settings_OpenPage_AllTasks));
 
-        var customLists = App.MainWindowInstance?.ViewModel.CustomLists ?? [];
         foreach (var list in customLists)
             MascotOpenPageOptions.Add(new(list.Id.ToString(), list.Name));
 
