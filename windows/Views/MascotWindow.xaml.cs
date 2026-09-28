@@ -274,9 +274,6 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
                     ViewModel.CloseBubble();
                 mainWindow.ToggleFromMascot();
                 break;
-            case MainWindowAction.Hide:
-                mainWindow.HideFromMascot();
-                break;
         }
     }
 

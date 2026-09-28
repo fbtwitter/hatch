@@ -192,7 +192,12 @@ public sealed partial class MainWindow : Window
         RaiseWithoutActivation();
     }
 
-    internal void HideFromMascot() => AppWindow.Hide();
+    internal bool HideIfVisibleFromMascot()
+    {
+        if (!AppWindow.IsVisible) return false;
+        AppWindow.Hide();
+        return true;
+    }
 
     internal void ShowSettingsFromMascot()
     {
