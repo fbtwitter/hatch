@@ -13,6 +13,7 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
     private static readonly Windows.Globalization.DateTimeFormatting.DateTimeFormatter _lastSyncedFormatter =
         new("month.abbreviated day hour minute");
 
+    private readonly SyncAccountService _accountService;
     private readonly SyncService _syncService;
     private readonly SettingsService _settings;
     private readonly DispatcherQueue _dispatcherQueue;
@@ -21,20 +22,26 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
     public event PropertyChangedEventHandler? PropertyChanged;
     public event Action<SyncConflict>? ConflictDetected;
 
-    public SyncAccountViewModel(SyncService syncService, SettingsService settings, DispatcherQueue dispatcherQueue)
+    public SyncAccountViewModel(
+        SyncAccountService accountService,
+        SyncService syncService,
+        SettingsService settings,
+        DispatcherQueue dispatcherQueue)
     {
+        _accountService = accountService;
         _syncService = syncService;
         _settings = settings;
         _dispatcherQueue = dispatcherQueue;
-        _wasSignedIn = syncService.IsSignedIn;
+        _wasSignedIn = accountService.IsSignedIn;
+        _accountService.StateChanged += OnSyncStateChanged;
         _syncService.StateChanged += OnSyncStateChanged;
     }
 
-    public bool IsSyncSignedIn => _syncService.IsSignedIn;
+    public bool IsSyncSignedIn => _accountService.IsSignedIn;
 
-    public string SyncUserEmail => _syncService.UserEmail ?? "";
+    public string SyncUserEmail => _accountService.UserEmail ?? "";
 
-    public bool IsPassphraseSet => _syncService.HasPassphrase;
+    public bool IsPassphraseSet => _accountService.HasPassphrase;
 
     // Drives the passphrase card + info bar: sync is paused in this state.
     // The two-factor challenge takes precedence — it is about the session, and until it is
@@ -61,7 +68,7 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
             return;
         }
 
-        _syncService.SetPassphrase(passphrase);
+        _accountService.SetPassphrase(passphrase);
         OnPropertyChanged(nameof(IsPassphraseSet));
         OnPropertyChanged(nameof(IsSignedInWithoutPassphrase));
         OnPropertyChanged(nameof(CanShowRecoveryKit));
@@ -102,7 +109,7 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
 
     public void ShowRecoveryKit()
     {
-        var passphrase = _syncService.PassphraseForRecoveryKit;
+        var passphrase = _accountService.PassphraseForRecoveryKit;
         if (passphrase == null) return;
         RecoveryKitText = RecoveryKit.Build(passphrase, SyncUserEmail, DateTime.Now);
     }
@@ -190,7 +197,7 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
         if (string.IsNullOrWhiteSpace(SyncEmail) || string.IsNullOrWhiteSpace(password)) return;
         IsSyncing = true;
         SyncError = null;
-        var error = await _syncService.SignInAsync(SyncEmail.Trim(), password);
+        var error = await _accountService.SignInAsync(SyncEmail.Trim(), password);
         IsSyncing = false;
         if (error != null) { SyncError = error; return; }
     }
@@ -200,14 +207,14 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
         if (string.IsNullOrWhiteSpace(SyncEmail) || string.IsNullOrWhiteSpace(password)) return;
         IsSyncing = true;
         SyncError = null;
-        var msg = await _syncService.SignUpAsync(SyncEmail.Trim(), password);
+        var msg = await _accountService.SignUpAsync(SyncEmail.Trim(), password);
         IsSyncing = false;
         if (msg != null) SyncError = msg;
     }
 
     public async Task SignOutAsync()
     {
-        await _syncService.SignOutAsync();
+        await _accountService.SignOutAsync();
         SyncError = null;
     }
 
@@ -217,7 +224,7 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
     {
         IsSyncing = true;
         SyncError = null;
-        var (url, error) = await _syncService.GetGitHubSignInUrlAsync();
+        var (url, error) = await _accountService.GetGitHubSignInUrlAsync();
         IsSyncing = false;
         if (error != null) { SyncError = error; return; }
         _ = Windows.System.Launcher.LaunchUriAsync(new Uri(url!));
@@ -227,7 +234,7 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
     {
         _dispatcherQueue.TryEnqueue(async () =>
         {
-            bool isNowSignedIn = _syncService.IsSignedIn;
+            bool isNowSignedIn = _accountService.IsSignedIn;
             bool justSignedIn  = isNowSignedIn && !_wasSignedIn;
             _wasSignedIn = isNowSignedIn;
 
@@ -241,7 +248,7 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
 
             // Surface OAuth callback failures; without this the browser closes and the app
             // shows nothing at all.
-            if (_syncService.LastAuthError is { } authError)
+            if (_accountService.LastAuthError is { } authError)
                 SyncError = authError;
 
             OnPropertyChanged(nameof(IsMfaChallengePending));
@@ -284,14 +291,14 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
     public bool IsMfaSettingsVisible => IsSyncSignedIn && !IsMfaChallengePending;
     public bool ShowMfaOnInfo        => IsMfaEnrolled && !IsMfaChallengePending;
 
-    public bool IsMfaChallengePending => _syncService.IsMfaChallengePending;
+    public bool IsMfaChallengePending => _accountService.IsMfaChallengePending;
 
     public async Task SubmitMfaChallengeAsync(string code)
     {
         if (string.IsNullOrWhiteSpace(code)) return;
         IsSyncing = true;
         SyncError = null;
-        var error = await _syncService.SubmitMfaChallengeAsync(code.Trim());
+        var error = await _accountService.SubmitMfaChallengeAsync(code.Trim());
         IsSyncing = false;
         if (error != null) { SyncError = error; return; }
 
@@ -309,13 +316,13 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
 
     public async Task RefreshMfaStateAsync()
     {
-        IsMfaEnrolled = await _syncService.GetVerifiedMfaFactorAsync() != null;
+        IsMfaEnrolled = await _accountService.GetVerifiedMfaFactorAsync() != null;
     }
 
     public async Task StartMfaEnrollmentAsync()
     {
         SyncError = null;
-        var (factor, error) = await _syncService.EnrollMfaAsync();
+        var (factor, error) = await _accountService.EnrollMfaAsync();
         if (error != null) { SyncError = error; return; }
 
         _pendingFactor = factor;
@@ -330,7 +337,7 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
         if (_pendingFactor == null) return;
         SyncError = null;
 
-        var error = await _syncService.VerifyMfaAsync(_pendingFactor.Id, code);
+        var error = await _accountService.VerifyMfaAsync(_pendingFactor.Id, code);
         if (error != null) { SyncError = error; return; }
 
         _pendingFactor = null;
@@ -341,7 +348,7 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
 
         // Generated immediately after verifying, never later: this is the one moment the
         // session is known to be aal2 and the user is already thinking about lockout.
-        var (codes, codesError) = await _syncService.GenerateRecoveryCodesAsync();
+        var (codes, codesError) = await _accountService.GenerateRecoveryCodesAsync();
         if (codesError != null) { SyncError = codesError; return; }
         RecoveryCodes = codes;
     }
@@ -387,7 +394,7 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
         if (string.IsNullOrWhiteSpace(code)) return;
         IsSyncing = true;
         SyncError = null;
-        var error = await _syncService.RedeemRecoveryCodeAsync(code);
+        var error = await _accountService.RedeemRecoveryCodeAsync(code);
         IsSyncing = false;
         if (error != null) { SyncError = error; return; }
 
@@ -417,7 +424,7 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
     public async Task CancelMfaEnrollmentAsync()
     {
         if (_pendingFactor == null) return;
-        await _syncService.UnenrollMfaAsync(_pendingFactor.Id);
+        await _accountService.UnenrollMfaAsync(_pendingFactor.Id);
         _pendingFactor = null;
         OnPropertyChanged(nameof(IsMfaEnrolling));
         OnPropertyChanged(nameof(MfaSecret));
@@ -427,17 +434,17 @@ public sealed class SyncAccountViewModel : INotifyPropertyChanged
 
     public async Task DisableMfaAsync()
     {
-        var factor = await _syncService.GetVerifiedMfaFactorAsync();
+        var factor = await _accountService.GetVerifiedMfaFactorAsync();
         if (factor == null) return;
 
-        var error = await _syncService.UnenrollMfaAsync(factor.Id);
+        var error = await _accountService.UnenrollMfaAsync(factor.Id);
         if (error != null) { SyncError = error; return; }
         await RefreshMfaStateAsync();
     }
 
     private void ForgetPassphrase()
     {
-        _syncService.ClearPassphrase();
+        _accountService.ClearPassphrase();
         OnPropertyChanged(nameof(IsPassphraseSet));
         OnPropertyChanged(nameof(IsSignedInWithoutPassphrase));
     }
