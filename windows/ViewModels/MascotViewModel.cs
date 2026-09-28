@@ -75,19 +75,6 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
     public int WindowSize => _settings.Current.MascotSize;
 
-    public int Size
-    {
-        get => _settings.Current.MascotSize;
-        set
-        {
-            if (_settings.Current.MascotSize == value) return;
-            _settings.Current.MascotSize = Math.Max(40, value);
-            _settings.SaveDebounced();
-            OnPropertyChanged();
-            OnPropertyChanged(nameof(WindowSize));
-        }
-    }
-
     public bool MuteAnimation
     {
         get => _settings.Current.MuteAnimation;
@@ -118,7 +105,6 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     // Called by SettingsViewModel after saving MascotSize so MascotWindow responds without re-saving.
     public void RaiseWindowSizeChanged()
     {
-        OnPropertyChanged(nameof(Size));
         OnPropertyChanged(nameof(WindowSize));
         ClampToWorkArea();
     }
@@ -169,7 +155,6 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     public ICommand HideUntilTomorrowCommand  { get; }
     public ICommand HideUntilRestartCommand   { get; }
     public ICommand RestoreFromHideCommand    { get; }
-    public ICommand OpenResizeCommand         { get; }
 
     public bool IsMascotHidden
     {
@@ -250,7 +235,6 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         HideUntilTomorrowCommand = new RelayCommand(_ => HideFor(UntilTomorrow()));
         HideUntilRestartCommand  = new RelayCommand(_ => HideUntilRestart());
         RestoreFromHideCommand   = new RelayCommand(_ => RestoreFromHide());
-        OpenResizeCommand        = new RelayCommand(_ => OpenResize());
         InitializePosition();
         StartFullscreenPolling();
         CheckHideExpiration();
@@ -316,17 +300,6 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         X = workArea.X + workArea.Width  - size - EdgePadding;
         Y = workArea.Y + workArea.Height - size - EdgePadding;
         _settings.SaveDebounced();
-    }
-
-    private void OpenResize()
-    {
-        // Placeholder — the actual resize UI is handled by MascotWindow
-    }
-
-    public void ResizeByValue(int newSize)
-    {
-        Size = newSize;
-        ClampToWorkArea();
     }
 
     private void ShowMainWindow() => MainWindowActionRequested?.Invoke(MainWindowAction.Show);
