@@ -21,7 +21,7 @@ using Microsoft.UI.Xaml.Automation;
 
 namespace Hatch.Views;
 
-public sealed partial class MascotWindow : Window
+public sealed partial class MascotWindow : Window, IHotkeyRegistration
 {
     public MascotViewModel ViewModel { get; }
 
@@ -248,7 +248,7 @@ public sealed partial class MascotWindow : Window
             ViewModel.Dispose();
         };
 
-        RegisterHotKey();
+        RegisterHotKey(App.Settings.HotkeyModifiers, App.Settings.HotkeyVirtualKey);
 
         ViewModel.ProactiveTipDue += OnProactiveTipDue;
     }
@@ -624,17 +624,24 @@ public sealed partial class MascotWindow : Window
     // case is the combination being taken at startup, long before anything is changed.
     internal bool IsHotkeyRegistered { get; private set; } = true;
 
+    bool IHotkeyRegistration.IsRegistered => IsHotkeyRegistered;
+
+    bool IHotkeyRegistration.ReRegister(uint modifiers, uint virtualKey)
+    {
+        UnregisterHotKey();
+        return RegisterHotKey(modifiers, virtualKey);
+    }
+
     // False when the combination is already owned by another application. Windows gives no
     // notification for this — the key simply does nothing — so the result has to travel back
     // to Settings rather than being dropped.
-    internal bool RegisterHotKey()
+    internal bool RegisterHotKey(uint modifiers, uint virtualKey)
     {
-        var settings = App.Settings;
         bool registered = NativeMethods.RegisterHotKey(
             _hwnd,
             NativeMethods.HOTKEY_ID,
-            settings.HotkeyModifiers | NativeMethods.MOD_NOREPEAT,
-            settings.HotkeyVirtualKey);
+            modifiers | NativeMethods.MOD_NOREPEAT,
+            virtualKey);
 
         // Install a native subclass to intercept WM_HOTKEY without polling.
         // Once only: `SubclassProc` allocates a fresh delegate each call, so a new function
