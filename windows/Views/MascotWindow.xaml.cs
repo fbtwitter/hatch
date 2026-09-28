@@ -244,13 +244,37 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             if (_mascotXamlRoot != null) _mascotXamlRoot.Changed -= OnMascotXamlRootChanged;
             App.MainWindowInstance?.ViewModel.TasksLoaded -= OnTasksLoadedForFocusRestore;
             UnregisterHotKey();
+            ViewModel.MainWindowActionRequested -= OnMainWindowActionRequested;
             _bubbleWindow?.Close();
             ViewModel.Dispose();
         };
 
+        ViewModel.MainWindowActionRequested += OnMainWindowActionRequested;
         RegisterHotKey(App.Settings.HotkeyModifiers, App.Settings.HotkeyVirtualKey);
 
         ViewModel.ProactiveTipDue += OnProactiveTipDue;
+    }
+
+    private void OnMainWindowActionRequested(MainWindowAction action)
+    {
+        var mainWindow = App.MainWindowInstance;
+        if (mainWindow == null) return;
+
+        switch (action)
+        {
+            case MainWindowAction.Show:
+                ViewModel.CloseBubble();
+                mainWindow.ShowFromMascot();
+                break;
+            case MainWindowAction.Toggle:
+                if (!mainWindow.AppWindow.IsVisible)
+                    ViewModel.CloseBubble();
+                mainWindow.ToggleFromMascot();
+                break;
+            case MainWindowAction.Hide:
+                mainWindow.HideFromMascot();
+                break;
+        }
     }
 
     // Lazily creates the quick-add bubble window if it doesn't exist yet, without
@@ -1006,24 +1030,6 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
     {
         // Show the main window and navigate straight to Settings.
         // XamlRoot for any dialog is guaranteed correct there.
-        var win = App.MainWindowInstance;
-        if (win == null) return;
-
-        var mainHwnd = Win32Interop.GetWindowFromWindowId(win.AppWindow.Id);
-
-        if (!win.AppWindow.IsVisible)
-        {
-            // Coming from tray — restore default size and position near mascot.
-            win.PositionNearMascot(resetSize: true);
-            win.AppWindow.Show();
-        }
-
-        // Flash TOPMOST→NOTOPMOST to raise above other windows, then activate
-        // so the user can immediately interact with Settings.
-        NativeMethods.SetWindowPos(mainHwnd, NativeMethods.HWND_TOPMOST,   0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
-        NativeMethods.SetWindowPos(mainHwnd, NativeMethods.HWND_NOTOPMOST, 0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
-        win.Activate();
-
-        win.NavigateToSettings();
+        App.MainWindowInstance?.ShowSettingsFromMascot();
     }
 }
