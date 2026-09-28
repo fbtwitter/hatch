@@ -14,6 +14,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Storage.Streams;
 using WinUIEx;
 using Hatch.Models;
+using Hatch.Services;
 using Hatch.ViewModels;
 using Hatch.Helpers;
 using Microsoft.UI.Xaml.Automation;
@@ -78,9 +79,9 @@ public sealed partial class MascotWindow : Window
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_FRAMECHANGED);
     }
 
-    public MascotWindow()
+    public MascotWindow(SettingsService settings, TipCoordinator tipCoordinator)
     {
-        ViewModel = new MascotViewModel(DispatcherQueue);
+        ViewModel = new MascotViewModel(settings, tipCoordinator, DispatcherQueue);
 
         // Set WS_EX_NOREDIRECTIONBITMAP before InitializeComponent so it takes effect
         // before the XAML island allocates a GDI redirection bitmap. Setting it after
@@ -1006,7 +1007,7 @@ public sealed partial class MascotWindow : Window
         if (!win.AppWindow.IsVisible)
         {
             // Coming from tray — restore default size and position near mascot.
-            MascotViewModel.PositionMainWindowNearMascot(win, resetSize: true);
+            MascotViewModel.PositionMainWindowNearMascot(win, App.SettingsService, resetSize: true);
             win.AppWindow.Show();
         }
 
