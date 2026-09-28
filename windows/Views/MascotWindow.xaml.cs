@@ -1014,7 +1014,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         if (!win.AppWindow.IsVisible)
         {
             // Coming from tray — restore default size and position near mascot.
-            MascotViewModel.PositionMainWindowNearMascot(win, App.SettingsService, resetSize: true);
+            win.PositionNearMascot(resetSize: true);
             win.AppWindow.Show();
         }
 

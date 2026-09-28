@@ -342,7 +342,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         }
 
         // Coming from tray — restore default size and position near mascot.
-        PositionMainWindowNearMascot(win, _settings, resetSize: true);
+        win.PositionNearMascot(resetSize: true);
         win.AppWindow.Show();
         NavigateToPinnedPage(win);
         win.Activate();
@@ -385,51 +385,12 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         if (App.MascotWindowInstance?.ViewModel.IsBubbleOpen == true)
             App.MascotWindowInstance.ViewModel.CloseBubble();
 
-        PositionMainWindowNearMascot(win, _settings, resetSize: true);
+        win.PositionNearMascot(resetSize: true);
         win.AppWindow.Show();
         NavigateToPinnedPage(win);
 
         NativeMethods.SetWindowPos(mainHwnd, NativeMethods.HWND_TOPMOST,   0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
         NativeMethods.SetWindowPos(mainHwnd, NativeMethods.HWND_NOTOPMOST, 0, 0, 0, 0, NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
-    }
-
-    internal static void PositionMainWindowNearMascot(MainWindow win, SettingsService settings, bool resetSize = false)
-    {
-        const int logicalWidth  = 620;
-        const int logicalHeight = 640;
-        const int gap           = 12;
-
-        int mascotX = settings.Current.MascotX;
-        int mascotY = settings.Current.MascotY;
-        int windowSize = settings.Current.MascotSize;
-
-        var pt       = new NativeMethods.POINT { X = mascotX + windowSize / 2, Y = mascotY + windowSize / 2 };
-        var hMonitor = NativeMethods.MonitorFromPoint(pt, NativeMethods.MONITOR_DEFAULTTONEAREST);
-        var mi       = new NativeMethods.MONITORINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.MONITORINFO>() };
-        if (!NativeMethods.GetMonitorInfo(hMonitor, ref mi)) return;
-
-        NativeMethods.GetDpiForMonitor(hMonitor, NativeMethods.MDT_EFFECTIVE_DPI, out uint dpiX, out _);
-        double scale       = dpiX / 96.0;
-        int winWidth       = (int)Math.Round(logicalWidth  * scale);
-        int winHeight      = (int)Math.Round(logicalHeight * scale);
-        int scaledGap      = (int)Math.Round(gap * scale);
-
-        var w = mi.rcWork;
-
-        // Prefer left of mascot; flip to right if it doesn't fit
-        int x = mascotX - winWidth - scaledGap;
-        if (x < w.left)
-            x = mascotX + windowSize + scaledGap;
-
-        // Vertically centre the main window on the mascot
-        int mascotCenterY = mascotY + windowSize / 2;
-        int y = mascotCenterY - winHeight / 2;
-        y = Math.Clamp(y, w.top + scaledGap, w.bottom - winHeight);
-        x = Math.Clamp(x, w.left, w.right - winWidth);
-
-        if (resetSize)
-            win.AppWindow.Resize(new Windows.Graphics.SizeInt32(winWidth, winHeight));
-        win.AppWindow.Move(new Windows.Graphics.PointInt32(x, y));
     }
 
     private void ToggleBubble()
