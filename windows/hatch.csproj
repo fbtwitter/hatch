@@ -55,9 +55,12 @@
     <None Remove="Hatch.Tests\**" />
     <Compile Remove="Hatch.Tests.Unit\**" />
     <None Remove="Hatch.Tests.Unit\**" />
+    <Compile Remove="Hatch.Core\**" />
+    <None Remove="Hatch.Core\**" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="Hatch.Core\Hatch.Core.csproj" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <!-- Hatch has no AI/ML feature. The metapackage pulls in Microsoft.WindowsAppSDK.ML
          transitively, which carries onnxruntime.dll + DirectML.dll for x64/arm64/arm64ec
