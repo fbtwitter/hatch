@@ -917,7 +917,7 @@ public sealed partial class TaskListPage : Page
     {
         _dateFlyout!.Hide();
         if (_flyoutTask == null) return;
-        _flyoutTask.DueDate = date;
+        ViewModel.UpdateTaskDueDate(_flyoutTask, date);
         if (_paneTask == _flyoutTask)
         {
             _updatingPane = true;
