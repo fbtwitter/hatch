@@ -12,8 +12,7 @@ namespace Hatch.ViewModels;
 internal enum MainWindowAction
 {
     Show,
-    Toggle,
-    Hide
+    Toggle
 }
 
 public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
@@ -336,12 +335,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
 
     private void ToggleBubble()
     {
-        // If the main window is visible, tapping the mascot dismisses it — no bubble.
-        if (App.MainWindowInstance?.AppWindow.IsVisible == true)
-        {
-            MainWindowActionRequested?.Invoke(MainWindowAction.Hide);
-            return;
-        }
+        if (App.MainWindowInstance?.HideIfVisibleFromMascot() == true) return;
 
         if (IsBubbleOpen)
         {
