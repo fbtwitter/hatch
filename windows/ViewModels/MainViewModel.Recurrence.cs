@@ -58,7 +58,7 @@ public sealed partial class MainViewModel
         };
 
         AttachTaskPropertyChangedHandler(next);
-        App.NotificationScheduler.ScheduleForTask(next);
+        _notificationScheduler.ScheduleForTask(next);
         Tasks.Insert(0, next);
         return next;
     }

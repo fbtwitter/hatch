@@ -24,7 +24,7 @@ public sealed partial class MainWindow : Window
     private bool _isExiting;
     private bool _contentInitialized;
 
-    public MainViewModel ViewModel { get; } = new MainViewModel();
+    public MainViewModel ViewModel { get; }
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
@@ -32,8 +32,9 @@ public sealed partial class MainWindow : Window
     private const int SW_HIDE    = 0;
     private const int SW_RESTORE = 9;
 
-    public MainWindow()
+    public MainWindow(MainViewModel viewModel)
     {
+        ViewModel = viewModel;
         InitializeComponent();
         Title = "Hatch";
         AppWindow.Resize(new SizeInt32(620, 640));
