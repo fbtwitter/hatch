@@ -17,7 +17,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private static readonly Uri _releaseFeedUri = new("https://fbtwitter.github.io/hatch/Hatch.appinstaller");
     private static readonly HttpClient _updateClient = new() { Timeout = TimeSpan.FromSeconds(15) };
 
-    private readonly SettingsService _settings = App.SettingsService;
+    private readonly SettingsService _settings;
+    private readonly SyncService _syncService;
 
     public SyncAccountViewModel SyncAccount { get; }
     private readonly StartupRegistryService _startupRegistry = new();
@@ -27,11 +28,13 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private bool _hasAvailableUpdate;
     private string _updateStatus = Strings.Settings_Update_Description;
 
-    public SettingsViewModel()
+    public SettingsViewModel(SettingsService settings, SyncService syncService)
     {
+        _settings = settings;
+        _syncService = syncService;
         CheckForUpdatesCommand = new RelayCommand(async _ => await CheckForUpdatesAsync());
         InstallUpdateCommand = new RelayCommand(async _ => await InstallUpdateAsync());
-        SyncAccount = new SyncAccountViewModel(App.SyncService, _settings);
+        SyncAccount = new SyncAccountViewModel(_syncService, _settings);
 
         foreach (var line in _settings.Current.CustomTips)
             CustomTips.Add(line);
@@ -684,8 +687,8 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             if (App.MainWindowInstance?.ViewModel is { } vm)
                 await vm.ReloadAsync();
 
-            if (App.SyncService.IsSignedIn)
-                App.SyncService.SchedulePush(merged);
+            if (_syncService.IsSignedIn)
+                _syncService.SchedulePush(merged);
 
             ImportResult = Strings.Settings_Import_Count(applied);
         }
