@@ -24,6 +24,7 @@ public sealed partial class SettingsPage : Page
         InitializeComponent();
         _viewModel = new SettingsViewModel(
             App.SettingsService,
+            App.SyncAccountService,
             App.SyncService,
             DispatcherQueue.GetForCurrentThread());
         DataContext = _viewModel;

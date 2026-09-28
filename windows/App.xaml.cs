@@ -14,7 +14,8 @@ public partial class App : Application
 {
     public static SettingsService SettingsService { get; } = new();
     public static AppSettings Settings => SettingsService.Current;
-    public static SyncService SyncService { get; } = new(SettingsService);
+    public static SyncAccountService SyncAccountService { get; } = new(SettingsService);
+    public static SyncService SyncService { get; } = new(SettingsService, SyncAccountService);
     public static NotificationSchedulerService NotificationScheduler { get; } = new();
     public static TipCoordinator TipCoordinator { get; } = new(SettingsService);
     public static MainWindow? MainWindowInstance { get; private set; }
@@ -74,9 +75,9 @@ public partial class App : Application
         if (uri.Host == "auth-callback")
         {
             if (queue != null)
-                queue.TryEnqueue(async () => await SyncService.HandleOAuthCallbackAsync(uri));
+                queue.TryEnqueue(async () => await SyncAccountService.HandleOAuthCallbackAsync(uri));
             else
-                _ = SyncService.HandleOAuthCallbackAsync(uri);
+                _ = SyncAccountService.HandleOAuthCallbackAsync(uri);
             return;
         }
 
@@ -166,7 +167,7 @@ public partial class App : Application
     {
         try
         {
-            await SyncService.InitializeAsync();
+            await SyncAccountService.InitializeAsync();
             await SyncService.PullIfNewerAsync();
             SyncService.StartAutoSync();
         }
