@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.25.7] - 2026-10-01
+
+### Changed
+- Simplified contextual and proactive tip cards with content-led alignment and full-width actions.
+- Updated Summary statistic tiles to use neutral WinUI card fills and theme-aware emphasis.
+
 ## [0.25.6] - 2026-09-30
 
 ### Changed
