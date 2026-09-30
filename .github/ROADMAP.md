@@ -8,6 +8,7 @@ The path to v1.0 and beyond. This is a living document — dates and scope shift
 
 | Version | Shipped | Highlights |
 |---------|---------|-----------|
+| **v0.25.7** | Oct 1, 2026 | Simplified tip cards and aligned Summary statistic tiles with WinUI theme surfaces |
 | **v0.25.4** | Sep 28, 2026 | Fix widget activation timing out while adding My Day |
 | **v0.25.3** | Sep 28, 2026 | Polished contextual tips and aligned the Settings update card with surrounding components |
 | **v0.25.2** | Sep 27, 2026 | Manual update check for direct bundle installs and visible update status |
