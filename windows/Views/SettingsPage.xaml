@@ -1167,10 +1167,12 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="{x:Bind ViewModel.UpdateStatus, Mode=OneWay}"
-                                               TextWrapping="Wrap"/>
+                                               TextWrapping="Wrap"
+                                               VerticalAlignment="Center"/>
                                     <ProgressRing Grid.Column="1" Width="16" Height="16"
                                                   IsActive="{x:Bind ViewModel.IsCheckingForUpdates, Mode=OneWay}"
-                                                  Visibility="{x:Bind ViewModel.IsCheckingForUpdates, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"/>
+                                                  Visibility="{x:Bind ViewModel.IsCheckingForUpdates, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                                  VerticalAlignment="Center"/>
                                 </Grid>
                             </toolkit:SettingsCard.Description>
                             <StackPanel Orientation="Horizontal" Spacing="8">
