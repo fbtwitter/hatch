@@ -431,6 +431,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         }
 
         TipTextBlock.Text = _currentTip.Message;
+        TipTextBlock.TextAlignment = _currentTip.Action is null ? TextAlignment.Center : TextAlignment.Left;
 
         // Show action button if available
         if (_currentTip.Action != null)
