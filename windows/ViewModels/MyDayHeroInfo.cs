@@ -1,5 +1,3 @@
-using Microsoft.UI.Xaml.Media;
-
 namespace Hatch.ViewModels;
 
 // The Summary page's My Day card. When something is planned it shows a determinate ring
@@ -11,8 +9,7 @@ public sealed record MyDayHeroInfo(
     string CenterLabel,
     string Title,
     string Detail,
-    string IconGlyph,
-    Brush Background)
+    string IconGlyph)
 {
     public string AutomationName => $"{Title}: {Detail}";
 }

@@ -69,6 +69,7 @@
             </Setter>
         </Style>
         <Style x:Key="StatTileButtonStyle" TargetType="Button" BasedOn="{StaticResource SummaryButtonStyle}">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
             <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="{ThemeResource OverlayCornerRadius}"/>
@@ -122,7 +123,6 @@
             <!-- My Day hero — the day's progress, promoted out of the tile grid to a wide
                  card with a determinate ring. -->
             <Button Style="{StaticResource StatTileButtonStyle}"
-                    Background="{x:Bind ViewModel.MyDay.Background, Mode=OneWay}"
                     MinHeight="0"
                     AutomationProperties.Name="{x:Bind ViewModel.MyDay.AutomationName, Mode=OneWay}"
                     Click="MyDayHero_Click">
@@ -175,7 +175,6 @@
                 <ItemsRepeater.ItemTemplate>
                     <DataTemplate x:DataType="vm:StatTileInfo">
                         <Button Style="{StaticResource StatTileButtonStyle}"
-                                Background="{x:Bind ContainerBackground}"
                                 Tag="{x:Bind}"
                                 AutomationProperties.Name="{x:Bind AutomationName}"
                                 Click="Tile_Click"
