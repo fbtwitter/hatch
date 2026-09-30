@@ -15,7 +15,6 @@
   </p>
 </div>
 
-
 ![Hatch My Day screen](docs/screenshots/02-my-day.png)
 
 ## Features
