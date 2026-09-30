@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.25.6] - 2026-09-30
+
+### Changed
+- Centered the update-check status and progress indicator vertically.
+- Used the high-resolution app logo for the Windows widget icon and attribution.
+- Refined the README download links and retained its logo, WinUI/.NET details, and mascot shadow troubleshooting steps.
+
 ## [0.25.5] - 2026-09-30
 
 ### Changed

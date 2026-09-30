@@ -8,11 +8,13 @@
     <img src="https://img.shields.io/badge/WinUI-3-0078D4?style=flat-square" alt="WinUI 3">
     <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License">
   </p>
+  <p>
+    <a href="https://apps.microsoft.com/detail/9PKTQFG9S3K8"><img src="https://img.shields.io/badge/Microsoft_Store-Get_it-0078D4?style=flat-square&logo=microsoft&logoColor=white" alt="Get Hatch from Microsoft Store"></a>
+    <a href="https://fbtwitter.github.io/hatch/Hatch.appinstaller"><img src="https://img.shields.io/badge/App_Installer-Download-0078D4?style=flat-square&logo=windows11&logoColor=white" alt="Install Hatch with App Installer"></a>
+    <a href="https://github.com/fbtwitter/hatch/releases"><img src="https://img.shields.io/badge/GitHub_Releases-Download-181717?style=flat-square&logo=github&logoColor=white" alt="Download a Hatch release from GitHub"></a>
+  </p>
 </div>
 
-Built with WinUI 3 and .NET 10.
-
-[Microsoft Store](https://apps.microsoft.com/detail/9PKTQFG9S3K8) · [Install with App Installer](https://fbtwitter.github.io/hatch/Hatch.appinstaller) · [GitHub releases](https://github.com/fbtwitter/hatch/releases)
 
 ![Hatch My Day screen](docs/screenshots/02-my-day.png)
 
