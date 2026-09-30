@@ -5,7 +5,6 @@ using System.Runtime.CompilerServices;
 using Hatch.Converters;
 using Hatch.Helpers;
 using Hatch.Models;
-using Microsoft.UI.Xaml.Media;
 
 namespace Hatch.ViewModels;
 
@@ -34,7 +33,7 @@ public sealed class StatsViewModel : INotifyPropertyChanged
     public ObservableCollection<UpcomingTaskInfo> UpcomingTasks { get; } = [];
     public ObservableCollection<RhythmBarInfo> WeekRhythm { get; } = [];
 
-    private MyDayHeroInfo _myDay = new(false, 0, "0", "My Day", "", MyDayGlyph, new SolidColorBrush());
+    private MyDayHeroInfo _myDay = new(false, 0, "0", "My Day", "", MyDayGlyph);
     public MyDayHeroInfo MyDay
     {
         get => _myDay;
@@ -83,21 +82,8 @@ public sealed class StatsViewModel : INotifyPropertyChanged
     public void RefreshStats(IEnumerable<TodoItem> sourceTasks)
     {
         var neutralFg  = ThemeResourceHelper.GetBrush("TextFillColorSecondaryBrush");
-        var successFg  = ThemeResourceHelper.GetBrush("SystemFillColorSuccessBrush");
         var criticalFg = ThemeResourceHelper.GetBrush("SystemFillColorCriticalBrush");
-        // No standard "starred/gold" theme token in this app's palette — same light/dark
-        // hardcoded pairing PriorityToForegroundConverter already uses for chip colors.
-        var starredFg = ThemeResourceHelper.GetThemedBrush(
-            Windows.UI.Color.FromArgb(255, 117,  67,   0),
-            Windows.UI.Color.FromArgb(255, 255, 200,  87));
-
-        var neutralBg  = ThemeResourceHelper.GetBrush("CardBackgroundFillColorDefaultBrush");
-        var successBg   = ThemeResourceHelper.GetBrush("SystemFillColorSuccessBackgroundBrush");
-        var criticalBg  = ThemeResourceHelper.GetBrush("SystemFillColorCriticalBackgroundBrush");
-        // A low-alpha gold wash — same hues as starredFg, thinned to a tile-fill tint.
-        var starredBg = ThemeResourceHelper.GetThemedBrush(
-            Windows.UI.Color.FromArgb(38, 157, 108,   0),
-            Windows.UI.Color.FromArgb(38, 255, 200,  87));
+        var accentFg   = ThemeResourceHelper.GetBrush("AccentTextFillColorPrimaryBrush");
 
         var tasks = sourceTasks.ToList();
         var today = DateTime.Today;
@@ -119,8 +105,7 @@ public sealed class StatsViewModel : INotifyPropertyChanged
             myDayPlanned
                 ? Strings.Stats_MyDay_Hero_Done(myDayCompleted, myDayTotal)
                 : Strings.Stats_Tile_MyDay_Description_Empty,
-            MyDayGlyph,
-            myDayPlanned ? successBg : neutralBg);
+            MyDayGlyph);
 
         // Due dates: the day as written, never through ToLocalTime — see TipEngine.
         int dueToday = tasks.Count(t =>
@@ -139,20 +124,19 @@ public sealed class StatsViewModel : INotifyPropertyChanged
             "Stats_DueToday", Strings.Stats_Tile_DueToday_Title,
             dueToday.ToString(),
             Strings.Stats_Tile_DueToday_Description,
-            DueTodayGlyph, neutralFg, neutralBg, "planned"));
+            DueTodayGlyph, neutralFg, "planned"));
         Tiles.Add(new StatTileInfo(
             "Stats_Overdue", Strings.Stats_Tile_Overdue_Title,
             overdue.ToString(),
             overdue > 0 ? Strings.Stats_Tile_Overdue_Description_Active : Strings.Stats_Tile_Overdue_Description_Clear,
             OverdueGlyph,
             overdue > 0 ? criticalFg : neutralFg,
-            overdue > 0 ? criticalBg : neutralBg,
             "planned"));
         Tiles.Add(new StatTileInfo(
             "Stats_Starred", Strings.Stats_Tile_Starred_Title,
             starred.ToString(),
             Strings.Stats_Tile_Starred_Description,
-            StarredGlyph, starredFg, starredBg, "important"));
+            StarredGlyph, accentFg, "important"));
 
         RefreshWeekRhythm(tasks, today);
 
