@@ -298,6 +298,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         _currentProactiveTip = tip;
 
         ProactiveTipText.Text = tip.Message;
+        ProactiveTipText.TextAlignment = tip.Action is null ? TextAlignment.Center : TextAlignment.Left;
         ProactiveTipActionText.Text = tip.Action?.Label ?? string.Empty;
         ProactiveTipAction.Visibility = tip.Action == null ? Visibility.Collapsed : Visibility.Visible;
         _proactiveTipProgrammaticClose = false;

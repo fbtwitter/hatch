@@ -83,21 +83,14 @@
                     PointerEntered="TipBubble_PointerEntered"
                     PointerExited="TipBubble_PointerExited">
                 <StackPanel Spacing="10">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <FontIcon Glyph="&#xE82F;" FontSize="16"
-                                  Foreground="{ThemeResource AccentFillColorDefaultBrush}"/>
-                        <TextBlock x:Uid="QuickAdd_TipHeading"
-                                   Style="{ThemeResource CaptionTextBlockStyle}"
-                                   FontWeight="SemiBold"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
                     <TextBlock x:Name="TipTextBlock"
                                TextWrapping="Wrap"
                                Style="{ThemeResource BodyTextBlockStyle}"/>
                     <Button x:Name="TipActionButton"
                             AutomationProperties.AutomationId="Bubble_TipAction"
                             Visibility="Collapsed"
-                            HorizontalAlignment="Left"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Center"
                             Padding="12,6"
                             Click="TipActionButton_Click"
                             Style="{ThemeResource AccentButtonStyle}"/>
