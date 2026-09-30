@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.25.5] - 2026-09-30
+
+### Changed
+- Maintenance refactors across sync, task storage, settings, and window management.
+- Simplified installation and privacy guidance in the README.
+
 ## [0.25.4] - 2026-09-28
 
 ### Fixed
