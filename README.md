@@ -1,6 +1,16 @@
-# Hatch
+<div align="center">
+  <img src="assets/logo.svg" width="112" alt="Hatch logo">
+  <h1>Hatch</h1>
+  <p>A local-first Windows to-do app with an always-on-top mascot for quick task capture.</p>
+  <p>
+    <img src="https://img.shields.io/badge/Windows-10%2F11-0078D4?style=flat-square&logo=windows11" alt="Windows 10 and 11">
+    <img src="https://img.shields.io/badge/.NET-10-512BD4?style=flat-square&logo=.net" alt=".NET 10">
+    <img src="https://img.shields.io/badge/WinUI-3-0078D4?style=flat-square" alt="WinUI 3">
+    <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License">
+  </p>
+</div>
 
-Hatch is a local-first to-do app for Windows. Its desktop mascot keeps quick task capture one click away.
+Built with WinUI 3 and .NET 10.
 
 [Microsoft Store](https://apps.microsoft.com/detail/9PKTQFG9S3K8) · [Install with App Installer](https://fbtwitter.github.io/hatch/Hatch.appinstaller) · [GitHub releases](https://github.com/fbtwitter/hatch/releases)
 
@@ -37,6 +47,10 @@ See the [contributing guide](.github/CONTRIBUTING.md) for setup details.
 Tasks are stored in `%LocalAppData%\Hatch` by default. No account or internet connection is required to use Hatch. Optional sync is off until you sign in, and the app includes no analytics or crash reporting.
 
 Read the [privacy policy](.github/PRIVACY.md).
+
+## Troubleshooting
+
+**Remove the shadow around the mascot:** Search Windows for **Adjust the appearance and performance of Windows**, then clear **Show shadows under windows**. Windows does not offer a per-app setting to disable this shadow.
 
 ## Project links
 
