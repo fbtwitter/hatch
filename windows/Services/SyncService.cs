@@ -252,8 +252,8 @@ public sealed class SyncService
             int serverLists = serverData?.Lists.Count(l => !l.IsDeleted) ?? 0;
 
             // An account containing only tombstones has no live data to conflict with.
-            bool localHasData = localTasks > 0;
-            bool serverHasData = serverTasks > 0;
+            bool localHasData = localTasks > 0 || localLists > 0;
+            bool serverHasData = serverTasks > 0 || serverLists > 0;
 
             if (localHasData && serverHasData)
             {
@@ -274,7 +274,7 @@ public sealed class SyncService
             }
 
             if (localHasData)
-                // Back up local tasks immediately when the account has no live tasks.
+                // Back up local data immediately when the account has no live data.
                 await PushAsync(localData);
 
             return null;
