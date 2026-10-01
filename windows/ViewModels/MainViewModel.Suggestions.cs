@@ -14,7 +14,7 @@ public sealed partial class MainViewModel
     public bool HasSuggestions => MySuggestions.Count > 0;
     public int SuggestionsCount => MySuggestions.Count;
     public bool SuggestionsVisible => _activeNavItem == "myday" && HasSuggestions;
-    public bool ShowEmptyState => IsTaskListEmpty && !SuggestionsVisible;
+    public bool ShowEmptyState => IsLoaded && IsTaskListEmpty && !SuggestionsVisible;
 
     private void RefreshSuggestions()
     {

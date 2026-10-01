@@ -756,6 +756,17 @@
                     </ListView.GroupStyle>
                 </ListView>
 
+                <Grid Grid.Row="0"
+                      Background="Transparent"
+                      Visibility="{x:Bind ViewModel.IsLoaded, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
+                    <ProgressRing x:Uid="TaskList_LoadingRing"
+                                  Width="32"
+                                  Height="32"
+                                  IsActive="True"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+                </Grid>
+
                 <InfoBar Grid.Row="1"
                          x:Name="UndoInfoBar"
                          AutomationProperties.AutomationId="UndoInfoBar"

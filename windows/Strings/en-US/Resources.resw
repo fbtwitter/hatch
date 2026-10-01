@@ -227,6 +227,7 @@
   <data name="Mascot_MenuHideTomorrow.Text" xml:space="preserve"><value>Until tomorrow</value></data>
   <data name="Mascot_MenuHideRestart.Text" xml:space="preserve"><value>Until restart</value></data>
   <data name="Mascot_LoadingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Loading mascot</value></data>
+  <data name="TaskList_LoadingRing.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Loading tasks</value></data>
   <data name="FocusMode_MarkDoneButton.ToolTipService.ToolTip" xml:space="preserve"><value>Mark done</value></data>
   <data name="FocusMode_MarkDoneButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Mark done</value></data>
   <data name="FocusMode_ExitButton.ToolTipService.ToolTip" xml:space="preserve"><value>Exit focus</value></data>

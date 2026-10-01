@@ -26,10 +26,10 @@ public sealed class TaskStorageService
         if (!File.Exists(_filePath))
             return new TasksFile();
 
-        await _fileLock.WaitAsync();
+        await _fileLock.WaitAsync().ConfigureAwait(false);
         try
         {
-            var json = await File.ReadAllTextAsync(_filePath);
+            var json = await File.ReadAllTextAsync(_filePath).ConfigureAwait(false);
             TasksFile file;
             // Migration: old format was a plain array of TodoItem
             if (json.TrimStart().StartsWith('['))

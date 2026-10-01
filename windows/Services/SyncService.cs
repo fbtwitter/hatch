@@ -175,7 +175,12 @@ public sealed class SyncService
     private async Task<(TasksFile? Merged, string? Error)> MergeWithServerAsync(TasksFile local)
     {
         // The row is whole-state: an unreadable newer row must block the upsert to avoid data loss.
-        var response = await _account.Client!.From<UserDataRow>().Get();
+        var metadataResponse = await _account.Client!.From<UserDataRow>().Select("updated_at").Get();
+        var metadata = metadataResponse.Models.FirstOrDefault();
+        if (metadata == null || !SyncDecisions.IsServerNewer(metadata.UpdatedAt, _settings.Current.LastSyncedAt))
+            return (null, null);
+
+        var response = await _account.Client.From<UserDataRow>().Get();
         var row = response.Models.FirstOrDefault();
         if (string.IsNullOrEmpty(row?.TasksJson)) return (null, null);
 
@@ -211,8 +216,23 @@ public sealed class SyncService
         if (_account.IsMfaChallengePending) return Strings.Sync_Error_MfaRequired;
         try
         {
-            var response = await client.From<UserDataRow>().Get();
-            var row = response.Models.FirstOrDefault();
+            UserDataRow? row;
+            if (force)
+            {
+                var response = await client.From<UserDataRow>().Get();
+                row = response.Models.FirstOrDefault();
+            }
+            else
+            {
+                var metadataResponse = await client.From<UserDataRow>().Select("updated_at").Get();
+                var metadata = metadataResponse.Models.FirstOrDefault();
+                if (metadata == null || !SyncDecisions.IsServerNewer(metadata.UpdatedAt, _settings.Current.LastSyncedAt))
+                    return null;
+
+                var response = await client.From<UserDataRow>().Get();
+                row = response.Models.FirstOrDefault();
+            }
+
             if (row?.TasksJson == null) return null;
 
             // Conflict resolution forces the server copy even when its timestamp is not newer.
