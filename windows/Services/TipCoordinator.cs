@@ -4,7 +4,7 @@ namespace Hatch.Services;
 
 // Single owner of the tip bookkeeping that the two tip surfaces (quick-add bubble's
 // contextual tip, mascot's proactive TeachingTip) previously duplicated: adaptive-silence
-// cooldown, activity stamping, meaningful-tip timestamp, daily-indicator date, and the
+// cooldown, activity stamping, meaningful-tip timestamp, and the
 // 3-strike dismissal counter. TipEngine itself stays a pure function.
 public sealed class TipCoordinator
 {
@@ -18,9 +18,8 @@ public sealed class TipCoordinator
 
     private AppSettings S => _settings.Current;
 
-    public Tip? TryGetContextualTip(IReadOnlyList<TodoItem> tasks, out bool isNewDailyTip)
+    public Tip? TryGetContextualTip(IReadOnlyList<TodoItem> tasks)
     {
-        isNewDailyTip = false;
         var today = DateTime.Today;
 
         if (S.TipAutoOpenCooldownUntil.HasValue && today < S.TipAutoOpenCooldownUntil.Value)
@@ -47,20 +46,12 @@ public sealed class TipCoordinator
         if (tip.IsMeaningful)
             S.LastMeaningfulTipTime = DateTime.Now;
 
-        if (S.LastTipShowDate?.Date != today)
-        {
-            S.LastTipShowDate = today;
-            isNewDailyTip = true;
-        }
-
         _settings.SaveDebounced();
         return tip;
     }
 
-    public Tip? TryGetProactiveTip(IReadOnlyList<TodoItem> tasks, out bool isNewDailyTip)
+    public Tip? TryGetProactiveTip(IReadOnlyList<TodoItem> tasks)
     {
-        isNewDailyTip = false;
-
         if (!S.ShowTipsAutomatically) return null;
         if (S.LastProactiveTipCheckDate?.Date == DateTime.Today) return null;
 
@@ -71,7 +62,7 @@ public sealed class TipCoordinator
         S.LastProactiveTipCheckDate = DateTime.Today;
         _settings.SaveDebounced();
 
-        return TryGetContextualTip(tasks, out isNewDailyTip);
+        return TryGetContextualTip(tasks);
     }
 
     public void RecordEngagement()
