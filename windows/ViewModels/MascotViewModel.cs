@@ -36,7 +36,6 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     private int _bubbleX;
     private int _bubbleY;
     private bool _isMascotHidden;
-    private bool _showDailyTipIndicator;
 
     public bool IsVisible
     {
@@ -167,17 +166,6 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
-    public bool ShowDailyTipIndicator
-    {
-        get => _showDailyTipIndicator;
-        private set
-        {
-            if (_showDailyTipIndicator == value) return;
-            _showDailyTipIndicator = value;
-            OnPropertyChanged();
-        }
-    }
-
     // Fired at most once per calendar day, on the UI thread, when the user has opted
     // into proactive tips, the mascot is currently visible/not hidden, and TipEngine
     // actually has something to say. MascotWindow owns the TeachingTip that displays it.
@@ -189,23 +177,10 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     {
         if (!IsVisible || IsMascotHidden || IsBubbleOpen) return;
 
-        var tip = _tipCoordinator.TryGetProactiveTip(_tasks, out var isNewDailyTip);
+        var tip = _tipCoordinator.TryGetProactiveTip(_tasks);
         if (tip == null) return;
 
-        if (isNewDailyTip)
-            ShowDailyTipIndicator = true;
-
         ProactiveTipDue?.Invoke(tip);
-    }
-
-    public void SetDailyTipIndicatorVisible()
-    {
-        _dispatcher.TryEnqueue(() => { ShowDailyTipIndicator = true; });
-    }
-
-    public void HideDailyTipIndicator()
-    {
-        _dispatcher.TryEnqueue(() => { ShowDailyTipIndicator = false; });
     }
 
     // Called by MascotWindow when the proactive TeachingTip closes. Reason.Programmatic

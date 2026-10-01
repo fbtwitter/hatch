@@ -232,12 +232,6 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             {
                 ApplyWindowResize();
             }
-            else if (e.PropertyName == nameof(MascotViewModel.ShowDailyTipIndicator))
-            {
-                DailyTipIndicator.Visibility = ViewModel.ShowDailyTipIndicator
-                    ? Visibility.Visible
-                    : Visibility.Collapsed;
-            }
         };
         Closed += (_, _) =>
         {
@@ -340,8 +334,6 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
     private void ProactiveTip_Closed(object? sender, object args)
     {
         _proactiveTipDismissTimer?.Stop();
-        ViewModel.HideDailyTipIndicator();
-
         var tip = _currentProactiveTip;
         _currentProactiveTip = null;
         if (tip == null) return;
