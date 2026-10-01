@@ -24,6 +24,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     private string _newTaskText = string.Empty;
     private CancellationTokenSource? _saveCancelToken;
     private bool _isBulkLoading = false;
+    private bool _isLoaded;
     private int _themeVersion = 0;
     private TodoItem? _selectedTask;
 
@@ -621,7 +622,17 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     // Raised at the end of every load, including a sync-pull reload. MascotWindow uses it
     // to restore a persisted focus session once the task it names actually exists.
     public event Action? TasksLoaded;
-    public bool IsLoaded { get; private set; }
+    public bool IsLoaded
+    {
+        get => _isLoaded;
+        private set
+        {
+            if (_isLoaded == value) return;
+            _isLoaded = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowEmptyState));
+        }
+    }
 
     public TodoItem? FindTaskById(Guid id) => Tasks.FirstOrDefault(t => t.Id == id);
 
