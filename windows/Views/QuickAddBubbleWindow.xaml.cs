@@ -200,7 +200,6 @@ public sealed partial class QuickAddBubbleWindow : Window
         _isClosed = true;
         _tipDismissCts?.Cancel();
         OnWindowClosed();
-        App.MascotWindowInstance?.ViewModel.HideDailyTipIndicator();
         NativeMethods.ShowWindow(_hwnd, SW_HIDE);
         Dismissed?.Invoke();
     }
@@ -422,7 +421,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         var mainVm = GetMainViewModel();
         if (mainVm == null) return;
 
-        _currentTip = App.TipCoordinator.TryGetContextualTip(mainVm.Tasks, out var isNewDailyTip);
+        _currentTip = App.TipCoordinator.TryGetContextualTip(mainVm.Tasks);
 
         // Null = cooldown or suppressed fallback — show nothing
         if (_currentTip == null)
@@ -455,9 +454,6 @@ public sealed partial class QuickAddBubbleWindow : Window
 
         _tipFadeIn?.Begin();
 
-        if (isNewDailyTip)
-            SignalMascotDailyTip();
-
         // Use Severity and DismissAfterMs to determine timeout
         if (_currentTip.DismissAfterMs > 0)
         {
@@ -469,11 +465,6 @@ public sealed partial class QuickAddBubbleWindow : Window
             // Critical tips: if shown without manual dismissal, engagement
             _ = TrackEngagementOnCloseAsync();
         }
-    }
-
-    private void SignalMascotDailyTip()
-    {
-        App.MascotWindowInstance?.ViewModel.SetDailyTipIndicatorVisible();
     }
 
     // Starts (or resumes, after a hover-pause) a single wait for _tipDismissRemainingMs —

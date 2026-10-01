@@ -39,7 +39,6 @@ public sealed class AppSettings
     public uint HotkeyVirtualKey { get; set; } = 0x20;            // VK_SPACE
 
     // Tip Engine — adaptive silence on repeated dismissals
-    public DateTime? LastTipShowDate { get; set; } = null;
     public int ConsecutiveTipDismissals { get; set; } = 0;
     public DateTime? TipAutoOpenCooldownUntil { get; set; } = null;
 

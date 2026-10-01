@@ -218,14 +218,6 @@
                       HorizontalAlignment="Center"
                       VerticalAlignment="Center" />
 
-        <Ellipse x:Name="DailyTipIndicator"
-                 Width="12" Height="12"
-                 Fill="{ThemeResource SystemFillColorSuccessBrush}"
-                 HorizontalAlignment="Right"
-                 VerticalAlignment="Top"
-                 Margin="4,4,4,4"
-                 Visibility="Collapsed" />
-
         </Grid>
         <!-- Focus mode overlay — ShouldConstrainToRootBounds=False lets the popup
              render outside the mascot window bounds. Shaped like a now-playing bar
@@ -345,26 +337,37 @@
                         Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
                         BorderBrush="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
                         BorderThickness="1">
-                    <StackPanel Spacing="10">
-                        <Button AutomationProperties.AutomationId="ProactiveTip_Close"
+                    <Grid RowSpacing="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="ProactiveTipText" Grid.Row="0" Grid.Column="0"
+                                   TextWrapping="Wrap" VerticalAlignment="Top"
+                                   AutomationProperties.AutomationId="ProactiveTip_Message"
+                                   Style="{ThemeResource BodyTextBlockStyle}" />
+                        <Button Grid.Row="0" Grid.Column="1"
+                                AutomationProperties.AutomationId="ProactiveTip_Close"
                                 AutomationProperties.Name="Dismiss tip"
-                                HorizontalAlignment="Right"
+                                HorizontalAlignment="Right" VerticalAlignment="Top"
                                 Style="{ThemeResource SubtleButtonStyle}"
-                                MinWidth="0" Padding="8"
+                                Width="32" Height="32" MinWidth="0" Padding="0"
                                 Click="ProactiveTip_CloseClick">
                             <FontIcon Glyph="&#xE711;" FontSize="12" />
                         </Button>
-                        <TextBlock x:Name="ProactiveTipText" TextWrapping="Wrap"
-                                   AutomationProperties.AutomationId="ProactiveTip_Message"
-                                   Style="{ThemeResource BodyTextBlockStyle}" />
-                        <Button x:Name="ProactiveTipAction" HorizontalAlignment="Stretch"
+                        <Button x:Name="ProactiveTipAction" Grid.Row="1" Grid.ColumnSpan="2"
+                                HorizontalAlignment="Stretch"
                                 HorizontalContentAlignment="Center"
                                 Padding="12,6"
                                 Style="{ThemeResource AccentButtonStyle}"
                                 Click="ProactiveTip_ActionButtonClick">
                             <TextBlock x:Name="ProactiveTipActionText" TextWrapping="Wrap" />
                         </Button>
-                    </StackPanel>
+                    </Grid>
                 </Border>
             </ScrollViewer>
         </Popup>
