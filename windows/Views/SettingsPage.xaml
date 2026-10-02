@@ -558,75 +558,33 @@
                     </toolkit:SettingsExpander.Items>
                 </toolkit:SettingsExpander>
 
-                <!-- Description is static: the live combination is the collapsed-state
-                     content on the right. Binding both to HotkeyDescription printed the
-                     same string twice, inches apart. -->
-                <toolkit:SettingsExpander x:Uid="Settings_HotkeyExpander">
-                    <toolkit:SettingsExpander.Description>
-                        <TextBlock x:Uid="Settings_HotkeyExpanderDescription"
-                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"/>
-                    </toolkit:SettingsExpander.Description>
-                    <toolkit:SettingsExpander.HeaderIcon>
-                        <FontIcon Glyph="&#xE92E;"/>
-                    </toolkit:SettingsExpander.HeaderIcon>
-                    <Border Background="{ThemeResource ControlFillColorDefaultBrush}"
-                            BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
-                            BorderThickness="1"
-                            CornerRadius="{ThemeResource ControlCornerRadius}"
-                            Padding="10,4"
-                            VerticalAlignment="Center">
-                        <TextBlock Text="{x:Bind ViewModel.HotkeyDescription, Mode=OneWay}"
-                                   AutomationProperties.AutomationId="Settings_HotkeyPreview"
-                                   FontFamily="Consolas"
-                                   Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
-                    </Border>
-                    <toolkit:SettingsExpander.Items>
-                        <!-- Modifier keys. Vertical: the description explains the
-                             at-least-one rule and needs the full width to say it, rather
-                             than wrapping to three words a line beside the checkboxes. -->
-                        <toolkit:SettingsCard x:Uid="Settings_ModifiersCard"
-                                              ContentAlignment="Vertical">
-                            <toolkit:SettingsCard.Description>
-                                <TextBlock x:Uid="Settings_ModifiersCardDescription"
-                                           TextWrapping="Wrap"/>
-                            </toolkit:SettingsCard.Description>
-                            <StackPanel Orientation="Horizontal" Spacing="24">
-                                <CheckBox x:Uid="Settings_HotkeyCtrl"
-                                          AutomationProperties.AutomationId="Settings_HotkeyCtrl"
-                                          IsEnabled="{x:Bind ViewModel.IsHotkeyCtrlEnabled, Mode=OneWay}"
-                                          IsChecked="{x:Bind ViewModel.HotkeyCtrl, Mode=TwoWay}"/>
-                                <CheckBox x:Uid="Settings_HotkeyShift"
-                                          AutomationProperties.AutomationId="Settings_HotkeyShift"
-                                          IsEnabled="{x:Bind ViewModel.IsHotkeyShiftEnabled, Mode=OneWay}"
-                                          IsChecked="{x:Bind ViewModel.HotkeyShift, Mode=TwoWay}"/>
-                                <CheckBox x:Uid="Settings_HotkeyAlt"
-                                          AutomationProperties.AutomationId="Settings_HotkeyAlt"
-                                          IsEnabled="{x:Bind ViewModel.IsHotkeyAltEnabled, Mode=OneWay}"
-                                          IsChecked="{x:Bind ViewModel.HotkeyAlt, Mode=TwoWay}"/>
-                            </StackPanel>
-                        </toolkit:SettingsCard>
-                        <toolkit:SettingsCard x:Uid="Settings_KeyCard"
-                                              ContentAlignment="Vertical">
-                            <toolkit:SettingsCard.Description>
-                                <TextBlock x:Uid="Settings_KeyCardDescription"
-                                           TextWrapping="Wrap"/>
-                            </toolkit:SettingsCard.Description>
-                            <ComboBox x:Name="HotkeyKeySelector"
-                                      x:Uid="Settings_HotkeyKeyComboBox"
-                                      AutomationProperties.AutomationId="Settings_HotkeyKeyComboBox"
-                                      MinWidth="160"
-                                      HorizontalAlignment="Left"
-                                      SelectionChanged="HotkeyKeySelector_SelectionChanged">
-                                <ComboBoxItem x:Uid="Settings_HotkeyKey_Space" Tag="32"/>
-                                <ComboBoxItem x:Uid="Settings_HotkeyKey_A" Tag="65"/>
-                                <ComboBoxItem x:Uid="Settings_HotkeyKey_Q" Tag="81"/>
-                                <ComboBoxItem x:Uid="Settings_HotkeyKey_T" Tag="84"/>
-                                <ComboBoxItem x:Uid="Settings_HotkeyKey_N" Tag="78"/>
-                                <ComboBoxItem x:Uid="Settings_HotkeyKey_Plus" Tag="187"/>
-                            </ComboBox>
-                        </toolkit:SettingsCard>
-                    </toolkit:SettingsExpander.Items>
-                </toolkit:SettingsExpander>
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE92E;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock x:Uid="Settings_HotkeyCardHeader"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="{x:Bind ViewModel.HotkeyRecordDescription, Mode=OneWay}"
+                                       Style="{StaticResource SettingsDescriptionTextBlockStyle}"/>
+                        </StackPanel>
+                        <Button Grid.Column="2"
+                                x:Name="HotkeyRecordButton"
+                                x:Uid="Settings_HotkeyRecordButton"
+                                AutomationProperties.AutomationId="Settings_HotkeyRecordButton"
+                                Content="{x:Bind ViewModel.HotkeyRecordButtonText, Mode=OneWay}"
+                                MinWidth="160"
+                                FontFamily="Consolas"
+                                VerticalAlignment="Center"
+                                Click="HotkeyRecordButton_Click"/>
+                    </Grid>
+                </Border>
 
                 <!-- Registration failure is otherwise invisible: the key just does nothing
                      while Settings still shows it as configured. Sits outside the expander,
@@ -642,21 +600,29 @@
                 <TextBlock x:Uid="Settings_SectionSync"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"/>
 
-                <toolkit:SettingsCard
-                    Visibility="{x:Bind ViewModel.SyncAccount.IsSyncSignedIn, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                    Header="{x:Bind ViewModel.SyncAccount.SyncUserEmail, Mode=OneWay}">
-                    <toolkit:SettingsCard.Description>
-                        <TextBlock Text="{x:Bind ViewModel.SyncAccount.SyncLastSyncedText, Mode=OneWay}"
-                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"
-                                   ToolTipService.ToolTip="{x:Bind ViewModel.SyncAccount.SyncLastSyncedText, Mode=OneWay}"/>
-                    </toolkit:SettingsCard.Description>
-                    <toolkit:SettingsCard.HeaderIcon>
-                        <FontIcon Glyph="&#xE77B;"/>
-                    </toolkit:SettingsCard.HeaderIcon>
-                    <Button x:Uid="Settings_SyncSignOut"
-                            AutomationProperties.AutomationId="Settings_SyncSignOut"
-                            Command="{x:Bind ViewModel.SyncAccount.SignOutCommand}"/>
-                </toolkit:SettingsCard>
+                <Border Style="{StaticResource ToggleCardBorderStyle}"
+                        Visibility="{x:Bind ViewModel.SyncAccount.IsSyncSignedIn, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE77B;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,14,16,14">
+                            <TextBlock Text="{x:Bind ViewModel.SyncAccount.SyncUserEmail, Mode=OneWay}"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="{x:Bind ViewModel.SyncAccount.SyncLastSyncedText, Mode=OneWay}"
+                                       Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                       ToolTipService.ToolTip="{x:Bind ViewModel.SyncAccount.SyncLastSyncedText, Mode=OneWay}"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" x:Uid="Settings_SyncSignOut"
+                                AutomationProperties.AutomationId="Settings_SyncSignOut"
+                                Command="{x:Bind ViewModel.SyncAccount.SignOutCommand}"
+                                VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
 
                 <!-- Two-factor challenge — every sync path stays closed until it is met -->
                 <InfoBar x:Uid="Settings_MfaChallengeInfo"
@@ -733,46 +699,59 @@
                          Visibility="{x:Bind ViewModel.SyncAccount.IsSignedInWithoutPassphrase, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
                          IsClosable="False"/>
 
-                <!-- ContentAlignment=Vertical throughout the sync section: these cards carry
-                     an input plus one or more buttons, which at 620px wide would otherwise
-                     squeeze the header text to a couple of words per line. -->
-                <toolkit:SettingsCard x:Uid="Settings_SyncPassphraseCard"
-                    ContentAlignment="Vertical"
-                    Visibility="{x:Bind ViewModel.SyncAccount.IsSignedInWithoutPassphrase, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                    <toolkit:SettingsCard.Description>
-                        <TextBlock x:Uid="Settings_SyncPassphraseCardDescription"
-                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"/>
-                    </toolkit:SettingsCard.Description>
-                    <toolkit:SettingsCard.HeaderIcon>
-                        <FontIcon Glyph="&#xE72E;"/>
-                    </toolkit:SettingsCard.HeaderIcon>
-                    <StackPanel Spacing="8">
-                        <PasswordBox x:Name="SyncPassphraseBox"
-                                     x:Uid="Settings_SyncPassphrase"
-                                     AutomationProperties.AutomationId="Settings_SyncPassphrase"
-                                     HorizontalAlignment="Stretch"/>
-                        <Button x:Uid="Settings_SyncPassphraseSet"
-                                AutomationProperties.AutomationId="Settings_SyncSetPassphrase"
-                                Style="{ThemeResource AccentButtonStyle}"
-                                HorizontalAlignment="Right"
-                                IsEnabled="{x:Bind ViewModel.SyncAccount.IsNotSyncing, Mode=OneWay}"
-                                Click="SyncSetPassphrase_Click"/>
-                    </StackPanel>
-                </toolkit:SettingsCard>
+                <Border Style="{StaticResource ToggleCardBorderStyle}"
+                        Visibility="{x:Bind ViewModel.SyncAccount.IsSignedInWithoutPassphrase, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE72E;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,14,16,14">
+                            <TextBlock x:Uid="Settings_SyncPassphraseActionHeader"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock x:Uid="Settings_SyncPassphraseCardDescription"
+                                       Style="{StaticResource SettingsDescriptionTextBlockStyle}"
+                                       TextWrapping="WrapWholeWords"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <PasswordBox x:Name="SyncPassphraseBox"
+                                         x:Uid="Settings_SyncPassphrase"
+                                         AutomationProperties.AutomationId="Settings_SyncPassphrase"
+                                         Width="220"/>
+                            <Button x:Uid="Settings_SyncPassphraseSet"
+                                    AutomationProperties.AutomationId="Settings_SyncSetPassphrase"
+                                    Style="{ThemeResource AccentButtonStyle}"
+                                    IsEnabled="{x:Bind ViewModel.SyncAccount.IsNotSyncing, Mode=OneWay}"
+                                    Click="SyncSetPassphrase_Click"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
 
-                <toolkit:SettingsCard x:Uid="Settings_ChangePassphraseCard"
-                    Visibility="{x:Bind ViewModel.SyncAccount.CanStartChangePassphrase, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                    <toolkit:SettingsCard.Description>
-                        <TextBlock x:Uid="Settings_ChangePassphraseCardDescription"
-                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"/>
-                    </toolkit:SettingsCard.Description>
-                    <toolkit:SettingsCard.HeaderIcon>
-                        <FontIcon Glyph="&#xE72E;"/>
-                    </toolkit:SettingsCard.HeaderIcon>
-                    <Button x:Uid="Settings_ChangePassphraseStart"
-                            AutomationProperties.AutomationId="Settings_ChangePassphraseStart"
-                            Click="ChangePassphraseStart_Click"/>
-                </toolkit:SettingsCard>
+                <Border Style="{StaticResource ToggleCardBorderStyle}"
+                        Visibility="{x:Bind ViewModel.SyncAccount.CanStartChangePassphrase, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE72E;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,14,16,14">
+                            <TextBlock x:Uid="Settings_ChangePassphraseActionHeader"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock x:Uid="Settings_ChangePassphraseCardDescription"
+                                       Style="{StaticResource SettingsDescriptionTextBlockStyle}"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" x:Uid="Settings_ChangePassphraseStart"
+                                AutomationProperties.AutomationId="Settings_ChangePassphraseStart"
+                                Click="ChangePassphraseStart_Click"
+                                VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
 
                 <toolkit:SettingsCard x:Uid="Settings_ChangePassphraseFormCard"
                     ContentAlignment="Vertical"
@@ -811,19 +790,28 @@
                 </toolkit:SettingsCard>
 
                 <!-- Sync recovery kit — the passphrase cannot be reset or recovered -->
-                <toolkit:SettingsCard x:Uid="Settings_RecoveryKitCard"
-                    Visibility="{x:Bind ViewModel.SyncAccount.CanShowRecoveryKit, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                    <toolkit:SettingsCard.Description>
-                        <TextBlock x:Uid="Settings_RecoveryKitCardDescription"
-                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"/>
-                    </toolkit:SettingsCard.Description>
-                    <toolkit:SettingsCard.HeaderIcon>
-                        <FontIcon Glyph="&#xE7BA;"/>
-                    </toolkit:SettingsCard.HeaderIcon>
-                    <Button x:Uid="Settings_RecoveryKitShow"
-                            AutomationProperties.AutomationId="Settings_RecoveryKitShow"
-                            Click="RecoveryKitShow_Click"/>
-                </toolkit:SettingsCard>
+                <Border Style="{StaticResource ToggleCardBorderStyle}"
+                        Visibility="{x:Bind ViewModel.SyncAccount.CanShowRecoveryKit, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE7BA;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,14,16,14">
+                            <TextBlock x:Uid="Settings_RecoveryKitActionHeader"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock x:Uid="Settings_RecoveryKitCardDescription"
+                                       Style="{StaticResource SettingsDescriptionTextBlockStyle}"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" x:Uid="Settings_RecoveryKitShow"
+                                AutomationProperties.AutomationId="Settings_RecoveryKitShow"
+                                Click="RecoveryKitShow_Click"
+                                VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
 
                 <InfoBar x:Uid="Settings_RecoveryKitInfo"
                          Severity="Warning"
@@ -858,27 +846,35 @@
                 </InfoBar>
 
                 <!-- Two-factor authentication (docs/mfa-spec.md) -->
-                <toolkit:SettingsCard x:Uid="Settings_MfaCard"
-                    Visibility="{x:Bind ViewModel.SyncAccount.IsMfaSettingsVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                    <toolkit:SettingsCard.Description>
-                        <TextBlock x:Uid="Settings_MfaCardDescription"
-                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"/>
-                    </toolkit:SettingsCard.Description>
-                    <toolkit:SettingsCard.HeaderIcon>
-                        <FontIcon Glyph="&#xE928;"/>
-                    </toolkit:SettingsCard.HeaderIcon>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button x:Uid="Settings_MfaEnable"
-                                AutomationProperties.AutomationId="Settings_MfaEnable"
-                                Style="{ThemeResource AccentButtonStyle}"
-                                Visibility="{x:Bind ViewModel.SyncAccount.CanEnrollMfa, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                Click="MfaEnable_Click"/>
-                        <Button x:Uid="Settings_MfaDisable"
-                                AutomationProperties.AutomationId="Settings_MfaDisable"
-                                Visibility="{x:Bind ViewModel.SyncAccount.IsMfaEnrolled, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                Click="MfaDisable_Click"/>
-                    </StackPanel>
-                </toolkit:SettingsCard>
+                <Border Style="{StaticResource ToggleCardBorderStyle}"
+                        Visibility="{x:Bind ViewModel.SyncAccount.IsMfaSettingsVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE928;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,14,16,14">
+                            <TextBlock x:Uid="Settings_MfaActionHeader"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock x:Uid="Settings_MfaCardDescription"
+                                       Style="{StaticResource SettingsDescriptionTextBlockStyle}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <Button x:Uid="Settings_MfaEnable"
+                                    AutomationProperties.AutomationId="Settings_MfaEnable"
+                                    Style="{ThemeResource AccentButtonStyle}"
+                                    Visibility="{x:Bind ViewModel.SyncAccount.CanEnrollMfa, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                    Click="MfaEnable_Click"/>
+                            <Button x:Uid="Settings_MfaDisable"
+                                    AutomationProperties.AutomationId="Settings_MfaDisable"
+                                    Visibility="{x:Bind ViewModel.SyncAccount.IsMfaEnrolled, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                    Click="MfaDisable_Click"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
 
                 <InfoBar x:Uid="Settings_MfaOnInfo"
                          Severity="Success"
@@ -987,47 +983,100 @@
                     <toolkit:SettingsExpander.HeaderIcon>
                         <FontIcon Glyph="&#xE895;"/>
                     </toolkit:SettingsExpander.HeaderIcon>
-                    <toolkit:SettingsExpander.Items>
-                        <toolkit:SettingsCard x:Uid="Settings_SyncEmailCard">
-                            <TextBox x:Name="SyncEmailBox"
-                                     x:Uid="Settings_SyncEmail"
-                                     AutomationProperties.AutomationId="Settings_SyncEmail"
-                                     Text="{x:Bind ViewModel.SyncAccount.SyncEmail, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     MinWidth="220"
-                                     InputScope="EmailNameOrAddress"/>
-                        </toolkit:SettingsCard>
-                        <toolkit:SettingsCard x:Uid="Settings_SyncPasswordCard">
-                            <PasswordBox x:Name="SyncPasswordBox"
-                                         x:Uid="Settings_SyncPassword"
-                                         AutomationProperties.AutomationId="Settings_SyncPassword"
-                                         MinWidth="220"/>
-                        </toolkit:SettingsCard>
-                        <toolkit:SettingsCard>
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button x:Uid="Settings_SyncSignIn"
-                                        AutomationProperties.AutomationId="Settings_SyncSignIn"
-                                        Style="{ThemeResource AccentButtonStyle}"
-                                        IsEnabled="{x:Bind ViewModel.SyncAccount.IsNotSyncing, Mode=OneWay}"
-                                        Click="SyncSignIn_Click"/>
-                                <Button x:Uid="Settings_SyncSignUp"
-                                        AutomationProperties.AutomationId="Settings_SyncSignUp"
-                                        IsEnabled="{x:Bind ViewModel.SyncAccount.IsNotSyncing, Mode=OneWay}"
-                                        Click="SyncSignUp_Click"/>
-                            </StackPanel>
-                        </toolkit:SettingsCard>
-                        <toolkit:SettingsCard x:Uid="Settings_SyncGitHubCard">
-                            <Button x:Uid="Settings_SyncGitHub"
-                                    AutomationProperties.AutomationId="Settings_SyncGitHub"
-                                    IsEnabled="{x:Bind ViewModel.SyncAccount.IsNotSyncing, Mode=OneWay}"
-                                    Click="SyncGitHubSignIn_Click"/>
-                        </toolkit:SettingsCard>
-                        <toolkit:SettingsCard
-                            Visibility="{x:Bind ViewModel.SyncAccount.HasSyncError, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                            <TextBlock Text="{x:Bind ViewModel.SyncAccount.SyncError, Mode=OneWay}"
-                                       Foreground="{ThemeResource SystemFillColorCriticalBrush}"
-                                       TextWrapping="Wrap"/>
-                        </toolkit:SettingsCard>
-                    </toolkit:SettingsExpander.Items>
+                    <toolkit:SettingsExpander.ItemsHeader>
+                        <StackPanel Padding="16,8,16,16" Spacing="8">
+                            <Border Style="{StaticResource ToggleCardBorderStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Grid.Column="0" Glyph="&#xE715;" FontSize="16"
+                                              VerticalAlignment="Center" Margin="0,0,20,0"/>
+                                    <TextBlock Grid.Column="1" x:Uid="Settings_SyncEmailLabel"
+                                               Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                               VerticalAlignment="Center"/>
+                                    <TextBox Grid.Column="2" x:Name="SyncEmailBox"
+                                             x:Uid="Settings_SyncEmail"
+                                             AutomationProperties.AutomationId="Settings_SyncEmail"
+                                             Text="{x:Bind ViewModel.SyncAccount.SyncEmail, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                             MinWidth="220"
+                                             InputScope="EmailNameOrAddress"
+                                             VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource ToggleCardBorderStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Grid.Column="0" Glyph="&#xE72E;" FontSize="16"
+                                              VerticalAlignment="Center" Margin="0,0,20,0"/>
+                                    <TextBlock Grid.Column="1" x:Uid="Settings_SyncPasswordLabel"
+                                               Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                               VerticalAlignment="Center"/>
+                                    <PasswordBox Grid.Column="2" x:Name="SyncPasswordBox"
+                                                 x:Uid="Settings_SyncPassword"
+                                                 AutomationProperties.AutomationId="Settings_SyncPassword"
+                                                 MinWidth="220"
+                                                 VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource ToggleCardBorderStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Grid.Column="0" Glyph="&#xE77B;" FontSize="16"
+                                              VerticalAlignment="Center" Margin="0,0,20,0"/>
+                                    <TextBlock Grid.Column="1" x:Uid="Settings_SyncEmailActionsLabel"
+                                               Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                               VerticalAlignment="Center"/>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                        <Button x:Uid="Settings_SyncSignIn"
+                                                AutomationProperties.AutomationId="Settings_SyncSignIn"
+                                                Style="{ThemeResource AccentButtonStyle}"
+                                                IsEnabled="{x:Bind ViewModel.SyncAccount.IsNotSyncing, Mode=OneWay}"
+                                                Click="SyncSignIn_Click"/>
+                                        <Button x:Uid="Settings_SyncSignUp"
+                                                AutomationProperties.AutomationId="Settings_SyncSignUp"
+                                                IsEnabled="{x:Bind ViewModel.SyncAccount.IsNotSyncing, Mode=OneWay}"
+                                                Click="SyncSignUp_Click"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource ToggleCardBorderStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <FontIcon Grid.Column="0" Glyph="&#xE71B;" FontSize="16"
+                                              VerticalAlignment="Center" Margin="0,0,20,0"/>
+                                    <TextBlock Grid.Column="1" x:Uid="Settings_SyncGitHubActionsLabel"
+                                               Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                               VerticalAlignment="Center"/>
+                                    <Button Grid.Column="2" x:Uid="Settings_SyncGitHub"
+                                            AutomationProperties.AutomationId="Settings_SyncGitHub"
+                                            IsEnabled="{x:Bind ViewModel.SyncAccount.IsNotSyncing, Mode=OneWay}"
+                                            Click="SyncGitHubSignIn_Click"
+                                            VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                            <toolkit:SettingsCard
+                                Visibility="{x:Bind ViewModel.SyncAccount.HasSyncError, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                                <TextBlock Text="{x:Bind ViewModel.SyncAccount.SyncError, Mode=OneWay}"
+                                           Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                           TextWrapping="Wrap"/>
+                            </toolkit:SettingsCard>
+                        </StackPanel>
+                    </toolkit:SettingsExpander.ItemsHeader>
                 </toolkit:SettingsExpander>
 
                 <TextBlock x:Uid="Settings_SectionData"
@@ -1132,81 +1181,121 @@
                 <TextBlock x:Uid="Settings_SectionAbout"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"/>
 
-                <toolkit:SettingsExpander
-                    Margin="0,0,0,24"
-                    x:Uid="Settings_HatchExpander">
-                    <toolkit:SettingsExpander.Description>
-                        <TextBlock x:Uid="Settings_HatchExpanderDescription"
-                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"/>
-                    </toolkit:SettingsExpander.Description>
-                    <toolkit:SettingsExpander.HeaderIcon>
-                        <FontIcon Glyph="&#xE946;"/>
-                    </toolkit:SettingsExpander.HeaderIcon>
-                    <TextBlock Text="{x:Bind ViewModel.AppVersion}"
-                               AutomationProperties.AutomationId="Settings_AppVersion"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               VerticalAlignment="Center"/>
-                    <toolkit:SettingsExpander.Items>
-                        <toolkit:SettingsCard x:Uid="Settings_PrivacyCard">
-                            <toolkit:SettingsCard.Description>
-                                <TextBlock x:Uid="Settings_PrivacyCardDescription" TextWrapping="Wrap"/>
-                            </toolkit:SettingsCard.Description>
-                        </toolkit:SettingsCard>
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE72C;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock x:Uid="Settings_UpdateActionHeader"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="{x:Bind ViewModel.UpdateStatus, Mode=OneWay}"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8"
+                                    VerticalAlignment="Center">
+                            <ProgressRing Width="16" Height="16"
+                                          IsActive="{x:Bind ViewModel.IsCheckingForUpdates, Mode=OneWay}"
+                                          Visibility="{x:Bind ViewModel.IsCheckingForUpdates, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                          VerticalAlignment="Center"/>
+                            <Button x:Uid="Settings_CheckForUpdates"
+                                    AutomationProperties.AutomationId="Settings_CheckForUpdates"
+                                    IsEnabled="{x:Bind ViewModel.CanCheckForUpdates, Mode=OneWay}"
+                                    Command="{x:Bind ViewModel.CheckForUpdatesCommand}"/>
+                            <Button x:Uid="Settings_InstallUpdate"
+                                    AutomationProperties.AutomationId="Settings_InstallUpdate"
+                                    Visibility="{x:Bind ViewModel.HasAvailableUpdate, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                    IsEnabled="{x:Bind ViewModel.CanInstallUpdate, Mode=OneWay}"
+                                    Command="{x:Bind ViewModel.InstallUpdateCommand}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
 
-                        <toolkit:SettingsCard x:Uid="Settings_AuthorCard">
-                            <toolkit:SettingsCard.Description>
-                                <TextBlock x:Uid="Settings_AuthorCardDescription" TextWrapping="Wrap"/>
-                            </toolkit:SettingsCard.Description>
-                        </toolkit:SettingsCard>
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE90A;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock x:Uid="Settings_ReportIssueActionHeader"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock x:Uid="Settings_ReportIssueCardDescription"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="NoWrap"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <Button Grid.Column="2" x:Uid="Settings_OpenGitHubIssues"
+                                AutomationProperties.AutomationId="Settings_OpenGitHubIssues"
+                                VerticalAlignment="Center"
+                                Command="{x:Bind ViewModel.OpenGitHubIssuesCommand}"/>
+                    </Grid>
+                </Border>
 
-                        <toolkit:SettingsCard x:Uid="Settings_UpdateCard">
-                            <toolkit:SettingsCard.Description>
-                                <Grid ColumnSpacing="8">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="{x:Bind ViewModel.UpdateStatus, Mode=OneWay}"
-                                               TextWrapping="Wrap"
-                                               VerticalAlignment="Center"/>
-                                    <ProgressRing Grid.Column="1" Width="16" Height="16"
-                                                  IsActive="{x:Bind ViewModel.IsCheckingForUpdates, Mode=OneWay}"
-                                                  Visibility="{x:Bind ViewModel.IsCheckingForUpdates, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                                  VerticalAlignment="Center"/>
-                                </Grid>
-                            </toolkit:SettingsCard.Description>
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button x:Uid="Settings_CheckForUpdates"
-                                        AutomationProperties.AutomationId="Settings_CheckForUpdates"
-                                        IsEnabled="{x:Bind ViewModel.CanCheckForUpdates, Mode=OneWay}"
-                                        Command="{x:Bind ViewModel.CheckForUpdatesCommand}"/>
-                                <Button x:Uid="Settings_InstallUpdate"
-                                        AutomationProperties.AutomationId="Settings_InstallUpdate"
-                                        Visibility="{x:Bind ViewModel.HasAvailableUpdate, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                        IsEnabled="{x:Bind ViewModel.CanInstallUpdate, Mode=OneWay}"
-                                        Command="{x:Bind ViewModel.InstallUpdateCommand}"/>
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE946;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,0,14">
+                            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                <TextBlock x:Uid="Settings_HatchInfoHeader"
+                                           Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                                <TextBlock Text="{x:Bind ViewModel.AppVersion}"
+                                           AutomationProperties.AutomationId="Settings_AppVersion"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           VerticalAlignment="Center"/>
                             </StackPanel>
-                        </toolkit:SettingsCard>
+                            <TextBlock x:Uid="Settings_HatchInfoDescription"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
 
-                        <toolkit:SettingsCard x:Uid="Settings_SourceCodeCard">
-                            <toolkit:SettingsCard.Description>
-                                <TextBlock x:Uid="Settings_SourceCodeCardDescription" TextWrapping="Wrap"/>
-                            </toolkit:SettingsCard.Description>
-                            <Button x:Uid="Settings_OpenGitHub"
-                                    AutomationProperties.AutomationId="Settings_OpenGitHub"
-                                    Command="{x:Bind ViewModel.OpenGitHubCommand}"/>
-                        </toolkit:SettingsCard>
-
-                        <toolkit:SettingsCard x:Uid="Settings_ReportIssueCard">
-                            <toolkit:SettingsCard.Description>
-                                <TextBlock x:Uid="Settings_ReportIssueCardDescription" TextWrapping="Wrap"/>
-                            </toolkit:SettingsCard.Description>
-                            <Button x:Uid="Settings_OpenGitHubIssues"
-                                    AutomationProperties.AutomationId="Settings_OpenGitHubIssues"
-                                    Command="{x:Bind ViewModel.OpenGitHubIssuesCommand}"/>
-                        </toolkit:SettingsCard>
-                    </toolkit:SettingsExpander.Items>
-                </toolkit:SettingsExpander>
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Left">
+                    <Button x:Uid="Settings_TermsButton"
+                            AutomationProperties.AutomationId="Settings_TermsButton"
+                            Click="TermsButton_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <FontIcon Glyph="&#xE8A5;" FontSize="16"/>
+                            <TextBlock x:Uid="Settings_TermsButtonLabel"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Uid="Settings_PrivacyButton"
+                            AutomationProperties.AutomationId="Settings_PrivacyButton"
+                            Click="PrivacyButton_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <FontIcon Glyph="&#xE72E;" FontSize="16"/>
+                            <TextBlock x:Uid="Settings_PrivacyButtonLabel"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Uid="Settings_RateAppButton"
+                            AutomationProperties.AutomationId="Settings_RateAppButton"
+                            Click="RateAppButton_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <FontIcon Glyph="&#xE734;" FontSize="16"/>
+                            <TextBlock x:Uid="Settings_RateAppButtonLabel"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
 
         </StackPanel>
     </ScrollViewer>

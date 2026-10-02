@@ -1,7 +1,9 @@
 using Microsoft.UI;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -9,6 +11,9 @@ using System.Text;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage.Pickers;
 using Windows.Storage.Streams;
+using Windows.System;
+using Windows.UI.Core;
+using Hatch.Helpers;
 using Hatch.Models;
 using Hatch.ViewModels;
 
@@ -17,6 +22,7 @@ namespace Hatch.Views;
 public sealed partial class SettingsPage : Page
 {
     private readonly SettingsViewModel _viewModel;
+    private bool _suppressHotkeyRecordClick;
     public SettingsViewModel ViewModel => _viewModel;
 
     public SettingsPage()
@@ -30,17 +36,23 @@ public sealed partial class SettingsPage : Page
             App.UpdateService,
             App.MainWindowInstance?.ViewModel.CustomLists.ToArray() ?? Array.Empty<TaskList>(),
             App.MascotWindowInstance,
-            DispatcherQueue.GetForCurrentThread());
+            Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
         DataContext = _viewModel;
         NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
 
+        HotkeyRecordButton.AddHandler(
+            UIElement.KeyDownEvent,
+            new KeyEventHandler(HotkeyRecordButton_KeyDown),
+            true);
+        HotkeyRecordButton.AddHandler(
+            UIElement.KeyUpEvent,
+            new KeyEventHandler(HotkeyRecordButton_KeyUp),
+            true);
         _viewModel.SyncAccount.ConflictDetected += OnConflictDetected;
 
-        // Pre-select the currently saved hotkey key in the ComboBox
-        // and initialise the mascot size slider/label
+        // Initialise the mascot size slider/label.
         Loaded += (_, _) =>
         {
-            SyncHotkeyKeySelector();
             SyncMascotSizeSlider();
         };
     }
@@ -172,6 +184,106 @@ public sealed partial class SettingsPage : Page
             Frame.GoBack();
     }
 
+    private async Task ShowAboutDialogAsync(string titleKey, UIElement content)
+    {
+        const double ContentDialogHorizontalContentInset = 48;
+        const double ContentDialogVerticalChrome = 160;
+        var maxDialogWidth = Math.Min(
+            MainWindow.MinimumWindowWidth * 0.8 / XamlRoot.RasterizationScale,
+            XamlRoot.Size.Width * 0.8);
+        var scrollViewer = new ScrollViewer
+        {
+            Content = content,
+            MaxWidth = Math.Max(0, maxDialogWidth - ContentDialogHorizontalContentInset),
+            MaxHeight = Math.Max(0, XamlRoot.Size.Height * 0.8 - ContentDialogVerticalChrome),
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto
+        };
+
+        var dialog = new ContentDialog
+        {
+            Title = Strings.Get(titleKey),
+            Content = scrollViewer,
+            CloseButtonText = Strings.Get("Settings_AboutDialog_Close"),
+            DefaultButton = ContentDialogButton.Close,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            XamlRoot = XamlRoot
+        };
+
+        await dialog.ShowAsync();
+    }
+
+    private static void AddPrivacySection(StackPanel content, string headingKey, string messageKey)
+    {
+        content.Children.Add(new TextBlock
+        {
+            Text = Strings.Get(headingKey),
+            FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
+        });
+        content.Children.Add(new TextBlock
+        {
+            Text = Strings.Get(messageKey),
+            TextWrapping = TextWrapping.Wrap
+        });
+    }
+
+    private static Border CreateAboutDivider()
+    {
+        var divider = new Border { Height = 1, Margin = new Thickness(0, 4, 0, 4) };
+        if (Application.Current.Resources.TryGetValue("CardStrokeColorDefaultBrush", out var stroke) && stroke is Brush brush)
+            divider.Background = brush;
+        return divider;
+    }
+
+    private async Task ShowPrivacyPolicyDialogAsync()
+    {
+        var content = new StackPanel { Spacing = 12 };
+        var lastUpdated = new TextBlock
+        {
+            Text = Strings.Get("Settings_PrivacyLastUpdated"),
+            FontSize = 12
+        };
+        if (Application.Current.Resources.TryGetValue("TextFillColorSecondaryBrush", out var secondary) && secondary is Brush brush)
+            lastUpdated.Foreground = brush;
+
+        content.Children.Add(lastUpdated);
+        content.Children.Add(new TextBlock
+        {
+            Text = Strings.Get("Settings_PrivacyIntro"),
+            TextWrapping = TextWrapping.Wrap
+        });
+        content.Children.Add(CreateAboutDivider());
+        AddPrivacySection(content, "Settings_PrivacyUserDataHeading", "Settings_PrivacyUserDataMessage");
+        AddPrivacySection(content, "Settings_PrivacySyncHeading", "Settings_PrivacySyncMessage");
+        AddPrivacySection(content, "Settings_PrivacyTelemetryHeading", "Settings_PrivacyTelemetryMessage");
+        AddPrivacySection(content, "Settings_PrivacyNetworkHeading", "Settings_PrivacyNetworkMessage");
+        AddPrivacySection(content, "Settings_PrivacySharingHeading", "Settings_PrivacySharingMessage");
+        AddPrivacySection(content, "Settings_PrivacyChildrenHeading", "Settings_PrivacyChildrenMessage");
+        AddPrivacySection(content, "Settings_PrivacyContactHeading", "Settings_PrivacyContactMessage");
+
+        await ShowAboutDialogAsync("Settings_PrivacyDialogTitle", content);
+    }
+
+    private async void PrivacyButton_Click(object sender, RoutedEventArgs e)
+        => await ShowPrivacyPolicyDialogAsync();
+
+    private async void TermsButton_Click(object sender, RoutedEventArgs e)
+    {
+        var content = new TextBlock
+        {
+            Text = Strings.Get("Settings_TermsDialogMessage"),
+            TextWrapping = TextWrapping.Wrap
+        };
+        await ShowAboutDialogAsync("Settings_TermsDialogTitle", content);
+    }
+
+    private async void RateAppButton_Click(object sender, RoutedEventArgs e)
+    {
+        await Windows.System.Launcher.LaunchUriAsync(
+            new Uri("ms-windows-store://review/?ProductId=9PKTQFG9S3K8"));
+    }
+
     private async void BrowseLottieButton_Click(object sender, RoutedEventArgs e)
     {
         var picker = new FileOpenPicker();
@@ -240,28 +352,53 @@ public sealed partial class SettingsPage : Page
         await _viewModel.ImportAsync(file.Path);
     }
 
-    private void SyncHotkeyKeySelector()
+    private void HotkeyRecordButton_Click(object sender, RoutedEventArgs e)
     {
-        var vk = _viewModel.HotkeyVirtualKey;
-        for (int i = 0; i < HotkeyKeySelector.Items.Count; i++)
+        if (_suppressHotkeyRecordClick)
         {
-            if (HotkeyKeySelector.Items[i] is ComboBoxItem item &&
-                item.Tag is string tag && uint.TryParse(tag, out var tagVk) && tagVk == vk)
-            {
-                HotkeyKeySelector.SelectedIndex = i;
-                return;
-            }
+            _suppressHotkeyRecordClick = false;
+            return;
         }
-        HotkeyKeySelector.SelectedIndex = 0; // fallback to Space
+
+        if (_viewModel.IsRecordingHotkey)
+            _viewModel.CancelHotkeyRecording();
+        else
+        {
+            _viewModel.BeginHotkeyRecording();
+            HotkeyRecordButton.Focus(FocusState.Programmatic);
+        }
     }
 
-    private void HotkeyKeySelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    private void HotkeyRecordButton_KeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (HotkeyKeySelector.SelectedItem is ComboBoxItem item &&
-            item.Tag is string tag && uint.TryParse(tag, out var vk))
-        {
-            _viewModel.HotkeyVirtualKey = vk;
-        }
+        if (!_viewModel.IsRecordingHotkey) return;
+
+        if (e.Key is VirtualKey.Space or VirtualKey.Enter)
+            _suppressHotkeyRecordClick = true;
+
+        e.Handled = _viewModel.HandleHotkeyRecordingKey(
+            (uint)e.Key,
+            GetPressedHotkeyModifiers());
+    }
+
+    private void HotkeyRecordButton_KeyUp(object sender, KeyRoutedEventArgs e)
+    {
+        if (!_suppressHotkeyRecordClick || e.Key is not (VirtualKey.Space or VirtualKey.Enter))
+            return;
+
+        DispatcherQueue.TryEnqueue(() => _suppressHotkeyRecordClick = false);
+    }
+
+    private static uint GetPressedHotkeyModifiers()
+    {
+        var modifiers = 0u;
+        if ((InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control) & CoreVirtualKeyStates.Down) != 0)
+            modifiers |= NativeMethods.MOD_CONTROL;
+        if ((InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift) & CoreVirtualKeyStates.Down) != 0)
+            modifiers |= NativeMethods.MOD_SHIFT;
+        if ((InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Menu) & CoreVirtualKeyStates.Down) != 0)
+            modifiers |= NativeMethods.MOD_ALT;
+        return modifiers;
     }
 
     private void SyncMascotSizeSlider()

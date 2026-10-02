@@ -248,7 +248,7 @@ public sealed partial class MainWindow : Window
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
     }
 
-    private const int MinW = 560;
+    internal const int MinimumWindowWidth = 560;
     private const int MinH = 490;
 
     private IntPtr MinSizeSubclassProc(
@@ -259,7 +259,7 @@ public sealed partial class MainWindow : Window
         if (uMsg == WM_GETMINMAXINFO)
         {
             var info = Marshal.PtrToStructure<NativeMethods.MINMAXINFO>(lParam);
-            info.ptMinTrackSize.X = Math.Max(info.ptMinTrackSize.X, MinW);
+            info.ptMinTrackSize.X = Math.Max(info.ptMinTrackSize.X, MinimumWindowWidth);
             info.ptMinTrackSize.Y = Math.Max(info.ptMinTrackSize.Y, MinH);
             Marshal.StructureToPtr(info, lParam, true);
             return IntPtr.Zero;
