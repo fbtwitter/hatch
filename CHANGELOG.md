@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.25.8] - 2026-10-02
+
+- Improved Settings About dialogs and replaced Quick-Add hotkey selectors with direct keyboard recording.
+
 ## [0.25.7] - 2026-10-01
 
 ### Changed
