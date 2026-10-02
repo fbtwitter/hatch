@@ -20,6 +20,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private readonly UpdateService _updateService;
     private readonly IHotkeyRegistration? _hotkeyRegistration;
     private bool _isHotkeyRegistered;
+    private bool _isRecordingHotkey;
 
     public SyncAccountViewModel SyncAccount { get; }
     private readonly StartupRegistryService _startupRegistry = new();
@@ -444,66 +445,62 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         }
     }
 
-    public uint HotkeyModifiers
+    public uint HotkeyModifiers => _settings.Current.HotkeyModifiers;
+    public uint HotkeyVirtualKey => _settings.Current.HotkeyVirtualKey;
+
+    public bool IsRecordingHotkey
     {
-        get => _settings.Current.HotkeyModifiers;
-        set
+        get => _isRecordingHotkey;
+        private set
         {
-            // Zero modifiers would register the bare key system-wide. The checkboxes already
-            // prevent it; this is the backstop for any other caller.
-            if (value == 0) return;
-            if (_settings.Current.HotkeyModifiers == value) return;
-            _settings.Current.HotkeyModifiers = value;
-            ReRegisterHotKey();
-            _settings.SaveDebounced();
+            if (_isRecordingHotkey == value) return;
+            _isRecordingHotkey = value;
             OnPropertyChanged();
-            OnPropertyChanged(nameof(HotkeyDescription));
-            OnPropertyChanged(nameof(HotkeyCtrl));
-            OnPropertyChanged(nameof(HotkeyShift));
-            OnPropertyChanged(nameof(HotkeyAlt));
-            OnPropertyChanged(nameof(IsHotkeyCtrlEnabled));
-            OnPropertyChanged(nameof(IsHotkeyShiftEnabled));
-            OnPropertyChanged(nameof(IsHotkeyAltEnabled));
+            OnPropertyChanged(nameof(HotkeyRecordButtonText));
+            OnPropertyChanged(nameof(HotkeyRecordDescription));
         }
     }
 
-    public bool HotkeyCtrl
-    {
-        get => (HotkeyModifiers & NativeMethods.MOD_CONTROL) != 0;
-        set => HotkeyModifiers = value
-            ? HotkeyModifiers | NativeMethods.MOD_CONTROL
-            : HotkeyModifiers & ~NativeMethods.MOD_CONTROL;
-    }
+    public string HotkeyRecordButtonText => IsRecordingHotkey
+        ? Strings.Get("Settings_HotkeyRecording")
+        : HotkeyDescription;
 
-    public bool HotkeyShift
-    {
-        get => (HotkeyModifiers & NativeMethods.MOD_SHIFT) != 0;
-        set => HotkeyModifiers = value
-            ? HotkeyModifiers | NativeMethods.MOD_SHIFT
-            : HotkeyModifiers & ~NativeMethods.MOD_SHIFT;
-    }
+    public string HotkeyRecordDescription => Strings.Get(IsRecordingHotkey
+        ? "Settings_HotkeyRecordingDescription"
+        : "Settings_HotkeyRecordDescription");
 
-    public bool HotkeyAlt
-    {
-        get => (HotkeyModifiers & NativeMethods.MOD_ALT) != 0;
-        set => HotkeyModifiers = value
-            ? HotkeyModifiers | NativeMethods.MOD_ALT
-            : HotkeyModifiers & ~NativeMethods.MOD_ALT;
-    }
+    public void BeginHotkeyRecording() => IsRecordingHotkey = true;
 
-    public uint HotkeyVirtualKey
+    public void CancelHotkeyRecording() => IsRecordingHotkey = false;
+
+    public bool HandleHotkeyRecordingKey(uint virtualKey, uint modifiers)
     {
-        get => _settings.Current.HotkeyVirtualKey;
-        set
+        if (!IsRecordingHotkey) return false;
+        if (virtualKey == 0x1B)
         {
-            if (_settings.Current.HotkeyVirtualKey == value) return;
-            _settings.Current.HotkeyVirtualKey = value;
+            CancelHotkeyRecording();
+            return true;
+        }
+        if (virtualKey == 0 || IsHotkeyModifierKey(virtualKey) || modifiers == 0)
+            return true;
+
+        if (HotkeyModifiers != modifiers || HotkeyVirtualKey != virtualKey)
+        {
+            _settings.Current.HotkeyModifiers = modifiers;
+            _settings.Current.HotkeyVirtualKey = virtualKey;
             ReRegisterHotKey();
             _settings.SaveDebounced();
-            OnPropertyChanged();
+            OnPropertyChanged(nameof(HotkeyModifiers));
+            OnPropertyChanged(nameof(HotkeyVirtualKey));
             OnPropertyChanged(nameof(HotkeyDescription));
         }
+
+        IsRecordingHotkey = false;
+        return true;
     }
+
+    private static bool IsHotkeyModifierKey(uint virtualKey) =>
+        virtualKey is 0x10 or 0x11 or 0x12 or 0x5B or 0x5C or >= 0xA0 and <= 0xA5;
 
     public string HotkeyDescription
     {
@@ -522,11 +519,33 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     private static string VkToLabel(uint vk) => vk switch
     {
         0x20 => "Space",
+        0x08 => "Backspace",
+        0x09 => "Tab",
+        0x0D => "Enter",
+        0x1B => "Esc",
+        0x21 => "PageUp",
+        0x22 => "PageDown",
+        0x23 => "End",
+        0x24 => "Home",
+        0x25 => "Left",
+        0x26 => "Up",
+        0x27 => "Right",
+        0x28 => "Down",
+        0x2D => "Insert",
+        0x2E => "Delete",
         0xBB => "+",
         0xBC => ",",
         0xBE => ".",
         0xBF => "/",
         0xC0 => "`",
+        0xDB => "[",
+        0xDC => "\\",
+        0xDD => "]",
+        0xDE => "'",
+        0xBD => "-",
+        0xBA => ";",
+        >= 0x60 and <= 0x69 => $"Num{vk - 0x60}",
+        >= 0x70 and <= 0x87 => $"F{vk - 0x6F}",
         >= 0x30 and <= 0x39 => ((char)vk).ToString(),
         >= 0x41 and <= 0x5A => ((char)vk).ToString(),
         _ => $"0x{vk:X2}"
@@ -555,16 +574,6 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
     }
 
     public bool HasHotkeyConflict => !_isHotkeyRegistered;
-
-    private int HotkeyModifierCount =>
-        (HotkeyCtrl ? 1 : 0) + (HotkeyShift ? 1 : 0) + (HotkeyAlt ? 1 : 0);
-
-    // With no modifier, RegisterHotKey claims the bare key globally — press Space in any
-    // application and Hatch would swallow it. The last remaining modifier is locked rather
-    // than silently refused, so the constraint is visible instead of feeling broken.
-    public bool IsHotkeyCtrlEnabled  => !(HotkeyCtrl  && HotkeyModifierCount == 1);
-    public bool IsHotkeyShiftEnabled => !(HotkeyShift && HotkeyModifierCount == 1);
-    public bool IsHotkeyAltEnabled   => !(HotkeyAlt   && HotkeyModifierCount == 1);
 
     public ICommand OpenDataFolderCommand { get; } =
         new RelayCommand(_ =>
@@ -652,10 +661,6 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             ImportError = ex.Message;
         }
     }
-
-    public ICommand OpenGitHubCommand { get; } =
-        new RelayCommand(_ => Process.Start(new ProcessStartInfo
-            { FileName = "https://github.com/fbtwitter/hatch", UseShellExecute = true }));
 
     public ICommand OpenGitHubIssuesCommand { get; } =
         new RelayCommand(_ => Process.Start(new ProcessStartInfo
