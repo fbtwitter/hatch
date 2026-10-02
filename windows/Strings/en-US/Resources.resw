@@ -354,12 +354,11 @@
   <!-- ── Sync passphrase (x:Uid mapped) ──────────────────────── -->
   <data name="Settings_SyncPassphraseInfo.Title" xml:space="preserve"><value>End-to-end encryption</value></data>
   <data name="Settings_SyncPassphraseInfo.Message" xml:space="preserve"><value>Your tasks are encrypted on this device before upload — the server can never read them. Set a passphrase to start syncing, and use the same one on every device.</value></data>
-  <data name="Settings_SyncPassphraseCard.Header" xml:space="preserve"><value>Sync passphrase</value></data>
   <data name="Settings_SyncPassphraseCardDescription.Text" xml:space="preserve"><value>Never sent to the server. If you lose it, synced data cannot be recovered.</value></data>
   <data name="Settings_SyncPassphraseCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Never sent to the server. If you lose it, synced data cannot be recovered.</value></data>
   <data name="Settings_SyncPassphraseSet.Content" xml:space="preserve"><value>Set passphrase</value></data>
 
-  <data name="Settings_ChangePassphraseCard.Header" xml:space="preserve"><value>Change passphrase</value></data>
+  <data name="Settings_ChangePassphraseActionHeader.Text" xml:space="preserve"><value>Change passphrase</value></data>
   <data name="Settings_ChangePassphraseCardDescription.Text" xml:space="preserve"><value>Requires your current passphrase. Other signed-in devices will need the new one entered again the next time they sync.</value></data>
   <data name="Settings_ChangePassphraseCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Requires your current passphrase. Other signed-in devices will need the new one entered again the next time they sync.</value></data>
   <data name="Settings_ChangePassphraseStart.Content" xml:space="preserve"><value>Change passphrase</value></data>
@@ -373,7 +372,7 @@
   <data name="Settings_ChangePassphraseCancel.Content" xml:space="preserve"><value>Cancel</value></data>
 
   <!-- ── Sync recovery kit (x:Uid mapped) ─────────────────────── -->
-  <data name="Settings_RecoveryKitCard.Header" xml:space="preserve"><value>Sync recovery kit</value></data>
+  <data name="Settings_RecoveryKitActionHeader.Text" xml:space="preserve"><value>Sync recovery kit</value></data>
   <data name="Settings_RecoveryKitCardDescription.Text" xml:space="preserve"><value>Your passphrase cannot be reset or recovered by anyone. Save a copy somewhere you'll still have if this PC is lost.</value></data>
   <data name="Settings_RecoveryKitCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Your passphrase cannot be reset or recovered by anyone. Save a copy somewhere you'll still have if this PC is lost.</value></data>
   <data name="Settings_RecoveryKitShow.Content" xml:space="preserve"><value>Show recovery kit</value></data>
@@ -383,7 +382,7 @@
   <data name="Settings_RecoveryKitCopy.Content" xml:space="preserve"><value>Copy</value></data>
   <data name="Settings_RecoveryKitDone.Content" xml:space="preserve"><value>Hide</value></data>
 
-  <data name="Settings_MfaCard.Header" xml:space="preserve"><value>Two-factor authentication</value></data>
+  <data name="Settings_MfaActionHeader.Text" xml:space="preserve"><value>Two-factor authentication</value></data>
   <data name="Settings_MfaCardDescription.Text" xml:space="preserve"><value>Require a code from an authenticator app when signing in. This protects your account — your tasks are already protected by the sync passphrase.</value></data>
   <data name="Settings_MfaCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Require a code from an authenticator app when signing in. This protects your account — your tasks are already protected by the sync passphrase.</value></data>
   <data name="Settings_MfaEnable.Content" xml:space="preserve"><value>Set up</value></data>
@@ -509,25 +508,13 @@
   <data name="Settings_SizeLarge.Content" xml:space="preserve"><value>Large</value></data>
   <data name="Settings_MascotSizeCustomCard.Header" xml:space="preserve"><value>Custom</value></data>
   <data name="Settings_SizeSlider.AutomationProperties.Name" xml:space="preserve"><value>Mascot size</value></data>
-  <data name="Settings_HotkeyExpander.Header" xml:space="preserve"><value>Quick-Add Hotkey</value></data>
-  <data name="Settings_HotkeyExpanderDescription.Text" xml:space="preserve"><value>Opens quick-add from anywhere, even when Hatch is hidden</value></data>
-  <data name="Settings_HotkeyExpanderDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Opens quick-add from anywhere, even when Hatch is hidden</value></data>
-  <data name="Settings_ModifiersCard.Header" xml:space="preserve"><value>Modifiers</value></data>
-  <data name="Settings_ModifiersCardDescription.Text" xml:space="preserve"><value>At least one is required — without a modifier the key would be captured system-wide</value></data>
-  <data name="Settings_HotkeyCtrl.Content" xml:space="preserve"><value>Ctrl</value></data>
-  <data name="Settings_HotkeyShift.Content" xml:space="preserve"><value>Shift</value></data>
-  <data name="Settings_HotkeyAlt.Content" xml:space="preserve"><value>Alt</value></data>
-  <data name="Settings_KeyCard.Header" xml:space="preserve"><value>Key</value></data>
-  <data name="Settings_KeyCardDescription.Text" xml:space="preserve"><value>Pressed together with the modifiers above</value></data>
-  <data name="Settings_HotkeyKeyComboBox.AutomationProperties.Name" xml:space="preserve"><value>Hotkey key</value></data>
-  <data name="Settings_HotkeyKey_Space.Content" xml:space="preserve"><value>Space</value></data>
-  <data name="Settings_HotkeyKey_A.Content" xml:space="preserve"><value>A</value></data>
-  <data name="Settings_HotkeyKey_Q.Content" xml:space="preserve"><value>Q</value></data>
-  <data name="Settings_HotkeyKey_T.Content" xml:space="preserve"><value>T</value></data>
-  <data name="Settings_HotkeyKey_N.Content" xml:space="preserve"><value>N</value></data>
-  <data name="Settings_HotkeyKey_Plus.Content" xml:space="preserve"><value>+</value></data>
+  <data name="Settings_HotkeyCardHeader.Text" xml:space="preserve"><value>Quick-Add Hotkey</value></data>
+  <data name="Settings_HotkeyRecordButton.AutomationProperties.Name" xml:space="preserve"><value>Record quick-add shortcut</value></data>
+  <data name="Settings_HotkeyRecordDescription" xml:space="preserve"><value>Opens quick-add from anywhere, even when Hatch is hidden</value></data>
+  <data name="Settings_HotkeyRecording" xml:space="preserve"><value>Press shortcut...</value></data>
+  <data name="Settings_HotkeyRecordingDescription" xml:space="preserve"><value>Press Ctrl, Shift, or Alt with another key. Press Esc to cancel.</value></data>
   <data name="Settings_HotkeyConflict.Title" xml:space="preserve"><value>That shortcut is already taken</value></data>
-  <data name="Settings_HotkeyConflict.Message" xml:space="preserve"><value>Another application registered it first, so it will not reach Hatch. Pick a different key or modifier below.</value></data>
+  <data name="Settings_HotkeyConflict.Message" xml:space="preserve"><value>Another application already uses that shortcut, so it will not reach Hatch. Press the shortcut button and record a different combination.</value></data>
   <data name="Settings_SectionSync.Text" xml:space="preserve"><value>Sync</value></data>
 
   <data name="Settings_SyncSignOut.Content" xml:space="preserve"><value>Sign out</value></data>
@@ -544,15 +531,17 @@
   <data name="Settings_SyncAcrossDevicesExpander.Header" xml:space="preserve"><value>Sync across devices</value></data>
   <data name="Settings_SyncAcrossDevicesExpanderDescription.Text" xml:space="preserve"><value>Sign in to keep your tasks in sync across PCs</value></data>
   <data name="Settings_SyncAcrossDevicesExpanderDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Sign in to keep your tasks in sync across PCs</value></data>
-  <data name="Settings_SyncEmailCard.Header" xml:space="preserve"><value>Email</value></data>
+  <data name="Settings_SyncEmailLabel.Text" xml:space="preserve"><value>Email</value></data>
   <data name="Settings_SyncEmail.AutomationProperties.Name" xml:space="preserve"><value>Email</value></data>
-  <data name="Settings_SyncPasswordCard.Header" xml:space="preserve"><value>Password</value></data>
+  <data name="Settings_SyncPasswordLabel.Text" xml:space="preserve"><value>Password</value></data>
   <data name="Settings_SyncPassword.AutomationProperties.Name" xml:space="preserve"><value>Password</value></data>
   <data name="Settings_SyncSignIn.Content" xml:space="preserve"><value>Sign in</value></data>
   <data name="Settings_SyncSignUp.Content" xml:space="preserve"><value>Create account</value></data>
-  <data name="Settings_SyncGitHubCard.Header" xml:space="preserve"><value>Or continue with</value></data>
+  <data name="Settings_SyncEmailActionsLabel.Text" xml:space="preserve"><value>Email account</value></data>
+  <data name="Settings_SyncGitHubActionsLabel.Text" xml:space="preserve"><value>Or continue with</value></data>
   <data name="Settings_SyncGitHub.Content" xml:space="preserve"><value>Sign in with GitHub</value></data>
   <data name="Settings_SyncPassphrase.AutomationProperties.Name" xml:space="preserve"><value>Sync passphrase</value></data>
+  <data name="Settings_SyncPassphraseActionHeader.Text" xml:space="preserve"><value>Sync passphrase</value></data>
 
   <data name="Settings_SectionData.Text" xml:space="preserve"><value>Data</value></data>
   <data name="Settings_OpenDataFolderCard.Header" xml:space="preserve"><value>Open data folder</value></data>
@@ -570,21 +559,40 @@
   <data name="Settings_Import_Count" xml:space="preserve"><value>Imported {0} task(s)</value></data>
 
   <data name="Settings_SectionAbout.Text" xml:space="preserve"><value>About</value></data>
-  <data name="Settings_HatchExpander.Header" xml:space="preserve"><value>Hatch</value></data>
-  <data name="Settings_HatchExpanderDescription.Text" xml:space="preserve"><value>Local-first task manager for Windows</value></data>
-  <data name="Settings_PrivacyCard.Header" xml:space="preserve"><value>Privacy</value></data>
-  <data name="Settings_PrivacyCardDescription.Text" xml:space="preserve"><value>No account · No cloud · No telemetry. All data is stored locally in %LocalAppData%\Hatch\ and never leaves your device.</value></data>
-  <data name="Settings_AuthorCard.Header" xml:space="preserve"><value>Author</value></data>
-  <data name="Settings_AuthorCardDescription.Text" xml:space="preserve"><value>Reza Fauzi Augusdi</value></data>
-  <data name="Settings_SourceCodeCard.Header" xml:space="preserve"><value>Source code</value></data>
-  <data name="Settings_SourceCodeCardDescription.Text" xml:space="preserve"><value>github.com/fbtwitter/hatch</value></data>
-  <data name="Settings_OpenGitHub.Content" xml:space="preserve"><value>Open on GitHub</value></data>
-  <data name="Settings_ReportIssueCard.Header" xml:space="preserve"><value>Report an issue</value></data>
+  <data name="Settings_HatchInfoHeader.Text" xml:space="preserve"><value>Hatch: Always-On To-Do</value></data>
+  <data name="Settings_HatchInfoDescription.Text" xml:space="preserve"><value>Local-first task manager for Windows, created by Reza Fauzi Augusdi.</value></data>
+  <data name="Settings_ReportIssueActionHeader.Text" xml:space="preserve"><value>Report an issue</value></data>
   <data name="Settings_ReportIssueCardDescription.Text" xml:space="preserve"><value>Found a bug or have a suggestion?</value></data>
   <data name="Settings_OpenGitHubIssues.Content" xml:space="preserve"><value>Open issues</value></data>
-  <data name="Settings_UpdateCard.Header" xml:space="preserve"><value>Updates</value></data>
+  <data name="Settings_UpdateActionHeader.Text" xml:space="preserve"><value>Updates</value></data>
   <data name="Settings_CheckForUpdates.Content" xml:space="preserve"><value>Check for updates</value></data>
   <data name="Settings_InstallUpdate.Content" xml:space="preserve"><value>Install update</value></data>
+  <data name="Settings_PrivacyButton.AutomationProperties.Name" xml:space="preserve"><value>Privacy policy</value></data>
+  <data name="Settings_PrivacyButtonLabel.Text" xml:space="preserve"><value>Privacy policy</value></data>
+  <data name="Settings_TermsButton.AutomationProperties.Name" xml:space="preserve"><value>Terms and conditions</value></data>
+  <data name="Settings_TermsButtonLabel.Text" xml:space="preserve"><value>Terms and conditions</value></data>
+  <data name="Settings_RateAppButton.AutomationProperties.Name" xml:space="preserve"><value>Rate the app</value></data>
+  <data name="Settings_RateAppButtonLabel.Text" xml:space="preserve"><value>Rate the app</value></data>
+  <data name="Settings_AboutDialog_Close" xml:space="preserve"><value>Close</value></data>
+  <data name="Settings_PrivacyDialogTitle" xml:space="preserve"><value>Privacy policy</value></data>
+  <data name="Settings_PrivacyLastUpdated" xml:space="preserve"><value>Last updated: June 19, 2026</value></data>
+  <data name="Settings_PrivacyIntro" xml:space="preserve"><value>Hatch stores your tasks locally by default. Sync is optional and requires you to sign in.</value></data>
+  <data name="Settings_PrivacyUserDataHeading" xml:space="preserve"><value>User data</value></data>
+  <data name="Settings_PrivacyUserDataMessage" xml:space="preserve"><value>Tasks and custom lists are stored in tasks.json; app preferences are stored in settings.json. Both files stay on your device in %LocalAppData%\Hatch\.</value></data>
+  <data name="Settings_PrivacySyncHeading" xml:space="preserve"><value>Optional sync</value></data>
+  <data name="Settings_PrivacySyncMessage" xml:space="preserve"><value>Sync is off by default and requires sign-in. If enabled, only your tasks and lists are sent to the sync service; device and usage data are not. Tasks and lists are encrypted on this device before upload. You can turn sync off in Settings.</value></data>
+  <data name="Settings_PrivacyTelemetryHeading" xml:space="preserve"><value>Analytics and telemetry</value></data>
+  <data name="Settings_PrivacyTelemetryMessage" xml:space="preserve"><value>None. Hatch has no analytics SDK, crash reporter, feature-flag system, or usage pings.</value></data>
+  <data name="Settings_PrivacyNetworkHeading" xml:space="preserve"><value>Internet access</value></data>
+  <data name="Settings_PrivacyNetworkMessage" xml:space="preserve"><value>Hatch works without an internet connection. It makes no network requests without your action: signing in to sync, checking for updates, opening the Microsoft Store review page, or opening GitHub issues.</value></data>
+  <data name="Settings_PrivacySharingHeading" xml:space="preserve"><value>Data sharing</value></data>
+  <data name="Settings_PrivacySharingMessage" xml:space="preserve"><value>Hatch does not sell or share data with advertisers or analytics providers. Sync data is sent to Hatch's sync service only when you opt in.</value></data>
+  <data name="Settings_PrivacyChildrenHeading" xml:space="preserve"><value>Children's privacy</value></data>
+  <data name="Settings_PrivacyChildrenMessage" xml:space="preserve"><value>Hatch does not knowingly collect data from children. It has no social features or public user-generated content.</value></data>
+  <data name="Settings_PrivacyContactHeading" xml:space="preserve"><value>Contact</value></data>
+  <data name="Settings_PrivacyContactMessage" xml:space="preserve"><value>For questions or concerns, open an issue at github.com/fbtwitter/hatch/issues.</value></data>
+  <data name="Settings_TermsDialogTitle" xml:space="preserve"><value>Terms and conditions</value></data>
+  <data name="Settings_TermsDialogMessage" xml:space="preserve"><value>MIT License&#xA;&#xA;Copyright (c) 2026 Reza Fauzi Augusdi&#xA;&#xA;Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:&#xA;&#xA;The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.&#xA;&#xA;THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</value></data>
   <data name="Settings_Update_Description" xml:space="preserve"><value>Check for the latest Hatch version.</value></data>
   <data name="Settings_Update_Checking" xml:space="preserve"><value>Checking for updates…</value></data>
   <data name="Settings_Update_UpToDate" xml:space="preserve"><value>Hatch is up to date.</value></data>
