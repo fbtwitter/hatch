@@ -58,4 +58,4 @@ Read the [privacy policy](docs/privacy-policy.md).
 
 ## Project links
 
-[Changelog](CHANGELOG.md) · [Roadmap](.github/ROADMAP.md) · [Architecture](.github/ARCHITECTURE.md) · [License](LICENSE)
+[Documentation](docs/README.md) · [Changelog](CHANGELOG.md) · [Roadmap](.github/ROADMAP.md) · [Architecture](.github/ARCHITECTURE.md) · [License](LICENSE)
