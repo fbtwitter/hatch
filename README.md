@@ -45,11 +45,13 @@ See the [contributing guide](.github/CONTRIBUTING.md) for setup details.
 
 ## Privacy
 
-Tasks are stored in `%LocalAppData%\Hatch` by default. No account or internet connection is required to use Hatch. Optional sync is off until you sign in, and the app includes no analytics or crash reporting.
+Tasks are stored in `%LocalAppData%\Hatch` by default. No account or internet connection is required to use Hatch. Optional sync is off until you sign in, and the app includes no analytics or remote crash reporting.
 
-Read the [privacy policy](.github/PRIVACY.md).
+Read the [privacy policy](docs/privacy-policy.md).
 
 ## Troubleshooting
+
+**Crash diagnostics:** Hatch writes startup and unhandled exception details to `%LocalAppData%\Hatch\crash.log` in Debug and installed builds. The log stays on your device and may contain task data in exception details. Some native WinUI crashes bypass this log. To capture a local minidump for those crashes during development, run `windows\scripts\enable-crash-dumps.ps1` from an elevated PowerShell window. Windows saves dumps to `%LocalAppData%\CrashDumps` for the crashing user. Dumps may contain task data, so review them before sharing. This opt-in setting applies to `hatch.exe` until you remove its `HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\hatch.exe` registry key.
 
 **Remove the shadow around the mascot:** Search Windows for **Adjust the appearance and performance of Windows**, then clear **Show shadows under windows**. Windows does not offer a per-app setting to disable this shadow.
 

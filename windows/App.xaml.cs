@@ -34,6 +34,10 @@ public partial class App : Application
 
     public App()
     {
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            Helpers.CrashLog.Write("Unhandled .NET exception", e.ExceptionObject?.ToString() ?? "Unknown exception");
+        UnhandledException += (_, e) =>
+            Helpers.CrashLog.Write("Unhandled XAML exception", $"{e.Message}{Environment.NewLine}{e.Exception}");
         InitializeComponent();
         RegisterProtocolWhenUnpackaged();
     }
@@ -272,14 +276,9 @@ public partial class App : Application
         }
         catch (Exception ex)
         {
-            var msg = $"{ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}";
+            var msg = ex.ToString();
             System.Diagnostics.Debug.WriteLine(msg);
-            try
-            {
-                var logPath = Path.Combine(Path.GetTempPath(), "hatch-crash.log");
-                File.WriteAllText(logPath, msg);
-            }
-            catch { }
+            Helpers.CrashLog.Write("Startup exception", msg);
             throw;
         }
     }
