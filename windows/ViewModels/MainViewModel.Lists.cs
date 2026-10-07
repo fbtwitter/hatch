@@ -103,6 +103,37 @@ public sealed partial class MainViewModel
 
     public int GetTaskCountForList(TaskList list) => Tasks.Count(t => t.ListId == list.Id);
 
+    public void SetTaskList(TodoItem task, TaskList? list)
+    {
+        if (!Tasks.Contains(task)) return;
+        if (list != null)
+        {
+            list = CustomLists.FirstOrDefault(current => current.Id == list.Id);
+            if (list == null) return;
+        }
+
+        var listId = list?.Id ?? Guid.Empty;
+        if (task.ListId == listId) return;
+
+        task.ListId = listId;
+        task.UpdatedAt = DateTimeOffset.UtcNow;
+        task.ListName = list?.Name ?? "Task";
+
+        if (!MatchesFilter(task) && ActiveTasks.Contains(task))
+        {
+            SelectedTask = null;
+            ActiveTasks.Remove(task);
+            _openGroup.Items.Remove(task);
+            _completedGroup.Items.Remove(task);
+            OnPropertyChanged(nameof(IsTaskListEmpty));
+            OnPropertyChanged(nameof(ShowEmptyState));
+        }
+
+        BadgeVersion++;
+        OnPropertyChanged(nameof(BadgeVersion));
+        SaveAsync();
+    }
+
     private void RefreshListNames()
     {
         var listMap = CustomLists.ToDictionary(l => l.Id, l => l.Name);

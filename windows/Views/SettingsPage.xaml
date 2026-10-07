@@ -323,6 +323,33 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE82F;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock x:Uid="Settings_ShowQuickTipsHeader"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock x:Uid="Settings_ShowQuickTipsDescription"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <ToggleSwitch Grid.Column="2"
+                                      x:Uid="Settings_ShowQuickTips"
+                                      AutomationProperties.AutomationId="Settings_ShowQuickTips"
+                                      IsOn="{x:Bind ViewModel.ShowQuickTips, Mode=TwoWay}"
+                                      MinWidth="80"
+                                      VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
                         <FontIcon Grid.Column="0" Glyph="&#xE946;" FontSize="16"
                                   VerticalAlignment="Center" Margin="0,0,20,0"/>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center"
@@ -337,6 +364,7 @@
                         <ToggleSwitch Grid.Column="2"
                                       x:Uid="Settings_ShowTipsAutomatically"
                                       AutomationProperties.AutomationId="Settings_ShowTipsAutomatically"
+                                      IsEnabled="{x:Bind ViewModel.ShowQuickTips, Mode=OneWay}"
                                       IsOn="{x:Bind ViewModel.ShowTipsAutomatically, Mode=TwoWay}"
                                       MinWidth="80"
                                       VerticalAlignment="Center"/>
@@ -367,7 +395,7 @@
                         <ComboBox Grid.Column="2" MinWidth="140" VerticalAlignment="Center"
                                   x:Uid="Settings_TipTime"
                                   AutomationProperties.AutomationId="Settings_TipTime"
-                                  IsEnabled="{x:Bind ViewModel.ShowTipsAutomatically, Mode=OneWay}"
+                                  IsEnabled="{x:Bind ViewModel.CanSetProactiveTipTime, Mode=OneWay}"
                                   SelectedIndex="{x:Bind ViewModel.ProactiveTipTimeIndex, Mode=TwoWay}">
                             <ComboBoxItem x:Uid="Settings_TipTime_Anytime"/>
                             <ComboBoxItem x:Uid="Settings_TipTime_Morning"/>

@@ -94,6 +94,7 @@ public sealed class TipEngine
                     ? _resolve("Tip_Overdue_One")
                     : string.Format(_resolve("Tip_Overdue_Many"), overdueTasks),
                 Severity = TipSeverity.Critical,
+                Category = TipCategory.TaskReminder,
                 Action = new TipAction { Label = _resolve("Tip_Action_ViewOverdue"), Type = TipActionType.ViewOverdue },
                 DismissAfterMs = 0,
                 IsMeaningful = true
@@ -110,6 +111,7 @@ public sealed class TipEngine
                     ? _resolve("Tip_DueToday_One")
                     : string.Format(_resolve("Tip_DueToday_Many"), dueToday),
                 Severity = TipSeverity.Warning,
+                Category = TipCategory.TaskReminder,
                 Action = new TipAction { Label = _resolve("Tip_Action_ViewPlanned"), Type = TipActionType.ViewPlanned },
                 DismissAfterMs = 0,
                 IsMeaningful = true
@@ -124,6 +126,7 @@ public sealed class TipEngine
             {
                 Message = _resolve("Tip_MyDayEmpty"),
                 Severity = TipSeverity.Warning,
+                Category = TipCategory.Planning,
                 Action = new TipAction { Label = _resolve("Tip_Action_PlanMyDay"), Type = TipActionType.ViewMyDay },
                 DismissAfterMs = 0,
                 IsMeaningful = true
@@ -138,6 +141,7 @@ public sealed class TipEngine
             {
                 Message = _resolve("Tip_EveningWrapUp"),
                 Severity = TipSeverity.Info,
+                Category = TipCategory.Planning,
                 Action = new TipAction { Label = _resolve("Tip_Action_PlanTomorrow"), Type = TipActionType.ViewMyDay },
                 DismissAfterMs = 0,
                 IsMeaningful = true
@@ -148,6 +152,7 @@ public sealed class TipEngine
             {
                 Message = string.Format(_resolve("Tip_CompletedToday"), completedToday),
                 Severity = TipSeverity.Info,
+                Category = TipCategory.Encouragement,
                 Action = null,
                 DismissAfterMs = 3000,
                 IsMeaningful = true
@@ -165,6 +170,7 @@ public sealed class TipEngine
                 Message = string.Format(_resolve("Tip_StaleTask"),
                     staleTask.Title, (today - staleTask.CreatedAt.Date).Days),
                 Severity = TipSeverity.Info,
+                Category = TipCategory.TaskSuggestion,
                 Action = new TipAction { Label = _resolve("Tip_Action_TakeALook"), Type = TipActionType.OpenMainWindow },
                 DismissAfterMs = 0,
                 IsMeaningful = true
@@ -179,6 +185,7 @@ public sealed class TipEngine
             {
                 Message = string.Format(_resolve("Tip_UndatedBacklog"), undated),
                 Severity = TipSeverity.Info,
+                Category = TipCategory.TaskSuggestion,
                 Action = new TipAction { Label = _resolve("Tip_Action_ScheduleOne"), Type = TipActionType.OpenMainWindow },
                 DismissAfterMs = 0,
                 IsMeaningful = true
@@ -196,6 +203,7 @@ public sealed class TipEngine
             {
                 Message = _resolve("Tip_EmptyList"),
                 Severity = TipSeverity.Warning,
+                Category = TipCategory.TaskSuggestion,
                 Action = new TipAction { Label = _resolve("Tip_Action_AddSample"), Type = TipActionType.AddSampleTask },
                 DismissAfterMs = 0,
                 IsMeaningful = false
@@ -220,6 +228,7 @@ public sealed class TipEngine
                 {
                     Message = pool[dayNumber % pool.Count],
                     Severity = TipSeverity.Info,
+                    Category = TipCategory.DailyInspiration,
                     Action = null,
                     DismissAfterMs = 6000,
                     IsMeaningful = false,
@@ -237,6 +246,7 @@ public sealed class TipEngine
             {
                 Message = _resolve(GetTimeBasedGreetingKey(current)),
                 Severity = TipSeverity.Warning,
+                Category = TipCategory.Encouragement,
                 Action = null,
                 DismissAfterMs = 5000,
                 IsMeaningful = false
@@ -250,6 +260,7 @@ public sealed class TipEngine
         {
             Message = _resolve(CaptureInviteKeys[_greetingIndex++ % CaptureInviteKeys.Length]),
             Severity = TipSeverity.Info,
+            Category = TipCategory.TaskSuggestion,
             Action = new TipAction { Label = _resolve("Tip_Action_WriteItDown"), Type = TipActionType.CaptureTask },
             DismissAfterMs = 5000,
             IsMeaningful = false

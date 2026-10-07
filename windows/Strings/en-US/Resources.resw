@@ -122,7 +122,6 @@
 
   <!-- ── Quick Add bubble window (x:Uid mapped) ──────────────── -->
   <data name="QuickAdd_Header.Text" xml:space="preserve"><value>Add Task</value></data>
-  <data name="QuickAdd_TipHeading.Text" xml:space="preserve"><value>Quick tip</value></data>
   <data name="QuickAdd_ConfirmHeadline.Text" xml:space="preserve"><value>Task added!</value></data>
   <data name="QuickAdd_ConfirmAddedTo" xml:space="preserve"><value>Added to &quot;{0}&quot;</value><comment>{0} = list name</comment></data>
   <data name="QuickAdd_IntroTitle.Text" xml:space="preserve"><value>Welcome to Hatch</value></data>
@@ -202,6 +201,9 @@
   <data name="Pane_MyDayLabel.Text" xml:space="preserve"><value>My Day</value></data>
   <data name="Pane_RepeatLabel.Text" xml:space="preserve"><value>Repeat</value></data>
   <data name="Pane_PriorityLabel.Text" xml:space="preserve"><value>Priority</value></data>
+  <data name="Pane_ListLabel.Text" xml:space="preserve"><value>List</value></data>
+  <data name="PaneListCombo.AutomationProperties.Name" xml:space="preserve"><value>List</value></data>
+  <data name="PaneListNone.Content" xml:space="preserve"><value>No list</value></data>
   <data name="Pane_TagsLabel.Text" xml:space="preserve"><value>Tags</value></data>
   <data name="PaneTagInput.PlaceholderText" xml:space="preserve"><value>Add a tag, press Enter</value></data>
   <data name="PaneTagChipRemove.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Remove tag</value></data>
@@ -236,6 +238,15 @@
   <data name="FocusMode_Resume" xml:space="preserve"><value>Resume</value></data>
 
   <!-- ── Tips ────────────────────────────────────────────────── -->
+  <data name="Tip_Category_TaskReminder" xml:space="preserve"><value>Task reminder</value></data>
+  <data name="Tip_Category_Planning" xml:space="preserve"><value>Planning</value></data>
+  <data name="Tip_Category_TaskSuggestion" xml:space="preserve"><value>Task suggestion</value></data>
+  <data name="Tip_Category_DailyInspiration" xml:space="preserve"><value>Daily inspiration</value></data>
+  <data name="Tip_Category_Encouragement" xml:space="preserve"><value>Encouragement</value></data>
+  <data name="Tip_OptionsButton.AutomationProperties.Name" xml:space="preserve"><value>Tip options</value></data>
+  <data name="Tip_OptionsButton.ToolTipService.ToolTip" xml:space="preserve"><value>Tip options</value></data>
+  <data name="Tip_MenuHideToday.Text" xml:space="preserve"><value>Hide tips for today</value></data>
+  <data name="Tip_MenuTurnOff.Text" xml:space="preserve"><value>Turn off Quick Tips</value></data>
   <data name="Tip_SampleTaskTitle" xml:space="preserve"><value>Example: Click to edit task name</value></data>
   <data name="Tip_Overdue_One" xml:space="preserve"><value>You have 1 overdue task</value></data>
   <data name="Tip_Overdue_Many" xml:space="preserve"><value>You have {0} overdue tasks</value><comment>{0} = overdue task count, always ≥ 2</comment></data>
@@ -486,6 +497,12 @@
   <data name="Settings_HideFullscreen.AutomationProperties.Name" xml:space="preserve"><value>Hide during fullscreen</value></data>
   <data name="Settings_HideFullscreen.OnContent" xml:space="preserve"><value>On</value></data>
   <data name="Settings_HideFullscreen.OffContent" xml:space="preserve"><value>Off</value></data>
+  <data name="Settings_ShowQuickTipsHeader.Text" xml:space="preserve"><value>Quick Tips</value></data>
+  <data name="Settings_ShowQuickTipsDescription.Text" xml:space="preserve"><value>Show tips in Quick Add and above the mascot</value></data>
+  <data name="Settings_ShowQuickTipsDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Show tips in Quick Add and above the mascot</value></data>
+  <data name="Settings_ShowQuickTips.AutomationProperties.Name" xml:space="preserve"><value>Show Quick Tips</value></data>
+  <data name="Settings_ShowQuickTips.OnContent" xml:space="preserve"><value>On</value></data>
+  <data name="Settings_ShowQuickTips.OffContent" xml:space="preserve"><value>Off</value></data>
   <data name="Settings_ShowTipsAutomaticallyHeader.Text" xml:space="preserve"><value>Show Tips Automatically</value></data>
   <data name="Settings_ShowTipsAutomaticallyDescription.Text" xml:space="preserve"><value>Pop up tips above the mascot on their own, instead of waiting for a click</value></data>
   <data name="Settings_ShowTipsAutomaticallyDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Pop up tips above the mascot on their own, instead of waiting for a click</value></data>
@@ -575,14 +592,14 @@
   <data name="Settings_RateAppButtonLabel.Text" xml:space="preserve"><value>Rate the app</value></data>
   <data name="Settings_AboutDialog_Close" xml:space="preserve"><value>Close</value></data>
   <data name="Settings_PrivacyDialogTitle" xml:space="preserve"><value>Privacy policy</value></data>
-  <data name="Settings_PrivacyLastUpdated" xml:space="preserve"><value>Last updated: June 19, 2026</value></data>
+  <data name="Settings_PrivacyLastUpdated" xml:space="preserve"><value>Last updated: October 8, 2026</value></data>
   <data name="Settings_PrivacyIntro" xml:space="preserve"><value>Hatch stores your tasks locally by default. Sync is optional and requires you to sign in.</value></data>
   <data name="Settings_PrivacyUserDataHeading" xml:space="preserve"><value>User data</value></data>
-  <data name="Settings_PrivacyUserDataMessage" xml:space="preserve"><value>Tasks and custom lists are stored in tasks.json; app preferences are stored in settings.json. Both files stay on your device in %LocalAppData%\Hatch\.</value></data>
+  <data name="Settings_PrivacyUserDataMessage" xml:space="preserve"><value>Tasks and custom lists are stored in tasks.json; app preferences are stored in settings.json. Both files stay on your device in %LocalAppData%\Hatch\. Startup and unhandled exceptions may write diagnostic details to %LocalAppData%\Hatch\crash.log. This file stays on your device and is not sent automatically. Exception details may contain task data.</value></data>
   <data name="Settings_PrivacySyncHeading" xml:space="preserve"><value>Optional sync</value></data>
   <data name="Settings_PrivacySyncMessage" xml:space="preserve"><value>Sync is off by default and requires sign-in. If enabled, only your tasks and lists are sent to the sync service; device and usage data are not. Tasks and lists are encrypted on this device before upload. You can turn sync off in Settings.</value></data>
   <data name="Settings_PrivacyTelemetryHeading" xml:space="preserve"><value>Analytics and telemetry</value></data>
-  <data name="Settings_PrivacyTelemetryMessage" xml:space="preserve"><value>None. Hatch has no analytics SDK, crash reporter, feature-flag system, or usage pings.</value></data>
+  <data name="Settings_PrivacyTelemetryMessage" xml:space="preserve"><value>Hatch has no analytics, telemetry, or remote crash reporting.</value></data>
   <data name="Settings_PrivacyNetworkHeading" xml:space="preserve"><value>Internet access</value></data>
   <data name="Settings_PrivacyNetworkMessage" xml:space="preserve"><value>Hatch works without an internet connection. It makes no network requests without your action: signing in to sync, checking for updates, opening the Microsoft Store review page, or opening GitHub issues.</value></data>
   <data name="Settings_PrivacySharingHeading" xml:space="preserve"><value>Data sharing</value></data>

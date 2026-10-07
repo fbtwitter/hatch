@@ -177,9 +177,6 @@ internal static class NativeMethods
     internal static extern int SHQueryUserNotificationState(
         out QUERY_USER_NOTIFICATION_STATE pquns);
 
-    [DllImport("kernel32.dll", SetLastError = true)]
-    internal static extern bool EmptyWorkingSet(IntPtr proc);
-
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     internal static extern uint RegisterApplicationRestart(string? commandLine, uint flags);
 

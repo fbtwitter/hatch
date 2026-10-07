@@ -167,6 +167,25 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         App.MascotWindowInstance?.ViewModel.RaiseLottieFileChanged();
     }
 
+    public bool ShowQuickTips
+    {
+        get => _settings.Current.ShowQuickTips;
+        set
+        {
+            if (_settings.Current.ShowQuickTips == value) return;
+            App.TipCoordinator.SetQuickTipsEnabled(value);
+            RefreshQuickTipSettings();
+        }
+    }
+
+    public bool CanSetProactiveTipTime => ShowQuickTips && ShowTipsAutomatically;
+
+    public void RefreshQuickTipSettings()
+    {
+        OnPropertyChanged(nameof(ShowQuickTips));
+        OnPropertyChanged(nameof(CanSetProactiveTipTime));
+    }
+
     public bool ShowTipsAutomatically
     {
         get => _settings.Current.ShowTipsAutomatically;
@@ -176,6 +195,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             _settings.Current.ShowTipsAutomatically = value;
             _settings.SaveDebounced();
             OnPropertyChanged();
+            OnPropertyChanged(nameof(CanSetProactiveTipTime));
         }
     }
 

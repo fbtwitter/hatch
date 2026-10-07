@@ -538,6 +538,8 @@
                                                           CornerRadius="0"
                                                           SelectionMode="Single"
                                                           SelectionChanged="TaskListView_SelectionChanged"
+                                                          Loaded="TaskListView_Loaded"
+                                                          Unloaded="TaskListView_Unloaded"
                                                           IsTabStop="False"
                                                           ScrollViewer.VerticalScrollBarVisibility="Disabled"
                                                           ScrollViewer.HorizontalScrollBarVisibility="Disabled">
@@ -557,6 +559,8 @@
                                                       DragItemsCompleted="MyDayTasks_DragItemsCompleted"
                                                       SelectionMode="Single"
                                                       SelectionChanged="TaskListView_SelectionChanged"
+                                                      Loaded="TaskListView_Loaded"
+                                                      Unloaded="TaskListView_Unloaded"
                                                       IsTabStop="False"
                                                       Margin="20,4"
                                                       Visibility="{x:Bind ShowFlatList, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
@@ -588,6 +592,8 @@
                                           ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
                                           SelectionMode="Single"
                                           SelectionChanged="TaskListView_SelectionChanged"
+                                          Loaded="TaskListView_Loaded"
+                                          Unloaded="TaskListView_Unloaded"
                                           IsTabStop="False"
                                           ScrollViewer.VerticalScrollBarVisibility="Disabled"
                                           ScrollViewer.HorizontalScrollBarVisibility="Disabled">
@@ -724,6 +730,8 @@
                           ItemsSource="{x:Bind PlannedGroupsSource.View, Mode=OneWay}"
                           SelectionMode="Single"
                           SelectionChanged="TaskListView_SelectionChanged"
+                          Loaded="TaskListView_Loaded"
+                          Unloaded="TaskListView_Unloaded"
                           Padding="20,0,20,0"
                           ItemTemplate="{StaticResource TaskItemTemplate}"
                           ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
@@ -1170,6 +1178,30 @@
                                             <ComboBoxItem x:Uid="PriorityItem_Low" Content="Low" />
                                             <ComboBoxItem x:Uid="PriorityItem_Medium" Content="Medium" />
                                             <ComboBoxItem x:Uid="PriorityItem_High" Content="High" />
+                                        </ComboBox>
+                                    </Grid>
+
+                                    <Border Style="{StaticResource PaneRowDividerStyle}" />
+
+                                    <Grid Style="{StaticResource PaneRowGridStyle}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <FontIcon Grid.Column="0" Glyph="&#xE8B7;"
+                                                  Style="{StaticResource PaneRowGlyphStyle}" />
+                                        <TextBlock Grid.Column="1" x:Uid="Pane_ListLabel" Text="List"
+                                                   Style="{StaticResource PaneRowLabelStyle}" />
+                                        <ComboBox Grid.Column="2"
+                                                  x:Name="PaneListCombo"
+                                                  x:Uid="PaneListCombo"
+                                                  AutomationProperties.AutomationId="PaneListCombo"
+                                                  AutomationProperties.Name="List"
+                                                  MinWidth="132"
+                                                  VerticalAlignment="Center"
+                                                  SelectionChanged="PaneListCombo_SelectionChanged">
+                                            <ComboBoxItem x:Uid="PaneListNone" Content="No list" />
                                         </ComboBox>
                                     </Grid>
 

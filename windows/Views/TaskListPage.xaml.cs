@@ -26,9 +26,10 @@ public sealed partial class TaskListPage : Page
     private TodoItem? _paneTask;
     private bool _updatingPane;
     private Storyboard? _paneStoryboard;
+    private int _paneTransitionVersion;
     private bool _suppressSelectionChanged;
     private TodoItem? _preTapSelectedTask;
-    private List<ListView>? _cachedTaskListViews;
+    private readonly HashSet<ListView> _taskListViews = [];
 
     // Cached date flyout controls — built once, reused on every chip tap.
     private Flyout? _dateFlyout;
@@ -77,7 +78,6 @@ public sealed partial class TaskListPage : Page
     {
         FlatGroupsItemsControl.ItemsSource = null;
         GroupedListView.ItemsSource = null;
-        _cachedTaskListViews = null;
     }
 
     // Restores from the ViewModel's current state, never from a snapshot taken at hide
@@ -166,7 +166,12 @@ public sealed partial class TaskListPage : Page
             _vm.FlatGroupMoveCompleted -= OnFlatGroupMoveCompleted;
             // Close pane silently when navigating away — don't animate
             _vm.SelectedTask = null;
+            _paneTransitionVersion++;
+            _paneStoryboard?.Stop();
             DetailsPaneRoot.Visibility = Visibility.Collapsed;
+            PaneScrim.Visibility = Visibility.Collapsed;
+            DetailsPaneTranslate.X = 0;
+            _paneTask = null;
         }
     }
 
@@ -221,6 +226,7 @@ public sealed partial class TaskListPage : Page
         {
             // Cancel any in-flight close animation (e.g. triggered by OnPagePointerPressed
             // before TaskCard_Tapped fires) and keep the pane open at full position.
+            _paneTransitionVersion++;
             _paneStoryboard?.Stop();
             DetailsPaneTranslate.X = 0;
         }
@@ -231,6 +237,16 @@ public sealed partial class TaskListPage : Page
     private void ClosePane()
     {
         if (DetailsPaneRoot.Visibility != Visibility.Visible) return;
+
+        var focused = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject;
+        while (focused != null && !ReferenceEquals(focused, DetailsPaneRoot))
+            focused = VisualTreeHelper.GetParent(focused);
+        if (focused != null)
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, () =>
+            {
+                if (IsLoaded && _vm?.SelectedTask == null)
+                    Focus(FocusState.Programmatic);
+            });
 
         AnimatePane(from: 0, to: DetailsPaneRoot.Width, durationMs: 200, easeOut: false, onComplete: () =>
         {
@@ -278,6 +294,7 @@ public sealed partial class TaskListPage : Page
 
     private void AnimatePane(double from, double to, int durationMs, bool easeOut, Action? onComplete = null)
     {
+        var transitionVersion = ++_paneTransitionVersion;
         _paneStoryboard?.Stop();
         DetailsPaneTranslate.X = from;
 
@@ -293,7 +310,10 @@ public sealed partial class TaskListPage : Page
         Storyboard.SetTargetProperty(anim, "X");
         _paneStoryboard.Children.Add(anim);
         if (onComplete != null)
-            _paneStoryboard.Completed += (_, _) => onComplete();
+            _paneStoryboard.Completed += (_, _) =>
+            {
+                if (transitionVersion == _paneTransitionVersion) onComplete();
+            };
         _paneStoryboard.Begin();
     }
 
@@ -309,6 +329,33 @@ public sealed partial class TaskListPage : Page
         PaneNotesBox.Text = task.Notes ?? string.Empty;
         PaneMyDayToggle.IsOn = task.IsInMyDay;
         PanePriorityCombo.SelectedIndex = (int)task.Priority;
+        var lists = ViewModel.CustomLists;
+        var optionsChanged = PaneListCombo.Items.Count != lists.Count + 1;
+        for (int i = 0; !optionsChanged && i < lists.Count; i++)
+        {
+            optionsChanged = PaneListCombo.Items[i + 1] is not ComboBoxItem option
+                || option.Tag is not TaskList current
+                || !ReferenceEquals(current, lists[i])
+                || !Equals(option.Content, lists[i].Name);
+        }
+        if (optionsChanged)
+        {
+            PaneListCombo.SelectedIndex = -1;
+            while (PaneListCombo.Items.Count > 1)
+                PaneListCombo.Items.RemoveAt(1);
+            foreach (var list in lists)
+                PaneListCombo.Items.Add(new ComboBoxItem { Content = list.Name, Tag = list });
+        }
+        var selectedListIndex = 0;
+        for (int i = 1; i < PaneListCombo.Items.Count; i++)
+        {
+            if (PaneListCombo.Items[i] is ComboBoxItem { Tag: TaskList list } && list.Id == task.ListId)
+            {
+                selectedListIndex = i;
+                break;
+            }
+        }
+        PaneListCombo.SelectedIndex = selectedListIndex;
         // The day as written, never through ToLocalTime (see TipEngine): converting here
         // showed the previous day in the picker west of UTC, and re-picking that visible
         // day silently committed the shifted date.
@@ -433,6 +480,12 @@ public sealed partial class TaskListPage : Page
         ViewModel.SetTaskPriority(_paneTask, (TaskPriority)PanePriorityCombo.SelectedIndex);
     }
 
+    private void PaneListCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_updatingPane || _paneTask == null || PaneListCombo.SelectedItem is not ComboBoxItem item) return;
+        ViewModel.SetTaskList(_paneTask, item.Tag as TaskList);
+    }
+
     private void SuggestionAddButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: TodoItem task })
@@ -541,7 +594,7 @@ public sealed partial class TaskListPage : Page
         {
             // Deselect all other task ListViews so only one row highlights at a time.
             _suppressSelectionChanged = true;
-            foreach (var lv in FindTaskListViews())
+            foreach (var lv in _taskListViews)
             {
                 if (!ReferenceEquals(lv, sender))
                     lv.SelectedItem = null;
@@ -557,46 +610,38 @@ public sealed partial class TaskListPage : Page
     private void SyncListViewSelection(TodoItem? task)
     {
         _suppressSelectionChanged = true;
-        // Deferred: cross-page navigation can land here before the ListViews are realized
-        // by the layout pass, so FindTaskListViews would find nothing yet.
+        // Deferred: cross-page navigation can land before the ListViews load.
+        // TaskListView_Loaded also applies the selection if layout takes another frame.
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, () =>
         {
-            _cachedTaskListViews = null;
-            foreach (var lv in FindTaskListViews())
+            foreach (var lv in _taskListViews)
                 lv.SelectedItem = task != null && lv.Items.Contains(task) ? task : null;
             _suppressSelectionChanged = false;
         });
     }
 
-    private IEnumerable<ListView> FindTaskListViews()
+    private void TaskListView_Loaded(object sender, RoutedEventArgs e)
     {
-        if (_cachedTaskListViews != null) return _cachedTaskListViews;
-        // Matched by ItemContainerStyle, not ItemTemplate — Suggestions uses a different
-        // row template but shares this style, so one filter covers every selectable list.
-        var style = (Style)Resources["TaskListViewItemStyle"];
-        _cachedTaskListViews = FindDescendants<ListView>(this)
-            .Where(lv => lv.ItemContainerStyle == style)
-            .ToList();
-        return _cachedTaskListViews;
+        if (sender is not ListView listView) return;
+        _taskListViews.Add(listView);
+        var selectedTask = _vm?.SelectedTask;
+        var wasSuppressing = _suppressSelectionChanged;
+        _suppressSelectionChanged = true;
+        listView.SelectedItem = selectedTask != null && listView.Items.Contains(selectedTask)
+            ? selectedTask
+            : null;
+        _suppressSelectionChanged = wasSuppressing;
     }
 
-    private static IEnumerable<T> FindDescendants<T>(DependencyObject parent) where T : DependencyObject
+    private void TaskListView_Unloaded(object sender, RoutedEventArgs e)
     {
-        int count = VisualTreeHelper.GetChildrenCount(parent);
-        for (int i = 0; i < count; i++)
-        {
-            var child = VisualTreeHelper.GetChild(parent, i);
-            if (child is T match) yield return match;
-            foreach (var desc in FindDescendants<T>(child))
-                yield return desc;
-        }
+        if (sender is ListView listView) _taskListViews.Remove(listView);
     }
 
     // ── Existing handlers ────────────────────────────────────────────────────
 
     private void UpdateView(string navItem)
     {
-        _cachedTaskListViews = null;
         HeaderText.Text = navItem switch
         {
             "myday"     => Strings.Header_MyDay,

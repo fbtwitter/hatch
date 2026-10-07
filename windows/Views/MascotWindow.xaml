@@ -341,25 +341,61 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock x:Name="ProactiveTipText" Grid.Row="0" Grid.Column="0"
+                        <Grid Grid.Row="0" Grid.ColumnSpan="2" ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <FontIcon x:Name="ProactiveTipCategoryIcon" Grid.Column="0" FontSize="16"
+                                      Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
+                            <TextBlock x:Name="ProactiveTipCategoryHeading" Grid.Column="1"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center" />
+                            <Button Grid.Column="2" x:Uid="Tip_OptionsButton"
+                                    AutomationProperties.AutomationId="ProactiveTip_Options"
+                                    AutomationProperties.Name="Tip options"
+                                    ToolTipService.ToolTip="Tip options"
+                                    Style="{ThemeResource SubtleButtonStyle}"
+                                    Width="32" Height="32" MinWidth="0" Padding="0">
+                                <FontIcon Glyph="&#xE712;" FontSize="14" />
+                                <Button.Flyout>
+                                    <MenuFlyout Placement="BottomEdgeAlignedRight"
+                                                Opened="TipOptionsFlyout_Opened"
+                                                Closed="TipOptionsFlyout_Closed"
+                                                ShouldConstrainToRootBounds="False">
+                                        <MenuFlyoutItem x:Uid="Tip_MenuHideToday"
+                                                        Text="Hide tips for today"
+                                                        Click="TipMenuHideToday_Click" />
+                                        <MenuFlyoutItem x:Uid="Tip_MenuTurnOff"
+                                                        Text="Turn off Quick Tips"
+                                                        Click="TipMenuTurnOff_Click" />
+                                    </MenuFlyout>
+                                </Button.Flyout>
+                            </Button>
+                            <Button Grid.Column="3"
+                                    AutomationProperties.AutomationId="ProactiveTip_Close"
+                                    AutomationProperties.Name="Dismiss tip"
+                                    HorizontalAlignment="Right" VerticalAlignment="Top"
+                                    Style="{ThemeResource SubtleButtonStyle}"
+                                    Width="32" Height="32" MinWidth="0" Padding="0"
+                                    Click="ProactiveTip_CloseClick">
+                                <FontIcon Glyph="&#xE711;" FontSize="12" />
+                            </Button>
+                        </Grid>
+                        <TextBlock x:Name="ProactiveTipText" Grid.Row="1" Grid.Column="0"
                                    TextWrapping="Wrap" VerticalAlignment="Top"
                                    AutomationProperties.AutomationId="ProactiveTip_Message"
                                    Style="{ThemeResource BodyTextBlockStyle}" />
-                        <Button Grid.Row="0" Grid.Column="1"
-                                AutomationProperties.AutomationId="ProactiveTip_Close"
-                                AutomationProperties.Name="Dismiss tip"
-                                HorizontalAlignment="Right" VerticalAlignment="Top"
-                                Style="{ThemeResource SubtleButtonStyle}"
-                                Width="32" Height="32" MinWidth="0" Padding="0"
-                                Click="ProactiveTip_CloseClick">
-                            <FontIcon Glyph="&#xE711;" FontSize="12" />
-                        </Button>
-                        <Button x:Name="ProactiveTipAction" Grid.Row="1" Grid.ColumnSpan="2"
+                        <Button x:Name="ProactiveTipAction" Grid.Row="2" Grid.ColumnSpan="2"
                                 HorizontalAlignment="Stretch"
                                 HorizontalContentAlignment="Center"
                                 Padding="12,6"
