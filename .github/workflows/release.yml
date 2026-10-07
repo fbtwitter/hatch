@@ -28,6 +28,64 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prepare GitHub release notes
+        if: github.event_name == 'push'
+        shell: pwsh
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          $tagMatch = [regex]::Match($tag, '^v(?<version>\d+\.\d+\.\d+(?:\.\d+)?)$')
+          if (-not $tagMatch.Success) {
+            throw "Release tag must use vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH.REVISION: $tag"
+          }
+          $version = $tagMatch.Groups['version'].Value
+          $changelog = Get-Content (Join-Path $env:GITHUB_WORKSPACE 'CHANGELOG.md') -Raw
+          $sectionPattern = "(?ms)^## \[$([regex]::Escape($version))\] - \d{4}-\d{2}-\d{2}[ \t]*\r?\n(?<entry>.*?)(?=^## \[|\z)"
+          $section = [regex]::Match($changelog, $sectionPattern)
+          if (-not $section.Success) {
+            throw "Add a dated CHANGELOG.md entry for $tag before tagging the release."
+          }
+          $entry = [regex]::Replace($section.Groups['entry'].Value, '(?m)^[ \t]*---[ \t]*\r?\n?', '').Trim()
+          if ($entry -notmatch '(?m)^- \S') {
+            throw "CHANGELOG.md entry for $tag needs at least one change bullet."
+          }
+
+          $currentVersion = [version]$version
+          $previousTag = git tag --list 'v*' |
+            Where-Object { $_ -match '^v\d+\.\d+\.\d+(?:\.\d+)?$' -and [version]($_.Substring(1)) -lt $currentVersion } |
+            Sort-Object { [version]$_.Substring(1) } -Descending |
+            Select-Object -First 1
+          $repoUrl = "https://github.com/$($env:GITHUB_REPOSITORY)"
+          $releaseCommit = git rev-parse "$tag^{commit}"
+          $commitUrl = '{0}/commit/{1}' -f $repoUrl, $releaseCommit
+          $commitLink = "[Tagged commit]($commitUrl)"
+          if ($previousTag) {
+            $compareUrl = '{0}/compare/{1}...{2}' -f $repoUrl, $previousTag, $tag
+            $commitLink = "[View commits since $previousTag]($compareUrl) · $commitLink"
+          }
+          $install = @'
+          ## Install
+
+          Install this release directly and get future updates automatically:
+          1. **First time only** — download `install-cert.cer`, double-click → Install Certificate → Local Machine → Trusted People → Finish
+          2. Open **<https://fbtwitter.github.io/hatch/Hatch.appinstaller>** and choose Install
+
+          Installing that way registers Hatch with Windows App Installer, which
+          checks for new versions daily and updates in the background.
+
+          [Microsoft Store](https://apps.microsoft.com/detail/9PKTQFG9S3K8) installs do not need certificate setup. Store releases are published separately and may lag this GitHub release.
+
+          <details>
+          <summary>One-off install without auto-updates</summary>
+
+          Download the attached `.msixbundle` and double-click it. Windows picks the
+          right architecture automatically. Installs done this way will not update themselves.
+          </details>
+          '@
+          $notes = "## What's new in $tag`n`n$entry`n`n$commitLink`n`n---`n`n$install"
+          Set-Content (Join-Path $env:GITHUB_WORKSPACE 'release-notes.md') $notes -Encoding utf8NoBOM
 
       - name: Inject secrets
         shell: pwsh
@@ -250,29 +308,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           name: Hatch ${{ github.ref_name }}
-          generate_release_notes: true
-          body: |
-            ## Install
-
-            Install this release directly and get future updates automatically:
-            1. **First time only** — download `install-cert.cer`, double-click → Install Certificate → Local Machine → Trusted People → Finish
-            2. Open **<https://fbtwitter.github.io/hatch/Hatch.appinstaller>** and choose Install
-
-            Installing that way registers Hatch with Windows App Installer, which
-            checks for new versions daily and updates in the background — no need to
-            come back here for the next release.
-
-            [Microsoft Store](https://apps.microsoft.com/detail/9PKTQFG9S3K8) installs do not need certificate setup. Store releases are published separately and may lag this GitHub release.
-
-            <details>
-            <summary>One-off install without auto-updates</summary>
-
-            Download `${{ env.BUNDLE_NAME }}` and double-click it — Windows picks the
-            right architecture (x64, ARM64 or x86) automatically. Installs done this
-            way will not update themselves.
-            </details>
-
-            ---
+          body_path: ${{ github.workspace }}/release-notes.md
           files: |
             ${{ env.BUNDLE_PATH }}
             ${{ env.APPINSTALLER_PATH }}

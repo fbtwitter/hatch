@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.25.9] - 2026-10-08
+
+### Added
+- Quick Tips now distinguish task reminders, task suggestions, and encouragement, with
+  controls to hide tips for today or turn them off.
+- Task details now include a List picker below Priority.
+- Local crash diagnostics record startup and unhandled exceptions for development and installs.
+
+### Fixed
+- The mascot starts its Lottie animation on launch, and the first Quick Tip waits for it.
+- Task lists stay visible after list changes and sync reloads; repeated task-detail opening
+  and closing is more stable.
+
+### Changed
+- Reduced work when opening task details and improved warm reopen responsiveness.
+- Documented command-line building, privacy behavior, and release updates. GitHub release
+  pages now show this version summary with links to its commits.
+
 ## [0.25.8] - 2026-10-02
 
 - Improved Settings About dialogs and replaced Quick-Add hotkey selectors with direct keyboard recording.
@@ -77,6 +95,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 - Details-pane editing now keeps scroll and input focus in step with user interaction.
 
 ---
+
+## [0.23.2] - 2026-09-24
+
+- Upgraded Windows App SDK to 2.5.1 and added the repository license file.
 
 ## [0.23.1] - 2026-09-23
 
@@ -483,7 +505,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
-## [0.12.4] – [0.12.5] - 2026-06-17
+## [0.12.5] - 2026-06-17
+
+- Tagged the same commit as v0.12.4; no further code changes.
+
+## [0.12.4] - 2026-06-17
 
 ### Fixed
 - Onboarding page content clipping — `ScrollViewer` with a viewport-bound `MinHeight`
@@ -636,6 +662,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.6.3] - 2026-06-04
+
+- Updated version metadata in the manifest and About page to v0.6.2; no new app behavior.
+
 ## [0.6.2] - 2026-06-04
 
 ### Added
@@ -726,6 +756,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.3.1.1] - 2026-05-15
+
+- Restored per-platform dependency restore in the release build for the ARM64 apphost pack.
+
 ## [0.3.1] - 2026-05-15
 
 ### Added
@@ -755,6 +789,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ---
 
+## [0.2.7] - 2026-05-12
+
+- Removed a release workflow runtime asset check and left dependency handling to Windows.
+
 ## [0.2.6] - 2026-05-12
 
 ### Added
@@ -783,9 +821,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 - Explicit `EmptyWorkingSet()` P/Invoke call on main window minimize-to-tray for aggressive memory cleanup
 
 ### Performance
-- Idle memory now <50MB, CPU <2% when mascot hidden with window closed
+- Early memory and CPU optimizations. The original <50 MB idle-memory claim was later
+  disproven by measurement; see [.github/PERFORMANCE.md](.github/PERFORMANCE.md).
 
 ---
+
+## [0.2.4] - 2026-05-11
+
+- Tagged the same commit as v0.2.3; no further code changes.
 
 ## [0.2.3.2] - 2026-05-12
 
@@ -800,6 +843,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 - Dynamic scaling for both animated and vector mascots via Viewbox wrapping
 
 ---
+
+## [0.2.3.1] - 2026-05-11
+
+- Excluded dependency MSIX files from bundle staging in the release workflow.
 
 ## [0.2.3] - 2026-05-11
 
@@ -882,6 +929,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 - Scroll jumps on list updates
 
 ---
+
+## [0.1.1] - 2026-05-07
+
+- Imported the signing certificate into the certificate store before MSIX signing.
 
 ## [0.1.0] - 2026-05-07
 

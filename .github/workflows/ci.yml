@@ -53,7 +53,7 @@ jobs:
 
       # Pure-logic tests only (Models/Helpers/Services with no WinUI dependency).
       # The FlaUI UI-automation suite in Hatch.Tests launches the packaged app and
-      # stays manual — not run here. See context/current-feature.md.
+      # stays manual — see the contributor guide for local UI checks.
       - name: Run unit tests
         shell: pwsh
         run: dotnet test Hatch.Tests.Unit/Hatch.Tests.Unit.csproj --configuration Debug

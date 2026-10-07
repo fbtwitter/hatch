@@ -1,248 +1,65 @@
-# Contributing — Hatch
+# Contributing to Hatch
 
-Thank you for considering contributing to Hatch! This guide explains how to set up, build, and submit changes.
+Thanks for considering a contribution. Hatch is a WinUI 3 desktop app for Windows 10
+(build 17763+) and Windows 11.
 
----
+## Set up and build
 
-## Prerequisites
+Follow the [IDE-free build and run instructions](../README.md#build-and-run-without-an-ide).
+They use the x64 Debug configuration and list the required SDK and runtime. Run the commands
+from the repository root.
 
-- **Windows 10** (build 17763+) or **Windows 11**
-- **Visual Studio 2022** with Windows App SDK workload, OR
-- **.NET 10 SDK** + **Windows App SDK** installed separately
-- **Git**
-
-### Install Windows App SDK
+For the pure-logic unit tests:
 
 ```powershell
-# Via Visual Studio Installer (recommended)
-# Workload: ".NET Desktop development" → includes Windows App SDK
-
-# Or standalone
-winget install Microsoft.WindowsAppSDK
+dotnet test .\windows\Hatch.Tests.Unit\Hatch.Tests.Unit.csproj -c Debug
 ```
 
----
+The Kotlin Multiplatform companion app is maintained in the
+[hatch-mobile repository](https://github.com/fbtwitter/hatch-mobile).
 
-## Building from Source
+## Project structure
 
-### 1. Clone & Navigate
+See [Architecture](ARCHITECTURE.md) for the current system overview and
+[docs/README.md](../docs/README.md) for product and protocol references.
 
-```powershell
-git clone https://github.com/fbtwitter/hatch.git
-cd hatch/windows
-```
+## Before opening a pull request
 
-`windows/` is the WinUI 3 app that every command below refers to. The Kotlin Multiplatform
-companion project lives in its own repository,
-[hatch-mobile](https://github.com/fbtwitter/hatch-mobile).
+1. Create a branch named `feature/<name>`, `fix/<name>`, or `chore/<name>`.
+2. Describe the change and its scope in the issue or pull request.
+3. Follow the existing WinUI and MVVM patterns:
+   - Use `Microsoft.UI.Xaml.*` controls and theme resources.
+   - Keep presentation state and commands in ViewModels.
+   - Keep I/O asynchronous and UI updates on the dispatcher.
+   - Keep `TaskStorageService` as the sole writer to `tasks.json`.
+4. Build the app and run the unit tests. Check relevant UI behavior, including theme and
+   multi-monitor behavior when applicable.
+5. Use a conventional commit message (`feat:`, `fix:`, `chore:`, `refactor:`, or
+   `docs:`). Keep each commit to one logical change and omit AI attribution.
+6. Push the branch and open a pull request.
 
-### 2. Build
+## Privacy and performance
 
-```powershell
-# Debug build
-dotnet build
+Hatch stores tasks locally by default. Sync is optional and requires sign-in; do not add
+telemetry or unrelated automatic network requests. See the
+[privacy implementation notes](PRIVACY.md).
 
-# Release build
-dotnet build -c Release
+Memory and startup measurements are documented in [Performance](PERFORMANCE.md). The old
+sub-50 MB idle target was disproven, and CI has no memory-performance gate. For new services,
+timers, or large collections, describe the expected impact and measure it when practical.
 
-# Run (Debug only; requires Windows App SDK)
-dotnet run
-```
+## CI and releases
 
-Placeholder assets are generated automatically on first build.
+Pull requests and pushes to `main` build the app and run the pure-logic unit tests. A
+`v*.*.*` tag triggers MSIX packaging, a GitHub release, and an App Installer feed update.
+Microsoft Store submission is manual.
 
----
+Before pushing a release tag, move the relevant `Unreleased` changes into a dated
+`CHANGELOG.md` section headed `## [X.Y.Z] - YYYY-MM-DD` (or `X.Y.Z.W` for a revision),
+with at least one change bullet. The release workflow checks that the section matches the
+tag before building. The GitHub release page displays that entry, a link to the commits
+since the previous version, and installation instructions. For each separate
+Microsoft Store submission, write its **What's new** text from the changes actually included
+in that Store build; see [Store listing notes](../docs/store-listing.md#whats-new).
 
-## Project Structure
-
-See [Architecture](ARCHITECTURE.md) for a complete folder layout.
-
-**Key directories:**
-- `Models/` — Data types (TodoItem, TaskList, AppSettings)
-- `ViewModels/` — UI logic, commands, collections
-- `Views/` — XAML + code-behind (MainWindow, MascotWindow, etc.)
-- `Services/` — Storage, notifications, tips
-- `Converters/` — Value converters for binding
-- `NativeMethods.cs` — P/Invoke declarations
-
-**One type per file. File name = class name.**
-
----
-
-## Development Workflow
-
-1. **Create a branch**
-   ```powershell
-   git checkout -b feature/your-feature-name
-   ```
-   Naming: `feature/<name>`, `fix/<name>`, `chore/<name>`
-
-2. **Make changes** following [Coding Standards](../context/coding-standards.md)
-   - No hard-coded colors (use `ThemeResource` tokens)
-   - No logic in code-behind (ViewModels only)
-   - All async I/O is async (no `Task.Run`)
-   - Include memory impact notes for services/timers
-
-3. **Build & test**
-   ```powershell
-   dotnet build
-   ```
-   Build must pass. No warnings elevated to errors (yet).
-
-4. **Test manually**
-   - Run the app (`dotnet run`)
-   - Test the feature in a real window
-   - Test dark/light mode switching
-   - Test multi-monitor positioning if applicable
-
-5. **Commit**
-   ```powershell
-   git add <files>
-   git commit -m "feat: brief description of change"
-   ```
-   **Conventional commits:** `feat:`, `fix:`, `chore:`, `refactor:`, `docs:`
-   - One logical change per commit
-   - No AI attribution lines
-   - Precise, specific messages (CI auto-generates release notes)
-
-6. **Push & create PR**
-   ```powershell
-   git push origin feature/your-feature-name
-   # Then open PR on GitHub
-   ```
-
----
-
-## Code Review Checklist
-
-Before submitting a PR, verify:
-
-- ✅ Build passes (`dotnet build`)
-- ✅ WinUI 3 namespaces only (no `Windows.UI.Xaml.*` or WPF)
-- ✅ No outbound network calls or HTTP-capable dependencies
-- ✅ MVVM discipline:
-  - No logic in code-behind
-  - All property changes raise `PropertyChanged`
-  - Commands use `ICommand` (RelayCommand)
-- ✅ All UI updates on dispatcher thread (no `Task.Run`)
-- ✅ `TaskStorageService.SaveAsync()` called after every task mutation
-- ✅ No raster assets (Lottie vector only)
-- ✅ Memory impact within budgets (see [Performance](PERFORMANCE.md))
-- ✅ Comments only for non-obvious WHY (not WHAT)
-- ✅ No `#nullable disable` pragmas
-- ✅ Tests pass (if applicable)
-
----
-
-## Common Tasks
-
-### Add a New Feature
-
-1. Update `context/current-feature.md` with scope & goals
-2. Implement following [Coding Standards](../context/coding-standards.md)
-3. Update docs if behavior changes
-4. Commit with conventional message
-5. Move feature to History in `context/current-feature.md`
-
-### Add a Service
-
-Services handle async I/O, persistence, or business logic.
-
-**Template:**
-```csharp
-// Services/MyService.cs
-namespace Hatch.Services;
-
-public sealed class MyService
-{
-    public async Task DoSomethingAsync(CancellationToken cancellationToken = default)
-    {
-        // Async work here
-        await Task.Delay(100, cancellationToken);
-    }
-}
-```
-
-**Add memory impact note to PR description:**
-```
-Memory: New MyService adds ~2MB peak (loaded on startup, cached).
-```
-
-### Modify XAML Styles
-
-All colors must use `ThemeResource` tokens:
-```xaml
-<!-- ✅ Correct -->
-<Rectangle Fill="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
-
-<!-- ❌ Wrong -->
-<Rectangle Fill="#FF5500" />
-```
-
-Theme-aware brushes automatically adjust on dark/light switch.
-
-### Update Persistence
-
-If adding a field to `TodoItem` or `AppSettings`:
-
-1. Update `Models/TodoItem.cs` or `Models/AppSettings.cs`
-2. Update `Services/TaskStorageService.cs` migration logic (if breaking)
-3. Increment `schemaVersion` in `tasks.json` / `settings.json`
-4. Document migration path in [Architecture](ARCHITECTURE.md)
-
-**Example migration:**
-```csharp
-if (data.SchemaVersion < 2)
-{
-    foreach (var task in data.Tasks)
-    {
-        task.NewField ??= DefaultValue;  // Set default for old tasks
-    }
-}
-```
-
----
-
-## Performance & Memory
-
-Every PR must include a one-line memory impact assessment:
-
-```
-Memory: No new services. Minimal overhead (<5MB peak transient).
-```
-
-If you add:
-- A new service → measure startup + idle memory
-- A timer/PeriodicTimer → measure CPU with it running idle
-- A large collection → measure with 100+ items loaded
-
-See [Performance](PERFORMANCE.md) for tools and budgets.
-
----
-
-## Git Conventions
-
-- **Branch naming:** `feature/name`, `fix/name`, `chore/name`
-- **Commits:** Conventional format (`feat:`, `fix:`, etc.)
-- **No force-push** to main
-- **No merge commits** — rebase or squash
-- **No WIP commits** in PR
-
----
-
-## CI/CD
-
-- **Trigger:** Push to branch → runs tests, build check
-- **Release:** Tag `v*.*.*` → builds MSIX, runs memory profiling, creates GitHub release
-- **Memory gate:** Idle memory check must pass (<50 MB) before release
-
----
-
-## Questions?
-
-- Check [Architecture](ARCHITECTURE.md) for design decisions
-- Check [Coding Standards](../context/coding-standards.md) for language/MVVM rules
-- Check [Performance](PERFORMANCE.md) for memory budgets
-- Open an issue on GitHub
-
-Thank you for contributing! 🥚
+For broader project links, see the [repository README](../README.md).
