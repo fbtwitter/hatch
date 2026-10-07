@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Input;
 using Microsoft.UI;
@@ -425,14 +424,6 @@ public sealed partial class MainWindow : Window
             // ItemsSource is cleared, so it's cheap to reclaim and cheap to restore.
             (RootFrame?.Content as MainPage)?.ReleaseTaskListMemory();
 
-            try
-            {
-                NativeMethods.EmptyWorkingSet(Process.GetCurrentProcess().Handle);
-            }
-            catch
-            {
-                // P/Invoke may fail in some environments; not critical for functionality
-            }
             return;
         }
         // Real close (not a tray hide) — same reasoning as OnExitRequested.

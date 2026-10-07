@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Hatch.Models;
@@ -37,6 +38,8 @@ public sealed partial class QuickAddBubbleWindow : Window
     private CancellationTokenSource? _tipCountdownCts;
     private System.Diagnostics.Stopwatch? _tipDismissStopwatch;
     private bool _tipDismissPaused = false;
+    private bool _tipPointerOver;
+    private bool _tipOptionsOpen;
     private int _tipDismissRemainingMs = 0;
     private bool _tipWasShown = false;
     private bool _tipAutoDismissCompleted = false;
@@ -46,6 +49,7 @@ public sealed partial class QuickAddBubbleWindow : Window
     public QuickAddBubbleWindow()
     {
         InitializeComponent();
+        App.TipCoordinator.QuickTipsAvailabilityChanged += OnQuickTipsAvailabilityChanged;
 
         _fadeIn  = (Storyboard)BubbleRoot.Resources["ConfirmationFadeIn"];
         _fadeOut = (Storyboard)BubbleRoot.Resources["ConfirmationFadeOut"];
@@ -85,6 +89,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         Closed += (_, _) =>
         {
             if (_bubbleXamlRoot != null) _bubbleXamlRoot.Changed -= OnBubbleXamlRootChanged;
+            App.TipCoordinator.QuickTipsAvailabilityChanged -= OnQuickTipsAvailabilityChanged;
         };
 
         // Initialize list selector
@@ -217,6 +222,8 @@ public sealed partial class QuickAddBubbleWindow : Window
         _tipCountdownCts = null;
         _tipDismissStopwatch = null;
         _tipDismissPaused = false;
+        _tipPointerOver = false;
+        _tipOptionsOpen = false;
 
         // Reset form to initial state
         TaskTitleBox.Text = string.Empty;
@@ -429,6 +436,14 @@ public sealed partial class QuickAddBubbleWindow : Window
             return;
         }
 
+        var categoryLabel = Strings.Get(_currentTip.CategoryLabelKey);
+        TipCategoryIcon.Glyph = _currentTip.CategoryGlyph;
+        AutomationProperties.SetName(TipCategoryIcon, categoryLabel);
+        ToolTipService.SetToolTip(TipCategoryIcon, categoryLabel);
+        TipCategoryHeading.Text = categoryLabel;
+        TipCategoryHeading.Visibility = _currentTip.Category == TipCategory.TaskReminder
+            ? Visibility.Visible
+            : Visibility.Collapsed;
         TipTextBlock.Text = _currentTip.Message;
         TipTextBlock.TextAlignment = _currentTip.Action is null ? TextAlignment.Center : TextAlignment.Left;
 
@@ -446,6 +461,8 @@ public sealed partial class QuickAddBubbleWindow : Window
         TipBubble.Visibility = Visibility.Visible;
         TipBubble.Opacity = 0;
         _tipDismissPaused = false;
+        _tipPointerOver = false;
+        _tipOptionsOpen = false;
         _tipWasShown = true;
         _tipAutoDismissCompleted = false;
 
@@ -467,9 +484,48 @@ public sealed partial class QuickAddBubbleWindow : Window
         }
     }
 
-    // Starts (or resumes, after a hover-pause) a single wait for _tipDismissRemainingMs —
-    // no polling. TipBubble_PointerEntered cancels _tipCountdownCts to pause; the resume
-    // in TipBubble_PointerExited calls this again with whatever time was left.
+    private void TipCloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        var tip = _currentTip;
+        if (tip == null) return;
+
+        HideCurrentTip();
+
+        if (tip.Severity == TipSeverity.Critical)
+            ResetTipDismissalCounter();
+        else
+            RecordTipDismissal();
+    }
+
+    private void TipMenuHideToday_Click(object sender, RoutedEventArgs e)
+    {
+        App.TipCoordinator.PauseForToday();
+    }
+
+    private void TipMenuTurnOff_Click(object sender, RoutedEventArgs e)
+    {
+        App.TipCoordinator.SetQuickTipsEnabled(false);
+    }
+
+    private void OnQuickTipsAvailabilityChanged(bool available)
+    {
+        if (!available && _currentTip != null) HideCurrentTip();
+    }
+
+    private void HideCurrentTip()
+    {
+        _tipDismissCts?.Cancel();
+        _tipCountdownCts?.Cancel();
+        _tipDismissPaused = false;
+        _tipPointerOver = false;
+        _tipOptionsOpen = false;
+        _tipDismissStopwatch = null;
+        _tipAutoDismissCompleted = true;
+        TipBubble.Visibility = Visibility.Collapsed;
+        _currentTip = null;
+    }
+
+    // Keeps the tip visible while the pointer or its options menu is active.
     private void StartTipCountdown()
     {
         _tipCountdownCts?.Cancel();
@@ -517,21 +573,45 @@ public sealed partial class QuickAddBubbleWindow : Window
 
     private void TipBubble_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
     {
-        if (_tipDismissPaused || _tipDismissStopwatch == null) return;
-        _tipDismissPaused = true;
-
-        _tipDismissRemainingMs -= (int)_tipDismissStopwatch.ElapsedMilliseconds;
-        if (_tipDismissRemainingMs < 0) _tipDismissRemainingMs = 0;
-        _tipCountdownCts?.Cancel();
+        _tipPointerOver = true;
+        PauseTipCountdown();
     }
 
     private void TipBubble_PointerExited(object sender, PointerRoutedEventArgs e)
     {
-        if (!_tipDismissPaused) return;
-        _tipDismissPaused = false;
+        _tipPointerOver = false;
+        ResumeTipCountdown();
+    }
 
-        if (_tipDismissRemainingMs > 0)
-            StartTipCountdown();
+    private void TipOptionsFlyout_Opened(object sender, object args)
+    {
+        _tipOptionsOpen = true;
+        PauseTipCountdown();
+    }
+
+    private void TipOptionsFlyout_Closed(object sender, object args)
+    {
+        _tipOptionsOpen = false;
+        ResumeTipCountdown();
+    }
+
+    private void PauseTipCountdown()
+    {
+        if (_tipDismissPaused || _tipDismissStopwatch == null || _tipAutoDismissCompleted) return;
+        _tipDismissPaused = true;
+        _tipDismissRemainingMs = Math.Max(0, _tipDismissRemainingMs - (int)_tipDismissStopwatch.ElapsedMilliseconds);
+        _tipDismissStopwatch = null;
+        _tipCountdownCts?.Cancel();
+    }
+
+    private void ResumeTipCountdown()
+    {
+        if (!_tipDismissPaused || _tipPointerOver || _tipOptionsOpen ||
+            _tipAutoDismissCompleted || _currentTip is null || _currentTip.DismissAfterMs <= 0) return;
+
+        _tipDismissPaused = false;
+        _tipDismissRemainingMs = Math.Max(1, _tipDismissRemainingMs);
+        StartTipCountdown();
     }
 
     private void TipActionButton_Click(object sender, RoutedEventArgs e)

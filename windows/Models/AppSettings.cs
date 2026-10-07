@@ -41,6 +41,8 @@ public sealed class AppSettings
     // Tip Engine — adaptive silence on repeated dismissals
     public int ConsecutiveTipDismissals { get; set; } = 0;
     public DateTime? TipAutoOpenCooldownUntil { get; set; } = null;
+    public bool ShowQuickTips { get; set; } = true;
+    public DateTime? QuickTipsPausedUntil { get; set; } = null;
 
     // Proactive tip popup — off by default (opt-in; more interruptive than the click-only default)
     public bool ShowTipsAutomatically { get; set; } = false;

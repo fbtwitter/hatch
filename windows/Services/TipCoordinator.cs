@@ -10,6 +10,7 @@ public sealed class TipCoordinator
 {
     private readonly TipEngine _engine = new(Helpers.Strings.Get);
     private readonly SettingsService _settings;
+    public event Action<bool>? QuickTipsAvailabilityChanged;
 
     public TipCoordinator(SettingsService settings)
     {
@@ -17,11 +18,38 @@ public sealed class TipCoordinator
     }
 
     private AppSettings S => _settings.Current;
+    private bool QuickTipsActiveToday => S.ShowQuickTips &&
+        (!S.QuickTipsPausedUntil.HasValue || DateTime.Today >= S.QuickTipsPausedUntil.Value.Date);
+
+    public void PauseForToday()
+    {
+        S.QuickTipsPausedUntil = DateTime.Today.AddDays(1);
+        S.ConsecutiveTipDismissals = 0;
+        _settings.SaveDebounced();
+        QuickTipsAvailabilityChanged?.Invoke(false);
+    }
+
+    public void SetQuickTipsEnabled(bool enabled)
+    {
+        if (S.ShowQuickTips == enabled) return;
+
+        S.ShowQuickTips = enabled;
+        S.ConsecutiveTipDismissals = 0;
+        if (enabled)
+        {
+            S.QuickTipsPausedUntil = null;
+            S.TipAutoOpenCooldownUntil = null;
+            S.LastProactiveTipCheckDate = null;
+        }
+        _settings.SaveDebounced();
+        QuickTipsAvailabilityChanged?.Invoke(QuickTipsActiveToday);
+    }
 
     public Tip? TryGetContextualTip(IReadOnlyList<TodoItem> tasks)
     {
         var today = DateTime.Today;
 
+        if (!QuickTipsActiveToday) return null;
         if (S.TipAutoOpenCooldownUntil.HasValue && today < S.TipAutoOpenCooldownUntil.Value)
             return null;
 
@@ -52,6 +80,7 @@ public sealed class TipCoordinator
 
     public Tip? TryGetProactiveTip(IReadOnlyList<TodoItem> tasks)
     {
+        if (!QuickTipsActiveToday) return null;
         if (!S.ShowTipsAutomatically) return null;
         if (S.LastProactiveTipCheckDate?.Date == DateTime.Today) return null;
 

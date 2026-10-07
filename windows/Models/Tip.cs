@@ -4,14 +4,40 @@ public class Tip
 {
     public string Message { get; set; } = string.Empty;
     public TipSeverity Severity { get; set; } = TipSeverity.Info;
+    public TipCategory Category { get; set; } = TipCategory.Encouragement;
     public TipAction? Action { get; set; }
     public int DismissAfterMs { get; set; } = 5000;  // 5s default for low-priority
     public bool IsMeaningful { get; set; } = true;   // false = fallback tip (suppress if user active recently)
+    public string CategoryLabelKey => Category switch
+    {
+        TipCategory.TaskReminder => "Tip_Category_TaskReminder",
+        TipCategory.Planning => "Tip_Category_Planning",
+        TipCategory.TaskSuggestion => "Tip_Category_TaskSuggestion",
+        TipCategory.DailyInspiration => "Tip_Category_DailyInspiration",
+        _ => "Tip_Category_Encouragement"
+    };
+    public string CategoryGlyph => Category switch
+    {
+        TipCategory.TaskReminder => "\uE823",
+        TipCategory.Planning => "\uE787",
+        TipCategory.TaskSuggestion => "\uE710",
+        TipCategory.DailyInspiration => "\uE82F",
+        _ => "\uE734"
+    };
 
     // True only for the once-a-day inspiration line. TipCoordinator stamps
     // LastInspirationDate off this rather than inferring it from Severity/Action, so
     // reordering the engine's tiers cannot silently start consuming the daily slot.
     public bool IsInspiration { get; set; }
+}
+
+public enum TipCategory
+{
+    TaskReminder,
+    Planning,
+    TaskSuggestion,
+    DailyInspiration,
+    Encouragement
 }
 
 public class TipAction

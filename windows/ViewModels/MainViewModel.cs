@@ -162,6 +162,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
 
     public async Task ReloadAsync()
     {
+        var selectedTaskId = SelectedTask?.Id;
         IsLoaded = false;
         DismissUndoBar();
         _isBulkLoading = true;
@@ -169,6 +170,8 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         CustomLists.Clear();
         _isBulkLoading = false;
         await LoadAsync();
+        if (selectedTaskId.HasValue)
+            SelectedTask = Tasks.FirstOrDefault(task => task.Id == selectedTaskId.Value && MatchesFilter(task));
     }
 
     private async Task LoadAsync()
@@ -188,6 +191,10 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             // Load lists sorted: pinned first, then ascending SortOrder
             foreach (var list in data.Lists.OrderByDescending(l => l.IsPinned).ThenBy(l => l.SortOrder))
                 CustomLists.Add(list);
+
+            if (Guid.TryParse(_activeNavItem, out var activeListId) &&
+                !CustomLists.Any(list => list.Id == activeListId))
+                ActiveNavItem = "alltasks";
 
             RefreshListNames();
             RefreshActiveTasks();

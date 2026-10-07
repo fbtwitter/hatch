@@ -54,8 +54,14 @@ public sealed partial class SettingsPage : Page
         Loaded += (_, _) =>
         {
             SyncMascotSizeSlider();
+            App.TipCoordinator.QuickTipsAvailabilityChanged -= OnQuickTipsAvailabilityChanged;
+            App.TipCoordinator.QuickTipsAvailabilityChanged += OnQuickTipsAvailabilityChanged;
+            _viewModel.RefreshQuickTipSettings();
         };
+        Unloaded += (_, _) => App.TipCoordinator.QuickTipsAvailabilityChanged -= OnQuickTipsAvailabilityChanged;
     }
+
+    private void OnQuickTipsAvailabilityChanged(bool _) => _viewModel.RefreshQuickTipSettings();
 
     private async void OnConflictDetected(SyncConflict conflict)
     {

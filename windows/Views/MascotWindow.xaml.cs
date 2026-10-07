@@ -32,10 +32,10 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
     private bool _wigglePlayed = false;
     private bool _hasDragged = false;
     private bool _entrancePlayed = false;
+    private bool _startupInitialized;
+    private Tip? _pendingProactiveTip;
 
-    // Tracks whether LottiePlayer.PlayAsync has been called at least once for the
-    // current source. Resume() is only valid after a Pause(); before first play we
-    // must call PlayAsync so the source actually starts loading and rendering.
+    // Resume() only works after playback has started for the current source.
     private bool _lottieStarted = false;
 
     // Kept alive to prevent GC — the native subclass holds a function pointer to it
@@ -93,14 +93,22 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         _hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
 
         // Hide before Activate() runs so the compositor's default background fill
-        // (black on dark theme) is never painted. Activate() will still trigger
-        // OnFirstActivated via WM_ACTIVATE; we show the window there after
-        // TransparentTintBackdrop is applied and styles are settled.
+        // (black on dark theme) is never painted. Startup initialization follows
+        // activation, then reveals the window after backdrop and styles settle.
         ShowWindow(_hwnd, SW_HIDE);
 
         ApplyWindowStyles();
 
         InitializeComponent();
+
+        LottiePlayer.RegisterPropertyChangedCallback(
+            AnimatedVisualPlayer.IsAnimatedVisualLoadedProperty, (_, _) =>
+            {
+                if (!LottiePlayer.IsAnimatedVisualLoaded) return;
+                TryPlayEntrance();
+                UpdateAnimationState();
+                ShowPendingProactiveTip();
+            });
 
         FocusPopupBorder.SizeChanged += (_, _) => PositionMascotPopups();
         ProactiveTipContent.SizeChanged += (_, _) => PositionMascotPopups();
@@ -227,6 +235,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
                     TryPlayEntrance();
                     if (_focusViewModel != null) FocusPopup.IsOpen = true;
                 }
+                UpdateAnimationState();
             }
             else if (e.PropertyName == nameof(MascotViewModel.WindowSize))
             {
@@ -242,6 +251,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             App.MainWindowInstance?.ViewModel.TasksLoaded -= OnTasksLoadedForFocusRestore;
             UnregisterHotKey();
             ViewModel.MainWindowActionRequested -= OnMainWindowActionRequested;
+            App.TipCoordinator.QuickTipsAvailabilityChanged -= OnQuickTipsAvailabilityChanged;
             _bubbleWindow?.Close();
             ViewModel.Dispose();
         };
@@ -250,6 +260,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         RegisterHotKey(App.Settings.HotkeyModifiers, App.Settings.HotkeyVirtualKey);
 
         ViewModel.ProactiveTipDue += OnProactiveTipDue;
+        App.TipCoordinator.QuickTipsAvailabilityChanged += OnQuickTipsAvailabilityChanged;
     }
 
     private void OnMainWindowActionRequested(MainWindowAction action)
@@ -289,8 +300,23 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
     {
         if (ViewModel.IsBubbleOpen || _focusViewModel != null) return;
 
+        if (!_startupInitialized || MascotLoadingRing.Visibility == Visibility.Visible ||
+            (LottiePlayer.Visibility == Visibility.Visible && !LottiePlayer.IsAnimatedVisualLoaded))
+        {
+            _pendingProactiveTip = tip;
+            return;
+        }
+
         _currentProactiveTip = tip;
 
+        var categoryLabel = Strings.Get(tip.CategoryLabelKey);
+        ProactiveTipCategoryIcon.Glyph = tip.CategoryGlyph;
+        AutomationProperties.SetName(ProactiveTipCategoryIcon, categoryLabel);
+        ToolTipService.SetToolTip(ProactiveTipCategoryIcon, categoryLabel);
+        ProactiveTipCategoryHeading.Text = categoryLabel;
+        ProactiveTipCategoryHeading.Visibility = tip.Category == TipCategory.TaskReminder
+            ? Visibility.Visible
+            : Visibility.Collapsed;
         ProactiveTipText.Text = tip.Message;
         ProactiveTipText.TextAlignment = tip.Action is null ? TextAlignment.Center : TextAlignment.Left;
         ProactiveTipActionText.Text = tip.Action?.Label ?? string.Empty;
@@ -315,6 +341,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
 
     private void CloseProactiveTip()
     {
+        _pendingProactiveTip = null;
         _proactiveTipProgrammaticClose = true;
         ProactiveTip.IsOpen = false;
     }
@@ -322,6 +349,42 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
     private void ProactiveTip_Opened(object? sender, object args) => PositionMascotPopups();
 
     private void ProactiveTip_CloseClick(object sender, RoutedEventArgs args) => ProactiveTip.IsOpen = false;
+
+    private void TipOptionsFlyout_Opened(object sender, object args) => _proactiveTipDismissTimer?.Stop();
+
+    private void TipOptionsFlyout_Closed(object sender, object args)
+    {
+        if (ProactiveTip.IsOpen && _currentProactiveTip?.DismissAfterMs > 0)
+            _proactiveTipDismissTimer?.Start();
+    }
+
+    private void ShowPendingProactiveTip()
+    {
+        if (_pendingProactiveTip is not { } tip) return;
+        if (!_startupInitialized || MascotLoadingRing.Visibility == Visibility.Visible ||
+            (LottiePlayer.Visibility == Visibility.Visible && !LottiePlayer.IsAnimatedVisualLoaded)) return;
+        _pendingProactiveTip = null;
+        if (ViewModel.IsVisible && !ViewModel.IsMascotHidden && !ViewModel.IsBubbleOpen &&
+            _focusViewModel == null)
+            OnProactiveTipDue(tip);
+    }
+
+    private void TipMenuHideToday_Click(object sender, RoutedEventArgs args)
+    {
+        App.TipCoordinator.PauseForToday();
+    }
+
+    private void TipMenuTurnOff_Click(object sender, RoutedEventArgs args)
+    {
+        App.TipCoordinator.SetQuickTipsEnabled(false);
+    }
+
+    private void OnQuickTipsAvailabilityChanged(bool available)
+    {
+        if (available) return;
+        _pendingProactiveTip = null;
+        if (ProactiveTip.IsOpen) CloseProactiveTip();
+    }
 
     private void ProactiveTip_ActionButtonClick(object sender, RoutedEventArgs args)
     {
@@ -401,10 +464,8 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             case nameof(MascotViewModel.IsVisible):
                 if (ViewModel.IsVisible) RevealMascotWindow();
                 else ShowWindow(_hwnd, SW_HIDE);
-                // Treat coming back from fullscreen hide as a fresh start for Lottie
                 if (!ViewModel.IsVisible)
                 {
-                    _lottieStarted = false;
                     _inactivityTimer?.Stop();
                     CloseProactiveTip();
                     FocusPopup.IsOpen = false;
@@ -489,6 +550,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         TryPlayEntrance();
 
         UpdateAnimationState();
+        ShowPendingProactiveTip();
     }
 
     // Entrance runs once, on the first reveal where the mascot is actually on screen
@@ -500,6 +562,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         if (_entrancePlayed) return;
         if (!ViewModel.IsVisible || ViewModel.IsMascotHidden) return;
         if (MascotLoadingRing.Visibility == Visibility.Visible) return;
+        if (LottiePlayer.Visibility == Visibility.Visible && !LottiePlayer.IsAnimatedVisualLoaded) return;
         _entrancePlayed = true;
         PlayMascotEntrance();
     }
@@ -530,10 +593,11 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
 
     private void UpdateAnimationState()
     {
-        var shouldPlay = ViewModel.IsVisible && !ViewModel.MuteAnimation;
+        var shouldPlay = ViewModel.IsVisible && !ViewModel.IsMascotHidden && !ViewModel.MuteAnimation;
 
         if (LottiePlayer.Visibility == Visibility.Visible)
         {
+            if (!LottiePlayer.IsAnimatedVisualLoaded) return;
             if (!shouldPlay)
             {
                 LottiePlayer.Pause();
@@ -545,8 +609,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             }
             else
             {
-                // First play for this source — PlayAsync triggers source loading
-                // and then starts playback. Resume() cannot do this.
+                // First play for this source; Resume() cannot start it.
                 _lottieStarted = true;
                 _ = LottiePlayer.PlayAsync(0, 1, looped: true);
             }
@@ -740,8 +803,16 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         NativeMethods.DwmExtendFrameIntoClientArea(_hwnd, ref margins);
     }
 
+    internal void EnsureStartupInitialized()
+        => DispatcherQueue.TryEnqueue(InitializeAfterActivation);
+
     private void OnFirstActivated(object sender, WindowActivatedEventArgs e)
+        => InitializeAfterActivation();
+
+    private void InitializeAfterActivation()
     {
+        if (_startupInitialized) return;
+        _startupInitialized = true;
         Activated -= OnFirstActivated;
 
         // Set transparent backdrop after the compositor is ready. Deferred here because
