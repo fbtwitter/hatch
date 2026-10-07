@@ -30,18 +30,19 @@
 
 **GitHub release:** For background updates, install the signing certificate from the [latest release](https://github.com/fbtwitter/hatch/releases/latest) once, then open the [App Installer feed](https://fbtwitter.github.io/hatch/Hatch.appinstaller) and select **Install**. Install the certificate to **Local Machine > Trusted People**.
 
-## Build from source
+## Build and run without an IDE
 
-Requirements: Windows 10 (build 17763+) or Windows 11, plus the .NET 10 SDK and Windows App SDK.
+On Windows 10 (build 17763+) or Windows 11, install the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) and the [Windows App SDK 2.5.1 runtime](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads). The Debug build is unpackaged and needs that runtime installed. You also need internet access for the first NuGet restore. Visual Studio or JetBrains Rider does not need to be open.
+
+Open PowerShell in the repository root and run:
 
 ```powershell
-git clone https://github.com/fbtwitter/hatch.git
-cd hatch/windows
-dotnet build
-dotnet run
+dotnet restore .\windows\hatch.csproj -p:Platform=x64
+dotnet build .\windows\hatch.csproj -c Debug --no-restore -p:Platform=x64
+dotnet run --project .\windows\hatch.csproj -c Debug --no-build -p:Platform=x64 --no-launch-profile
 ```
 
-See the [contributing guide](.github/CONTRIBUTING.md) for setup details.
+The `dotnet build` command builds Hatch without opening it; only `dotnet run` launches the app. Use the full word `Debug` for the configuration. If you are setting up a new PC, Microsoft's [command-line WinUI setup guide](https://learn.microsoft.com/en-us/windows/apps/get-started/start-here?tabs=stable) covers the required development tools. See the [contributing guide](.github/CONTRIBUTING.md) for more project details.
 
 ## Privacy
 
