@@ -77,31 +77,37 @@
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="{ThemeResource ControlCornerRadius}"
-                    Padding="14"
+                    Padding="12"
                     Opacity="0"
                     Visibility="Collapsed"
                     PointerEntered="TipBubble_PointerEntered"
-                    PointerExited="TipBubble_PointerExited">
-                <StackPanel Spacing="10">
-                    <Grid ColumnSpacing="8">
+                    PointerExited="TipBubble_PointerExited"
+                    GotFocus="TipBubble_GotFocus"
+                    LostFocus="TipBubble_LostFocus">
+                <StackPanel Spacing="2">
+                    <Grid ColumnSpacing="0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <FontIcon x:Name="TipCategoryIcon" Grid.Column="0" FontSize="16"
+                        <FontIcon x:Name="TipCategoryIcon" Grid.Column="0" FontSize="16" Margin="0,0,8,0"
+                                  AutomationProperties.AutomationId="Bubble_TipCategoryIcon"
                                   Foreground="{ThemeResource AccentFillColorDefaultBrush}"/>
                         <TextBlock x:Name="TipCategoryHeading" Grid.Column="1"
+                                   AutomationProperties.AutomationId="Bubble_TipTitle"
                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                    FontWeight="SemiBold"
                                    VerticalAlignment="Center"/>
-                        <Button Grid.Column="2" x:Uid="Tip_OptionsButton"
+                        <Button x:Name="TipOptionsButton" Grid.Column="2" x:Uid="Tip_OptionsButton"
+                                Margin="0,0,4,0"
                                 AutomationProperties.AutomationId="Bubble_TipOptions"
                                 AutomationProperties.Name="Tip options"
                                 ToolTipService.ToolTip="Tip options"
                                 Style="{ThemeResource SubtleButtonStyle}"
-                                Width="32" Height="32" MinWidth="0" Padding="0">
+                                Width="32" Height="32" MinWidth="0" Padding="0"
+                                Opacity="0">
                             <FontIcon Glyph="&#xE712;" FontSize="14" />
                             <Button.Flyout>
                                 <MenuFlyout Placement="BottomEdgeAlignedRight"
@@ -123,21 +129,31 @@
                                 HorizontalAlignment="Right" VerticalAlignment="Top"
                                 Style="{ThemeResource SubtleButtonStyle}"
                                 Width="32" Height="32" MinWidth="0" Padding="0"
+                                Opacity="0"
                                 Click="TipCloseButton_Click">
                             <FontIcon Glyph="&#xE711;" FontSize="12" />
                         </Button>
                     </Grid>
-                    <TextBlock x:Name="TipTextBlock"
-                               TextWrapping="Wrap"
-                               Style="{ThemeResource BodyTextBlockStyle}"/>
-                    <Button x:Name="TipActionButton"
-                            AutomationProperties.AutomationId="Bubble_TipAction"
-                            Visibility="Collapsed"
-                            HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Center"
-                            Padding="12,6"
-                            Click="TipActionButton_Click"
-                            Style="{ThemeResource AccentButtonStyle}"/>
+                    <StackPanel Spacing="10">
+                        <TextBlock x:Name="TipTextBlock"
+                                   AutomationProperties.AutomationId="Bubble_TipMessage"
+                                   TextWrapping="Wrap"
+                                   Style="{ThemeResource BodyTextBlockStyle}"/>
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="TipActionButton"
+                                    AutomationProperties.AutomationId="Bubble_TipAction"
+                                    Visibility="Collapsed"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Center"
+                                    Padding="12,6"
+                                    Click="TipActionButton_Click"
+                                    Style="{ThemeResource AccentButtonStyle}"/>
+                        </Grid>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 

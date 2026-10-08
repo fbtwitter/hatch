@@ -333,10 +333,12 @@ public sealed partial class MainWindow : Window
     public void ShowAndSelectTask(Guid taskId)
     {
         EnsureContent();
-        RefreshTasksOnReopen();
-        ShowWindow(_hwnd, SW_RESTORE);
-        AppWindow.Show(true);
-        Activate();
+        if (AppWindow.IsVisible)
+        {
+            RefreshTasksOnReopen();
+            ShowWindow(_hwnd, SW_RESTORE);
+        }
+        ShowFromMascot();
         NavigateTo("alltasks");
         var task = ViewModel.FindTaskById(taskId);
         if (task != null)

@@ -166,16 +166,18 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
-    // Fired at most once per calendar day, on the UI thread, when the user has opted
-    // into proactive tips, the mascot is currently visible/not hidden, and TipEngine
-    // actually has something to say. MascotWindow owns the TeachingTip that displays it.
+    // Fires on the UI thread when an opted-in planning or inspiration moment is due.
+    // MascotWindow owns the popup and records a daily slot only after showing it.
     public event Action<Tip>? ProactiveTipDue;
     internal event Action<MainWindowAction>? MainWindowActionRequested;
 
     // Called from the dispatcher-queued fullscreen-poll tick — already on the UI thread.
     private void CheckProactiveTipDue()
     {
-        if (!IsVisible || IsMascotHidden || IsBubbleOpen) return;
+        if (!IsVisible || IsMascotHidden || IsBubbleOpen || IsForegroundWindowFullscreen() ||
+            App.MainWindowInstance?.ViewModel.IsLoaded != true) return;
+
+        _tipCoordinator.PeekPendingTip(_tasks);
 
         var tip = _tipCoordinator.TryGetProactiveTip(_tasks);
         if (tip == null) return;
@@ -183,12 +185,10 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         ProactiveTipDue?.Invoke(tip);
     }
 
-    // Called by MascotWindow when the proactive TeachingTip closes. Reason.Programmatic
-    // means we closed it ourselves (auto-dismiss timer elapsed or action button clicked) —
-    // both count as engagement. CloseButton/LightDismiss means the user waved it off.
-    public void ResetProactiveTipDismissalCounter() => _tipCoordinator.RecordEngagement();
+    // Only explicit action and X interactions change a topic's response history.
+    public void RecordProactiveTipEngagement(Tip? tip) => _tipCoordinator.RecordEngagement(tip);
 
-    public void RecordProactiveTipDismissal() => _tipCoordinator.RecordDismissal();
+    public void RecordProactiveTipDismissal(Tip tip) => _tipCoordinator.RecordDismissal(tip);
 
     public MascotViewModel(
         SettingsService settings,

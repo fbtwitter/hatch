@@ -130,7 +130,7 @@
   <data name="QuickAdd_AddToLabel.Text" xml:space="preserve"><value>Add to:</value></data>
   <data name="QuickAdd_DueDateLabel.Text" xml:space="preserve"><value>Due date:</value></data>
   <data name="QuickAdd_TaskTitleBox.PlaceholderText" xml:space="preserve"><value>What needs to be done?</value></data>
-  <data name="QuickAdd_ListSelector.PlaceholderText" xml:space="preserve"><value>No lists yet</value></data>
+  <data name="QuickAdd_ListSelector.PlaceholderText" xml:space="preserve"><value>Tasks</value></data>
   <data name="QuickAdd_NoDateItem.Content" xml:space="preserve"><value>No date</value></data>
   <data name="QuickAdd_TodayItem.Content" xml:space="preserve"><value>Today</value></data>
   <data name="QuickAdd_TomorrowItem.Content" xml:space="preserve"><value>Tomorrow</value></data>
@@ -203,7 +203,8 @@
   <data name="Pane_PriorityLabel.Text" xml:space="preserve"><value>Priority</value></data>
   <data name="Pane_ListLabel.Text" xml:space="preserve"><value>List</value></data>
   <data name="PaneListCombo.AutomationProperties.Name" xml:space="preserve"><value>List</value></data>
-  <data name="PaneListNone.Content" xml:space="preserve"><value>No list</value></data>
+  <data name="PaneListNone.Content" xml:space="preserve"><value>Tasks</value></data>
+  <data name="List_Default_Name" xml:space="preserve"><value>Tasks</value></data>
   <data name="Pane_TagsLabel.Text" xml:space="preserve"><value>Tags</value></data>
   <data name="PaneTagInput.PlaceholderText" xml:space="preserve"><value>Add a tag, press Enter</value></data>
   <data name="PaneTagChipRemove.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Remove tag</value></data>
@@ -258,6 +259,7 @@
   <data name="Tip_Action_PlanMyDay" xml:space="preserve"><value>Plan My Day</value></data>
   <data name="Tip_EveningWrapUp" xml:space="preserve"><value>My Day is clear. Plan tomorrow?</value></data>
   <data name="Tip_Action_PlanTomorrow" xml:space="preserve"><value>Plan tomorrow</value></data>
+  <data name="Tip_MyDayComplete" xml:space="preserve"><value>You finished My Day. Nice work!</value></data>
   <data name="Tip_CompletedToday" xml:space="preserve"><value>Great progress! {0} tasks done today.</value><comment>{0} = tasks completed today, always ≥ 5</comment></data>
   <data name="Tip_StaleTask" xml:space="preserve"><value>“{0}” has been waiting {1} days</value><comment>{0} = task title, {1} = days since created</comment></data>
   <data name="Tip_Action_TakeALook" xml:space="preserve"><value>Take a look</value></data>
@@ -311,8 +313,8 @@
 
   <!-- ── Settings › Automatic tip time (x:Uid mapped) ────────── -->
   <data name="Settings_TipTimeHeader.Text" xml:space="preserve"><value>Automatic Tip Time</value></data>
-  <data name="Settings_TipTimeDescription.Text" xml:space="preserve"><value>When the once-a-day automatic tip is allowed to appear</value></data>
-  <data name="Settings_TipTimeDescription.ToolTipService.ToolTip" xml:space="preserve"><value>When the once-a-day automatic tip is allowed to appear</value></data>
+  <data name="Settings_TipTimeDescription.Text" xml:space="preserve"><value>Choose when automatic mascot messages may appear</value></data>
+  <data name="Settings_TipTimeDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Choose when automatic mascot messages may appear</value></data>
   <data name="Settings_ChattinessCard.Header" xml:space="preserve"><value>Mascot messages</value></data>
   <data name="Settings_ChattinessCardDescription.Text" xml:space="preserve"><value>How freely Hatch shows encouragement. Reminders about overdue tasks always appear.</value></data>
   <data name="Settings_ChattinessCardDescription.ToolTipService.ToolTip" xml:space="preserve"><value>How freely Hatch shows encouragement. Reminders about overdue tasks always appear.</value></data>

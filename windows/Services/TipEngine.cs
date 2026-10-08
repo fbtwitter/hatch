@@ -55,7 +55,6 @@ public sealed class TipEngine
 
     private const int InactivityThresholdMinutes = 5;
     private const int MeaningfulTipThresholdHours = 4;
-    private const int CompletedTodayCelebrationThreshold = 5;
     private const int StaleTaskThresholdDays = 14;
     private const int EveningHour = 18;
     private const int UndatedBacklogThreshold = 5;
@@ -76,10 +75,12 @@ public sealed class TipEngine
                        DateTime? lastActivity = null, DateTime? now = null,
                        MascotChattiness chattiness = MascotChattiness.Balanced,
                        IReadOnlyList<string>? customTips = null,
-                       DateTime? lastInspiration = null)
+                       DateTime? lastInspiration = null,
+                       IReadOnlySet<string>? quietedTopics = null)
     {
         var current = now ?? DateTime.Now;
         var today = current.Date;
+        bool Allowed(string topic) => quietedTopics?.Contains(topic) != true;
 
         // Due dates are calendar days read as written (stored midnight +00:00, or local
         // midnight from a preset) — a time-zone conversion shifts the day west of UTC.
@@ -87,9 +88,10 @@ public sealed class TipEngine
             !t.IsCompleted && t.DueDate.HasValue &&
             t.DueDate.Value.Date < today);
 
-        if (overdueTasks >= 1)
+        if (overdueTasks >= 1 && Allowed("overdue"))
             return new Tip
             {
+                Topic = "overdue",
                 Message = overdueTasks == 1
                     ? _resolve("Tip_Overdue_One")
                     : string.Format(_resolve("Tip_Overdue_Many"), overdueTasks),
@@ -104,9 +106,10 @@ public sealed class TipEngine
             !t.IsCompleted && t.DueDate.HasValue &&
             t.DueDate.Value.Date == today);
 
-        if (dueToday >= 1)
+        if (dueToday >= 1 && Allowed("due-today"))
             return new Tip
             {
+                Topic = "due-today",
                 Message = dueToday == 1
                     ? _resolve("Tip_DueToday_One")
                     : string.Format(_resolve("Tip_DueToday_Many"), dueToday),
@@ -121,9 +124,10 @@ public sealed class TipEngine
         var hasOpenTasks = tasks.Any(t => !t.IsCompleted);
         var hasUsedMyDay = tasks.Any(t => t.MyDayDate.HasValue || t.IsInMyDay);
 
-        if (openMyDay == 0 && current.Hour < EveningHour && hasUsedMyDay && hasOpenTasks)
+        if (openMyDay == 0 && current.Hour < EveningHour && hasUsedMyDay && hasOpenTasks && Allowed("plan-my-day"))
             return new Tip
             {
+                Topic = "plan-my-day",
                 Message = _resolve("Tip_MyDayEmpty"),
                 Severity = TipSeverity.Warning,
                 Category = TipCategory.Planning,
@@ -136,25 +140,15 @@ public sealed class TipEngine
             t.IsCompleted && t.CompletedAt.HasValue &&
             t.CompletedAt.Value.ToLocalTime().Date == today);
 
-        if (current.Hour >= EveningHour && openMyDay == 0 && completedToday >= 1)
+        if (current.Hour >= EveningHour && openMyDay == 0 && completedToday >= 1 && Allowed("plan-tomorrow"))
             return new Tip
             {
+                Topic = "plan-tomorrow",
                 Message = _resolve("Tip_EveningWrapUp"),
                 Severity = TipSeverity.Info,
                 Category = TipCategory.Planning,
                 Action = new TipAction { Label = _resolve("Tip_Action_PlanTomorrow"), Type = TipActionType.ViewMyDay },
                 DismissAfterMs = 0,
-                IsMeaningful = true
-            };
-
-        if (completedToday >= CompletedTodayCelebrationThreshold)
-            return new Tip
-            {
-                Message = string.Format(_resolve("Tip_CompletedToday"), completedToday),
-                Severity = TipSeverity.Info,
-                Category = TipCategory.Encouragement,
-                Action = null,
-                DismissAfterMs = 3000,
                 IsMeaningful = true
             };
 
@@ -164,14 +158,20 @@ public sealed class TipEngine
             .OrderBy(t => t.CreatedAt)
             .FirstOrDefault();
 
-        if (staleTask != null)
+        if (staleTask != null && Allowed("stale-task"))
             return new Tip
             {
+                Topic = "stale-task",
                 Message = string.Format(_resolve("Tip_StaleTask"),
                     staleTask.Title, (today - staleTask.CreatedAt.Date).Days),
                 Severity = TipSeverity.Info,
                 Category = TipCategory.TaskSuggestion,
-                Action = new TipAction { Label = _resolve("Tip_Action_TakeALook"), Type = TipActionType.OpenMainWindow },
+                Action = new TipAction
+                {
+                    Label = _resolve("Tip_Action_TakeALook"),
+                    Type = TipActionType.OpenTaskDetails,
+                    TaskId = staleTask.Id
+                },
                 DismissAfterMs = 0,
                 IsMeaningful = true
             };
@@ -180,9 +180,10 @@ public sealed class TipEngine
         // above the fallback tier and counts as meaningful. Only fires once the pile is
         // big enough to be worth mentioning; a couple of undated tasks is normal.
         var undated = tasks.Count(t => !t.IsCompleted && t.DueDate == null);
-        if (undated >= UndatedBacklogThreshold)
+        if (undated >= UndatedBacklogThreshold && Allowed("undated-backlog"))
             return new Tip
             {
+                Topic = "undated-backlog",
                 Message = string.Format(_resolve("Tip_UndatedBacklog"), undated),
                 Severity = TipSeverity.Info,
                 Category = TipCategory.TaskSuggestion,
@@ -197,10 +198,11 @@ public sealed class TipEngine
 
         // Onboarding outranks inspiration: someone with no tasks at all needs the prompt
         // that gets them started, not a quote. Deliberately above the daily slot.
-        if (tasks.Count == 0)
+        if (tasks.Count == 0 && Allowed("first-task"))
         {
             var emptyTip = new Tip
             {
+                Topic = "first-task",
                 Message = _resolve("Tip_EmptyList"),
                 Severity = TipSeverity.Warning,
                 Category = TipCategory.TaskSuggestion,
@@ -218,7 +220,7 @@ public sealed class TipEngine
         // random so the same line holds all day instead of re-rolling per bubble open.
         bool inspirationDueToday = chattiness != MascotChattiness.Quiet &&
                                    lastInspiration?.Date != today;
-        if (inspirationDueToday)
+        if (inspirationDueToday && Allowed("inspiration"))
         {
             var pool = BuildInspirationPool(customTips);
             if (pool.Count > 0)
@@ -226,6 +228,7 @@ public sealed class TipEngine
                 var dayNumber = (int)(current.Date.Ticks / TimeSpan.TicksPerDay);
                 return new Tip
                 {
+                    Topic = "inspiration",
                     Message = pool[dayNumber % pool.Count],
                     Severity = TipSeverity.Info,
                     Category = TipCategory.DailyInspiration,
@@ -240,10 +243,11 @@ public sealed class TipEngine
         bool suppress = chattiness != MascotChattiness.Chatty &&
                         ShouldSuppressFallback(current, lastMeaningfulTip, lastActivity);
 
-        if (hasOpenTasks)
+        if (hasOpenTasks && Allowed("greeting"))
         {
             var fallbackTip = new Tip
             {
+                Topic = "greeting",
                 Message = _resolve(GetTimeBasedGreetingKey(current)),
                 Severity = TipSeverity.Warning,
                 Category = TipCategory.Encouragement,
@@ -258,6 +262,7 @@ public sealed class TipEngine
         // in — this is the moment the user has capacity to add something.
         var captureTip = new Tip
         {
+            Topic = "capture",
             Message = _resolve(CaptureInviteKeys[_greetingIndex++ % CaptureInviteKeys.Length]),
             Severity = TipSeverity.Info,
             Category = TipCategory.TaskSuggestion,
@@ -265,7 +270,41 @@ public sealed class TipEngine
             DismissAfterMs = 5000,
             IsMeaningful = false
         };
-        return suppress ? null : captureTip;
+        return suppress || !Allowed("capture") ? null : captureTip;
+    }
+
+    public Tip? GetPlanningTip(IReadOnlyList<TodoItem> tasks, DateTime now)
+    {
+        var openMyDay = tasks.Count(t => t.IsInMyDay && !t.IsCompleted);
+        if (openMyDay != 0 || !tasks.Any(t => !t.IsCompleted)) return null;
+        if (now.Hour < EveningHour)
+            return new Tip
+            {
+                Topic = "plan-my-day", Message = _resolve("Tip_MyDayEmpty"),
+                Category = TipCategory.Planning,
+                Action = new TipAction { Label = _resolve("Tip_Action_PlanMyDay"), Type = TipActionType.ViewMyDay },
+                DismissAfterMs = 9000
+            };
+        if (!tasks.Any(t => t.IsCompleted && t.CompletedAt?.ToLocalTime().Date == now.Date)) return null;
+        return new Tip
+        {
+            Topic = "plan-tomorrow", Message = _resolve("Tip_EveningWrapUp"),
+            Category = TipCategory.Planning,
+            Action = new TipAction { Label = _resolve("Tip_Action_PlanTomorrow"), Type = TipActionType.ViewMyDay },
+            DismissAfterMs = 9000
+        };
+    }
+
+    public Tip GetInspirationTip(DateTime now, IReadOnlyList<string>? customTips)
+    {
+        var pool = BuildInspirationPool(customTips);
+        var dayNumber = (int)(now.Date.Ticks / TimeSpan.TicksPerDay);
+        return new Tip
+        {
+            Topic = "inspiration", Message = pool[dayNumber % pool.Count],
+            Category = TipCategory.DailyInspiration, IsInspiration = true,
+            IsMeaningful = false, DismissAfterMs = 9000
+        };
     }
 
     // Built-in lines and the user's own, merged. A user with many custom lines therefore

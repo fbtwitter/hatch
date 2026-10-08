@@ -2,6 +2,12 @@ namespace Hatch.Models;
 
 public enum AppTheme { SystemDefault = 0, Light = 1, Dark = 2 }
 public enum TipTimePreference { Anytime = 0, Morning = 1, Afternoon = 2, Evening = 3 }
+public enum MascotSound { None = 0, BuiltIn = 1, Custom = 2 }
+public sealed class TipTopicState
+{
+    public int Dismissals { get; set; }
+    public DateTime? QuietUntil { get; set; }
+}
 public enum AppBackdrop { None = 0, Mica = 1, MicaAlt = 2, DesktopAcrylic = 3 }
 
 // How freely the mascot may show non-actionable messages. Actionable tips (overdue,
@@ -26,7 +32,6 @@ public sealed class AppSettings
     public string? LottieFilePath { get; set; } = null;
     public string ActiveNavItem { get; set; } = "myday";
     public string? MascotOpenPageTag { get; set; } = null;
-    public Guid LastUsedListId { get; set; } = Guid.Empty;
     public bool FirstRunComplete { get; set; } = false;
     public long? HideUntilTicks { get; set; } = null; // DateTime.UtcNow.Ticks when hide expires
     public bool MascotAlwaysOnTop { get; set; } = true;
@@ -39,14 +44,11 @@ public sealed class AppSettings
     public uint HotkeyVirtualKey { get; set; } = 0x20;            // VK_SPACE
 
     // Tip Engine — adaptive silence on repeated dismissals
-    public int ConsecutiveTipDismissals { get; set; } = 0;
-    public DateTime? TipAutoOpenCooldownUntil { get; set; } = null;
     public bool ShowQuickTips { get; set; } = true;
     public DateTime? QuickTipsPausedUntil { get; set; } = null;
 
     // Proactive tip popup — off by default (opt-in; more interruptive than the click-only default)
     public bool ShowTipsAutomatically { get; set; } = false;
-    public DateTime? LastProactiveTipCheckDate { get; set; } = null;
     public TipTimePreference ProactiveTipTime { get; set; } = TipTimePreference.Anytime;
 
     // Tip Engine — smart fallback suppression (avoid filler)
@@ -59,6 +61,15 @@ public sealed class AppSettings
     public MascotChattiness MascotChattiness { get; set; } = MascotChattiness.Balanced;
     public List<string> CustomTips { get; set; } = [];
     public DateTime? LastInspirationDate { get; set; } = null;        // daily QOTD slot
+    public Dictionary<string, TipTopicState> TipTopics { get; set; } = [];
+    public DateTime? LastPlanningBubbleDate { get; set; }
+    public DateTime? LastAutomaticBubbleAt { get; set; }
+    public string? PendingTipTopic { get; set; }
+    public DateTime? PendingTipDate { get; set; }
+    public DateTime? LastMyDayCelebrationDate { get; set; }
+    public List<Guid> LastObservedMyDayOpenTaskIds { get; set; } = [];
+    public MascotSound MascotSound { get; set; } = MascotSound.None;
+    public string? MascotCustomSoundPath { get; set; }
 
     // Focus mode — the per-task stopwatch (Helpers/FocusTimer.cs). Local and ephemeral:
     // never written to TodoItem, tasks.json or the wire model, so it stays out of the

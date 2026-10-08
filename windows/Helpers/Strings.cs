@@ -114,6 +114,7 @@ internal static class Strings
 
     // ── Default list ─────────────────────────────────────────
     public static string List_AllTasks_Name => Get("List_AllTasks_Name");
+    public static string List_Default_Name => Get("List_Default_Name");
 
     // ── Priority chip labels ─────────────────────────────────
     public static string Priority_None   => Get("Priority_None");

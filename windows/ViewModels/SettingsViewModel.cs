@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Xaml;
 using Hatch.Helpers;
 using Hatch.Models;
 using Hatch.Services;
@@ -194,6 +195,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             if (_settings.Current.ShowTipsAutomatically == value) return;
             _settings.Current.ShowTipsAutomatically = value;
             _settings.SaveDebounced();
+            App.TipCoordinator.NotifyPresentationSettingsChanged();
             OnPropertyChanged();
             OnPropertyChanged(nameof(CanSetProactiveTipTime));
         }
@@ -479,6 +481,37 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(HotkeyRecordButtonText));
             OnPropertyChanged(nameof(HotkeyRecordDescription));
         }
+    }
+
+    public int MascotSoundIndex
+    {
+        get => (int)_settings.Current.MascotSound;
+        set
+        {
+            if (value < 0 || value > 2 || MascotSoundIndex == value) return;
+            _settings.Current.MascotSound = (MascotSound)value;
+            _settings.SaveDebounced();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ShowCustomSoundPicker));
+            OnPropertyChanged(nameof(CustomSoundVisibility));
+            if (_settings.Current.MascotSound == MascotSound.BuiltIn)
+                MascotSoundPlayer.Play();
+        }
+    }
+
+    public bool ShowCustomSoundPicker => _settings.Current.MascotSound == MascotSound.Custom;
+    public Visibility CustomSoundVisibility => ShowCustomSoundPicker ? Visibility.Visible : Visibility.Collapsed;
+    public string CustomSoundName => string.IsNullOrWhiteSpace(_settings.Current.MascotCustomSoundPath)
+        ? "Choose a WAV file"
+        : !File.Exists(_settings.Current.MascotCustomSoundPath)
+            ? "File missing — choose a WAV file"
+            : Path.GetFileName(_settings.Current.MascotCustomSoundPath);
+
+    public void SetCustomSound(string path)
+    {
+        _settings.Current.MascotCustomSoundPath = path;
+        _settings.SaveDebounced();
+        OnPropertyChanged(nameof(CustomSoundName));
     }
 
     public string HotkeyRecordButtonText => IsRecordingHotkey

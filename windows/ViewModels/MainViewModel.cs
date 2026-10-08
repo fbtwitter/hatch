@@ -118,6 +118,9 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             // Skip during bulk load — LoadAsync calls RefreshActiveTasks once at the end.
             if (_isBulkLoading) return;
 
+            RememberOpenMyDayTasks();
+            TasksChanged?.Invoke();
+
             if (e.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
             {
                 // Incremental insert keeps the UI fast for normal single-task adds.
@@ -198,6 +201,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
 
             RefreshListNames();
             RefreshActiveTasks();
+            ObserveMyDayAfterLoad();
             RefreshSuggestions();
             OnPropertyChanged(nameof(IsTaskListEmpty));
             OnPropertyChanged(nameof(ShowEmptyState));
@@ -219,7 +223,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
 
     private void AddTask()
     {
-        var task = new TodoItem { Title = NewTaskText.Trim(), ListName = "Task" };
+        var task = new TodoItem { Title = NewTaskText.Trim(), ListName = Strings.List_Default_Name };
 
         switch (_activeNavItem)
         {
@@ -285,6 +289,12 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
                 {
                     ApplyCompletedChange(task);
                     RefreshSuggestions();
+                    if (task.IsCompleted) TaskCompletedLocally?.Invoke();
+                    if (task.IsCompleted && task.IsInMyDay &&
+                        !Tasks.Any(other => other.IsInMyDay && !other.IsCompleted))
+                        RaiseMyDayCompleted(fromSync: false);
+                    RememberOpenMyDayTasks();
+                    TasksChanged?.Invoke();
                 }
                 else if (e.PropertyName == nameof(TodoItem.DueDate))
                     ApplyDueDateChange(task);
@@ -293,6 +303,8 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
                 else
                 {
                     // IsInMyDay changed
+                    RememberOpenMyDayTasks();
+                    TasksChanged?.Invoke();
                     RefreshActiveTasks();
                     RefreshSuggestions();
                     OnPropertyChanged(nameof(IsTaskListEmpty));
@@ -629,6 +641,45 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     // Raised at the end of every load, including a sync-pull reload. MascotWindow uses it
     // to restore a persisted focus session once the task it names actually exists.
     public event Action? TasksLoaded;
+    public event Action? TasksChanged;
+    public event Action? TaskCompletedLocally;
+    public event Action<bool>? MyDayCompleted;
+    private bool _syncedMyDayCelebrationPending;
+
+    public bool TakeSyncedMyDayCelebration()
+    {
+        var pending = _syncedMyDayCelebrationPending;
+        _syncedMyDayCelebrationPending = false;
+        return pending;
+    }
+
+    private void RaiseMyDayCompleted(bool fromSync)
+    {
+        if (_settingsService.Current.LastMyDayCelebrationDate?.Date == DateTime.Today) return;
+        _settingsService.Current.LastMyDayCelebrationDate = DateTime.Today;
+        _settingsService.SaveDebounced();
+        if (fromSync) _syncedMyDayCelebrationPending = true;
+        MyDayCompleted?.Invoke(fromSync);
+    }
+
+    private void RememberOpenMyDayTasks()
+    {
+        _settingsService.Current.LastObservedMyDayOpenTaskIds ??= [];
+        var ids = Tasks.Where(t => t.IsInMyDay && !t.IsCompleted).Select(t => t.Id).ToList();
+        if (_settingsService.Current.LastObservedMyDayOpenTaskIds.SequenceEqual(ids)) return;
+        _settingsService.Current.LastObservedMyDayOpenTaskIds = ids;
+        _settingsService.SaveDebounced();
+    }
+
+    private void ObserveMyDayAfterLoad()
+    {
+        var previous = _settingsService.Current.LastObservedMyDayOpenTaskIds ?? [];
+        if (previous.Count > 0 && !Tasks.Any(t => t.IsInMyDay && !t.IsCompleted) &&
+            previous.All(id => Tasks.Any(t => t.Id == id && t.IsInMyDay && t.IsCompleted &&
+                                              t.CompletedAt?.ToLocalTime().Date == DateTime.Today)))
+            RaiseMyDayCompleted(fromSync: true);
+        RememberOpenMyDayTasks();
+    }
     public bool IsLoaded
     {
         get => _isLoaded;

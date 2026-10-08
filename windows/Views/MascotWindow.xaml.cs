@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using CommunityToolkit.WinUI.Lottie;
 using Microsoft.UI;
@@ -49,8 +50,14 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
     private bool _isFaded = false;
     private FocusModeViewModel? _focusViewModel;
     private DispatcherTimer? _proactiveTipDismissTimer;
+    private Stopwatch? _proactiveTipStopwatch;
+    private int _proactiveTipRemainingMs;
     private Tip? _currentProactiveTip;
-    private bool _proactiveTipProgrammaticClose;
+    private bool _explicitTipDismissal;
+    private bool _proactiveActionTaken;
+    private bool _proactivePointerOver;
+    private bool _proactiveOptionsOpen;
+    private bool _proactiveHasFocus;
     private bool _placingPopups;
     private XamlRoot? _mascotXamlRoot;
     private double _popupScale;
@@ -154,6 +161,14 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         // the constructor crashed the app in combase (E_UNEXPECTED) — a
         // ShouldConstrainToRootBounds popup has no root to escape before the window is mapped.
         App.MainWindowInstance?.ViewModel.TasksLoaded += OnTasksLoadedForFocusRestore;
+        App.MainWindowInstance?.ViewModel.TasksLoaded += RefreshPendingTipIndicator;
+        App.MainWindowInstance?.ViewModel.TasksChanged += RefreshPendingTipIndicator;
+        App.MainWindowInstance?.ViewModel.MyDayCompleted += OnMyDayCompleted;
+        App.MainWindowInstance?.ViewModel.TaskCompletedLocally += PlayWiggleAnimation;
+        if (App.MainWindowInstance != null)
+            App.MainWindowInstance.Activated += OnMainWindowActivatedForCelebration;
+        if (App.MainWindowInstance?.ViewModel.TakeSyncedMyDayCelebration() == true)
+            OnMyDayCompleted(fromSync: true);
 
         // Non-resizable, no title bar chrome. hasBorder=true to avoid DWM injecting
         // WS_DLGFRAME on Windows 10 22H2 (which produces a thin white border).
@@ -192,8 +207,11 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         {
             if (e.PropertyName == nameof(MascotViewModel.IsBubbleOpen))
             {
+                RefreshPendingTipIndicator();
                 if (ViewModel.IsBubbleOpen)
                 {
+                    if (_currentProactiveTip != null && !_explicitTipDismissal)
+                        App.TipCoordinator.SetPendingTip(_currentProactiveTip);
                     CloseProactiveTip();
                     FocusPopup.IsOpen = false;
                     _wigglePlayed = false;
@@ -249,9 +267,16 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             _focusViewModel?.Dispose();
             if (_mascotXamlRoot != null) _mascotXamlRoot.Changed -= OnMascotXamlRootChanged;
             App.MainWindowInstance?.ViewModel.TasksLoaded -= OnTasksLoadedForFocusRestore;
+            App.MainWindowInstance?.ViewModel.TasksLoaded -= RefreshPendingTipIndicator;
+            App.MainWindowInstance?.ViewModel.TasksChanged -= RefreshPendingTipIndicator;
+            App.MainWindowInstance?.ViewModel.MyDayCompleted -= OnMyDayCompleted;
+            App.MainWindowInstance?.ViewModel.TaskCompletedLocally -= PlayWiggleAnimation;
+            if (App.MainWindowInstance != null)
+                App.MainWindowInstance.Activated -= OnMainWindowActivatedForCelebration;
             UnregisterHotKey();
             ViewModel.MainWindowActionRequested -= OnMainWindowActionRequested;
             App.TipCoordinator.QuickTipsAvailabilityChanged -= OnQuickTipsAvailabilityChanged;
+            App.TipCoordinator.PendingTipChanged -= RefreshPendingTipIndicator;
             _bubbleWindow?.Close();
             ViewModel.Dispose();
         };
@@ -261,6 +286,8 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
 
         ViewModel.ProactiveTipDue += OnProactiveTipDue;
         App.TipCoordinator.QuickTipsAvailabilityChanged += OnQuickTipsAvailabilityChanged;
+        App.TipCoordinator.PendingTipChanged += RefreshPendingTipIndicator;
+        RefreshPendingTipIndicator();
     }
 
     private void OnMainWindowActionRequested(MainWindowAction action)
@@ -299,6 +326,9 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
     private void OnProactiveTipDue(Tip tip)
     {
         if (ViewModel.IsBubbleOpen || _focusViewModel != null) return;
+        if (tip.Category == TipCategory.Planning &&
+            new TipEngine(Strings.Get).GetPlanningTip(App.MainWindowInstance?.ViewModel.Tasks ?? [], DateTime.Now)?.Topic != tip.Topic)
+            return;
 
         if (!_startupInitialized || MascotLoadingRing.Visibility == Visibility.Visible ||
             (LottiePlayer.Visibility == Visibility.Visible && !LottiePlayer.IsAnimatedVisualLoaded))
@@ -314,48 +344,167 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         AutomationProperties.SetName(ProactiveTipCategoryIcon, categoryLabel);
         ToolTipService.SetToolTip(ProactiveTipCategoryIcon, categoryLabel);
         ProactiveTipCategoryHeading.Text = categoryLabel;
-        ProactiveTipCategoryHeading.Visibility = tip.Category == TipCategory.TaskReminder
+        var categoryVisibility = !string.IsNullOrWhiteSpace(categoryLabel)
             ? Visibility.Visible
             : Visibility.Collapsed;
+        ProactiveTipCategoryIcon.Visibility = categoryVisibility;
+        ProactiveTipCategoryHeading.Visibility = categoryVisibility;
         ProactiveTipText.Text = tip.Message;
-        ProactiveTipText.TextAlignment = tip.Action is null ? TextAlignment.Center : TextAlignment.Left;
+        ProactiveTipText.TextAlignment = TextAlignment.Left;
         ProactiveTipActionText.Text = tip.Action?.Label ?? string.Empty;
         ProactiveTipAction.Visibility = tip.Action == null ? Visibility.Collapsed : Visibility.Visible;
-        _proactiveTipProgrammaticClose = false;
+        _explicitTipDismissal = false;
+        _proactiveActionTaken = false;
+        _proactivePointerOver = false;
+        _proactiveOptionsOpen = false;
+        _proactiveHasFocus = false;
+        UpdateProactiveTipChrome();
         ProactiveTip.IsOpen = true;
+        App.TipCoordinator.RecordShown(tip, automatic: true);
+        MascotSoundPlayer.Play();
 
         _proactiveTipDismissTimer?.Stop();
         if (tip.DismissAfterMs > 0)
         {
-            _proactiveTipDismissTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(tip.DismissAfterMs) };
+            _proactiveTipDismissTimer = new DispatcherTimer();
             _proactiveTipDismissTimer.Tick += ProactiveTipDismissTimer_Tick;
-            _proactiveTipDismissTimer.Start();
+            _proactiveTipRemainingMs = 9000;
+            ResumeProactiveTipCountdown();
         }
     }
 
     private void ProactiveTipDismissTimer_Tick(object? sender, object e)
     {
         _proactiveTipDismissTimer?.Stop();
+        _proactiveTipStopwatch = null;
         CloseProactiveTip();
+    }
+
+    private void OnMyDayCompleted(bool fromSync)
+    {
+        if (fromSync) App.MainWindowInstance?.ViewModel.TakeSyncedMyDayCelebration();
+        if (!App.TipCoordinator.CanSpeak) return;
+        var tip = new Tip
+        {
+            Topic = "my-day-complete",
+            Message = Strings.Get("Tip_MyDayComplete"),
+            Category = TipCategory.Encouragement,
+            IsMeaningful = true,
+            DismissAfterMs = 9000
+        };
+        if (fromSync || !App.Settings.ShowTipsAutomatically ||
+            !ViewModel.IsVisible || ViewModel.IsMascotHidden ||
+            ViewModel.IsBubbleOpen || _focusViewModel != null)
+            App.TipCoordinator.SetPendingTip(tip);
+        else
+            OnProactiveTipDue(tip);
+    }
+
+    private void OnMainWindowActivatedForCelebration(object sender, WindowActivatedEventArgs args)
+    {
+        if (args.WindowActivationState == WindowActivationState.Deactivated ||
+            !App.TipCoordinator.CanSpeak || !ViewModel.IsVisible || ViewModel.IsMascotHidden ||
+            ViewModel.IsBubbleOpen || _focusViewModel != null || ProactiveTip.IsOpen) return;
+        var tasks = App.MainWindowInstance?.ViewModel.Tasks;
+        if (tasks == null) return;
+        var pending = App.TipCoordinator.PeekPendingTip(tasks);
+        if (pending?.Topic != "my-day-complete") return;
+        App.TipCoordinator.ClearPendingTip();
+        OnProactiveTipDue(pending);
     }
 
     private void CloseProactiveTip()
     {
         _pendingProactiveTip = null;
-        _proactiveTipProgrammaticClose = true;
+        _proactiveTipDismissTimer?.Stop();
+        _proactiveTipStopwatch = null;
         ProactiveTip.IsOpen = false;
     }
 
     private void ProactiveTip_Opened(object? sender, object args) => PositionMascotPopups();
 
-    private void ProactiveTip_CloseClick(object sender, RoutedEventArgs args) => ProactiveTip.IsOpen = false;
+    private void ProactiveTip_CloseClick(object sender, RoutedEventArgs args)
+    {
+        _explicitTipDismissal = true;
+        ProactiveTip.IsOpen = false;
+    }
 
-    private void TipOptionsFlyout_Opened(object sender, object args) => _proactiveTipDismissTimer?.Stop();
+    private void TipOptionsFlyout_Opened(object sender, object args)
+    {
+        _proactiveOptionsOpen = true;
+        UpdateProactiveTipChrome();
+        PauseProactiveTipCountdown();
+    }
 
     private void TipOptionsFlyout_Closed(object sender, object args)
     {
-        if (ProactiveTip.IsOpen && _currentProactiveTip?.DismissAfterMs > 0)
-            _proactiveTipDismissTimer?.Start();
+        _proactiveOptionsOpen = false;
+        UpdateProactiveTipChrome();
+        ResumeProactiveTipCountdown();
+    }
+
+    private void ProactiveTip_PointerEntered(object sender, PointerRoutedEventArgs args)
+    {
+        _proactivePointerOver = true;
+        UpdateProactiveTipChrome();
+        PauseProactiveTipCountdown();
+    }
+
+    private void ProactiveTip_PointerExited(object sender, PointerRoutedEventArgs args)
+    {
+        _proactivePointerOver = false;
+        UpdateProactiveTipChrome();
+        ResumeProactiveTipCountdown();
+    }
+
+    private void ProactiveTip_GotFocus(object sender, RoutedEventArgs args)
+    {
+        _proactiveHasFocus = true;
+        UpdateProactiveTipChrome();
+        PauseProactiveTipCountdown();
+    }
+
+    private void ProactiveTip_LostFocus(object sender, RoutedEventArgs args)
+    {
+        _proactiveHasFocus = false;
+        UpdateProactiveTipChrome();
+        ResumeProactiveTipCountdown();
+    }
+
+    private void UpdateProactiveTipChrome()
+    {
+        var opacity = _proactivePointerOver || _proactiveOptionsOpen || _proactiveHasFocus ? 1 : 0;
+        ProactiveTipOptionsButton.Opacity = opacity;
+        ProactiveTipCloseButton.Opacity = opacity;
+    }
+
+    private void PauseProactiveTipCountdown()
+    {
+        if (_proactiveTipStopwatch == null) return;
+        _proactiveTipDismissTimer?.Stop();
+        _proactiveTipRemainingMs = Math.Max(1,
+            _proactiveTipRemainingMs - (int)_proactiveTipStopwatch.ElapsedMilliseconds);
+        _proactiveTipStopwatch = null;
+    }
+
+    private void ResumeProactiveTipCountdown()
+    {
+        if (!ProactiveTip.IsOpen || _proactivePointerOver || _proactiveOptionsOpen ||
+            _proactiveHasFocus || _proactiveTipDismissTimer == null ||
+            _proactiveTipStopwatch != null) return;
+        _proactiveTipDismissTimer.Interval = TimeSpan.FromMilliseconds(_proactiveTipRemainingMs);
+        _proactiveTipStopwatch = Stopwatch.StartNew();
+        _proactiveTipDismissTimer.Start();
+    }
+
+    private void RefreshPendingTipIndicator()
+    {
+        var tasks = App.MainWindowInstance?.ViewModel.Tasks;
+        PendingTipIndicator.Visibility = App.Settings.ShowTipsAutomatically &&
+            App.MainWindowInstance?.ViewModel.IsLoaded == true && tasks != null &&
+            App.TipCoordinator.PeekPendingTip(tasks) != null &&
+            !ProactiveTip.IsOpen && !ViewModel.IsBubbleOpen && _focusViewModel == null
+            ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void ShowPendingProactiveTip()
@@ -384,42 +533,42 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         if (available) return;
         _pendingProactiveTip = null;
         if (ProactiveTip.IsOpen) CloseProactiveTip();
+        RefreshPendingTipIndicator();
     }
 
     private void ProactiveTip_ActionButtonClick(object sender, RoutedEventArgs args)
     {
-        var actionType = _currentProactiveTip?.Action?.Type;
+        var action = _currentProactiveTip?.Action;
+        _proactiveActionTaken = true;
+        ViewModel.RecordProactiveTipEngagement(_currentProactiveTip);
         CloseProactiveTip();
-        if (actionType.HasValue)
-            ExecuteTipAction(actionType.Value);
+        if (action != null)
+            ExecuteTipAction(action);
     }
 
     private void ProactiveTip_Closed(object? sender, object args)
     {
         _proactiveTipDismissTimer?.Stop();
+        _proactiveTipStopwatch = null;
         var tip = _currentProactiveTip;
         _currentProactiveTip = null;
         if (tip == null) return;
 
-        if (tip.Severity == TipSeverity.Critical)
+        if (_explicitTipDismissal)
         {
-            // Critical tips (overdue, My Day empty) are reminders, not nags — being
-            // shown at all counts as engagement regardless of how they're closed.
-            ViewModel.ResetProactiveTipDismissalCounter();
+            ViewModel.RecordProactiveTipDismissal(tip);
             return;
         }
-
-        if (_proactiveTipProgrammaticClose)
-            ViewModel.ResetProactiveTipDismissalCounter();
-        else
-            ViewModel.RecordProactiveTipDismissal();
+        if (!_proactiveActionTaken && App.TipCoordinator.CanSpeak)
+            App.TipCoordinator.SetPendingTip(tip);
+        RefreshPendingTipIndicator();
     }
 
-    private void ExecuteTipAction(TipActionType actionType)
+    private void ExecuteTipAction(TipAction action)
     {
         // Capture is the mascot's own job — open the quick-add bubble rather than the
         // main window. Handled before the main-window guard below, since it needs neither.
-        if (actionType == TipActionType.CaptureTask)
+        if (action.Type == TipActionType.CaptureTask)
         {
             ViewModel.ToggleBubbleCommand.Execute(null);
             return;
@@ -429,30 +578,37 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         var mainVm = mainWindow?.ViewModel;
         if (mainVm == null || mainWindow == null) return;
 
-        switch (actionType)
+        switch (action.Type)
         {
             case TipActionType.ViewOverdue:
+                mainWindow.ShowFromMascot();
                 mainWindow.NavigateTo("planned");
-                mainWindow.Activate();
                 break;
 
             case TipActionType.ViewMyDay:
+                mainWindow.ShowFromMascot();
                 mainWindow.NavigateTo("myday");
-                mainWindow.Activate();
                 break;
 
             case TipActionType.ViewPlanned:
+                mainWindow.ShowFromMascot();
                 mainWindow.NavigateTo("planned");
-                mainWindow.Activate();
                 break;
 
             case TipActionType.AddSampleTask:
                 mainVm.AddSampleTask();
-                mainWindow.Activate();
+                mainWindow.ShowFromMascot();
                 break;
 
             case TipActionType.OpenMainWindow:
-                mainWindow.Activate();
+                mainWindow.ShowFromMascot();
+                break;
+
+            case TipActionType.OpenTaskDetails:
+                if (action.TaskId is Guid taskId)
+                    mainWindow.ShowAndSelectTask(taskId);
+                else
+                    mainWindow.ShowFromMascot();
                 break;
         }
     }
@@ -947,6 +1103,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         _focusViewModel?.Dispose();
         var vm = new FocusModeViewModel(task, restored);
         _focusViewModel = vm;
+        RefreshPendingTipIndicator();
 
         // Disposing here, not only in the Exit button's handler: completing the task from the
         // main window also ends the session, and the 1 s tick would otherwise outlive it.
@@ -956,6 +1113,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             FocusPopup.IsOpen = false;
             vm.Dispose();
             _focusViewModel = null;
+            RefreshPendingTipIndicator();
         });
         vm.SessionChanged += PersistFocusSession;
         vm.PropertyChanged += (_, e) => ApplyFocusState(vm, e.PropertyName);

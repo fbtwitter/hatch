@@ -120,6 +120,21 @@ public sealed class RuntimeMeasurementTests
         SaveImage("oversized-initial");
         Thread.Sleep(500);
         DumpTree("oversized-tree");
+        if (proactive)
+        {
+            var message = WaitFor("ProactiveTip_Message");
+            var originalMessage = message.Name;
+            Assert.IsFalse(message.Name.Contains("Runtime layout test line"),
+                "Automatic bubbles must use built-in copy, not custom private text.");
+            Assert.IsTrue(info.Work.ToRectangle().Contains(viewport.BoundingRectangle));
+            SetCursorPos(20, 20);
+            Thread.Sleep(10_000);
+            WaitFor("Mascot_PendingTipIndicator");
+            ClickMascot(mascot);
+            Assert.AreEqual(originalMessage, WaitFor("Bubble_TipMessage").Name,
+                "The collapsed tip should be waiting in Quick Add.");
+            return;
+        }
         var visibleBounds = viewport.BoundingRectangle;
         if (!proactive)
         {
@@ -332,4 +347,5 @@ public sealed class RuntimeMeasurementTests
     [DllImport("user32.dll")] private static extern bool GetMonitorInfo(IntPtr monitor, ref MonitorInfo info);
     [DllImport("user32.dll")] private static extern uint GetDpiForWindow(IntPtr hwnd);
     [DllImport("user32.dll")] private static extern int GetSystemMetrics(int index);
+    [DllImport("user32.dll")] private static extern bool SetCursorPos(int x, int y);
 }

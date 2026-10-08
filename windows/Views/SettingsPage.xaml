@@ -405,6 +405,43 @@
                     </Grid>
                 </Border>
 
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE767;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,14,16,14">
+                            <TextBlock Text="Mascot sound" Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Optional sound for automatic bubbles and My Day celebrations"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="8"
+                                    HorizontalAlignment="Right" Margin="0,10,0,10">
+                            <ComboBox MinWidth="140" HorizontalAlignment="Right"
+                                      AutomationProperties.AutomationId="Settings_MascotSound"
+                                      SelectedIndex="{x:Bind ViewModel.MascotSoundIndex, Mode=TwoWay}">
+                                <ComboBoxItem Content="None"/>
+                                <ComboBoxItem Content="System chime"/>
+                                <ComboBoxItem Content="Custom WAV"/>
+                            </ComboBox>
+                            <Button Visibility="{x:Bind ViewModel.CustomSoundVisibility, Mode=OneWay}"
+                                    ToolTipService.ToolTip="{x:Bind ViewModel.CustomSoundName, Mode=OneWay}"
+                                    AutomationProperties.AutomationId="Settings_ChooseMascotSound"
+                                    HorizontalAlignment="Right" MaxWidth="160"
+                                    Click="BrowseMascotSoundButton_Click">
+                                <TextBlock Text="{x:Bind ViewModel.CustomSoundName, Mode=OneWay}"
+                                           MaxWidth="132" TextTrimming="CharacterEllipsis"/>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
                 <!-- Mascot messages — how often, and the user's own lines -->
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
@@ -460,6 +497,27 @@
                                   AutomationProperties.AutomationId="Settings_MascotOpenPage"
                                   ItemsSource="{x:Bind ViewModel.MascotOpenPageOptions}"
                                   SelectedItem="{x:Bind ViewModel.SelectedMascotOpenPageOption, Mode=TwoWay}"/>
+                    </Grid>
+                </Border>
+
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid ColumnSpacing="20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Glyph="&#xE74F;" FontSize="16" VerticalAlignment="Top"
+                                  Margin="0,18,0,0"/>
+                        <StackPanel Grid.Column="1" Margin="0,14,0,14" Spacing="8">
+                            <TextBlock Text="Quieted tip topics"
+                                       AutomationProperties.AutomationId="Settings_QuietedTopics"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock Text="Resume a topic whenever you want to hear from Hatch again."
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       TextWrapping="Wrap"/>
+                            <StackPanel x:Name="QuietedTopicsPanel" Spacing="6"/>
+                        </StackPanel>
                     </Grid>
                 </Border>
 
