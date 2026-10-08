@@ -208,10 +208,12 @@ public sealed class TodoItem : INotifyPropertyChanged
     private void OnPropertyChanged([CallerMemberName] string? name = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-    /// <summary>
-    /// Re-raises PropertyChanged for DueDate so theme-sensitive converters
-    /// re-evaluate without modifying the collection.
-    /// </summary>
+    internal bool IsRefreshingDueDateBinding { get; private set; }
+
     public void RefreshDueDateBinding()
-        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DueDate)));
+    {
+        IsRefreshingDueDateBinding = true;
+        try { PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DueDate))); }
+        finally { IsRefreshingDueDateBinding = false; }
+    }
 }
