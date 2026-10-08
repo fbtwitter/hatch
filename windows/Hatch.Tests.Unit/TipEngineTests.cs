@@ -94,6 +94,48 @@ public class TipEngineTests
     }
 
     [TestMethod]
+    public void AutomaticPlanning_IgnoresDueAlertsAndPrivateTaskTitles()
+    {
+        var task = Task(dueDate: new DateTimeOffset(DateTime.Today), createdAt: DateTime.Now);
+        task.Title = "Private medical appointment";
+
+        var tip = Engine().GetPlanningTip([task], Morning);
+
+        Assert.AreEqual("plan-my-day", tip?.Topic);
+        Assert.AreEqual("Tip_MyDayEmpty", tip?.Message);
+        Assert.IsFalse(tip!.Message.Contains(task.Title));
+    }
+
+    [TestMethod]
+    public void AutomaticPlanning_StopsWhenMyDayHasAnOpenTask()
+    {
+        var tip = Engine().GetPlanningTip([Task(inMyDay: true)], Morning);
+        Assert.IsNull(tip);
+    }
+
+    [TestMethod]
+    public void AutomaticInspiration_HasStableTopicAndDailyCopy()
+    {
+        var first = Engine().GetInspirationTip(Morning, null);
+        var second = Engine().GetInspirationTip(Morning.AddHours(1), null);
+
+        Assert.AreEqual("inspiration", first.Topic);
+        Assert.AreEqual(first.Message, second.Message);
+        Assert.IsTrue(first.IsInspiration);
+    }
+
+    [TestMethod]
+    public void QuietingOneTopic_AllowsAnotherEligibleTopic()
+    {
+        var tasks = new List<TodoItem> { Task(dueDate: new DateTimeOffset(DateTime.Today)) };
+        var tip = Engine().GetTip(tasks, now: Morning,
+            quietedTopics: new HashSet<string> { "due-today" });
+
+        Assert.AreNotEqual("due-today", tip?.Topic);
+        Assert.IsNotNull(tip);
+    }
+
+    [TestMethod]
     public void EmptyMyDay_PromptsPlanning_OnlyWhenMyDayWasUsedBefore()
     {
         var neverUsedMyDay = new List<TodoItem> { Task(createdAt: DateTime.Now) };
@@ -155,7 +197,7 @@ public class TipEngineTests
     }
 
     [TestMethod]
-    public void CompletionCelebration_CountsOnlyToday()
+    public void FiveCompletions_DoNotCreateAnArbitrarySpeechMilestone()
     {
         var completedLongAgo = new List<TodoItem> { Task(inMyDay: true) };
         for (int i = 0; i < 5; i++)
@@ -169,23 +211,24 @@ public class TipEngineTests
         var tipToday = Engine().GetTip(completedToday, now: Morning);
 
         Assert.AreNotEqual("Tip_CompletedToday", tipOld?.Message);
-        Assert.AreEqual("Tip_CompletedToday", tipToday!.Message);
-        Assert.IsTrue(tipToday.IsMeaningful);
+        Assert.AreNotEqual("Tip_CompletedToday", tipToday?.Message);
     }
 
     [TestMethod]
     public void StaleTask_Nudged_WhenOldUndatedAndNothingElseApplies()
     {
+        var staleTask = Task(createdAt: DateTime.Now.AddDays(-20));
         var tasks = new List<TodoItem>
         {
             Task(inMyDay: true),
-            Task(createdAt: DateTime.Now.AddDays(-20))
+            staleTask
         };
 
         var tip = Engine().GetTip(tasks, now: Morning);
 
         Assert.AreEqual("Tip_StaleTask", tip!.Message);
-        Assert.AreEqual(TipActionType.OpenMainWindow, tip.Action?.Type);
+        Assert.AreEqual(TipActionType.OpenTaskDetails, tip.Action?.Type);
+        Assert.AreEqual(staleTask.Id, tip.Action?.TaskId);
     }
 
     [TestMethod]

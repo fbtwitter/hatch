@@ -218,6 +218,20 @@
                       HorizontalAlignment="Center"
                       VerticalAlignment="Center" />
 
+        <Border x:Name="PendingTipIndicator" Width="18" Height="18"
+                AutomationProperties.AutomationId="Mascot_PendingTipIndicator"
+                HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="0,5,5,0" CornerRadius="9"
+                Background="{ThemeResource AccentFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                BorderThickness="1" Visibility="Collapsed"
+                IsHitTestVisible="False"
+                AutomationProperties.Name="A tip is waiting in Quick Add">
+            <TextBlock Text="!" FontSize="11" FontWeight="Bold"
+                       Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+
         </Grid>
         <!-- Focus mode overlay — ShouldConstrainToRootBounds=False lets the popup
              render outside the mascot window bounds. Shaped like a now-playing bar
@@ -332,14 +346,17 @@
                           AutomationProperties.AutomationId="ProactiveTip_Viewport"
                           HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <Border x:Name="ProactiveTipContent" Width="320" Padding="14"
+                <Border x:Name="ProactiveTipContent" Width="320" Padding="12"
+                        PointerEntered="ProactiveTip_PointerEntered"
+                        PointerExited="ProactiveTip_PointerExited"
+                        GotFocus="ProactiveTip_GotFocus"
+                        LostFocus="ProactiveTip_LostFocus"
                         CornerRadius="{ThemeResource ControlCornerRadius}"
                         Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
                         BorderBrush="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
                         BorderThickness="1">
-                    <Grid RowSpacing="10">
+                    <Grid RowSpacing="2">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
@@ -347,25 +364,29 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <Grid Grid.Row="0" Grid.ColumnSpan="2" ColumnSpacing="8">
+                        <Grid Grid.Row="0" Grid.ColumnSpan="2" ColumnSpacing="0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <FontIcon x:Name="ProactiveTipCategoryIcon" Grid.Column="0" FontSize="16"
+                            <FontIcon x:Name="ProactiveTipCategoryIcon" Grid.Column="0" FontSize="16" Margin="0,0,8,0"
+                                      AutomationProperties.AutomationId="ProactiveTip_CategoryIcon"
                                       Foreground="{ThemeResource AccentFillColorDefaultBrush}" />
                             <TextBlock x:Name="ProactiveTipCategoryHeading" Grid.Column="1"
+                                       AutomationProperties.AutomationId="ProactiveTip_Title"
                                        Style="{ThemeResource CaptionTextBlockStyle}"
                                        FontWeight="SemiBold"
                                        VerticalAlignment="Center" />
-                            <Button Grid.Column="2" x:Uid="Tip_OptionsButton"
+                            <Button x:Name="ProactiveTipOptionsButton" Grid.Column="2" x:Uid="Tip_OptionsButton"
+                                    Margin="0,0,4,0"
                                     AutomationProperties.AutomationId="ProactiveTip_Options"
                                     AutomationProperties.Name="Tip options"
                                     ToolTipService.ToolTip="Tip options"
                                     Style="{ThemeResource SubtleButtonStyle}"
-                                    Width="32" Height="32" MinWidth="0" Padding="0">
+                                    Width="32" Height="32" MinWidth="0" Padding="0"
+                                    Opacity="0">
                                 <FontIcon Glyph="&#xE712;" FontSize="14" />
                                 <Button.Flyout>
                                     <MenuFlyout Placement="BottomEdgeAlignedRight"
@@ -381,28 +402,37 @@
                                     </MenuFlyout>
                                 </Button.Flyout>
                             </Button>
-                            <Button Grid.Column="3"
+                            <Button x:Name="ProactiveTipCloseButton" Grid.Column="3"
                                     AutomationProperties.AutomationId="ProactiveTip_Close"
                                     AutomationProperties.Name="Dismiss tip"
                                     HorizontalAlignment="Right" VerticalAlignment="Top"
                                     Style="{ThemeResource SubtleButtonStyle}"
                                     Width="32" Height="32" MinWidth="0" Padding="0"
+                                    Opacity="0"
                                     Click="ProactiveTip_CloseClick">
                                 <FontIcon Glyph="&#xE711;" FontSize="12" />
                             </Button>
                         </Grid>
-                        <TextBlock x:Name="ProactiveTipText" Grid.Row="1" Grid.Column="0"
-                                   TextWrapping="Wrap" VerticalAlignment="Top"
-                                   AutomationProperties.AutomationId="ProactiveTip_Message"
-                                   Style="{ThemeResource BodyTextBlockStyle}" />
-                        <Button x:Name="ProactiveTipAction" Grid.Row="2" Grid.ColumnSpan="2"
-                                HorizontalAlignment="Stretch"
-                                HorizontalContentAlignment="Center"
-                                Padding="12,6"
-                                Style="{ThemeResource AccentButtonStyle}"
-                                Click="ProactiveTip_ActionButtonClick">
-                            <TextBlock x:Name="ProactiveTipActionText" TextWrapping="Wrap" />
-                        </Button>
+                        <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Spacing="10">
+                            <TextBlock x:Name="ProactiveTipText"
+                                       TextWrapping="Wrap" VerticalAlignment="Top"
+                                       AutomationProperties.AutomationId="ProactiveTip_Message"
+                                       Style="{ThemeResource BodyTextBlockStyle}" />
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Button x:Name="ProactiveTipAction"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Center"
+                                        Padding="12,6"
+                                        Style="{ThemeResource AccentButtonStyle}"
+                                        Click="ProactiveTip_ActionButtonClick">
+                                    <TextBlock x:Name="ProactiveTipActionText" TextWrapping="Wrap" />
+                                </Button>
+                            </Grid>
+                        </StackPanel>
                     </Grid>
                 </Border>
             </ScrollViewer>

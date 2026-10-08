@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Hatch.Helpers;
 using Hatch.Models;
 
 namespace Hatch.ViewModels;
@@ -117,7 +118,7 @@ public sealed partial class MainViewModel
 
         task.ListId = listId;
         task.UpdatedAt = DateTimeOffset.UtcNow;
-        task.ListName = list?.Name ?? "Task";
+        task.ListName = list?.Name ?? Strings.List_Default_Name;
 
         if (!MatchesFilter(task) && ActiveTasks.Contains(task))
         {
@@ -139,7 +140,7 @@ public sealed partial class MainViewModel
         var listMap = CustomLists.ToDictionary(l => l.Id, l => l.Name);
         foreach (var task in Tasks)
             task.ListName = task.ListId == Guid.Empty
-                ? "Task"
+                ? Strings.List_Default_Name
                 : listMap.TryGetValue(task.ListId, out var name) ? name : null;
     }
 

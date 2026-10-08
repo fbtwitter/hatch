@@ -1207,7 +1207,7 @@
                                                   MinWidth="132"
                                                   VerticalAlignment="Center"
                                                   SelectionChanged="PaneListCombo_SelectionChanged">
-                                            <ComboBoxItem x:Uid="PaneListNone" Content="No list" />
+                                            <ComboBoxItem x:Uid="PaneListNone" Content="Tasks" />
                                         </ComboBox>
                                     </Grid>
 

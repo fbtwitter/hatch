@@ -3,6 +3,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -56,12 +57,79 @@ public sealed partial class SettingsPage : Page
             SyncMascotSizeSlider();
             App.TipCoordinator.QuickTipsAvailabilityChanged -= OnQuickTipsAvailabilityChanged;
             App.TipCoordinator.QuickTipsAvailabilityChanged += OnQuickTipsAvailabilityChanged;
+            App.TipCoordinator.TopicsChanged -= RefreshQuietedTopics;
+            App.TipCoordinator.TopicsChanged += RefreshQuietedTopics;
             _viewModel.RefreshQuickTipSettings();
+            RefreshQuietedTopics();
         };
-        Unloaded += (_, _) => App.TipCoordinator.QuickTipsAvailabilityChanged -= OnQuickTipsAvailabilityChanged;
+        Unloaded += (_, _) =>
+        {
+            App.TipCoordinator.QuickTipsAvailabilityChanged -= OnQuickTipsAvailabilityChanged;
+            App.TipCoordinator.TopicsChanged -= RefreshQuietedTopics;
+        };
     }
 
     private void OnQuickTipsAvailabilityChanged(bool _) => _viewModel.RefreshQuickTipSettings();
+
+    private async void BrowseMascotSoundButton_Click(object sender, RoutedEventArgs e)
+    {
+        var picker = new FileOpenPicker();
+        WinRT.Interop.InitializeWithWindow.Initialize(
+            picker, Win32Interop.GetWindowFromWindowId(App.MainWindowInstance!.AppWindow.Id));
+        picker.FileTypeFilter.Add(".wav");
+        var file = await picker.PickSingleFileAsync();
+        if (file == null) return;
+        _viewModel.SetCustomSound(file.Path);
+        Hatch.Services.MascotSoundPlayer.Play();
+    }
+
+    private void RefreshQuietedTopics()
+    {
+        QuietedTopicsPanel.Children.Clear();
+        var quieted = App.TipCoordinator.Topics
+            .Where(pair => pair.Value.QuietUntil > DateTime.Now)
+            .OrderBy(pair => pair.Key).ToArray();
+        if (quieted.Length == 0)
+        {
+            QuietedTopicsPanel.Children.Add(new TextBlock
+            {
+                Text = "No topics are quieted.",
+                FontSize = 12,
+                Opacity = 0.7
+            });
+            return;
+        }
+        foreach (var (topic, state) in quieted)
+        {
+            var row = new Grid { ColumnSpacing = 12 };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var name = topic switch
+            {
+                "plan-my-day" => "Plan My Day",
+                "plan-tomorrow" => "Plan tomorrow",
+                "inspiration" => "Daily inspiration",
+                _ => string.Join(' ', topic.Split('-').Select(word => char.ToUpperInvariant(word[0]) + word[1..]))
+            };
+            var label = new TextBlock
+            {
+                Text = $"{name} · until {state.QuietUntil:MMM d}",
+                VerticalAlignment = VerticalAlignment.Center,
+                TextWrapping = TextWrapping.Wrap
+            };
+            var resume = new Button { Content = "Resume", MinWidth = 84 };
+            AutomationProperties.SetName(resume, $"Resume {name}");
+            resume.Click += (_, _) =>
+            {
+                App.TipCoordinator.ResumeTopic(topic);
+                RefreshQuietedTopics();
+            };
+            Grid.SetColumn(resume, 1);
+            row.Children.Add(label);
+            row.Children.Add(resume);
+            QuietedTopicsPanel.Children.Add(row);
+        }
+    }
 
     private async void OnConflictDetected(SyncConflict conflict)
     {

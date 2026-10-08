@@ -39,11 +39,12 @@ public sealed partial class QuickAddBubbleWindow : Window
     private System.Diagnostics.Stopwatch? _tipDismissStopwatch;
     private bool _tipDismissPaused = false;
     private bool _tipPointerOver;
+    private bool _tipHasFocus;
     private bool _tipOptionsOpen;
     private int _tipDismissRemainingMs = 0;
-    private bool _tipWasShown = false;
     private bool _tipAutoDismissCompleted = false;
     private Tip? _currentTip;
+    private readonly TaskList _defaultList = new() { Id = Guid.Empty };
     private int _mascotX, _mascotY, _mascotWidth;
 
     public QuickAddBubbleWindow()
@@ -95,16 +96,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         // Initialize list selector
         var mainVm = GetMainViewModel();
         if (mainVm != null)
-        {
-            ListSelector.ItemsSource = mainVm.CustomLists;
-            ListSelector.DisplayMemberPath = nameof(TaskList.Name);
-
-            // Pre-select the last-used list if it still exists, otherwise fall back to first
-            var lastUsedIndex = mainVm.CustomLists.IndexOf(
-                mainVm.CustomLists.FirstOrDefault(l => l.Id == App.Settings.LastUsedListId)!);
-            ListSelector.SelectedIndex = lastUsedIndex >= 0 ? lastUsedIndex
-                                       : mainVm.CustomLists.Count > 0 ? 0 : -1;
-        }
+            RefreshListSelector(mainVm);
 
         // Show first-run intro if needed
         if (!App.Settings.FirstRunComplete)
@@ -213,7 +205,6 @@ public sealed partial class QuickAddBubbleWindow : Window
     {
         // Reset session flags
         _isClosed = false;
-        _tipWasShown = false;
         _tipAutoDismissCompleted = false;
         _tipDismissCts?.Cancel();
         _tipDismissCts = null;
@@ -223,6 +214,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         _tipDismissStopwatch = null;
         _tipDismissPaused = false;
         _tipPointerOver = false;
+        _tipHasFocus = false;
         _tipOptionsOpen = false;
 
         // Reset form to initial state
@@ -236,15 +228,10 @@ public sealed partial class QuickAddBubbleWindow : Window
         TipBubble.Visibility = Visibility.Collapsed;
         TipBubble.Opacity = 0;
 
-        // Re-sync list selector to last-used list
+        // Start every capture in the default Tasks list.
         var mainVm = GetMainViewModel();
         if (mainVm != null)
-        {
-            var lastUsedIndex = mainVm.CustomLists.IndexOf(
-                mainVm.CustomLists.FirstOrDefault(l => l.Id == App.Settings.LastUsedListId)!);
-            ListSelector.SelectedIndex = lastUsedIndex >= 0 ? lastUsedIndex
-                                       : mainVm.CustomLists.Count > 0 ? 0 : -1;
-        }
+            RefreshListSelector(mainVm);
 
         // Reposition relative to (possibly moved) mascot
         _mascotX = mascotX;
@@ -312,32 +299,41 @@ public sealed partial class QuickAddBubbleWindow : Window
         return (App.MainWindowInstance as MainWindow)?.ViewModel;
     }
 
+    private void RefreshListSelector(MainViewModel mainVm)
+    {
+        _defaultList.Name = Strings.List_Default_Name;
+        ListSelector.DisplayMemberPath = nameof(TaskList.Name);
+        ListSelector.Items.Clear();
+        ListSelector.Items.Add(_defaultList);
+        foreach (var list in mainVm.CustomLists)
+            ListSelector.Items.Add(list);
+
+        ListSelector.SelectedItem = _defaultList;
+    }
+
     private async void AddButton_Click(object sender, RoutedEventArgs e)
     {
         var title = TaskTitleBox.Text?.Trim();
         if (string.IsNullOrEmpty(title)) return;
 
         var mainVm = GetMainViewModel();
-        if (mainVm == null) return;
+        if (mainVm == null || !mainVm.IsLoaded) return;
 
         // Guard against double-submit (e.g. Enter key + button click race)
         AddButton.IsEnabled = false;
 
-        // Prefer the selected list; fall back to last-used only if it still exists,
-        // then to the first available list.
-        var selectedList = ListSelector.SelectedItem as TaskList;
-        var selectedListId = selectedList?.Id ?? Guid.Empty;
-        if (selectedListId == Guid.Empty)
-        {
-            var lastUsed = mainVm.Lists.FirstOrDefault(l => l.Id == App.Settings.LastUsedListId);
-            selectedListId = lastUsed?.Id ?? mainVm.Lists.FirstOrDefault()?.Id ?? Guid.Empty;
-        }
+        var selectedListId = (ListSelector.SelectedItem as TaskList)?.Id ?? Guid.Empty;
+        var selectedList = selectedListId == Guid.Empty
+            ? _defaultList
+            : mainVm.CustomLists.FirstOrDefault(list => list.Id == selectedListId) ?? _defaultList;
+        selectedListId = selectedList.Id;
+        ListSelector.SelectedItem = selectedList;
 
         var task = new TodoItem
         {
             Title = title,
             ListId = selectedListId,
-            ListName = selectedList?.Name ?? mainVm.Lists.FirstOrDefault(l => l.Id == selectedListId)?.Name
+            ListName = selectedList.Name
         };
 
         // TimeSpan.Zero: due dates are calendar days stored at midnight +00:00 — the
@@ -356,9 +352,6 @@ public sealed partial class QuickAddBubbleWindow : Window
         mainVm.AttachTaskPropertyChangedHandler(task);
         mainVm.SaveAsync();
 
-        App.Settings.LastUsedListId = selectedListId;
-        App.SettingsService.SaveDebounced();
-
         // Trigger mascot wiggle on first add in this session
         TriggerMascotWiggle();
 
@@ -373,10 +366,8 @@ public sealed partial class QuickAddBubbleWindow : Window
 
     private async Task ShowConfirmationAsync()
     {
-        var selectedList = ListSelector.SelectedItem as TaskList;
-        ConfirmationText.Text = selectedList != null
-            ? string.Format(Strings.Get("QuickAdd_ConfirmAddedTo"), selectedList.Name)
-            : string.Empty;
+        var selectedList = ListSelector.SelectedItem as TaskList ?? _defaultList;
+        ConfirmationText.Text = string.Format(Strings.Get("QuickAdd_ConfirmAddedTo"), selectedList.Name);
 
         ConfirmationOverlay.Opacity = 0;
         BubbleContent.Visibility = Visibility.Collapsed;
@@ -415,18 +406,12 @@ public sealed partial class QuickAddBubbleWindow : Window
     private void OnWindowClosed()
     {
         _tipDismissCts?.Cancel();
-
-        // If tip was shown but auto-dismiss didn't complete, user closed early = dismissal
-        if (_tipWasShown && !_tipAutoDismissCompleted)
-        {
-            RecordTipDismissal();
-        }
     }
 
     private void ShowContextualTip()
     {
         var mainVm = GetMainViewModel();
-        if (mainVm == null) return;
+        if (mainVm == null || !mainVm.IsLoaded) return;
 
         _currentTip = App.TipCoordinator.TryGetContextualTip(mainVm.Tasks);
 
@@ -441,11 +426,13 @@ public sealed partial class QuickAddBubbleWindow : Window
         AutomationProperties.SetName(TipCategoryIcon, categoryLabel);
         ToolTipService.SetToolTip(TipCategoryIcon, categoryLabel);
         TipCategoryHeading.Text = categoryLabel;
-        TipCategoryHeading.Visibility = _currentTip.Category == TipCategory.TaskReminder
+        var categoryVisibility = !string.IsNullOrWhiteSpace(categoryLabel)
             ? Visibility.Visible
             : Visibility.Collapsed;
+        TipCategoryIcon.Visibility = categoryVisibility;
+        TipCategoryHeading.Visibility = categoryVisibility;
         TipTextBlock.Text = _currentTip.Message;
-        TipTextBlock.TextAlignment = _currentTip.Action is null ? TextAlignment.Center : TextAlignment.Left;
+        TipTextBlock.TextAlignment = TextAlignment.Left;
 
         // Show action button if available
         if (_currentTip.Action != null)
@@ -459,12 +446,15 @@ public sealed partial class QuickAddBubbleWindow : Window
         }
 
         TipBubble.Visibility = Visibility.Visible;
+        App.TipCoordinator.RecordShown(_currentTip, automatic: false);
+        if (_currentTip.Topic == "my-day-complete") MascotSoundPlayer.Play();
         TipBubble.Opacity = 0;
         _tipDismissPaused = false;
         _tipPointerOver = false;
+        _tipHasFocus = false;
         _tipOptionsOpen = false;
-        _tipWasShown = true;
         _tipAutoDismissCompleted = false;
+        UpdateTipChrome();
 
         _tipDismissCts?.Cancel();
         _tipDismissCts = new CancellationTokenSource();
@@ -477,11 +467,6 @@ public sealed partial class QuickAddBubbleWindow : Window
             _tipDismissRemainingMs = _currentTip.DismissAfterMs;
             StartTipCountdown();
         }
-        else if (_currentTip.Severity == TipSeverity.Critical)
-        {
-            // Critical tips: if shown without manual dismissal, engagement
-            _ = TrackEngagementOnCloseAsync();
-        }
     }
 
     private void TipCloseButton_Click(object sender, RoutedEventArgs e)
@@ -491,10 +476,7 @@ public sealed partial class QuickAddBubbleWindow : Window
 
         HideCurrentTip();
 
-        if (tip.Severity == TipSeverity.Critical)
-            ResetTipDismissalCounter();
-        else
-            RecordTipDismissal();
+        App.TipCoordinator.RecordDismissal(tip);
     }
 
     private void TipMenuHideToday_Click(object sender, RoutedEventArgs e)
@@ -518,9 +500,11 @@ public sealed partial class QuickAddBubbleWindow : Window
         _tipCountdownCts?.Cancel();
         _tipDismissPaused = false;
         _tipPointerOver = false;
+        _tipHasFocus = false;
         _tipOptionsOpen = false;
         _tipDismissStopwatch = null;
         _tipAutoDismissCompleted = true;
+        UpdateTipChrome();
         TipBubble.Visibility = Visibility.Collapsed;
         _currentTip = null;
     }
@@ -543,9 +527,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         {
             await Task.Delay(delayMs, ct);
 
-            // Auto-dismiss completed — user didn't manually close = engagement
             _tipAutoDismissCompleted = true;
-            ResetTipDismissalCounter();
 
             _tipFadeOut?.Begin();
             await Task.Delay(150, ct);
@@ -556,43 +538,53 @@ public sealed partial class QuickAddBubbleWindow : Window
         catch (OperationCanceledException) { }
     }
 
-    private async Task TrackEngagementOnCloseAsync()
-    {
-        // High-priority tips: wait for bubble close to track engagement
-        await Task.Delay(10); // Minimal delay to avoid race with close event
-        if (!_isClosed && _tipWasShown && !_tipAutoDismissCompleted)
-        {
-            // Bubble is still open and tip wasn't auto-dismissed = engagement
-            ResetTipDismissalCounter();
-        }
-    }
-
-    private void ResetTipDismissalCounter() => App.TipCoordinator.RecordEngagement();
-
-    private void RecordTipDismissal() => App.TipCoordinator.RecordDismissal();
+    private void RecordTipEngagement() => App.TipCoordinator.RecordEngagement(_currentTip);
 
     private void TipBubble_PointerEntered(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
     {
         _tipPointerOver = true;
+        UpdateTipChrome();
         PauseTipCountdown();
     }
 
     private void TipBubble_PointerExited(object sender, PointerRoutedEventArgs e)
     {
         _tipPointerOver = false;
+        UpdateTipChrome();
         ResumeTipCountdown();
+    }
+
+    private void TipBubble_GotFocus(object sender, RoutedEventArgs e)
+    {
+        _tipHasFocus = true;
+        UpdateTipChrome();
+    }
+
+    private void TipBubble_LostFocus(object sender, RoutedEventArgs e)
+    {
+        _tipHasFocus = false;
+        UpdateTipChrome();
     }
 
     private void TipOptionsFlyout_Opened(object sender, object args)
     {
         _tipOptionsOpen = true;
+        UpdateTipChrome();
         PauseTipCountdown();
     }
 
     private void TipOptionsFlyout_Closed(object sender, object args)
     {
         _tipOptionsOpen = false;
+        UpdateTipChrome();
         ResumeTipCountdown();
+    }
+
+    private void UpdateTipChrome()
+    {
+        var opacity = _tipPointerOver || _tipHasFocus || _tipOptionsOpen ? 1 : 0;
+        TipOptionsButton.Opacity = opacity;
+        TipCloseButton.Opacity = opacity;
     }
 
     private void PauseTipCountdown()
@@ -625,46 +617,55 @@ public sealed partial class QuickAddBubbleWindow : Window
         {
             _tipDismissCts?.Cancel();
             TipBubble.Visibility = Visibility.Collapsed;
-            ResetTipDismissalCounter();
+            RecordTipEngagement();
             _tipAutoDismissCompleted = true;
             TaskTitleBox.Focus(FocusState.Programmatic);
             return;
         }
 
+        var action = _currentTip.Action;
+        RecordTipEngagement();
         HideWindow();
-        ExecuteTipAction(_currentTip.Action.Type);
+        ExecuteTipAction(action);
     }
 
-    private void ExecuteTipAction(TipActionType actionType)
+    private void ExecuteTipAction(TipAction action)
     {
         var mainVm = GetMainViewModel();
         var mainWindow = App.MainWindowInstance;
         if (mainVm == null || mainWindow == null) return;
 
-        switch (actionType)
+        switch (action.Type)
         {
             case TipActionType.ViewOverdue:
+                mainWindow.ShowFromMascot();
                 mainWindow.NavigateTo("planned");
-                mainWindow.Activate();
                 break;
 
             case TipActionType.ViewMyDay:
+                mainWindow.ShowFromMascot();
                 mainWindow.NavigateTo("myday");
-                mainWindow.Activate();
                 break;
 
             case TipActionType.ViewPlanned:
+                mainWindow.ShowFromMascot();
                 mainWindow.NavigateTo("planned");
-                mainWindow.Activate();
                 break;
 
             case TipActionType.AddSampleTask:
                 mainVm.AddSampleTask();
-                mainWindow.Activate();
+                mainWindow.ShowFromMascot();
                 break;
 
             case TipActionType.OpenMainWindow:
-                mainWindow.Activate();
+                mainWindow.ShowFromMascot();
+                break;
+
+            case TipActionType.OpenTaskDetails:
+                if (action.TaskId is Guid taskId)
+                    mainWindow.ShowAndSelectTask(taskId);
+                else
+                    mainWindow.ShowFromMascot();
                 break;
 
             case TipActionType.None:

@@ -2,6 +2,7 @@ namespace Hatch.Models;
 
 public class Tip
 {
+    public string Topic { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
     public TipSeverity Severity { get; set; } = TipSeverity.Info;
     public TipCategory Category { get; set; } = TipCategory.Encouragement;
@@ -16,14 +17,7 @@ public class Tip
         TipCategory.DailyInspiration => "Tip_Category_DailyInspiration",
         _ => "Tip_Category_Encouragement"
     };
-    public string CategoryGlyph => Category switch
-    {
-        TipCategory.TaskReminder => "\uE823",
-        TipCategory.Planning => "\uE787",
-        TipCategory.TaskSuggestion => "\uE710",
-        TipCategory.DailyInspiration => "\uE82F",
-        _ => "\uE734"
-    };
+    public string CategoryGlyph => "\uE946";
 
     // True only for the once-a-day inspiration line. TipCoordinator stamps
     // LastInspirationDate off this rather than inferring it from Severity/Action, so
@@ -44,6 +38,7 @@ public class TipAction
 {
     public string Label { get; set; } = string.Empty;
     public TipActionType Type { get; set; }
+    public Guid? TaskId { get; set; }
 }
 
 public enum TipSeverity
@@ -61,5 +56,6 @@ public enum TipActionType
     AddSampleTask = 3,
     OpenMainWindow = 4,
     ViewPlanned = 5,
-    CaptureTask = 6   // put the caret in the quick-add box so a thought can be written down
+    CaptureTask = 6,  // put the caret in the quick-add box so a thought can be written down
+    OpenTaskDetails = 7
 }
