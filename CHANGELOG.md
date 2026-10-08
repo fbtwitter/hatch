@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-10-08
+
+### Added
+- Opt-in mascot companion prompts for planning and inspiration, with sound preferences,
+  topic controls, pending tips, and a My Day completion celebration.
+- Tip actions that open their target task or list beside the mascot while keeping Quick Add
+  available.
+
+### Fixed
+- Reopening Hatch restores task lists and syncs recent changes; task Steps no longer show
+  blank rows after switching between task details.
+- Main-window actions from mascot tips now position the window beside the mascot.
+
+### Changed
+- Refined tip card icons, hover-only controls, spacing, and task-detail alignment.
+
 ## [0.25.9] - 2026-10-08
 
 ### Added
