@@ -980,11 +980,18 @@
                                                        Style="{ThemeResource CaptionTextBlockStyle}"
                                                        Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
                                         </Grid>
-                                        <ItemsRepeater x:Name="PaneStepsList">
-                                            <ItemsRepeater.Layout>
-                                                <StackLayout Orientation="Vertical" Spacing="2" />
-                                            </ItemsRepeater.Layout>
-                                            <ItemsRepeater.ItemTemplate>
+                                        <ItemsControl x:Name="PaneStepsList">
+                                            <ItemsControl.ItemContainerStyle>
+                                                <Style TargetType="ContentPresenter">
+                                                    <Setter Property="HorizontalAlignment" Value="Stretch" />
+                                                </Style>
+                                            </ItemsControl.ItemContainerStyle>
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Spacing="2" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
                                                 <DataTemplate x:DataType="models:Step">
                                                     <Grid ColumnSpacing="4">
                                                         <Grid.ColumnDefinitions>
@@ -1009,8 +1016,7 @@
                                                                   AutomationProperties.Name="{x:Bind Title, Mode=OneWay}" />
                                                         <!-- Wraps instead of clipping: a long title stays
                                                              fully readable without a drag-select to scroll
-                                                             the box, which stutters inside the repeater +
-                                                             pane ScrollViewer. Enter is caught in
+                                                             the box inside the pane ScrollViewer. Enter is caught in
                                                              PaneStepText_KeyDown, so AcceptsReturn is moot. -->
                                                         <TextBox Grid.Column="1"
                                                                  Tag="{x:Bind}"
@@ -1041,8 +1047,8 @@
                                                         </Button>
                                                     </Grid>
                                                 </DataTemplate>
-                                            </ItemsRepeater.ItemTemplate>
-                                        </ItemsRepeater>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
                                         <TextBox x:Name="PaneStepInput"
                                                  x:Uid="PaneStepInput"
                                                  BorderThickness="0"

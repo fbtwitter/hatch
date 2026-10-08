@@ -267,9 +267,9 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     private void TaskPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (sender is not TodoItem task) return;
+        if (task.IsRefreshingDueDateBinding || !RealEditProperties.Contains(e.PropertyName)) return;
 
-        if (RealEditProperties.Contains(e.PropertyName))
-            task.UpdatedAt = DateTimeOffset.UtcNow;
+        task.UpdatedAt = DateTimeOffset.UtcNow;
 
         bool filterProp = e.PropertyName is
             nameof(TodoItem.IsInMyDay) or

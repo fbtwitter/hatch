@@ -203,6 +203,7 @@ public sealed partial class MainWindow : Window
         if (!AppWindow.IsVisible)
         {
             PositionNearMascot(resetSize: true);
+            RefreshTasksOnReopen();
             AppWindow.Show();
         }
 
@@ -213,8 +214,15 @@ public sealed partial class MainWindow : Window
     private void RestoreNearMascot()
     {
         PositionNearMascot(resetSize: true);
+        RefreshTasksOnReopen();
         AppWindow.Show();
         NavigateToPinnedPage();
+    }
+
+    private void RefreshTasksOnReopen()
+    {
+        (RootFrame?.Content as MainPage)?.RestoreTaskListMemory();
+        _ = App.SyncService.PullIfNewerAsync();
     }
 
     private void NavigateToPinnedPage()
@@ -325,6 +333,7 @@ public sealed partial class MainWindow : Window
     public void ShowAndSelectTask(Guid taskId)
     {
         EnsureContent();
+        RefreshTasksOnReopen();
         ShowWindow(_hwnd, SW_RESTORE);
         AppWindow.Show(true);
         Activate();
@@ -337,6 +346,7 @@ public sealed partial class MainWindow : Window
     public void ShowMyDay(bool focusNewTask = false)
     {
         EnsureContent();
+        RefreshTasksOnReopen();
         ShowWindow(_hwnd, SW_RESTORE);
         AppWindow.Show(true);
         Activate();
@@ -370,7 +380,7 @@ public sealed partial class MainWindow : Window
             EnsureContent();
             // Put the released list bindings back before the window is shown again —
             // see OnWindowClosing's tray-hide branch and MainPage.RestoreTaskListMemory.
-            (RootFrame?.Content as MainPage)?.RestoreTaskListMemory();
+            RefreshTasksOnReopen();
 
             // Do not reposition the window when restoring from tray; just show it
             ShowWindow(_hwnd, SW_RESTORE);
