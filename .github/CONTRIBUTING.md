@@ -9,11 +9,20 @@ Follow the [IDE-free build and run instructions](../README.md#build-and-run-with
 They use the x64 Debug configuration and list the required SDK and runtime. Run the commands
 from the repository root.
 
-For the pure-logic unit tests:
+Build the Debug x64 app and run the full regression scan:
 
 ```powershell
-dotnet test .\windows\Hatch.Tests.Unit\Hatch.Tests.Unit.csproj -c Debug
+.\windows\scripts\run-regression.ps1
 ```
+
+The scan runs unit tests, real-file persistence and simulated sync integration tests,
+then eight FlaUI profiles, including Light/Dark task workflows and onboarding.
+It gives each profile separate app data and measurement output. Run it in an interactive
+Windows desktop session; the FlaUI runner builds a self-contained unpackaged Release x64
+app and automates its real windows.
+
+See the [coverage map and remaining gaps](../docs/testing.md). New features should add
+behavioral regression cases and update that map.
 
 The Kotlin Multiplatform companion app is maintained in the
 [hatch-mobile repository](https://github.com/fbtwitter/hatch-mobile).
@@ -32,8 +41,8 @@ See [Architecture](ARCHITECTURE.md) for the current system overview and
    - Keep presentation state and commands in ViewModels.
    - Keep I/O asynchronous and UI updates on the dispatcher.
    - Keep `TaskStorageService` as the sole writer to `tasks.json`.
-4. Build the app and run the unit tests. Check relevant UI behavior, including theme and
-   multi-monitor behavior when applicable.
+4. Run the full regression scan (build, unit, integration and UI). Check additional relevant
+   UI behavior, including theme and multi-monitor behavior when applicable.
 5. Use a conventional commit message (`feat:`, `fix:`, `chore:`, `refactor:`, or
    `docs:`). Keep each commit to one logical change and omit AI attribution.
 6. Push the branch and open a pull request.
@@ -50,7 +59,10 @@ timers, or large collections, describe the expected impact and measure it when p
 
 ## CI and releases
 
-Pull requests and pushes to `main` build the app and run the pure-logic unit tests. A
+Pull requests, pushes to `main`, weekly runs and manual dispatch build the app and run
+the regression scan on a Windows runner. Runs upload TRX results, screenshots,
+and synthetic fixture data as artifacts; the `build-and-test` job fails if any profile
+fails. Branch protection must require that job's status to block merges. A
 `v*.*.*` tag triggers MSIX packaging, a GitHub release, and an App Installer feed update.
 Microsoft Store submission is manual.
 

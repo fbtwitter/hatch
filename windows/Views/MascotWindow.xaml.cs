@@ -353,6 +353,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         ProactiveTipText.TextAlignment = TextAlignment.Left;
         ProactiveTipActionText.Text = tip.Action?.Label ?? string.Empty;
         ProactiveTipAction.Visibility = tip.Action == null ? Visibility.Collapsed : Visibility.Visible;
+        ProactiveTipActionContainer.Visibility = tip.Action == null ? Visibility.Collapsed : Visibility.Visible;
         _explicitTipDismissal = false;
         _proactiveActionTaken = false;
         _proactivePointerOver = false;
@@ -1182,7 +1183,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         try
         {
             if (FocusPopup.IsOpen) PositionPopup(FocusPopup, FocusPopupViewport, FocusPopupBorder, 280);
-            if (ProactiveTip.IsOpen) PositionPopup(ProactiveTip, ProactiveTipViewport, ProactiveTipContent, 320);
+            if (ProactiveTip.IsOpen) PositionPopup(ProactiveTip, ProactiveTipViewport, ProactiveTipContent, 308);
         }
         finally { _placingPopups = false; }
 

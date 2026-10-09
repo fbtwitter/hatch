@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageReference Include="MSTest.TestAdapter" Version="4.3.3" />
+    <PackageReference Include="MSTest.TestFramework" Version="4.3.3" />
+    <PackageReference Include="Supabase" Version="1.6.0" />
+    <ProjectReference Include="..\Hatch.Core\Hatch.Core.csproj" />
+  </ItemGroup>
+  <!-- Exercise production storage and transfer orchestration without loading WinUI.
+       Only account state, Credential Locker and localized strings are test doubles. -->
+  <ItemGroup>
+    <Compile Include="..\Helpers\AppDataPath.cs" Link="Source\AppDataPath.cs" />
+    <Compile Include="..\Models\AppSettings.cs" Link="Source\AppSettings.cs" />
+    <Compile Include="..\Models\SyncConflict.cs" Link="Source\SyncConflict.cs" />
+    <Compile Include="..\Models\SyncConflictResolution.cs" Link="Source\SyncConflictResolution.cs" />
+    <Compile Include="..\Services\TaskStorageService.cs" Link="Source\TaskStorageService.cs" />
+    <Compile Include="..\Services\SettingsService.cs" Link="Source\SettingsService.cs" />
+    <Compile Include="..\Services\TaskTombstoneStore.cs" Link="Source\TaskTombstoneStore.cs" />
+    <Compile Include="..\Services\SyncDecisions.cs" Link="Source\SyncDecisions.cs" />
+    <Compile Include="..\Services\SyncService.cs" Link="Source\SyncService.cs" />
+  </ItemGroup>
+</Project>

@@ -16,9 +16,10 @@ public sealed class SettingsService
 
     public AppSettings Current { get; private set; } = new();
 
-    public SettingsService()
+    public SettingsService() : this(Hatch.Helpers.AppDataPath.Folder) { }
+
+    internal SettingsService(string folder)
     {
-        var folder = Hatch.Helpers.AppDataPath.Folder;
         Directory.CreateDirectory(folder);
         _filePath = Path.Combine(folder, "settings.json");
     }

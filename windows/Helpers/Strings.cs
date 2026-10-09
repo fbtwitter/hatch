@@ -49,6 +49,7 @@ internal static class Strings
     // ── Undo snackbar ────────────────────────────────────────
     public static string UndoMessage_TaskCompleted => Get("UndoMessage_TaskCompleted");
     public static string UndoMessage_TaskDeleted   => Get("UndoMessage_TaskDeleted");
+    public static string TaskList_ShowMoreCompleted(int count) => string.Format(Get("TaskList_ShowMoreCompleted"), count);
 
     // ── New task ─────────────────────────────────────────────
     // PlaceholderText and tooltip are set via x:Uid in XAML.

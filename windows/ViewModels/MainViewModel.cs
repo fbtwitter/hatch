@@ -102,6 +102,8 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         });
 
         _flatGroupedTasks = [_openGroup, _completedGroup];
+        _completedGroup.ShowMoreCommand = new RelayCommand(_ => _completedGroup.ShowAllItems());
+        _completedGroup.SetPreviewLimit(_activeNavItem == "alltasks");
 
         // Open group is always expanded; never persisted.
         _openGroup.IsExpanded = true;

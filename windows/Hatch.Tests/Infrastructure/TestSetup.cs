@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 
 namespace Hatch.Tests.Infrastructure;
@@ -14,6 +15,36 @@ public static class TestSetup
     public static UIA3Automation? Auto { get; private set; }
     public static Window? MainWindow { get; private set; }
     public static string DataDirectory { get; private set; } = string.Empty;
+    private static string TestInstanceKey { get; set; } = string.Empty;
+
+    public static void ResetUi()
+    {
+        if (App is null || Auto is null || MainWindow is null) return;
+
+        ShowWindow(new IntPtr(MainWindow.Properties.NativeWindowHandle.Value), 9);
+        foreach (var id in new[] { "FocusMode_Exit", "Bubble_Close", "ProactiveTip_Close", "PaneCloseButton" })
+        {
+            try
+            {
+                foreach (var window in App.GetAllTopLevelWindows(Auto))
+                {
+                    var control = window.FindFirstDescendant(cf => cf.ByAutomationId(id));
+                    if (control is null || control.IsOffscreen) continue;
+                    control.AsButton().Invoke();
+                    break;
+                }
+            }
+            catch { }
+        }
+
+        try
+        {
+            MainWindow.FindFirstDescendant(cf => cf.ByAutomationId("Nav_AllTasks"))?.Click();
+        }
+        catch { }
+
+        Thread.Sleep(200);
+    }
 
     [AssemblyInitialize]
     public static void Initialize(TestContext _)
@@ -22,8 +53,11 @@ public static class TestSetup
 
         DataDirectory = Environment.GetEnvironmentVariable("HATCH_UI_TEST_DATA_DIR")
             ?? Path.Combine(Path.GetTempPath(), "Hatch.UiTests", Guid.NewGuid().ToString("N"));
+        TestInstanceKey = "hatch-ui-test-" + Guid.NewGuid().ToString("N");
         Directory.CreateDirectory(DataDirectory);
         bool longTip = Environment.GetEnvironmentVariable("HATCH_TEST_LONG_TIP") == "1";
+        bool proactiveTip = Environment.GetEnvironmentVariable("HATCH_TEST_PROACTIVE") == "1";
+        bool noActionTip = Environment.GetEnvironmentVariable("HATCH_TEST_NO_ACTION_TIP") == "1";
         int customCount = 1;
         long dayNumber = DateTime.Today.Ticks / TimeSpan.TicksPerDay;
         while (dayNumber % (12 + customCount) < 12) customCount++;
@@ -31,7 +65,8 @@ public static class TestSetup
             .Select(i => $"Runtime layout test line {i}: this deliberately long tip must scroll without hiding controls.")), customCount).ToArray() : [];
         File.WriteAllText(Path.Combine(DataDirectory, "settings.json"), JsonSerializer.Serialize(new
         {
-            FirstRunComplete = true,
+            FirstRunComplete = Environment.GetEnvironmentVariable("HATCH_TEST_ONBOARDING") != "1",
+            Theme = int.TryParse(Environment.GetEnvironmentVariable("HATCH_TEST_THEME"), out var theme) ? theme : 0,
             MascotX = int.TryParse(Environment.GetEnvironmentVariable("HATCH_TEST_MASCOT_X"), out var x) ? x : 700,
             MascotY = int.TryParse(Environment.GetEnvironmentVariable("HATCH_TEST_MASCOT_Y"), out var y) ? y : 500,
             MascotSize = 120, HideWhenFullscreen = false, MinimizeToTray = true,
@@ -39,18 +74,44 @@ public static class TestSetup
             ActiveNavItem = "alltasks", MuteAnimation = Environment.GetEnvironmentVariable("HATCH_TEST_MUTE") == "1",
             CustomTips = customTips
         }));
+        object[] tasks;
+        if (!proactiveTip)
+        {
+            tasks = [new { Id = Guid.NewGuid(), Title = "_RuntimeProbe_", CreatedAt = DateTimeOffset.UtcNow }];
+        }
+        else if (noActionTip)
+        {
+            var now = DateTimeOffset.Now;
+            tasks = [new
+            {
+                Id = Guid.NewGuid(), Title = "_RuntimeProbe_", CreatedAt = now.DateTime.AddDays(-3),
+                IsCompleted = true, CompletedAt = now.AddDays(-2)
+            }];
+        }
+        else
+        {
+            var now = DateTimeOffset.Now;
+            tasks =
+            [
+                new
+                {
+                    Id = Guid.NewGuid(), Title = "_RuntimeProbe_", CreatedAt = now.DateTime,
+                    IsCompleted = false, CompletedAt = (DateTimeOffset?)null
+                },
+                new
+                {
+                    Id = Guid.NewGuid(), Title = "_RuntimeCompletedProbe_", CreatedAt = now.DateTime.AddDays(-1),
+                    IsCompleted = true, CompletedAt = now
+                }
+            ];
+        }
         File.WriteAllText(Path.Combine(DataDirectory, "tasks.json"), JsonSerializer.Serialize(new
         {
-            Tasks = new[] { new { Id = Guid.NewGuid(), Title = "_RuntimeProbe_", CreatedAt = DateTimeOffset.UtcNow } },
+            Tasks = tasks,
             Lists = new[] { new { Id = Guid.NewGuid(), Name = "Runtime test list" } }
         }));
 
-        // HATCH_UI_TEST=1 is inherited by the child process and forces the
-        // main window to activate even when RunAtStartup=true suppresses it.
-        Environment.SetEnvironmentVariable("HATCH_UI_TEST", "1");
-        Environment.SetEnvironmentVariable("HATCH_UI_TEST_DATA_DIR", DataDirectory);
-        App = Application.Launch(ResolveAppExe());
-        Environment.SetEnvironmentVariable("HATCH_UI_TEST", null);
+        App = LaunchTestApp();
 
         // Give WinUI 3 time to finish initializing all windows
         Thread.Sleep(2500);
@@ -64,11 +125,44 @@ public static class TestSetup
         if (App != null)
         {
             var process = Process.GetProcessById(App.ProcessId);
-            App.Close();
-            if (!process.WaitForExit(3000)) process.Kill();
-            process.Dispose();
+            try
+            {
+                App.Close();
+                if (!process.WaitForExit(3000))
+                {
+                    process.Kill(entireProcessTree: true);
+                    process.WaitForExit(5000);
+                }
+            }
+            finally { process.Dispose(); }
         }
         Auto?.Dispose();
+    }
+
+    public static void Restart()
+    {
+        // Preserve the synthetic data directory; restart must never reseed the fixture.
+        Cleanup();
+        Auto = new UIA3Automation();
+        App = LaunchTestApp();
+        MainWindow = FindMainWindow();
+    }
+
+    private static Application LaunchTestApp()
+    {
+        // Pass an explicit environment and marker arguments to the child. The user's
+        // normal Hatch instance may already own the production key, so this test run
+        // uses isolated storage and a unique AppInstance key across its restarts.
+        var startInfo = new ProcessStartInfo(ResolveAppExe()) { UseShellExecute = false };
+        startInfo.Environment["HATCH_UI_TEST"] = "1";
+        startInfo.Environment["HATCH_UI_TEST_DATA_DIR"] = DataDirectory;
+        startInfo.Environment["HATCH_UI_TEST_INSTANCE_KEY"] = TestInstanceKey;
+        startInfo.ArgumentList.Add("--hatch-ui-test");
+        startInfo.ArgumentList.Add("--hatch-ui-test-data-dir");
+        startInfo.ArgumentList.Add(DataDirectory);
+        startInfo.ArgumentList.Add("--hatch-ui-test-instance-key");
+        startInfo.ArgumentList.Add(TestInstanceKey);
+        return Application.Launch(startInfo);
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
@@ -96,8 +190,8 @@ public static class TestSetup
         }
 
         throw new FileNotFoundException(
-            "Could not locate hatch.exe. Build the main project (Debug|x64) first, " +
-            "or set HATCH_APP_EXE to the exe path.");
+            "Could not locate hatch.exe. Run scripts/run-ui-regression.ps1 first, " +
+            "or set HATCH_APP_EXE to an app executable path.");
     }
 
     /// <summary>
@@ -150,7 +244,7 @@ public static class TestSetup
         if (hatchWindow is null)
             throw new InvalidOperationException(
                 "Could not find window titled 'Hatch' in process after 15 s. " +
-                "Ensure the main project is built (Debug|x64) and HATCH_UI_TEST=1 was inherited.");
+                "Ensure the selected app executable starts and HATCH_UI_TEST=1 was inherited.");
 
         // Step 2: widen to 800px so nav rail items are in the UIA tree, then single lookup
         var transform = hatchWindow.Patterns.Transform;
@@ -159,11 +253,15 @@ public static class TestSetup
         Thread.Sleep(300);
 
         var navItem = hatchWindow.FindFirstDescendant(cf => cf.ByAutomationId("Nav_AllTasks"));
-        if (navItem is null)
+        var onboarding = hatchWindow.FindFirstDescendant(cf => cf.ByAutomationId("Onboarding_GetStarted"));
+        if (navItem is null && onboarding is null)
             throw new InvalidOperationException(
                 "Nav_AllTasks not found after resizing window to 800px. " +
                 "Check NavigationView AutomationId and CompactModeThresholdWidth.");
 
         return hatchWindow;
     }
+
+    [DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hwnd, int command);
 }

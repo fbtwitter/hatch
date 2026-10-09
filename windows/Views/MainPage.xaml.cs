@@ -618,6 +618,11 @@ public sealed partial class MainPage : Page
     {
         if (args.IsSettingsInvoked) return;
 
+        // Re-invoking the selected item does not raise SelectionChanged.
+        if (!_suppressNavigation && _viewModel.IsSearchActive
+            && args.InvokedItemContainer?.Tag?.ToString() == _viewModel.ActiveNavItem)
+            _viewModel.SearchQuery = string.Empty;
+
         if (args.InvokedItemContainer?.Tag?.ToString() == "newlist")
         {
             _suppressNavigation = true;

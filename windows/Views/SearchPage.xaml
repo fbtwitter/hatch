@@ -78,6 +78,7 @@
              moving the ScrollBar, which sits in its own column at the control's right edge. -->
         <ListView Grid.Row="1"
                   x:Name="ResultsListView"
+                  AutomationProperties.AutomationId="Search_Results"
                   ItemsSource="{x:Bind ViewModel.SearchResults, Mode=OneWay}"
                   SelectionMode="None"
                   ItemContainerStyle="{StaticResource ResultRowStyle}"

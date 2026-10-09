@@ -77,7 +77,7 @@
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="{ThemeResource ControlCornerRadius}"
-                    Padding="12"
+                    Padding="12,12,12,20"
                     Opacity="0"
                     Visibility="Collapsed"
                     PointerEntered="TipBubble_PointerEntered"
@@ -139,7 +139,7 @@
                                    AutomationProperties.AutomationId="Bubble_TipMessage"
                                    TextWrapping="Wrap"
                                    Style="{ThemeResource BodyTextBlockStyle}"/>
-                        <Grid ColumnSpacing="12">
+                        <Grid x:Name="TipActionContainer" ColumnSpacing="12">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="*"/>

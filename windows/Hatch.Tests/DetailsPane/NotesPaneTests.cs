@@ -17,40 +17,64 @@ public class NotesPaneTests
         Window.FindFirstDescendant(cf => cf.ByAutomationId(automationId))
         ?? throw new InvalidOperationException($"Element '{automationId}' not found.");
 
+    private AutomationElement WaitForName(string name)
+    {
+        for (int i = 0; i < 80; i++)
+        {
+            var element = Window.FindFirstDescendant(cf => cf.ByName(name));
+            if (element is not null) return element;
+            Thread.Sleep(100);
+        }
+        throw new InvalidOperationException($"Task '{name}' was not visible.");
+    }
+
+    private bool WaitForVisible(string automationId, int timeoutMs)
+    {
+        for (int i = 0; i < timeoutMs / 100; i++)
+        {
+            var element = Window.FindFirstDescendant(cf => cf.ByAutomationId(automationId));
+            if (element is not null && !element.IsOffscreen) return true;
+            Thread.Sleep(100);
+        }
+        return false;
+    }
+
     // ── fixture ───────────────────────────────────────────────────────────────
 
     [TestInitialize]
     public void OpenPane()
     {
+        if (WaitForVisible("PaneNotesBox", 300))
+        {
+            ClearNotesText();
+            return;
+        }
+
+        TestSetup.ResetUi();
+
         // Navigate to All Tasks for a consistent starting state
         Find("Nav_AllTasks").Click();
         Thread.Sleep(300);
 
-        // Add a fresh task with a known title
-        var titleBox = Find("NewTask_TextBox").AsTextBox();
-        titleBox.Text = "";
-        titleBox.Enter("_NotesTest_");
-        Find("NewTask_AddButton").Click();
-        Thread.Sleep(400);
-
-        // Click the task title to open the details pane
-        Window.FindFirstDescendant(cf => cf.ByName("_NotesTest_"))?.Click();
+        // Use the fixture's seeded task so Notes tests do not mutate the task list.
+        var probe = WaitForName("_RuntimeProbe_");
+        probe.Click();
+        if (!WaitForVisible("PaneNotesBox", 3000)) probe.Click();
+        Assert.IsTrue(WaitForVisible("PaneNotesBox", 5000), "The Details Pane must open for the seeded task.");
         Thread.Sleep(500);
 
         // Clear any pre-existing notes
-        Find("PaneNotesBox").AsTextBox().Text = "";
-        Thread.Sleep(200);
+        ClearNotesText();
     }
 
+    [ClassCleanup]
+    public static void RestoreDefaultUi() => TestSetup.ResetUi();
+
     [TestCleanup]
-    public void ClosePane()
+    public void ClearNotes()
     {
-        try
-        {
-            Find("PaneCloseButton").Click();
-            Thread.Sleep(300);
-        }
-        catch { /* pane may already be closed */ }
+        try { ClearNotesText(); }
+        catch { }
     }
 
     // ── tests ─────────────────────────────────────────────────────────────────
@@ -78,8 +102,7 @@ public class NotesPaneTests
         var notes = Find("PaneNotesBox").AsTextBox();
         int baseline = (int)Find("PaneNotesBox").BoundingRectangle.Height;
 
-        notes.Enter("A brief note.");
-        Thread.Sleep(200);
+        EnterAndWait(notes, "A brief note.");
 
         int after = (int)Find("PaneNotesBox").BoundingRectangle.Height;
         Assert.IsTrue(after <= baseline + 10,
@@ -94,14 +117,16 @@ public class NotesPaneTests
         int baseline = (int)Find("PaneNotesBox").BoundingRectangle.Height;
 
         var notes = Find("PaneNotesBox").AsTextBox();
-        for (int i = 1; i <= 6; i++)
-            notes.Enter($"Line {i}\n");
-        Thread.Sleep(300);
+        var expected = string.Join(Environment.NewLine,
+            Enumerable.Range(1, 6).Select(i => $"Line {i}"));
+        EnterAndWait(notes, expected);
 
-        int grown = (int)Find("PaneNotesBox").BoundingRectangle.Height;
+        Assert.IsTrue(notes.Text.Contains("Line 6"),
+            $"UI Automation did not enter the expected multiline note: '{notes.Text}'");
+        int grown = WaitForHeightGreaterThan(notes, baseline);
         Assert.IsTrue(grown > baseline,
             $"6 lines should expand the box above MinHeight. " +
-            $"baseline={baseline}px grown={grown}px");
+            $"baseline={baseline}px grown={grown}px textLength={notes.Text.Length}");
     }
 
     [TestMethod]
@@ -111,11 +136,11 @@ public class NotesPaneTests
         int baseline = (int)Find("PaneNotesBox").BoundingRectangle.Height;
 
         var notes = Find("PaneNotesBox").AsTextBox();
-        for (int i = 1; i <= 25; i++)
-            notes.Enter($"Line {i} — padding content to fill the notes box\n");
-        Thread.Sleep(500);
+        var expected = string.Join(Environment.NewLine,
+            Enumerable.Range(1, 25).Select(i => $"Line {i} — padding content to fill the notes box"));
+        EnterAndWait(notes, expected);
 
-        int capped = (int)Find("PaneNotesBox").BoundingRectangle.Height;
+        int capped = WaitForHeightGreaterThan(notes, baseline);
 
         // MaxHeight=220, MinHeight=100 → ratio 2.2. Allow 20% tolerance for DPI/rounding.
         int maxAllowed = (int)(baseline * 2.2 * 1.2);
@@ -135,12 +160,10 @@ public class NotesPaneTests
         int h0 = (int)Find("PaneNotesBox").BoundingRectangle.Height;
 
         var notes = Find("PaneNotesBox").AsTextBox();
-        for (int i = 1; i <= 6; i++) notes.Enter($"L{i}\n");
-        Thread.Sleep(300);
-        int h6 = (int)Find("PaneNotesBox").BoundingRectangle.Height;
+        EnterAndWait(notes, string.Join(Environment.NewLine, Enumerable.Range(1, 6).Select(i => $"L{i}")));
+        int h6 = WaitForHeightGreaterThan(notes, h0);
 
-        for (int i = 7; i <= 25; i++) notes.Enter($"L{i}\n");
-        Thread.Sleep(400);
+        EnterAndWait(notes, string.Join(Environment.NewLine, Enumerable.Range(1, 25).Select(i => $"L{i}")));
         int h25 = (int)Find("PaneNotesBox").BoundingRectangle.Height;
 
         Assert.IsTrue(h0 <= h6,
@@ -148,4 +171,46 @@ public class NotesPaneTests
         Assert.IsTrue(h6 <= h25,
             $"Height must not shrink when adding more lines. 6-lines={h6}px 25-lines={h25}px");
     }
+
+    private void ClearNotesText()
+    {
+        var notes = Find("PaneNotesBox").AsTextBox();
+        notes.Text = string.Empty;
+        WaitForText(notes, string.Empty);
+    }
+
+    private static void EnterAndWait(TextBox notes, string expected)
+    {
+        notes.Focus();
+        notes.Enter(expected);
+        WaitForText(notes, expected);
+    }
+
+    private static void WaitForText(TextBox notes, string expected)
+    {
+        string normalizedExpected = NormalizeLineEndings(expected);
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (DateTime.UtcNow < deadline)
+        {
+            if (NormalizeLineEndings(notes.Text) == normalizedExpected) return;
+            Thread.Sleep(50);
+        }
+        Assert.AreEqual(normalizedExpected, NormalizeLineEndings(notes.Text),
+            "Wait for the full note text to reach the WinUI control.");
+    }
+
+    private static int WaitForHeightGreaterThan(TextBox notes, int baseline)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        int height = (int)notes.BoundingRectangle.Height;
+        while (height <= baseline && DateTime.UtcNow < deadline)
+        {
+            Thread.Sleep(50);
+            height = (int)notes.BoundingRectangle.Height;
+        }
+        return height;
+    }
+
+    private static string NormalizeLineEndings(string value) =>
+        value.Replace("\r\n", "\n").Replace('\r', '\n');
 }

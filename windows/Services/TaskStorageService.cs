@@ -14,9 +14,10 @@ public sealed class TaskStorageService
     // interleave writes to the same file.
     private static readonly SemaphoreSlim _fileLock = new(1, 1);
 
-    public TaskStorageService()
+    public TaskStorageService() : this(Hatch.Helpers.AppDataPath.Folder) { }
+
+    internal TaskStorageService(string folder)
     {
-        var folder = Hatch.Helpers.AppDataPath.Folder;
         Directory.CreateDirectory(folder);
         _filePath = Path.Combine(folder, "tasks.json");
     }

@@ -207,8 +207,12 @@ public partial class App : Application
             var activationArgs = AppInstance.GetCurrent().GetActivatedEventArgs();
             // Single-instance: if another Hatch is already running, redirect this activation
             // to it (e.g. hatch:// OAuth callback) and exit without showing a window.
-            var mainInstance = AppInstance.FindOrRegisterForKey(
-                Helpers.AppDataPath.IsUiTest ? "hatch-ui-test" : "hatch-main");
+            var instanceKey = Helpers.AppDataPath.IsUiTest
+                ? Environment.GetEnvironmentVariable("HATCH_UI_TEST_INSTANCE_KEY")
+                  ?? Helpers.AppDataPath.GetArgumentValue("--hatch-ui-test-instance-key")
+                  ?? "hatch-ui-test"
+                : "hatch-main";
+            var mainInstance = AppInstance.FindOrRegisterForKey(instanceKey);
             if (!mainInstance.IsCurrent)
             {
                 await mainInstance.RedirectActivationToAsync(
@@ -247,7 +251,7 @@ public partial class App : Application
                 TaskStorage, SettingsService, SyncService, NotificationScheduler);
             MainWindowInstance = new MainWindow(mainViewModel);
             // HATCH_UI_TEST=1 forces main window visible even during startup-launch suppression
-            var uiTest = Environment.GetEnvironmentVariable("HATCH_UI_TEST") == "1";
+            var uiTest = Helpers.AppDataPath.IsUiTest;
             // Mascot-only launch: the main window opens on demand (mascot click, tray,
             // hotkey). It still opens when there would otherwise be nothing on screen —
             // first run (onboarding), Show Mascot off, or an active "Hide for…" window.

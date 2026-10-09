@@ -47,6 +47,8 @@ public sealed partial class MainViewModel
             _activeNavItem = value;
             _activeTagFilter = null;
             _openGroup.CanReorderItems = value == "myday";
+            if (value == "alltasks")
+                _completedGroup.SetPreviewLimit(true);
             OnPropertyChanged();
             OnPropertyChanged(nameof(ActiveTagFilter));
             OnPropertyChanged(nameof(IsTagFilterActive));
@@ -67,6 +69,7 @@ public sealed partial class MainViewModel
             _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
             {
                 RefreshActiveTasks();
+                _completedGroup.SetPreviewLimit(_activeNavItem == "alltasks");
                 RefreshSuggestions();
             });
         }
