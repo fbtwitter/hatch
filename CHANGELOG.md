@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.27.0] - 2026-10-09
+
+### Added
+- Limit the expanded All Tasks Completed group to five tasks, with an option to show the rest.
+- Add a Windows regression gate covering unit, integration, and eight FlaUI UI profiles.
+
+### Fixed
+- Align Quick Tip messages and actions with the category icon group on both tip surfaces.
+- Close active search when the already-selected navigation item is invoked again.
+- Keep the task notes editor at a usable height while allowing longer notes to scroll.
+
 ## [0.26.0] - 2026-10-08
 
 ### Added

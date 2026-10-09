@@ -14,7 +14,7 @@
     <!-- Keep in sync with Package.appxmanifest's Identity Version and the release tag.
          Packaged builds read the manifest; unpackaged Debug builds have no package
          identity and fall back to this via SettingsViewModel.AppVersion. -->
-    <Version>0.26.0</Version>
+    <Version>0.27.0</Version>
     <!-- Signing and package generation are handled by CI; disabled locally -->
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
     <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>
@@ -55,6 +55,8 @@
     <None Remove="Hatch.Tests\**" />
     <Compile Remove="Hatch.Tests.Unit\**" />
     <None Remove="Hatch.Tests.Unit\**" />
+    <Compile Remove="Hatch.Tests.Integration\**" />
+    <None Remove="Hatch.Tests.Integration\**" />
     <Compile Remove="Hatch.Core\**" />
     <None Remove="Hatch.Core\**" />
   </ItemGroup>
