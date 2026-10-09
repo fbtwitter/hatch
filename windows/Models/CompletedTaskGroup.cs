@@ -2,11 +2,14 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Windows.Input;
+using Hatch.Helpers;
 
 namespace Hatch.Models;
 
 public sealed class CompletedTaskGroup : INotifyPropertyChanged
 {
+    private const int PreviewItemCount = 5;
     private string _name = string.Empty;
     private bool _hasItems;
     private bool _showEmptyState;
@@ -14,6 +17,8 @@ public sealed class CompletedTaskGroup : INotifyPropertyChanged
     private bool _isExpanded = true;
     private bool _isCollapsible = true;
     private bool _canReorderItems;
+    private bool _previewLimited;
+    private bool _showAllItems;
 
     public string Name
     {
@@ -115,6 +120,11 @@ public sealed class CompletedTaskGroup : INotifyPropertyChanged
     public bool TrackCount { get; init; }
 
     public ObservableCollection<TodoItem> Items { get; } = [];
+    public ObservableCollection<TodoItem> VisibleItems { get; } = [];
+
+    public bool ShowMoreVisible => _previewLimited && !_showAllItems && Items.Count > PreviewItemCount;
+    public string ShowMoreLabel => Strings.TaskList_ShowMoreCompleted(Math.Max(0, Items.Count - PreviewItemCount));
+    public ICommand ShowMoreCommand { get; internal set; } = null!;
 
     public CompletedTaskGroup()
     {
@@ -126,6 +136,87 @@ public sealed class CompletedTaskGroup : INotifyPropertyChanged
         HasItems = Items.Count > 0;
         if (TrackCount)
             CountLabel = $"{Items.Count} completed";
+
+        UpdateVisibleItems(e);
+        OnPropertyChanged(nameof(ShowMoreVisible));
+        OnPropertyChanged(nameof(ShowMoreLabel));
+    }
+
+    public void SetPreviewLimit(bool enabled)
+    {
+        if (_previewLimited == enabled) return;
+        _previewLimited = enabled;
+        _showAllItems = false;
+        UpdateVisibleItems();
+        OnPropertyChanged(nameof(ShowMoreVisible));
+        OnPropertyChanged(nameof(ShowMoreLabel));
+    }
+
+    public void ShowAllItems()
+    {
+        if (!_previewLimited || _showAllItems || Items.Count <= PreviewItemCount) return;
+        _showAllItems = true;
+        UpdateVisibleItems();
+        OnPropertyChanged(nameof(ShowMoreVisible));
+        OnPropertyChanged(nameof(ShowMoreLabel));
+    }
+
+    private int VisibleItemCount => _previewLimited && !_showAllItems
+        ? Math.Min(PreviewItemCount, Items.Count)
+        : Items.Count;
+
+    private void UpdateVisibleItems(NotifyCollectionChangedEventArgs? change = null)
+    {
+        if (change?.Action == NotifyCollectionChangedAction.Add && change.NewItems != null && change.NewStartingIndex >= 0)
+        {
+            for (int offset = 0; offset < change.NewItems.Count; offset++)
+            {
+                int index = change.NewStartingIndex + offset;
+                if (index < VisibleItemCount && index <= VisibleItems.Count)
+                    VisibleItems.Insert(index, (TodoItem)change.NewItems[offset]!);
+            }
+        }
+        else if (change?.Action == NotifyCollectionChangedAction.Remove && change.OldItems != null && change.OldStartingIndex >= 0)
+        {
+            for (int offset = 0; offset < change.OldItems.Count; offset++)
+            {
+                if (change.OldStartingIndex < VisibleItems.Count)
+                    VisibleItems.RemoveAt(change.OldStartingIndex);
+            }
+        }
+        else if (change?.Action == NotifyCollectionChangedAction.Replace && change.NewItems != null && change.NewStartingIndex >= 0)
+        {
+            for (int offset = 0; offset < change.NewItems.Count; offset++)
+            {
+                int index = change.NewStartingIndex + offset;
+                if (index < VisibleItems.Count)
+                    VisibleItems[index] = (TodoItem)change.NewItems[offset]!;
+            }
+        }
+        else if (change?.Action == NotifyCollectionChangedAction.Move && change.NewItems != null &&
+                 change.OldStartingIndex >= 0 && change.NewStartingIndex >= 0)
+        {
+            int oldIndex = change.OldStartingIndex;
+            int newIndex = change.NewStartingIndex;
+            if (oldIndex < VisibleItems.Count)
+            {
+                if (newIndex < VisibleItemCount && newIndex < VisibleItems.Count)
+                    VisibleItems.Move(oldIndex, newIndex);
+                else
+                    VisibleItems.RemoveAt(oldIndex);
+            }
+            else if (newIndex < VisibleItemCount && newIndex <= VisibleItems.Count)
+            {
+                VisibleItems.Insert(newIndex, Items[newIndex]);
+            }
+        }
+        else if (change?.Action == NotifyCollectionChangedAction.Reset || change != null)
+            VisibleItems.Clear();
+
+        while (VisibleItems.Count > VisibleItemCount)
+            VisibleItems.RemoveAt(VisibleItems.Count - 1);
+        while (VisibleItems.Count < VisibleItemCount)
+            VisibleItems.Add(Items[VisibleItems.Count]);
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

@@ -486,6 +486,7 @@
                      ListViews are inside it, and a MaxWidth+Stretch child centres itself against
                      the extent — which parked the whole list ~240px right of the header. -->
                 <ScrollViewer Grid.Row="0" x:Name="FlatListView"
+                              AutomationProperties.AutomationId="FlatListView"
                               HorizontalScrollBarVisibility="Disabled">
                     <Grid Width="{x:Bind FlatListView.ViewportWidth, Mode=OneWay}">
                         <StackPanel MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
@@ -503,7 +504,8 @@
                                         <StackPanel Spacing="4" HorizontalAlignment="Stretch">
 
                                             <!-- Completed groups render in an expander; open tasks render directly. -->
-                                            <Expander IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
+                                            <Expander AutomationProperties.AutomationId="CompletedTasks_Expander"
+                                                      IsExpanded="{x:Bind IsExpanded, Mode=TwoWay}"
                                                       HorizontalAlignment="Stretch"
                                                       HorizontalContentAlignment="Stretch"
                                                       Padding="4"
@@ -530,23 +532,36 @@
                                                     </StackPanel>
                                                 </Expander.Header>
 
-                                                <ListView ItemsSource="{x:Bind Items, Mode=OneWay}"
-                                                          ItemTemplate="{StaticResource TaskItemTemplate}"
-                                                          ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
-                                                          Margin="0"
-                                                          Padding="0, 1"
-                                                          CornerRadius="0"
-                                                          SelectionMode="Single"
-                                                          SelectionChanged="TaskListView_SelectionChanged"
-                                                          Loaded="TaskListView_Loaded"
-                                                          Unloaded="TaskListView_Unloaded"
-                                                          IsTabStop="False"
-                                                          ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                                                    <ListView.ItemContainerTransitions>
-                                                        <TransitionCollection />
-                                                    </ListView.ItemContainerTransitions>
-                                                </ListView>
+                                                <StackPanel Spacing="4">
+                                                    <ListView AutomationProperties.AutomationId="CompletedTasks_List"
+                                                              ItemsSource="{x:Bind VisibleItems, Mode=OneWay}"
+                                                              ItemTemplate="{StaticResource TaskItemTemplate}"
+                                                              ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
+                                                              Margin="0"
+                                                              Padding="0, 1"
+                                                              CornerRadius="0"
+                                                              SelectionMode="Single"
+                                                              SelectionChanged="TaskListView_SelectionChanged"
+                                                              Loaded="TaskListView_Loaded"
+                                                              Unloaded="TaskListView_Unloaded"
+                                                              IsTabStop="False"
+                                                              ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                                        <ListView.ItemContainerTransitions>
+                                                            <TransitionCollection />
+                                                        </ListView.ItemContainerTransitions>
+                                                    </ListView>
+                                                    <Button AutomationProperties.AutomationId="CompletedTasks_ShowMore"
+                                                            Content="{x:Bind ShowMoreLabel, Mode=OneWay}"
+                                                            Command="{x:Bind ShowMoreCommand}"
+                                                            Visibility="{x:Bind ShowMoreVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                                            HorizontalAlignment="Stretch"
+                                                            HorizontalContentAlignment="Center"
+                                                            Background="Transparent"
+                                                            BorderThickness="0"
+                                                            Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                                            Padding="12,14" />
+                                                </StackPanel>
                                             </Expander>
 
                                             <!-- Open tasks across every task list. -->
@@ -869,6 +884,7 @@
                               Click="PaneCompleteCheck_Click" />
 
                     <TextBox x:Name="PaneTitleBox"
+                             AutomationProperties.AutomationId="PaneTitleBox"
                              x:Uid="PaneTitleBox"
                              Grid.Column="1"
                              PlaceholderText="Task title"
@@ -950,7 +966,8 @@
                                                  BorderThickness="0"
                                                  Background="Transparent"
                                                  Padding="8,6"
-                                                 MinHeight="32"
+                                                 MinHeight="100"
+                                                 MaxHeight="220"
                                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                                                  HorizontalAlignment="Stretch"
                                                  TextChanged="PaneNotesBox_TextChanged"
@@ -1008,6 +1025,7 @@
                                                              Checked/Unchecked, so realizing a completed
                                                              row doesn't re-enter the handler. -->
                                                         <CheckBox Grid.Column="0"
+                                                                  AutomationProperties.AutomationId="PaneStepCheck"
                                                                   Tag="{x:Bind}"
                                                                   MinWidth="0" MinHeight="0" Padding="0"
                                                                   VerticalAlignment="Center"
@@ -1050,6 +1068,7 @@
                                             </ItemsControl.ItemTemplate>
                                         </ItemsControl>
                                         <TextBox x:Name="PaneStepInput"
+                                                 AutomationProperties.AutomationId="PaneStepInput"
                                                  x:Uid="PaneStepInput"
                                                  BorderThickness="0"
                                                  Background="Transparent"

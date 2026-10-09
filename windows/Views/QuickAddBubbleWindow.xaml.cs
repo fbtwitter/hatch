@@ -439,10 +439,12 @@ public sealed partial class QuickAddBubbleWindow : Window
         {
             TipActionButton.Content = _currentTip.Action.Label;
             TipActionButton.Visibility = Visibility.Visible;
+            TipActionContainer.Visibility = Visibility.Visible;
         }
         else
         {
             TipActionButton.Visibility = Visibility.Collapsed;
+            TipActionContainer.Visibility = Visibility.Collapsed;
         }
 
         TipBubble.Visibility = Visibility.Visible;

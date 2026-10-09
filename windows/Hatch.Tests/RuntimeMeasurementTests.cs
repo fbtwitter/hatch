@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using FlaUI.Core.Capturing;
+using FlaUI.Core.Definitions;
 using Hatch.Tests.Infrastructure;
 
 namespace Hatch.Tests;
@@ -14,6 +15,9 @@ public sealed class RuntimeMeasurementTests
     private readonly List<object> _checks = [];
     private string _output = string.Empty;
     private Process _process = null!;
+
+    [TestCleanup]
+    public void RestoreDefaultUi() => TestSetup.ResetUi();
 
     [TestMethod]
     public void RepeatedFocusSessions_ResourceLifetime()
@@ -147,14 +151,22 @@ public sealed class RuntimeMeasurementTests
             $"Work area {info.Work.ToRectangle()}, visible bounds {visibleBounds}");
         Assert.IsTrue(viewport.Patterns.Scroll.IsSupported, "Oversized content must be scrollable");
         Assert.IsTrue(viewport.Patterns.Scroll.Pattern.VerticallyScrollable.Value);
-        viewport.Patterns.Scroll.Pattern.SetScrollPercent(-1, 0);
-        SaveImage("oversized-top");
-        viewport.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
-        SaveImage("oversized-bottom");
         if (!proactive)
         {
-            var add = WaitFor("Bubble_AddButton");
-            Assert.IsTrue(info.Work.ToRectangle().Contains(add.BoundingRectangle), "Add button must be reachable by scrolling");
+            var scroll = viewport.Patterns.Scroll.Pattern;
+            AutomationElement? add = null;
+            for (int page = 0; page < 3 && add == null; page++)
+            {
+                scroll.Scroll(ScrollAmount.NoAmount, ScrollAmount.LargeIncrement);
+                Thread.Sleep(150);
+                add = TestSetup.App!.GetAllTopLevelWindows(TestSetup.Auto!)
+                    .Select(window => window.FindFirstDescendant(cf => cf.ByAutomationId("Bubble_AddButton")))
+                    .FirstOrDefault(element => element != null && !element.IsOffscreen);
+            }
+            Assert.IsNotNull(add, "Add button must become visible by scrolling the oversized tip");
+            SaveImage("oversized-bottom");
+            Assert.IsTrue(info.Work.ToRectangle().Contains(add!.BoundingRectangle),
+                "Add button must be reachable within the monitor work area");
         }
         File.WriteAllText(Path.Combine(_output, "oversized-result.json"), JsonSerializer.Serialize(new
         {

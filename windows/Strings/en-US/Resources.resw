@@ -79,6 +79,7 @@
   <!-- ── Undo snackbar (UndoButton.Content is x:Uid mapped; the Message varies by
        action, so it's set from Helpers.Strings via MainViewModel.UndoMessage) ── -->
   <data name="UndoMessage_TaskCompleted" xml:space="preserve"><value>Task completed</value></data>
+  <data name="TaskList_ShowMoreCompleted" xml:space="preserve"><value>Show {0} more</value><comment>{0} = number of hidden completed tasks</comment></data>
   <data name="UndoMessage_TaskDeleted" xml:space="preserve"><value>Task deleted</value></data>
   <data name="UndoButton.Content" xml:space="preserve"><value>Undo</value></data>
 

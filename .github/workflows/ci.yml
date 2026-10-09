@@ -1,6 +1,9 @@
 name: CI
 
 on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 1 * * 1'
   push:
     branches: [main]
   pull_request:
@@ -9,6 +12,7 @@ on:
 jobs:
   build-and-test:
     runs-on: windows-2022
+    timeout-minutes: 35
 
     # The WinUI app lives in windows/; every step below keeps its original relative paths.
     defaults:
@@ -48,12 +52,19 @@ jobs:
         shell: pwsh
         run: |
           msbuild hatch.csproj /t:Restore /p:Configuration=Debug /p:Platform=x64 /nowarn:NETSDK1233
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           msbuild hatch.csproj /p:Configuration=Debug /p:Platform=x64 /nowarn:NETSDK1233
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      # Pure-logic tests only (Models/Helpers/Services with no WinUI dependency).
-      # The FlaUI UI-automation suite in Hatch.Tests launches the packaged app and
-      # stays manual — see the contributor guide for local UI checks.
-      - name: Run unit tests
+      - name: Run full regression scan
         shell: pwsh
-        run: dotnet test Hatch.Tests.Unit/Hatch.Tests.Unit.csproj --configuration Debug
+        run: .\scripts\run-regression.ps1 -SkipBuild -ArtifactRoot "$env:RUNNER_TEMP\Hatch.Regression"
+
+      - name: Upload regression artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hatch-regression
+          path: ${{ runner.temp }}/Hatch.Regression
+          if-no-files-found: warn
+          retention-days: 7

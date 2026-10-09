@@ -346,7 +346,8 @@
                           AutomationProperties.AutomationId="ProactiveTip_Viewport"
                           HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
-                <Border x:Name="ProactiveTipContent" Width="320" Padding="12"
+                <Border x:Name="ProactiveTipContent" Width="308"
+                        Padding="12,12,12,20"
                         PointerEntered="ProactiveTip_PointerEntered"
                         PointerExited="ProactiveTip_PointerExited"
                         GotFocus="ProactiveTip_GotFocus"
@@ -418,12 +419,13 @@
                                        TextWrapping="Wrap" VerticalAlignment="Top"
                                        AutomationProperties.AutomationId="ProactiveTip_Message"
                                        Style="{ThemeResource BodyTextBlockStyle}" />
-                            <Grid ColumnSpacing="12">
+                            <Grid x:Name="ProactiveTipActionContainer" ColumnSpacing="12">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <Button x:Name="ProactiveTipAction"
+                                        AutomationProperties.AutomationId="ProactiveTip_Action"
                                         HorizontalAlignment="Stretch"
                                         HorizontalContentAlignment="Center"
                                         Padding="12,6"

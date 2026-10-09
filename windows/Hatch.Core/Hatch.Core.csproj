@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="hatch" />
+    <InternalsVisibleTo Include="Hatch.Tests.Integration" />
   </ItemGroup>
 
 </Project>
