@@ -1,6 +1,6 @@
 # Privacy implementation notes
 
-The user-facing policy is [docs/privacy-policy.md](../docs/privacy-policy.md). These notes
+The user-facing policy is [PRIVACY.md](../PRIVACY.md). These notes
 describe the app behavior that policy must reflect.
 
 - Tasks and settings are written to `%LocalAppData%\Hatch\`; optional sync uploads an encrypted

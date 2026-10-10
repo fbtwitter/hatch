@@ -34,7 +34,7 @@ the previous sub-50 MB idle target was disproven and is not a release gate. See
 | Mascot skins and animation packs | Optional visual choices |
 | Time tracking | Per-task timer and history |
 | Theme polish | Contrast and animation improvements across light and dark themes |
-| iOS companion | Separate client over the existing encrypted sync contract; see [ADR-0001](../docs/adr/0001-cross-platform-strategy.md) |
+| iOS companion | Separate client over the existing encrypted sync contract |
 
 These are ideas, not commitments. Feedback and implementation cost determine whether they
 move into a release.
