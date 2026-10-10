@@ -142,10 +142,9 @@ public sealed class CompletedTaskGroup : INotifyPropertyChanged
         OnPropertyChanged(nameof(ShowMoreLabel));
     }
 
-    public void SetPreviewLimit(bool enabled)
+    public void ResetPreviewLimit()
     {
-        if (_previewLimited == enabled) return;
-        _previewLimited = enabled;
+        _previewLimited = true;
         _showAllItems = false;
         UpdateVisibleItems();
         OnPropertyChanged(nameof(ShowMoreVisible));

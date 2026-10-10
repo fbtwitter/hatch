@@ -54,7 +54,6 @@ public sealed partial class TaskListPage : Page
     {
         this.InitializeComponent();
         NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
-        ActualThemeChanged += OnActualThemeChanged;
         SizeChanged += OnPageSizeChanged;
         Loaded += (_, _) => ApplyPaneLayout(ActualWidth);
 
@@ -93,15 +92,6 @@ public sealed partial class TaskListPage : Page
         _vm.ResetTaskComposerScroll(_vm.ActiveNavItem == "planned"
             ? _groupedTaskScrollViewer?.VerticalOffset ?? 0 : FlatListView.VerticalOffset);
         FlatGroupsItemsControl.ItemsSource = _vm.FlatGroupedTasks;
-        if (_vm.ActiveNavItem == "planned")
-            RefreshPlannedGroups();
-    }
-
-    private void OnActualThemeChanged(FrameworkElement sender, object args)
-    {
-        if (_vm == null) return;
-        foreach (var item in _vm.ActiveTasks)
-            item.RefreshDueDateBinding();
         if (_vm.ActiveNavItem == "planned")
             RefreshPlannedGroups();
     }
@@ -192,6 +182,11 @@ public sealed partial class TaskListPage : Page
 
         switch (args.PropertyName)
         {
+            case nameof(MainViewModel.ThemeVersion):
+                if (_vm.ActiveNavItem == "planned")
+                    RefreshPlannedGroups();
+                break;
+
             case nameof(MainViewModel.IsTaskComposerVisible):
                 AnimateTaskComposer(true);
                 break;
@@ -834,13 +829,17 @@ public sealed partial class TaskListPage : Page
     private void SnoozeTomorrow_Click(object sender, RoutedEventArgs e)
     {
         var task = (TodoItem)((MenuFlyoutItem)sender).Tag;
-        ViewModel.UpdateTaskDueDate(task, new DateTimeOffset(DueDatePresets.GetTomorrow(DateTime.Today), TimeSpan.Zero));
+        var date = DueDatePresets.GetTomorrow(DateTime.Today);
+        ViewModel.UpdateTaskDueDate(task,
+            new DateTimeOffset(DateTime.SpecifyKind(date, DateTimeKind.Unspecified), TimeSpan.Zero));
     }
 
     private void SnoozeNextWeek_Click(object sender, RoutedEventArgs e)
     {
         var task = (TodoItem)((MenuFlyoutItem)sender).Tag;
-        ViewModel.UpdateTaskDueDate(task, new DateTimeOffset(DueDatePresets.GetNextWeek(DateTime.Today), TimeSpan.Zero));
+        var date = DueDatePresets.GetNextWeek(DateTime.Today);
+        ViewModel.UpdateTaskDueDate(task,
+            new DateTimeOffset(DateTime.SpecifyKind(date, DateTimeKind.Unspecified), TimeSpan.Zero));
     }
 
     private void UndoInfoBar_Closed(InfoBar sender, InfoBarClosedEventArgs args)
@@ -860,7 +859,7 @@ public sealed partial class TaskListPage : Page
     private void NewTaskAddButton_Click(object sender, RoutedEventArgs e) => FocusNewTask();
 
     public Thickness ComposerOuterMargin(bool floating, bool undoVisible, double undoHeight) =>
-        new(24, 12, 24, 12 + (floating && undoVisible ? undoHeight + 20 : 0));
+        new(24, 12, 24, (floating ? 0 : 12) + (floating && undoVisible ? undoHeight + 20 : 0));
 
     public VerticalAlignment ComposerAlignment(bool floating) =>
         floating ? VerticalAlignment.Bottom : VerticalAlignment.Stretch;
@@ -1029,7 +1028,7 @@ public sealed partial class TaskListPage : Page
             HorizontalAlignment        = HorizontalAlignment.Stretch,
             HorizontalContentAlignment = HorizontalAlignment.Center,
             Margin                     = new Thickness(0, 8, 0, 0),
-            Foreground                 = ThemeResourceHelper.GetBrush("SystemFillColorCriticalBrush")
+            Style                      = ThemeResourceHelper.GetStyle("CriticalButtonStyle")
         };
         _flyoutClearBtn.Click += (_, _) => FlyoutCommitAndClose(null);
 
@@ -1062,9 +1061,10 @@ public sealed partial class TaskListPage : Page
                 if (_flyoutTask?.DueDate?.Date == date)
                     FlyoutCommitAndClose(null);
                 else
-                    // TimeSpan.Zero: the documented midnight-+00:00 spelling — the
-                    // offsetless ctor stamped the machine's own offset instead.
-                    FlyoutCommitAndClose(new DateTimeOffset(date, TimeSpan.Zero));
+                    // A calendar date has no timezone; Local Kind rejects the +00:00
+                    // storage offset on machines outside UTC.
+                    FlyoutCommitAndClose(new DateTimeOffset(
+                        DateTime.SpecifyKind(date, DateTimeKind.Unspecified), TimeSpan.Zero));
             };
 
             _flyoutPresetBtns[i] = btn;

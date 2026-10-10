@@ -5,6 +5,26 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
 
     <Grid RowDefinitions="Auto,*">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="WindowTitleStates">
+                <VisualState x:Name="CompactTitle">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="0" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="MainTitleBar.Title" Value="Hatch" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="WideTitle">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="960" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="MainTitleBar.Title" Value="Hatch: Always-On To-Do" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
         <!-- Page-content backdrop — set from code-behind on Windows 11 only -->
         <SystemBackdropElement x:Name="PageContentBackdrop"
                                Grid.RowSpan="2"
@@ -45,6 +65,7 @@
             ExpandedModeThresholdWidth="720"
             CompactPaneLength="48"
             OpenPaneLength="192"
+            DisplayModeChanged="NavView_DisplayModeChanged"
             SelectionChanged="NavView_SelectionChanged"
             ItemInvoked="NavView_ItemInvoked"
             IsSettingsVisible="True"

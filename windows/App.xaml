@@ -8,6 +8,19 @@
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls"/>
             </ResourceDictionary.MergedDictionaries>
             <ThemeShadow x:Key="CommonShadow"/>
+            <Style x:Key="DialogSummaryCardStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}"/>
+                <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+            </Style>
+            <Style x:Key="DialogDividerStyle" TargetType="Border">
+                <Setter Property="Background" Value="{ThemeResource CardStrokeColorDefaultBrush}"/>
+            </Style>
+            <Style x:Key="DialogSecondaryCaptionStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
+            </Style>
+            <Style x:Key="CriticalButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+                <Setter Property="Foreground" Value="{ThemeResource SystemFillColorCriticalBrush}"/>
+            </Style>
             <!-- Two caps, one column. Pages keep their scrolling control full-width so the
                  scrollbar tracks the window edge, and cap the content inside it instead. Use
                  PageMaxWidth when the capped element carries the 24px gutter itself, and

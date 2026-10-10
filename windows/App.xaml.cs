@@ -25,10 +25,17 @@ public partial class App : Application
     public static QuickAddBubbleWindow? BubbleWindowInstance { get; set; }
     public static bool IsStartupLaunch { get; private set; } = false;
 
+    internal static ElementTheme GetElementTheme(AppTheme theme) => theme switch
+    {
+        AppTheme.Light => ElementTheme.Light,
+        AppTheme.Dark => ElementTheme.Dark,
+        _ => ElementTheme.Default
+    };
+
     public static void ApplyThemeToWindows(AppTheme theme)
     {
         MainWindowInstance?.ApplyTheme(theme);
-        MainWindowInstance?.ViewModel.NotifyThemeChanged();
+        MascotWindowInstance?.ApplyTheme(theme);
         BubbleWindowInstance?.ApplyCurrentTheme();
     }
 

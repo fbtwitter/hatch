@@ -70,6 +70,8 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
 
     public void NotifyThemeChanged()
     {
+        foreach (var task in Tasks)
+            task.RefreshThemeBindings();
         ThemeVersion = _themeVersion + 1;
         RefreshActiveTasks();
     }
@@ -105,7 +107,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
 
         _flatGroupedTasks = [_openGroup, _completedGroup];
         _completedGroup.ShowMoreCommand = new RelayCommand(_ => _completedGroup.ShowAllItems());
-        _completedGroup.SetPreviewLimit(_activeNavItem == "alltasks");
+        _completedGroup.ResetPreviewLimit();
 
         // Open group is always expanded; never persisted.
         _openGroup.IsExpanded = true;
@@ -280,7 +282,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     private void TaskPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (sender is not TodoItem task) return;
-        if (task.IsRefreshingDueDateBinding || !RealEditProperties.Contains(e.PropertyName)) return;
+        if (task.IsRefreshingDisplayBindings || !RealEditProperties.Contains(e.PropertyName)) return;
 
         task.UpdatedAt = DateTimeOffset.UtcNow;
 

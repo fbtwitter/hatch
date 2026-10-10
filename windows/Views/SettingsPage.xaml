@@ -54,7 +54,7 @@
          those two widths differ, so they cannot be made to line up by capping them separately.
          Sharing one container makes them aligned by construction. The title scrolls with the
          list as a result, which is what Summary already does. -->
-    <ScrollViewer Padding="24,0,24,24" VerticalScrollBarVisibility="Auto">
+    <ScrollViewer Margin="0,0,0,24" Padding="24,0,24,0" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="{StaticResource SettingsCardSpacing}"
                     MaxWidth="{StaticResource PageMaxRowWidth}" HorizontalAlignment="Stretch">
 
@@ -193,7 +193,7 @@
                             <TextBlock x:Uid="Settings_TaskInputPositionDescription"
                                        Style="{ThemeResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
+                                       Margin="0,2,0,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
                         </StackPanel>
                         <ComboBox Grid.Column="2" VerticalAlignment="Center" MinWidth="130"
                                   x:Uid="Settings_TaskInputPosition"
