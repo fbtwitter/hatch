@@ -11,6 +11,10 @@ date. Measure startup, task opening, and memory use on representative Windows ha
 the previous sub-50 MB idle target was disproven and is not a release gate. See
 [Performance](PERFORMANCE.md).
 
+| Task-flow update | Status |
+|---|---|
+| Single-line task form with due dates, Important, page-aware creation, and fixed Top or floating Bottom placement | Implemented for the next release |
+
 ## Later candidates
 
 | Idea | Scope |

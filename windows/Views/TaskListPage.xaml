@@ -397,16 +397,17 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0" Padding="24,24,24,8"
+            <Grid Grid.Row="0" Padding="24,20,24,8"
                   MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
                 <TextBlock x:Name="HeaderText" Text="My Tasks"
-                           Style="{ThemeResource TitleLargeTextBlockStyle}"
+                           Style="{ThemeResource TitleTextBlockStyle}"
+                           FontSize="36"
                            VerticalAlignment="Center"
                            Visibility="{x:Bind ViewModel.IsMyDayPage, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}" />
                 <StackPanel Spacing="3"
                             Visibility="{x:Bind ViewModel.IsMyDayPage, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                     <TextBlock Text="{x:Bind ViewModel.MyDayGreetingText, Mode=OneWay}"
-                               Style="{ThemeResource TitleLargeTextBlockStyle}" />
+                               Style="{ThemeResource TitleTextBlockStyle}" FontSize="36" />
                     <TextBlock Text="{x:Bind ViewModel.MyDayDateText, Mode=OneWay}"
                                Style="{ThemeResource BodyTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
@@ -454,25 +455,83 @@
                 </Button>
             </StackPanel>
 
-            <Grid Grid.Row="2" Padding="24,8,24,16" ColumnSpacing="8"
-                  MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <TextBox x:Name="NewTaskTextBox"
-                         AutomationProperties.AutomationId="NewTask_TextBox"
-                         Grid.Column="0"
-                         x:Uid="NewTask_TextBox"
-                         Text="{x:Bind ViewModel.NewTaskText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                         KeyDown="NewTaskTextBox_KeyDown" />
-                <Button Grid.Column="1"
-                        AutomationProperties.AutomationId="NewTask_AddButton"
-                        Command="{x:Bind ViewModel.AddTaskCommand}"
-                        Style="{ThemeResource AccentButtonStyle}"
-                        MinWidth="80"
-                        x:Uid="NewTask_AddButton" />
-            </Grid>
+            <ContentControl x:Name="TaskComposer" Grid.Row="{x:Bind ViewModel.TaskComposerRow, Mode=OneWay}"
+                    AutomationProperties.AutomationId="TaskComposer"
+                    Margin="{x:Bind ComposerOuterMargin(ViewModel.IsTaskComposerFloating, ViewModel.IsUndoBarVisible, UndoInfoBar.ActualHeight), Mode=OneWay}"
+                    VerticalAlignment="{x:Bind ComposerAlignment(ViewModel.IsTaskComposerFloating), Mode=OneWay}"
+                    IsEnabled="{x:Bind ViewModel.IsTaskComposerVisible, Mode=OneWay}"
+                    IsTabStop="False" HorizontalContentAlignment="Stretch"
+                    Canvas.ZIndex="1" GotFocus="TaskComposer_GotFocus"
+                    HorizontalAlignment="Stretch">
+                <ContentControl.RenderTransform>
+                    <TranslateTransform x:Name="TaskComposerTranslate" />
+                </ContentControl.RenderTransform>
+                <Grid MaxWidth="{StaticResource PageMaxRowWidth}" HorizontalAlignment="Stretch">
+                    <Border CornerRadius="{ThemeResource ControlCornerRadius}"
+                            Background="{ThemeResource SolidBackgroundFillColorSecondaryBrush}" />
+                    <Grid ColumnSpacing="8" Margin="6">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="NewTaskTextBox" Grid.Column="0" MinWidth="0"
+                                 AutomationProperties.AutomationId="NewTask_TextBox" x:Uid="NewTask_TextBox"
+                                 ToolTipService.ToolTip="{x:Bind ViewModel.NewTaskDestinationText, Mode=OneWay}"
+                                 PlaceholderText="{x:Bind ViewModel.NewTaskPlaceholderText, Mode=OneWay}"
+                                 Text="{x:Bind ViewModel.NewTaskText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 KeyDown="NewTaskTextBox_KeyDown" />
+                        <Button Grid.Column="1" Padding="8,5" MinWidth="32"
+                                AutomationProperties.AutomationId="NewTask_DueDate"
+                                AutomationProperties.Name="{x:Bind ViewModel.NewTaskDueDateTooltip, Mode=OneWay}"
+                                ToolTipService.ToolTip="{x:Bind ViewModel.NewTaskDueDateTooltip, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <Grid Width="18" Height="18">
+                                    <FontIcon Glyph="&#xE787;" FontSize="16" />
+                                    <Border HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                            Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+                                            Visibility="{x:Bind ViewModel.HasNewTaskDueDate, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                                        <FontIcon Glyph="&#xE73E;" FontSize="9" />
+                                    </Border>
+                                </Grid>
+                                <TextBlock Text="{x:Bind ViewModel.NewTaskDueDateLabel, Mode=OneWay}"
+                                           MaxWidth="88" TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center"
+                                           Visibility="{x:Bind ComposerDateLabelVisibility(TaskComposer.ActualWidth, ViewModel.HasNewTaskDueDate), Mode=OneWay}" />
+                            </StackPanel>
+                            <Button.Flyout>
+                                <Flyout x:Name="NewTaskDateFlyout"
+                                        Placement="{x:Bind ComposerFlyoutPlacement(ViewModel.IsTaskComposerFloating), Mode=OneWay}"
+                                        Opened="NewTaskDateFlyout_Opened" Closed="NewTaskDateFlyout_Closed">
+                                    <StackPanel Spacing="8">
+                                        <CalendarView x:Name="NewTaskCalendar" SelectionMode="Single"
+                                                      AutomationProperties.AutomationId="NewTask_Calendar"
+                                                      x:Uid="NewTask_Calendar"
+                                                      SelectedDatesChanged="NewTaskCalendar_SelectedDatesChanged" />
+                                        <Button x:Uid="NewTask_ClearDueDate"
+                                                AutomationProperties.AutomationId="NewTask_ClearDueDate"
+                                                Command="{x:Bind ViewModel.ClearNewTaskDueDateCommand}"
+                                                Click="NewTaskClearDueDate_Click"
+                                                Visibility="{x:Bind ViewModel.CanClearNewTaskDueDate, Converter={StaticResource BoolToVisibility}, Mode=OneWay}" />
+                                    </StackPanel>
+                                </Flyout>
+                            </Button.Flyout>
+                        </Button>
+                        <ToggleButton Grid.Column="2" x:Uid="NewTask_Important" Padding="8,5" MinWidth="32"
+                                      AutomationProperties.AutomationId="NewTask_Important"
+                                      AutomationProperties.HelpText="{x:Bind ViewModel.NewTaskImportantTooltip, Mode=OneWay}"
+                                      ToolTipService.ToolTip="{x:Bind ViewModel.NewTaskImportantTooltip, Mode=OneWay}"
+                                      IsEnabled="{x:Bind ViewModel.CanChangeNewTaskImportant, Mode=OneWay}"
+                                      IsChecked="{x:Bind ViewModel.NewTaskImportant, Mode=TwoWay}">
+                            <FontIcon Glyph="{x:Bind ViewModel.NewTaskImportantGlyph, Mode=OneWay}" FontSize="16" />
+                        </ToggleButton>
+                        <Button Grid.Column="3" AutomationProperties.AutomationId="NewTask_AddButton"
+                                Command="{x:Bind ViewModel.AddTaskCommand}" Click="NewTaskAddButton_Click"
+                                Style="{ThemeResource AccentButtonStyle}" MinWidth="64" x:Uid="NewTask_AddButton" />
+                    </Grid>
+                </Grid>
+            </ContentControl>
 
             <Grid Grid.Row="3">
                 <Grid.RowDefinitions>
@@ -511,8 +570,10 @@
                      the extent — which parked the whole list ~240px right of the header. -->
                 <ScrollViewer Grid.Row="0" x:Name="FlatListView"
                               AutomationProperties.AutomationId="FlatListView"
+                              ViewChanged="TaskListScroll_ViewChanged"
                               HorizontalScrollBarVisibility="Disabled">
-                    <Grid Width="{x:Bind FlatListView.ViewportWidth, Mode=OneWay}">
+                    <Grid Width="{x:Bind FlatListView.ViewportWidth, Mode=OneWay}"
+                          Padding="{x:Bind ComposerScrollPadding(ViewModel.IsTaskComposerFloating, TaskComposer.ActualHeight), Mode=OneWay}">
                         <StackPanel MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
                             <ItemsControl x:Name="FlatGroupsItemsControl"
                                           ItemsSource="{x:Bind ViewModel.FlatGroupedTasks, Mode=OneWay}"
@@ -775,6 +836,10 @@
                           ItemTemplate="{StaticResource TaskItemTemplate}"
                           ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
                           Visibility="Collapsed">
+                    <ListView.Footer>
+                        <Border Height="{x:Bind ComposerScrollClearance(ViewModel.IsTaskComposerFloating, TaskComposer.ActualHeight), Mode=OneWay}"
+                                IsHitTestVisible="False" />
+                    </ListView.Footer>
                     <ListView.ItemContainerTransitions>
                         <TransitionCollection />
                     </ListView.ItemContainerTransitions>

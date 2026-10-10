@@ -85,9 +85,12 @@ public sealed partial class MainViewModel
         {
             if (_activeNavItem == value) return;
             _activeNavItem = value;
+            ResetTaskComposerScroll();
             _activeTagFilter = null;
             _openGroup.CanReorderItems = value == "myday";
             NotifyMyDayPageChanged();
+            NotifyNewTaskDetailsChanged();
+            OnPropertyChanged(nameof(NewTaskDestinationText));
             if (value == "alltasks")
                 _completedGroup.SetPreviewLimit(true);
             OnPropertyChanged();

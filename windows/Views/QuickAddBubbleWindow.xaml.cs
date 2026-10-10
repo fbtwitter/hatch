@@ -16,6 +16,7 @@ namespace Hatch.Views;
 
 public sealed partial class QuickAddBubbleWindow : Window
 {
+    public QuickAddViewModel ViewModel { get; } = new();
     private readonly IntPtr _hwnd;
     private Storyboard? _fadeIn;
     private Storyboard? _fadeOut;
@@ -219,6 +220,7 @@ public sealed partial class QuickAddBubbleWindow : Window
 
         // Reset form to initial state
         TaskTitleBox.Text = string.Empty;
+        ViewModel.IsImportant = false;
         AddButton.IsEnabled = false;
         DatePresetSelector.SelectedIndex = 0;
         BubbleContent.Visibility = Visibility.Visible;
@@ -326,31 +328,9 @@ public sealed partial class QuickAddBubbleWindow : Window
         var selectedList = selectedListId == Guid.Empty
             ? _defaultList
             : mainVm.CustomLists.FirstOrDefault(list => list.Id == selectedListId) ?? _defaultList;
-        selectedListId = selectedList.Id;
         ListSelector.SelectedItem = selectedList;
 
-        var task = new TodoItem
-        {
-            Title = title,
-            ListId = selectedListId,
-            ListName = selectedList.Name
-        };
-
-        // TimeSpan.Zero: due dates are calendar days stored at midnight +00:00 — the
-        // offsetless ctor stamped the machine's own offset, a second spelling every
-        // reader then had to survive.
-        task.DueDate = (DatePresetSelector.SelectedIndex) switch
-        {
-            1 => new DateTimeOffset(DueDatePresets.GetToday(DateTime.Today), TimeSpan.Zero),
-            2 => new DateTimeOffset(DueDatePresets.GetTomorrow(DateTime.Today), TimeSpan.Zero),
-            3 => new DateTimeOffset(DueDatePresets.GetThisWeekend(DateTime.Today), TimeSpan.Zero),
-            4 => new DateTimeOffset(DueDatePresets.GetNextWeek(DateTime.Today), TimeSpan.Zero),
-            _ => (DateTimeOffset?)null
-        };
-
-        mainVm.Tasks.Insert(0, task);
-        mainVm.AttachTaskPropertyChangedHandler(task);
-        mainVm.SaveAsync();
+        ViewModel.AddTask(mainVm, title, selectedList, DatePresetSelector.SelectedIndex);
 
         // Trigger mascot wiggle on first add in this session
         TriggerMascotWiggle();

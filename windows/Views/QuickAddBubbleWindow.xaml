@@ -213,11 +213,24 @@
                     </StackPanel>
                 </Grid>
 
-                <TextBox x:Name="TaskTitleBox"
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBox x:Name="TaskTitleBox" Grid.Column="0" MinWidth="0"
                          x:Uid="QuickAdd_TaskTitleBox"
                          AutomationProperties.AutomationId="Bubble_TaskTitleBox"
                          AutomationProperties.Name="Task title"
                          AcceptsReturn="False"/>
+                    <ToggleButton Grid.Column="1" x:Uid="NewTask_Important"
+                                  AutomationProperties.AutomationId="Bubble_Important"
+                                  IsChecked="{x:Bind ViewModel.IsImportant, Mode=TwoWay}"
+                                  ToolTipService.ToolTip="{x:Bind ViewModel.ImportantTooltip, Mode=OneWay}"
+                                  MinWidth="32" Padding="8,5">
+                        <FontIcon Glyph="{x:Bind ViewModel.ImportantGlyph, Mode=OneWay}" FontSize="16"/>
+                    </ToggleButton>
+                </Grid>
 
                 <StackPanel>
                     <TextBlock x:Uid="QuickAdd_AddToLabel"

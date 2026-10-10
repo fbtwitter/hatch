@@ -59,15 +59,15 @@
 
   <!-- ── Empty states ───────────────────────────────────────── -->
   <data name="EmptyState_MyDay_Headline" xml:space="preserve"><value>Your day is clear</value></data>
-  <data name="EmptyState_MyDay_Subtext" xml:space="preserve"><value>Add tasks to My Day from All Tasks</value></data>
+  <data name="EmptyState_MyDay_Subtext" xml:space="preserve"><value>Add your first task to My Day.</value></data>
   <data name="EmptyState_Important_Headline" xml:space="preserve"><value>No important tasks</value></data>
   <data name="EmptyState_Important_Subtext" xml:space="preserve"><value>Star a task to see it here</value></data>
   <data name="EmptyState_Planned_Headline" xml:space="preserve"><value>Nothing planned yet</value></data>
   <data name="EmptyState_Planned_Subtext" xml:space="preserve"><value>Set a due date on a task to see it here</value></data>
   <data name="EmptyState_AllTasks_Headline" xml:space="preserve"><value>No tasks yet</value></data>
-  <data name="EmptyState_AllTasks_Subtext" xml:space="preserve"><value>Add a task above to get started</value></data>
+  <data name="EmptyState_AllTasks_Subtext" xml:space="preserve"><value>Add your first task to get started.</value></data>
   <data name="EmptyState_CustomList_Headline" xml:space="preserve"><value>This list is empty</value></data>
-  <data name="EmptyState_CustomList_Subtext" xml:space="preserve"><value>Add a task above to get started</value></data>
+  <data name="EmptyState_CustomList_Subtext" xml:space="preserve"><value>Add your first task to get started.</value></data>
 
   <!-- ── Task list row ──────────────────────────────────────── -->
   <data name="Task_Tooltip_MarkComplete" xml:space="preserve"><value>Mark as complete</value></data>
@@ -81,9 +81,28 @@
   <data name="Task_Menu_Delete" xml:space="preserve"><value>Delete task</value></data>
 
   <!-- ── New task input (x:Uid mapped) ────────────────────────── -->
-  <data name="NewTask_TextBox.PlaceholderText" xml:space="preserve"><value>What needs to be done?</value></data>
+  <data name="NewTask_Placeholder" xml:space="preserve"><value>What needs to be done?</value></data>
+  <data name="NewTask_Placeholder_MyDay" xml:space="preserve"><value>Add a task to My Day</value></data>
+  <data name="NewTask_Placeholder_Important" xml:space="preserve"><value>Add an important task</value></data>
+  <data name="NewTask_Placeholder_Planned" xml:space="preserve"><value>Add a task with a due date</value></data>
   <data name="NewTask_AddButton.Content" xml:space="preserve"><value>Add</value></data>
   <data name="NewTask_AddButton.ToolTipService.ToolTip" xml:space="preserve"><value>Add task (Enter)</value></data>
+  <data name="NewTask_TextBox.AutomationProperties.Name" xml:space="preserve"><value>Task title</value></data>
+  <data name="NewTask_Destination" xml:space="preserve"><value>Adding to {0}</value></data>
+  <data name="NewTask_SetDueDate" xml:space="preserve"><value>Set a due date</value></data>
+  <data name="NewTask_DueDateSelected" xml:space="preserve"><value>Due {0} — change date</value></data>
+  <data name="NewTask_DueDateRequired" xml:space="preserve"><value>Due {0} — a due date is required in Planned</value></data>
+  <data name="NewTask_ImportantRequired" xml:space="preserve"><value>New tasks in Important are always starred</value></data>
+  <data name="NewTask_ClearDueDate.Content" xml:space="preserve"><value>Remove due date</value></data>
+  <data name="NewTask_Calendar.AutomationProperties.Name" xml:space="preserve"><value>Choose a due date for the new task</value></data>
+  <data name="NewTask_ClearDueDate.ToolTipService.ToolTip" xml:space="preserve"><value>Remove due date</value></data>
+  <data name="NewTask_ClearDueDate.AutomationProperties.Name" xml:space="preserve"><value>Remove due date from new task</value></data>
+  <data name="NewTask_Important.AutomationProperties.Name" xml:space="preserve"><value>Mark new task as important</value></data>
+  <data name="Settings_TaskInputPositionHeader.Text" xml:space="preserve"><value>Task input position</value></data>
+  <data name="Settings_TaskInputPositionDescription.Text" xml:space="preserve"><value>Bottom floats and slides away while scrolling down. Top stays fixed. Both use the same form.</value></data>
+  <data name="Settings_TaskInputPosition.AutomationProperties.Name" xml:space="preserve"><value>Task input position</value></data>
+  <data name="Settings_TaskInputPosition_Bottom.Content" xml:space="preserve"><value>Bottom</value></data>
+  <data name="Settings_TaskInputPosition_Top.Content" xml:space="preserve"><value>Top</value></data>
 
   <!-- ── Undo snackbar (UndoButton.Content is x:Uid mapped; the Message varies by
        action, so it's set from Helpers.Strings via MainViewModel.UndoMessage) ── -->
