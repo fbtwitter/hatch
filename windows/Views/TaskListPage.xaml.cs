@@ -858,8 +858,41 @@ public sealed partial class TaskListPage : Page
 
     private void NewTaskAddButton_Click(object sender, RoutedEventArgs e) => FocusNewTask();
 
-    public Thickness ComposerOuterMargin(bool floating, bool undoVisible, double undoHeight) =>
-        new(24, 12, 24, (floating ? 0 : 12) + (floating && undoVisible ? undoHeight + 20 : 0));
+    private static double PageContentSpacing
+    {
+        get
+        {
+            Application.Current.Resources.TryGetValue("PageContentSpacing", out var spacing);
+            return (double)spacing!;
+        }
+    }
+
+    private static double TaskContentInset(string navItem, bool taskListEmpty, bool suggestionsVisible) =>
+        taskListEmpty ? (suggestionsVisible ? 12 : 0) : (navItem == "planned" ? PageContentSpacing : 4);
+
+    public Thickness TaskHeaderPadding(bool floating, bool tagFiltered,
+        string navItem, bool taskListEmpty, bool suggestionsVisible) =>
+        new(24, 24, 24, floating && !tagFiltered
+            ? PageContentSpacing - TaskContentInset(navItem, taskListEmpty, suggestionsVisible)
+            : PageContentSpacing / 2);
+
+    public Thickness TaskTagFilterPadding(bool floating,
+        string navItem, bool taskListEmpty, bool suggestionsVisible) =>
+        new(24, 0, 24, floating
+            ? PageContentSpacing - TaskContentInset(navItem, taskListEmpty, suggestionsVisible)
+            : PageContentSpacing / 2);
+
+    public Thickness ComposerOuterMargin(bool floating, bool undoVisible, double undoHeight,
+        string navItem, bool taskListEmpty, bool suggestionsVisible)
+    {
+        if (floating)
+            return new(24, 12, 24, undoVisible ? undoHeight + 20 : 0);
+
+        // The header (or active tag filter) already contributes 8px above the form.
+        // Deduct the first content's own inset so every view has the same visible gap.
+        return new(24, PageContentSpacing / 2, 24,
+            PageContentSpacing - TaskContentInset(navItem, taskListEmpty, suggestionsVisible));
+    }
 
     public VerticalAlignment ComposerAlignment(bool floating) =>
         floating ? VerticalAlignment.Bottom : VerticalAlignment.Stretch;

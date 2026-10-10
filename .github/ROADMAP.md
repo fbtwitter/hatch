@@ -15,6 +15,9 @@ the previous sub-50 MB idle target was disproven and is not a release gate. See
 |---|---|
 | Single-line task form with due dates, Important, page-aware creation, and fixed Top or floating Bottom placement | Implemented for the next release |
 | Consistent themes and 24px page spacing, safe date presets, Completed previews across task pages, and adaptive window branding | Implemented for the next release |
+| Equal 16px gaps around the Top task form across task pages | Implemented locally; Debug x64 build passes |
+| Consistent 16px page-header and section gaps across task pages, Settings, Summary, Search, and onboarding | Implemented locally; Debug x64 build passes |
+| Native outlined due-date button matching Important in the task form | Implemented locally; Debug x64 build passes |
 | Window-centered search with a clean idle surface and full rounded accent focus outline | Implemented locally; Debug x64 build passes |
 | Centered, solid native search field with rounded corners and reliable keyboard exit | Implemented locally; 13 focused UI checks pass |
 | Consistent mascot hiding and restoration across fullscreen, settings, restart, and display changes | Implemented locally; eight focused regression checks pass and user confirmed YouTube fullscreen hide/return; slideshow and exclusive-game checks remain unverified |
