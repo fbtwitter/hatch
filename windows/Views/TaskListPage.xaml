@@ -401,7 +401,31 @@
                   MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
                 <TextBlock x:Name="HeaderText" Text="My Tasks"
                            Style="{ThemeResource TitleLargeTextBlockStyle}"
-                           VerticalAlignment="Center" />
+                           VerticalAlignment="Center"
+                           Visibility="{x:Bind ViewModel.IsMyDayPage, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}" />
+                <StackPanel Spacing="3"
+                            Visibility="{x:Bind ViewModel.IsMyDayPage, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <TextBlock Text="{x:Bind ViewModel.MyDayGreetingText, Mode=OneWay}"
+                               Style="{ThemeResource TitleLargeTextBlockStyle}" />
+                    <TextBlock Text="{x:Bind ViewModel.MyDayDateText, Mode=OneWay}"
+                               Style="{ThemeResource BodyTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <StackPanel Spacing="6"
+                                Visibility="{x:Bind ViewModel.IsLoaded, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                        <TextBlock Text="{x:Bind ViewModel.MyDaySummaryText, Mode=OneWay}"
+                                   Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                   TextWrapping="WrapWholeWords" />
+                        <ProgressBar x:Uid="MyDayProgressBar"
+                                     Height="4"
+                                     MaxWidth="280"
+                                     HorizontalAlignment="Left"
+                                     IsTabStop="False"
+                                     Minimum="0"
+                                     Maximum="100"
+                                     Value="{x:Bind ViewModel.MyDayProgressPercent, Mode=OneWay}"
+                                     Visibility="{x:Bind ViewModel.HasMyDayProgress, Converter={StaticResource BoolToVisibility}, Mode=OneWay}" />
+                    </StackPanel>
+                </StackPanel>
             </Grid>
 
             <StackPanel Grid.Row="1"

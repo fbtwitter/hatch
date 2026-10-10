@@ -18,6 +18,18 @@ internal static class Strings
     public static string Header_Important => Get("Header_Important");
     public static string Header_Planned   => Get("Header_Planned");
     public static string Header_AllTasks  => Get("Header_AllTasks");
+    public static string MyDay_Greeting_Morning   => Get("MyDay_Greeting_Morning");
+    public static string MyDay_Greeting_Afternoon => Get("MyDay_Greeting_Afternoon");
+    public static string MyDay_Greeting_Evening   => Get("MyDay_Greeting_Evening");
+    public static string MyDay_Status_EmptyPlan   => Get("MyDay_Status_EmptyPlan");
+    public static string MyDay_Status_Progress(int done, int total) =>
+        string.Format(Get("MyDay_Status_Progress"), done, total);
+    public static string MyDay_Status_Remaining(int open) =>
+        string.Format(Get("MyDay_Status_Remaining"), open);
+    public static string MyDay_Status_Complete(int total) =>
+        string.Format(Get("MyDay_Status_Complete"), total);
+    public static string MyDay_Status_CompleteEvening(int total) =>
+        string.Format(Get("MyDay_Status_CompleteEvening"), total);
 
     // ── Empty states ─────────────────────────────────────────
     public static string EmptyState_MyDay_Headline       => Get("EmptyState_MyDay_Headline");

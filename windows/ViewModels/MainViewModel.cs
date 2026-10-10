@@ -146,6 +146,8 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
                 RefreshActiveTasks();
             }
 
+            NotifyMyDayHeaderChanged();
+
             if (IsSearchActive)
                 RefreshSearchResults();
 
@@ -297,6 +299,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
                         RaiseMyDayCompleted(fromSync: false);
                     RememberOpenMyDayTasks();
                     TasksChanged?.Invoke();
+                    NotifyMyDayHeaderChanged();
                 }
                 else if (e.PropertyName == nameof(TodoItem.DueDate))
                     ApplyDueDateChange(task);
@@ -691,6 +694,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             _isLoaded = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(ShowEmptyState));
+            NotifyMyDayHeaderChanged();
         }
     }
 
