@@ -13,6 +13,7 @@ the previous sub-50 MB idle target was disproven and is not a release gate. See
 
 | Task-flow update | Status |
 |---|---|
+| Task-row metadata icon alignment | Implemented for the next release; Debug x64 build and 18 focused Light/Dark geometry checks pass; alternate DPI/text scaling and Contrast remain unverified |
 | Single-line task form with due dates, Important, page-aware creation, and fixed Top or floating Bottom placement | Implemented for the next release |
 | Consistent themes and 24px page spacing, safe date presets, Completed previews across task pages, and adaptive window branding | Implemented for the next release |
 | Equal 16px gaps around the Top task form across task pages | Implemented locally; Debug x64 build passes |
