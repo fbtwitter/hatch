@@ -14,6 +14,7 @@ the previous sub-50 MB idle target was disproven and is not a release gate. See
 | Task-flow update | Status |
 |---|---|
 | Native checkbox pressed feedback and completion animation time across task pages | Implemented for the next release; user accepted appearance; Debug x64 build passes; reduced-motion behaviour remains unverified; earlier checkbox checks predate this refinement |
+| Undo 4px above the Bottom task form, with scroll clearance for both controls | Implemented for the next release; native size updates and solid theme background; Debug x64 build passes; user accepted spacing |
 | Priority carried by native Fluent checkbox outlines, with accessible labels and Contrast text fallback | Implemented locally; startup crash corrected; Debug x64 build and 22 focused Light/Dark checks pass; Contrast and alternate DPI/text scaling remain unverified |
 | Task-row metadata icon alignment | Implemented for the next release; Debug x64 build and 18 focused Light/Dark geometry checks pass; alternate DPI/text scaling and Contrast remain unverified |
 | Single-line task form with due dates, Important, page-aware creation, and fixed Top or floating Bottom placement | Implemented for the next release |

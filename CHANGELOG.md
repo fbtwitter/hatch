@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ### Fixed
 - Preserve native checkbox pressed feedback and completion animation time with priority-coloured outlines, respecting Windows animation settings.
+- Keep Undo 4px above the bottom task form through native size changes, with a solid theme background and scroll clearance.
 - Fix priority-checkbox startup crashes and preserve native Fluent styling and outline colours when switching themes.
 - Replace task-row priority badges with themed checkbox outlines, retaining accessible priority labels and a Contrast text fallback.
 - Align task-row metadata icons with their captions across task lists and My Day suggestions.
