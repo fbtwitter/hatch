@@ -48,7 +48,7 @@ The `dotnet build` command builds Hatch without opening it; only `dotnet run` la
 
 Tasks are stored in `%LocalAppData%\Hatch` by default. No account or internet connection is required to use Hatch. Optional sync is off until you sign in, and the app includes no analytics or remote crash reporting.
 
-Read the [privacy policy](docs/privacy-policy.md).
+Read the [privacy policy](PRIVACY.md).
 
 ## Troubleshooting
 
@@ -58,4 +58,4 @@ Read the [privacy policy](docs/privacy-policy.md).
 
 ## Project links
 
-[Documentation](docs/README.md) · [Changelog](CHANGELOG.md) · [Roadmap](.github/ROADMAP.md) · [Architecture](.github/ARCHITECTURE.md) · [License](LICENSE)
+[Screenshots](docs/screenshots/) · [Changelog](CHANGELOG.md) · [Roadmap](.github/ROADMAP.md) · [Architecture](.github/ARCHITECTURE.md) · [License](LICENSE)

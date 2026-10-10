@@ -35,3 +35,7 @@ windows/Services/Secrets.cs
 /main-prd.md
 /CONTEXT.md
 /CLAUDE.md
+
+# Only screenshots under docs are published
+/docs/*
+!/docs/screenshots/

@@ -29,8 +29,7 @@ writer to `tasks.json`. Settings are stored through `SettingsService`.
 Tasks and settings are stored locally under `%LocalAppData%\Hatch\`. Sync is optional and
 requires sign-in. Task data is encrypted on the device before upload. Startup and unhandled
 exceptions may append to a local `crash.log`; Hatch has no remote crash reporting or analytics.
-See the [privacy policy](../docs/privacy-policy.md) and
-[sync protocol](../docs/sync-protocol.md).
+See the [privacy policy](../PRIVACY.md).
 
 ## Windows and release boundaries
 
@@ -41,5 +40,4 @@ sync and update checks; it does not request `internetClientServer`.
 A `v*.*.*` tag builds and signs the MSIX bundle, publishes a GitHub release, and updates the
 App Installer feed. Microsoft Store submission is currently manual.
 
-See the [documentation index](../docs/README.md) for specifications and architecture
-decisions.
+Supporting specifications and architecture decisions are maintained locally.

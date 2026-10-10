@@ -21,16 +21,14 @@ It gives each profile separate app data and measurement output. Run it in an int
 Windows desktop session; the FlaUI runner builds a self-contained unpackaged Release x64
 app and automates its real windows.
 
-See the [coverage map and remaining gaps](../docs/testing.md). New features should add
-behavioral regression cases and update that map.
+New features should add behavioral regression cases covering their changes.
 
 The Kotlin Multiplatform companion app is maintained in the
 [hatch-mobile repository](https://github.com/fbtwitter/hatch-mobile).
 
 ## Project structure
 
-See [Architecture](ARCHITECTURE.md) for the current system overview and
-[docs/README.md](../docs/README.md) for product and protocol references.
+See [Architecture](ARCHITECTURE.md) for the current system overview.
 
 ## Before opening a pull request
 
@@ -72,6 +70,6 @@ with at least one change bullet. The release workflow checks that the section ma
 tag before building. The GitHub release page displays that entry, a link to the commits
 since the previous version, and installation instructions. For each separate
 Microsoft Store submission, write its **What's new** text from the changes actually included
-in that Store build; see [Store listing notes](../docs/store-listing.md#whats-new).
+in that Store build.
 
 For broader project links, see the [repository README](../README.md).
