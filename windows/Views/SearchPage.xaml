@@ -56,7 +56,7 @@
         </Style>
     </Page.Resources>
 
-    <Grid RowDefinitions="Auto,*">
+    <Grid RowDefinitions="Auto,*" Margin="0,0,0,24">
 
         <StackPanel Grid.Row="0" Padding="24,24,24,12" Spacing="4"
                     MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
@@ -82,7 +82,7 @@
                   ItemsSource="{x:Bind ViewModel.SearchResults, Mode=OneWay}"
                   SelectionMode="None"
                   ItemContainerStyle="{StaticResource ResultRowStyle}"
-                  Padding="24,0,24,16"
+                  Padding="24,0,24,0"
                   HorizontalAlignment="Stretch"
                   Visibility="{x:Bind ViewModel.IsSearchEmpty, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
             <ListView.ItemContainerTransitions>

@@ -23,6 +23,7 @@ public sealed partial class MainWindow : Window
     private IntPtr _hwnd;
     private bool _isExiting;
     private bool _contentInitialized;
+    private readonly Windows.UI.ViewManagement.UISettings _uiSettings = new();
 
     public MainViewModel ViewModel { get; }
 
@@ -36,6 +37,10 @@ public sealed partial class MainWindow : Window
     {
         ViewModel = viewModel;
         InitializeComponent();
+        RootFrame.RequestedTheme = App.GetElementTheme(App.Settings.Theme);
+        RootFrame.ActualThemeChanged += (_, _) => ViewModel.NotifyThemeChanged();
+        _uiSettings.ColorValuesChanged += OnSystemColorsChanged;
+        Closed += (_, _) => _uiSettings.ColorValuesChanged -= OnSystemColorsChanged;
         Title = "Hatch";
         AppWindow.Resize(new SizeInt32(620, 640));
         ExtendsContentIntoTitleBar = true;
@@ -72,7 +77,7 @@ public sealed partial class MainWindow : Window
                 "Clean and rebuild the solution to regenerate XAML code-behind files.");
         RootFrame.Navigated += OnFrameNavigated;
 
-        // Defer backdrop and theme application to first Activated so the compositor
+        // Defer backdrop application to first Activated so the compositor
         // (DWM/WarpPal) is fully initialised. Setting SystemBackdrop in the constructor
         // races against DWM setup and causes a null vtable dereference in
         // Microsoft.UI.Xaml.dll on startup (access violation 0xC0000005).
@@ -286,12 +291,7 @@ public sealed partial class MainWindow : Window
     {
         if (RootFrame is null) return;
 
-        RootFrame.RequestedTheme = theme switch
-        {
-            AppTheme.Light => ElementTheme.Light,
-            AppTheme.Dark  => ElementTheme.Dark,
-            _              => ElementTheme.Default
-        };
+        RootFrame.RequestedTheme = App.GetElementTheme(theme);
 
         AppWindow.TitleBar.PreferredTheme = theme switch
         {
@@ -300,6 +300,10 @@ public sealed partial class MainWindow : Window
             _              => TitleBarTheme.UseDefaultAppMode
         };
     }
+
+    private void OnSystemColorsChanged(Windows.UI.ViewManagement.UISettings sender, object args)
+        => DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
+            ViewModel.NotifyThemeChanged);
 
     public void ApplyBackdrop(AppBackdrop backdrop)
     {

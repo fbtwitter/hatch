@@ -3,79 +3,52 @@ using Microsoft.UI.Xaml.Media;
 
 namespace Hatch.Converters;
 
-// TryGetValue on a ResourceDictionary only searches the top level — WinUI stores
-// system tokens inside nested MergedDictionaries, so we walk them recursively.
 internal static class ThemeResourceHelper
 {
+    private static readonly Windows.UI.ViewManagement.AccessibilitySettings Accessibility = new();
+
     public static Brush GetBrush(string key)
     {
-        var themeKey = ResolveThemeKey();
-
-        if (Application.Current.Resources.ThemeDictionaries.TryGetValue(themeKey, out var dict)
-            && dict is ResourceDictionary rd
-            && TryFindInDictionary(rd, key, out var themed)
-            && themed is Brush themedBrush)
-            return themedBrush;
-
-        // Fallback: search app-level resources (non-theme-specific)
-        if (TryFindInDictionary(Application.Current.Resources, key, out var fallback)
-            && fallback is Brush fallbackBrush)
-            return fallbackBrush;
+        if (TryFindInDictionary(Application.Current.Resources, key, ResolveThemeKey(), out var value)
+            && value is Brush brush)
+            return brush;
 
         return new SolidColorBrush(Microsoft.UI.Colors.Transparent);
     }
 
     public static Style GetStyle(string key)
     {
-        var themeKey = ResolveThemeKey();
-
-        if (Application.Current.Resources.ThemeDictionaries.TryGetValue(themeKey, out var dict)
-            && dict is ResourceDictionary rd
-            && TryFindInDictionary(rd, key, out var themed)
-            && themed is Style themedStyle)
-            return themedStyle;
-
-        if (TryFindInDictionary(Application.Current.Resources, key, out var fallback)
-            && fallback is Style fallbackStyle)
-            return fallbackStyle;
+        if (TryFindInDictionary(Application.Current.Resources, key, ResolveThemeKey(), out var value)
+            && value is Style style)
+            return style;
 
         return new Style();
     }
 
-    public static bool IsDarkTheme() => ResolveThemeKey() == "Dark";
-
-    public static Brush GetThemedBrush(Windows.UI.Color lightColor, Windows.UI.Color darkColor)
+    // Explicitly select nested theme dictionaries before ambient application lookup:
+    // the app's chosen theme can differ from Windows, and Dark often uses "Default".
+    private static bool TryFindInDictionary(ResourceDictionary rd, string key, string themeKey, out object? value)
     {
-        var color = IsDarkTheme() ? darkColor : lightColor;
-        return new SolidColorBrush(color);
-    }
-
-    // WinUI stores system tokens (e.g. ControlFillColorDefaultBrush) in nested
-    // MergedDictionaries that TryGetValue alone cannot reach.
-    private static bool TryFindInDictionary(ResourceDictionary rd, string key, out object? value)
-    {
-        if (rd.TryGetValue(key, out value))
-            return true;
-
-        foreach (var merged in rd.MergedDictionaries)
-            if (TryFindInDictionary(merged, key, out value))
+        string[] themeKeys = Accessibility.HighContrast
+            ? ["HighContrast", themeKey, "Default"] : [themeKey, "Default"];
+        foreach (var candidate in themeKeys)
+            if (rd.ThemeDictionaries.TryGetValue(candidate, out var dictionary)
+                && dictionary is ResourceDictionary themed
+                && TryFindInDictionary(themed, key, themeKey, out value))
                 return true;
 
-        value = null;
-        return false;
+        for (int i = rd.MergedDictionaries.Count - 1; i >= 0; i--)
+            if (TryFindInDictionary(rd.MergedDictionaries[i], key, themeKey, out value))
+                return true;
+
+        return rd.TryGetValue(key, out value);
     }
 
     private static string ResolveThemeKey()
     {
-        if (App.MainWindowInstance?.Content is FrameworkElement root)
-        {
-            return root.ActualTheme switch
-            {
-                ElementTheme.Dark  => "Dark",
-                ElementTheme.Light => "Light",
-                _                  => "Default"
-            };
-        }
-        return "Default";
+        var theme = App.GetElementTheme(App.Settings.Theme);
+        if (theme == ElementTheme.Default && App.MainWindowInstance?.Content is FrameworkElement root)
+            theme = root.ActualTheme;
+        return theme == ElementTheme.Light ? "Light" : "Default";
     }
 }

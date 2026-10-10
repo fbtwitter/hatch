@@ -33,6 +33,7 @@ public sealed partial class MainPage : Page
         NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
         Loaded += (_, _) =>
         {
+            MainTitleBar.IsPaneToggleButtonVisible = NavView.DisplayMode != NavigationViewDisplayMode.Expanded;
             ApplyContentBackdrop(App.Settings.Backdrop);
             if (NavView.SettingsItem is NavigationViewItem settingsItem)
                 ToolTipService.SetPlacement(settingsItem, PlacementMode.Right);
@@ -265,6 +266,7 @@ public sealed partial class MainPage : Page
                 PrimaryButtonText = "Delete",
                 CloseButtonText = "Cancel",
                 DefaultButton = ContentDialogButton.Close,
+                RequestedTheme = App.GetElementTheme(App.Settings.Theme),
                 XamlRoot = this.XamlRoot
             };
             if (await dialog.ShowAsync() == ContentDialogResult.Primary)
@@ -696,6 +698,9 @@ public sealed partial class MainPage : Page
     public void ReleaseTaskListMemory() => (ContentFrame.Content as TaskListPage)?.ReleaseListBindings();
 
     public void RestoreTaskListMemory() => (ContentFrame.Content as TaskListPage)?.RestoreListBindings();
+
+    private void NavView_DisplayModeChanged(NavigationView sender, NavigationViewDisplayModeChangedEventArgs args)
+        => MainTitleBar.IsPaneToggleButtonVisible = sender.DisplayMode != NavigationViewDisplayMode.Expanded;
 
     private void TitleBar_PaneToggleRequested(TitleBar sender, object args)
     {

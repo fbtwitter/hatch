@@ -59,8 +59,6 @@ public sealed partial class QuickAddBubbleWindow : Window
         _tipFadeOut = (Storyboard)BubbleRoot.Resources["TipFadeOut"];
         _hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
 
-        // Mirror the theme from the main window so this separate window
-        // always respects the user's Light/Dark/System setting.
         ApplyCurrentTheme();
 
         // Borderless, compact bubble window
@@ -168,21 +166,8 @@ public sealed partial class QuickAddBubbleWindow : Window
         };
     }
 
-    /// <summary>
-    /// Mirrors the theme from the main window's RootFrame into this window's
-    /// root element so Light/Dark/System settings are respected end-to-end.
-    /// Call this whenever the app theme changes.
-    /// </summary>
     public void ApplyCurrentTheme()
-    {
-        if (App.MainWindowInstance?.Content is not FrameworkElement mainRoot) return;
-        BubbleRoot.RequestedTheme = mainRoot.ActualTheme switch
-        {
-            ElementTheme.Light => ElementTheme.Light,
-            ElementTheme.Dark  => ElementTheme.Dark,
-            _                  => ElementTheme.Default
-        };
-    }
+        => BubbleRoot.RequestedTheme = App.GetElementTheme(App.Settings.Theme);
 
     public void PositionRelativeToMascot(int mascotX, int mascotY, int mascotWidth)
     {
@@ -204,6 +189,7 @@ public sealed partial class QuickAddBubbleWindow : Window
 
     public void ShowAndReset(int mascotX, int mascotY, int mascotWidth)
     {
+        ApplyCurrentTheme();
         // Reset session flags
         _isClosed = false;
         _tipAutoDismissCompleted = false;

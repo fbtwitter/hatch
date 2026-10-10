@@ -91,8 +91,7 @@ public sealed partial class MainViewModel
             NotifyMyDayPageChanged();
             NotifyNewTaskDetailsChanged();
             OnPropertyChanged(nameof(NewTaskDestinationText));
-            if (value == "alltasks")
-                _completedGroup.SetPreviewLimit(true);
+            _completedGroup.ResetPreviewLimit();
             OnPropertyChanged();
             OnPropertyChanged(nameof(ActiveTagFilter));
             OnPropertyChanged(nameof(IsTagFilterActive));
@@ -113,7 +112,6 @@ public sealed partial class MainViewModel
             _dispatcherQueue.TryEnqueue(DispatcherQueuePriority.Normal, () =>
             {
                 RefreshActiveTasks();
-                _completedGroup.SetPreviewLimit(_activeNavItem == "alltasks");
                 RefreshSuggestions();
             });
         }

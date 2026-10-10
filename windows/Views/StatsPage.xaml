@@ -115,7 +115,7 @@
 
     <!-- ScrollViewer spans the full page so its scrollbar tracks the window edge (PowerToys-style);
          the cap lives on the StackPanel inside it so content is centered under that scrollbar. -->
-    <ScrollViewer Padding="24" VerticalScrollBarVisibility="Auto">
+    <ScrollViewer Margin="0,0,0,24" Padding="24,24,24,0" VerticalScrollBarVisibility="Auto">
         <StackPanel Spacing="20" MaxWidth="{StaticResource PageMaxRowWidth}" HorizontalAlignment="Stretch">
 
             <TextBlock x:Uid="Stats_TitleText" Text="Summary" Style="{ThemeResource TitleLargeTextBlockStyle}"/>

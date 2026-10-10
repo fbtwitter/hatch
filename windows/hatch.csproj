@@ -92,6 +92,9 @@
   </Target>
 
   <ItemGroup>
+    <Content Include="..\THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <ApplicationIcon Include="Assets\Hatch.ico" Condition="Exists('Assets\Hatch.ico')"/>
     <Content Include="Assets\Hatch.ico" Condition="Exists('Assets\Hatch.ico')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

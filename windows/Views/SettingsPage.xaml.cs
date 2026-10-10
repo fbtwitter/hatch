@@ -202,6 +202,7 @@ public sealed partial class SettingsPage : Page
             PrimaryButtonText = "Continue",
             CloseButtonText = "Cancel",
             DefaultButton = ContentDialogButton.Primary,
+            RequestedTheme = App.GetElementTheme(App.Settings.Theme),
             XamlRoot = XamlRoot
         };
 
@@ -239,14 +240,9 @@ public sealed partial class SettingsPage : Page
         {
             Child = panel,
             CornerRadius = new CornerRadius(6),
-            BorderThickness = new Thickness(1)
+            BorderThickness = new Thickness(1),
+            Style = Hatch.Converters.ThemeResourceHelper.GetStyle("DialogSummaryCardStyle")
         };
-
-        // Look up theme brushes via the app's merged resource dictionaries.
-        if (Application.Current.Resources.TryGetValue("CardBackgroundFillColorDefaultBrush", out var bg) && bg is Brush bgBrush)
-            border.Background = bgBrush;
-        if (Application.Current.Resources.TryGetValue("CardStrokeColorDefaultBrush", out var stroke) && stroke is Brush strokeBrush)
-            border.BorderBrush = strokeBrush;
 
         Grid.SetColumn(border, column);
         return border;
@@ -280,6 +276,7 @@ public sealed partial class SettingsPage : Page
             Content = scrollViewer,
             CloseButtonText = Strings.Get("Settings_AboutDialog_Close"),
             DefaultButton = ContentDialogButton.Close,
+            RequestedTheme = App.GetElementTheme(App.Settings.Theme),
             HorizontalAlignment = HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center,
             XamlRoot = XamlRoot
@@ -304,10 +301,12 @@ public sealed partial class SettingsPage : Page
 
     private static Border CreateAboutDivider()
     {
-        var divider = new Border { Height = 1, Margin = new Thickness(0, 4, 0, 4) };
-        if (Application.Current.Resources.TryGetValue("CardStrokeColorDefaultBrush", out var stroke) && stroke is Brush brush)
-            divider.Background = brush;
-        return divider;
+        return new Border
+        {
+            Height = 1,
+            Margin = new Thickness(0, 4, 0, 4),
+            Style = Hatch.Converters.ThemeResourceHelper.GetStyle("DialogDividerStyle")
+        };
     }
 
     private async Task ShowPrivacyPolicyDialogAsync()
@@ -316,10 +315,8 @@ public sealed partial class SettingsPage : Page
         var lastUpdated = new TextBlock
         {
             Text = Strings.Get("Settings_PrivacyLastUpdated"),
-            FontSize = 12
+            Style = Hatch.Converters.ThemeResourceHelper.GetStyle("DialogSecondaryCaptionStyle")
         };
-        if (Application.Current.Resources.TryGetValue("TextFillColorSecondaryBrush", out var secondary) && secondary is Brush brush)
-            lastUpdated.Foreground = brush;
 
         content.Children.Add(lastUpdated);
         content.Children.Add(new TextBlock

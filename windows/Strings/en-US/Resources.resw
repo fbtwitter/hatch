@@ -99,7 +99,8 @@
   <data name="NewTask_ClearDueDate.AutomationProperties.Name" xml:space="preserve"><value>Remove due date from new task</value></data>
   <data name="NewTask_Important.AutomationProperties.Name" xml:space="preserve"><value>Mark new task as important</value></data>
   <data name="Settings_TaskInputPositionHeader.Text" xml:space="preserve"><value>Task input position</value></data>
-  <data name="Settings_TaskInputPositionDescription.Text" xml:space="preserve"><value>Bottom floats and slides away while scrolling down. Top stays fixed. Both use the same form.</value></data>
+  <data name="Settings_TaskInputPositionDescription.Text" xml:space="preserve"><value>Top stays inline; bottom floats.</value></data>
+  <data name="Settings_TaskInputPositionDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Bottom floats and slides away while scrolling down. Top stays inline. Both use the same form.</value></data>
   <data name="Settings_TaskInputPosition.AutomationProperties.Name" xml:space="preserve"><value>Task input position</value></data>
   <data name="Settings_TaskInputPosition_Bottom.Content" xml:space="preserve"><value>Bottom</value></data>
   <data name="Settings_TaskInputPosition_Top.Content" xml:space="preserve"><value>Top</value></data>

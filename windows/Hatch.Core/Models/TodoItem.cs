@@ -162,7 +162,7 @@ public sealed class TodoItem : INotifyPropertyChanged
 
     // Stamped explicitly by MainViewModel on real edits (not by property setters here) —
     // JSON deserialization must restore the persisted value untouched, and cosmetic
-    // OnPropertyChanged re-raises (e.g. RefreshDueDateBinding) must not count as edits.
+    // OnPropertyChanged re-raises (e.g. RefreshThemeBindings) must not count as edits.
     // Used by SyncMerge to resolve which side wins when the same task changed on both.
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 
@@ -208,12 +208,16 @@ public sealed class TodoItem : INotifyPropertyChanged
     private void OnPropertyChanged([CallerMemberName] string? name = null)
         => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 
-    internal bool IsRefreshingDueDateBinding { get; private set; }
+    internal bool IsRefreshingDisplayBindings { get; private set; }
 
-    public void RefreshDueDateBinding()
+    public void RefreshThemeBindings()
     {
-        IsRefreshingDueDateBinding = true;
-        try { PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DueDate))); }
-        finally { IsRefreshingDueDateBinding = false; }
+        IsRefreshingDisplayBindings = true;
+        try
+        {
+            OnPropertyChanged(nameof(DueDate));
+            OnPropertyChanged(nameof(Priority));
+        }
+        finally { IsRefreshingDisplayBindings = false; }
     }
 }

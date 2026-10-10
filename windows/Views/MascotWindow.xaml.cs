@@ -107,6 +107,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         ApplyWindowStyles();
 
         InitializeComponent();
+        ApplyTheme(App.Settings.Theme);
 
         LottiePlayer.RegisterPropertyChangedCallback(
             AnimatedVisualPlayer.IsAnimatedVisualLoadedProperty, (_, _) =>
@@ -308,6 +309,9 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
                 break;
         }
     }
+
+    public void ApplyTheme(AppTheme theme)
+        => MascotGrid.RequestedTheme = App.GetElementTheme(theme);
 
     // Lazily creates the quick-add bubble window if it doesn't exist yet, without
     // activating or positioning it — callers (click-open vs. proactive tip) finish
