@@ -83,7 +83,8 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
     {
         ShowWindow(_hwnd, SW_SHOWNOACTIVATE);
         NativeMethods.SetWindowPos(_hwnd, IntPtr.Zero, 0, 0, 0, 0,
-            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_FRAMECHANGED);
+            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_FRAMECHANGED |
+            NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
     }
 
     public MascotWindow(
@@ -240,21 +241,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             }
             else if (e.PropertyName == nameof(MascotViewModel.IsMascotHidden))
             {
-                if (ViewModel.IsMascotHidden) ShowWindow(_hwnd, SW_HIDE);
-                else RevealMascotWindow();
-                // "Hide for an hour" etc. should also suppress any proactive tip popup.
-                if (ViewModel.IsMascotHidden)
-                {
-                    _bubbleWindow?.HideWindow();
-                    CloseProactiveTip();
-                    FocusPopup.IsOpen = false;
-                }
-                else
-                {
-                    TryPlayEntrance();
-                    if (_focusViewModel != null) FocusPopup.IsOpen = true;
-                }
-                UpdateAnimationState();
+                RefreshPendingTipIndicator();
             }
             else if (e.PropertyName == nameof(MascotViewModel.WindowSize))
             {
@@ -623,6 +610,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         switch (e.PropertyName)
         {
             case nameof(MascotViewModel.IsVisible):
+                RefreshPendingTipIndicator();
                 if (ViewModel.IsVisible) RevealMascotWindow();
                 else ShowWindow(_hwnd, SW_HIDE);
                 if (!ViewModel.IsVisible)
@@ -916,7 +904,11 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             return new IntPtr(1);
         if (uMsg == NativeMethods.WM_DISPLAYCHANGE)
         {
-            DispatcherQueue.TryEnqueue(ApplyWindowStyles);
+            DispatcherQueue.TryEnqueue(() =>
+            {
+                ApplyWindowStyles();
+                ViewModel.RefreshPosition();
+            });
         }
         return NativeMethods.DefSubclassProc(hWnd, uMsg, wParam, lParam);
     }
@@ -931,7 +923,8 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
 
         // Flush presenter changes to DWM.
         NativeMethods.SetWindowPos(_hwnd, IntPtr.Zero, 0, 0, 0, 0,
-            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_FRAMECHANGED);
+            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_FRAMECHANGED |
+            NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
 
         // Strip all border style bits. SetBorderAndTitleBar(true, false) prevents DWM from
         // injecting WS_DLGFRAME (thin white border artifact on Windows 10 22H2); stripping

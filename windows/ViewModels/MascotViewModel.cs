@@ -89,14 +89,17 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     // Called by SettingsViewModel so MascotWindow responds without re-saving.
     public void RaiseMuteChanged() => OnPropertyChanged(nameof(MuteAnimation));
 
-    // Called by SettingsViewModel after saving ShowMascot. The fullscreen poll
-    // re-evaluates within 5 s, so a plain assignment is enough here.
-    public void ApplyShowMascotChanged()
+    public void ApplyShowMascotChanged() => RefreshVisibility();
+
+    public void RefreshVisibility()
     {
-        var show = _settings.Current.ShowMascot;
-        if (!show && IsBubbleOpen) CloseBubble();
-        IsVisible = show;
+        IsVisible = _settings.Current.ShowMascot && !IsMascotHidden &&
+            !(_settings.Current.HideWhenFullscreen &&
+              IsForegroundWindowFullscreen());
+        if (!IsVisible) CloseBubble();
     }
+
+    public void RefreshPosition() => ClampToWorkArea();
 
     public string? LottieFilePath => _settings.Current.LottieFilePath;
     public void RaiseLottieFileChanged() => OnPropertyChanged(nameof(LottieFilePath));
@@ -163,6 +166,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
             if (_isMascotHidden == value) return;
             _isMascotHidden = value;
             OnPropertyChanged();
+            RefreshVisibility();
         }
     }
 
@@ -211,8 +215,9 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         HideUntilRestartCommand  = new RelayCommand(_ => HideUntilRestart());
         RestoreFromHideCommand   = new RelayCommand(_ => RestoreFromHide());
         InitializePosition();
-        StartFullscreenPolling();
         CheckHideExpiration();
+        RefreshVisibility();
+        StartFullscreenPolling();
     }
 
     public bool LockPosition
@@ -297,7 +302,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     }
     private void InitializePosition()
     {
-        if (_settings.Current.MascotX < 0 || _settings.Current.MascotY < 0)
+        if (_settings.Current.MascotX == -1 && _settings.Current.MascotY == -1)
         {
             var workArea = DisplayArea.Primary.WorkArea;
             var size = WindowSize;
@@ -339,11 +344,9 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         {
             while (await _pollTimer!.WaitForNextTickAsync(ct))
             {
-                var isFull = _settings.Current.HideWhenFullscreen &&
-                             IsForegroundWindowFullscreen(_settings.Current.MascotAlwaysOnTop);
                 _dispatcher.TryEnqueue(() =>
                 {
-                    IsVisible = _settings.Current.ShowMascot && !isFull;
+                    RefreshVisibility();
                     CheckProactiveTipDue();
                 });
             }
@@ -351,29 +354,21 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         catch (OperationCanceledException) { }
     }
 
-    // Returns true when the user is in a context where Hatch should stay out of the way.
-    // When alwaysOnTop is true, the mascot is visible above windowed-fullscreen apps
-    // (browsers, video players), so only exclusive-fullscreen (games, D3D) triggers hiding.
-    private static bool IsForegroundWindowFullscreen(bool alwaysOnTop = false)
+    private static bool IsForegroundWindowFullscreen()
     {
-        // Shell API: presentation mode, D3D exclusive fullscreen (games), or system-busy.
-        // These take over the display pipeline entirely — the mascot isn't visible regardless
-        // of HWND_TOPMOST, so we always hide here even when always-on-top is enabled.
+        // Use foreground geometry for ordinary fullscreen instead of treating the
+        // shell's general QUNS_BUSY state as proof that the foreground app is fullscreen.
         if (NativeMethods.SHQueryUserNotificationState(out var quns) == 0)
         {
             if (quns == NativeMethods.QUERY_USER_NOTIFICATION_STATE.QUNS_PRESENTATION_MODE ||
-                quns == NativeMethods.QUERY_USER_NOTIFICATION_STATE.QUNS_RUNNING_D3D_FULL_SCREEN ||
-                quns == NativeMethods.QUERY_USER_NOTIFICATION_STATE.QUNS_BUSY)
+                quns == NativeMethods.QUERY_USER_NOTIFICATION_STATE.QUNS_RUNNING_D3D_FULL_SCREEN)
                 return true;
         }
 
-        // Geometry check: windowed-fullscreen apps (browser video, media players).
-        // When always-on-top is on the mascot stays above these, so skip the check.
-        if (alwaysOnTop) return false;
-
         // Any non-Hatch window that covers the full monitor bounds.
         var hwnd = NativeMethods.GetForegroundWindow();
-        if (hwnd == IntPtr.Zero) return false;
+        if (hwnd == IntPtr.Zero || hwnd == NativeMethods.GetShellWindow() ||
+            hwnd == NativeMethods.GetDesktopWindow()) return false;
 
         NativeMethods.GetWindowThreadProcessId(hwnd, out var pid);
         if ((int)pid == Environment.ProcessId) return false;
@@ -382,7 +377,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
         var mi = new NativeMethods.MONITORINFO { cbSize = Marshal.SizeOf<NativeMethods.MONITORINFO>() };
         if (!NativeMethods.GetMonitorInfo(hMonitor, ref mi)) return false;
 
-        NativeMethods.GetWindowRect(hwnd, out var wr);
+        if (!NativeMethods.GetWindowRect(hwnd, out var wr)) return false;
         var mr = mi.rcMonitor;
 
         // Maximized windows are positioned at -8,-8 (invisible resize border) so their
