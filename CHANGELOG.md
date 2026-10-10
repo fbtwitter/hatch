@@ -14,8 +14,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 - Center and round the native search field with solid theme colours, and fix Escape returning from search.
 - Stabilize mascot visibility across fullscreen, temporary hide/restore, restart, and display changes.
 - Honor fullscreen hiding for videos, slideshows, and games even when the mascot is always on top.
+- Equalize the gaps above and below the Top task form across task pages.
+- Give the task form's due-date control a visible native button outline.
 - Give search a clean idle surface and highlight its full rounded border when focused.
 - Balance title-bar spacing to center search relative to the window.
+- Standardize title and section gaps across task pages, Settings, Summary, Search, and onboarding.
 
 ## [0.27.0] - 2026-10-09
 

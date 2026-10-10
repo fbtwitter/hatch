@@ -397,14 +397,14 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0" Padding="24,24,24,8"
+            <Grid Grid.Row="0" Padding="{x:Bind TaskHeaderPadding(ViewModel.IsTaskComposerFloating, ViewModel.IsTagFilterActive, ViewModel.ActiveNavItem, ViewModel.IsTaskListEmpty, ViewModel.SuggestionsVisible), Mode=OneWay}"
                   MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
                 <TextBlock x:Name="HeaderText" Text="My Tasks"
                            Style="{ThemeResource TitleTextBlockStyle}"
                            FontSize="36"
                            VerticalAlignment="Center"
                            Visibility="{x:Bind ViewModel.IsMyDayPage, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}" />
-                <StackPanel Spacing="3"
+                <StackPanel Spacing="4"
                             Visibility="{x:Bind ViewModel.IsMyDayPage, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                     <TextBlock Text="{x:Bind ViewModel.MyDayGreetingText, Mode=OneWay}"
                                Style="{ThemeResource TitleTextBlockStyle}" FontSize="36" />
@@ -432,7 +432,7 @@
             <StackPanel Grid.Row="1"
                         Orientation="Horizontal"
                         Spacing="8"
-                        Padding="24,0,24,6"
+                        Padding="{x:Bind TaskTagFilterPadding(ViewModel.IsTaskComposerFloating, ViewModel.ActiveNavItem, ViewModel.IsTaskListEmpty, ViewModel.SuggestionsVisible), Mode=OneWay}"
                         MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch"
                         Visibility="{x:Bind ViewModel.IsTagFilterActive, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                 <TextBlock x:Uid="TagFilter_ShowingText"
@@ -457,7 +457,7 @@
 
             <ContentControl x:Name="TaskComposer" Grid.Row="{x:Bind ViewModel.TaskComposerRow, Mode=OneWay}"
                     AutomationProperties.AutomationId="TaskComposer"
-                    Margin="{x:Bind ComposerOuterMargin(ViewModel.IsTaskComposerFloating, ViewModel.IsUndoBarVisible, UndoInfoBar.ActualHeight), Mode=OneWay}"
+                    Margin="{x:Bind ComposerOuterMargin(ViewModel.IsTaskComposerFloating, ViewModel.IsUndoBarVisible, UndoInfoBar.ActualHeight, ViewModel.ActiveNavItem, ViewModel.IsTaskListEmpty, ViewModel.SuggestionsVisible), Mode=OneWay}"
                     VerticalAlignment="{x:Bind ComposerAlignment(ViewModel.IsTaskComposerFloating), Mode=OneWay}"
                     IsEnabled="{x:Bind ViewModel.IsTaskComposerVisible, Mode=OneWay}"
                     IsTabStop="False" HorizontalContentAlignment="Stretch"
@@ -483,7 +483,6 @@
                                  Text="{x:Bind ViewModel.NewTaskText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  KeyDown="NewTaskTextBox_KeyDown" />
                         <Button Grid.Column="1" Padding="8,5" MinWidth="32" VerticalAlignment="Stretch"
-                                Style="{ThemeResource SubtleButtonStyle}"
                                 AutomationProperties.AutomationId="NewTask_DueDate"
                                 AutomationProperties.Name="{x:Bind ViewModel.NewTaskDueDateTooltip, Mode=OneWay}"
                                 ToolTipService.ToolTip="{x:Bind ViewModel.NewTaskDueDateTooltip, Mode=OneWay}">
@@ -678,10 +677,10 @@
                             </ItemsControl>
 
                             <!-- Suggestions — My Day only, shows tasks from previous days not yet completed -->
-                            <StackPanel Margin="20,8,20,0"
+                            <StackPanel Margin="20,12,20,0"
                                         Spacing="4"
                                         Visibility="{x:Bind ViewModel.SuggestionsVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,0,0,4">
+                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,0,0,12">
                                     <TextBlock x:Uid="Suggestions_Header"
                                                Text="Suggested"
                                                Style="{ThemeResource CaptionTextBlockStyle}"
@@ -863,7 +862,7 @@
                                     <TextBlock Text="{x:Bind Name, Mode=OneTime}"
                                                Style="{ThemeResource BodyStrongTextBlockStyle}"
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               Margin="0,12,0,8" />
+                                               Margin="0,16,0,16" />
                                 </DataTemplate>
                             </GroupStyle.HeaderTemplate>
                         </GroupStyle>

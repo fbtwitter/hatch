@@ -58,7 +58,8 @@
 
     <Grid RowDefinitions="Auto,*" Margin="0,0,0,24">
 
-        <StackPanel Grid.Row="0" Padding="24,24,24,12" Spacing="4"
+        <!-- Result rows add 3px above their surface, giving a 16px content gap. -->
+        <StackPanel Grid.Row="0" Padding="24,24,24,13" Spacing="4"
                     MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
             <TextBlock Text="Search results" Style="{ThemeResource TitleLargeTextBlockStyle}" />
             <TextBlock Text="{x:Bind ViewModel.SearchResultsSummary, Mode=OneWay}"

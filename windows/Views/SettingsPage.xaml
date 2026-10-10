@@ -14,7 +14,8 @@
             BasedOn="{StaticResource BodyStrongTextBlockStyle}"
             TargetType="TextBlock">
             <Style.Setters>
-                <Setter Property="Margin" Value="0,24,0,8"/>
+                <!-- The parent contributes another 8px on each side of a heading. -->
+                <Setter Property="Margin" Value="0,8,0,8"/>
             </Style.Setters>
         </Style>
 
@@ -60,7 +61,7 @@
 
             <TextBlock x:Name="HeaderText" x:Uid="Settings_PageTitle"
                        Style="{ThemeResource TitleLargeTextBlockStyle}"
-                       Margin="0,24,0,8"/>
+                       Margin="0,24,0,0"/>
 
                 <TextBlock x:Uid="Settings_SectionAppearance"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"/>
