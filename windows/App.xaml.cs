@@ -237,6 +237,12 @@ public partial class App : Application
             // Settings/App.Settings.
             await SettingsService.LoadAsync();
 
+            if (Settings.HideUntilTicks == long.MaxValue)
+            {
+                Settings.HideUntilTicks = null;
+                SettingsService.SaveDebounced();
+            }
+
             // Unpackaged (Debug): StartupRegistryService writes --startup into the Run key.
             // Packaged (MSIX): activation kind is StartupTask when launched by the OS.
             // Never infer startup from empty args — that would suppress the window on every manual launch.
@@ -245,7 +251,7 @@ public partial class App : Application
                 activationArgs.Kind == ExtendedActivationKind.StartupTask;
 
             // Initialize mascot position if unset, so main window can position relative to it
-            if (Settings.MascotX < 0 || Settings.MascotY < 0)
+            if (Settings.MascotX == -1 && Settings.MascotY == -1)
             {
                 var workArea = DisplayArea.Primary.WorkArea;
                 int size = Settings.MascotSize;

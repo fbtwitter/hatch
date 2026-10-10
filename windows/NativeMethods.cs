@@ -8,6 +8,7 @@ internal static class NativeMethods
     internal static readonly IntPtr HWND_NOTOPMOST = new(-2);
     internal const uint SWP_NOSIZE     = 0x0001;
     internal const uint SWP_NOMOVE     = 0x0002;
+    internal const uint SWP_NOZORDER   = 0x0004;
     internal const uint SWP_NOACTIVATE = 0x0010;
 
     internal const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
@@ -34,6 +35,12 @@ internal static class NativeMethods
 
     [DllImport("user32.dll")]
     internal static extern IntPtr GetForegroundWindow();
+
+    [DllImport("user32.dll")]
+    internal static extern IntPtr GetShellWindow();
+
+    [DllImport("user32.dll")]
+    internal static extern IntPtr GetDesktopWindow();
 
     [DllImport("user32.dll")]
     internal static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);

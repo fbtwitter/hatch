@@ -26,7 +26,7 @@ public sealed class AppSettings
     public AppBackdrop Backdrop { get; set; } = AppBackdrop.Mica;
     public TaskInputPosition TaskInputPosition { get; set; } = TaskInputPosition.Bottom;
     public bool MinimizeToTray { get; set; } = true;
-    public int MascotX { get; set; } = -1; // -1 = not yet set; use default on first launch
+    public int MascotX { get; set; } = -1; // (-1, -1) is unset; other negative monitor positions are valid.
     public int MascotY { get; set; } = -1;
     public int MascotSize { get; set; } = 120;
     public bool MuteAnimation { get; set; } = false;

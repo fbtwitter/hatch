@@ -436,6 +436,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             if (_settings.Current.HideWhenFullscreen == value) return;
             _settings.Current.HideWhenFullscreen = value;
             _settings.SaveDebounced();
+            App.MascotWindowInstance?.ViewModel.RefreshVisibility();
             OnPropertyChanged();
         }
     }
@@ -476,6 +477,7 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
             _settings.Current.MascotAlwaysOnTop = value;
             _settings.SaveDebounced();
             App.MascotWindowInstance?.ApplyAlwaysOnTop(value);
+            App.MascotWindowInstance?.ViewModel.RefreshVisibility();
             OnPropertyChanged();
         }
     }
