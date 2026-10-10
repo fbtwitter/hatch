@@ -45,7 +45,8 @@
                 <BitmapIconSource UriSource="ms-appx:///Assets/Square44x44Logo.png" ShowAsMonochrome="False"/>
             </TitleBar.IconSource>
             <TitleBar.Content>
-                <Grid Margin="8,0" HorizontalAlignment="Stretch">
+                <Grid x:Name="TitleBarSearchHost" Margin="8,0" HorizontalAlignment="Stretch"
+                      Loaded="TitleBarSearchHost_Loaded" SizeChanged="TitleBarSearchHost_SizeChanged">
                     <AutoSuggestBox x:Name="TitleBarSearchBox" x:Uid="Search_TaskBox"
                                     AutomationProperties.AutomationId="Search_AutoSuggestBox"
                                     QueryIcon="Find"
@@ -58,19 +59,26 @@
                             <ResourceDictionary>
                                 <ResourceDictionary.ThemeDictionaries>
                                     <ResourceDictionary x:Key="Light">
+                                        <StaticResource x:Key="TextControlBorderBrush" ResourceKey="ControlFillColorTransparentBrush" />
+                                        <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="ControlFillColorTransparentBrush" />
                                         <StaticResource x:Key="TextControlBackground" ResourceKey="SolidBackgroundFillColorTertiaryBrush" />
                                         <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="SolidBackgroundFillColorSecondaryBrush" />
                                         <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="SolidBackgroundFillColorBaseBrush" />
+                                        <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="AccentFillColorDefaultBrush" />
                                     </ResourceDictionary>
                                     <ResourceDictionary x:Key="Dark">
+                                        <StaticResource x:Key="TextControlBorderBrush" ResourceKey="ControlFillColorTransparentBrush" />
+                                        <StaticResource x:Key="TextControlBorderBrushPointerOver" ResourceKey="ControlFillColorTransparentBrush" />
                                         <StaticResource x:Key="TextControlBackground" ResourceKey="SolidBackgroundFillColorTertiaryBrush" />
                                         <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="SolidBackgroundFillColorSecondaryBrush" />
                                         <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="SolidBackgroundFillColorBaseBrush" />
+                                        <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="AccentFillColorDefaultBrush" />
                                     </ResourceDictionary>
                                     <ResourceDictionary x:Key="HighContrast">
                                         <StaticResource x:Key="TextControlBackground" ResourceKey="SystemControlBackgroundChromeMediumLowBrush" />
                                         <StaticResource x:Key="TextControlBackgroundPointerOver" ResourceKey="SystemControlBackgroundChromeMediumLowBrush" />
                                         <StaticResource x:Key="TextControlBackgroundFocused" ResourceKey="SystemControlBackgroundChromeMediumLowBrush" />
+                                        <StaticResource x:Key="TextControlBorderBrushFocused" ResourceKey="SystemControlHighlightAccentBrush" />
                                     </ResourceDictionary>
                                 </ResourceDictionary.ThemeDictionaries>
                                 <Thickness x:Key="TextControlThemePadding">12,5,12,5</Thickness>

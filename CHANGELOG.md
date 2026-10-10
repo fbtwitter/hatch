@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 - Center and round the native search field with solid theme colours, and fix Escape returning from search.
 - Stabilize mascot visibility across fullscreen, temporary hide/restore, restart, and display changes.
 - Honor fullscreen hiding for videos, slideshows, and games even when the mascot is always on top.
+- Give search a clean idle surface and highlight its full rounded border when focused.
+- Balance title-bar spacing to center search relative to the window.
 
 ## [0.27.0] - 2026-10-09
 
