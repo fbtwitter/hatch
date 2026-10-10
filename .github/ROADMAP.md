@@ -15,6 +15,7 @@ the previous sub-50 MB idle target was disproven and is not a release gate. See
 |---|---|
 | Single-line task form with due dates, Important, page-aware creation, and fixed Top or floating Bottom placement | Implemented for the next release |
 | Consistent themes and 24px page spacing, safe date presets, Completed previews across task pages, and adaptive window branding | Implemented for the next release |
+| Centered, solid native search field with rounded corners and reliable keyboard exit | Implemented locally; 13 focused UI checks pass |
 
 ## Later candidates
 

@@ -42,6 +42,8 @@ public sealed partial class MainPage : Page
         // handledEventsToo so Ctrl+F reaches the search box even when focus is inside
         // the nav pane or another child control that already handled the key press.
         this.AddHandler(UIElement.KeyDownEvent, new KeyEventHandler(OnPageKeyDown), handledEventsToo: true);
+        TitleBarSearchBox.AddHandler(UIElement.KeyDownEvent,
+            new KeyEventHandler(TitleBarSearchBox_KeyDown), handledEventsToo: true);
     }
 
     private void OnPageKeyDown(object sender, KeyRoutedEventArgs e)
@@ -65,6 +67,8 @@ public sealed partial class MainPage : Page
         if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput) return;
         _viewModel.SearchQuery = sender.Text;
     }
+
+    public CornerRadius SearchCornerRadius(double height) => new(Math.Max(16, height / 2));
 
     private void TitleBarSearchBox_KeyDown(object sender, KeyRoutedEventArgs e)
     {
