@@ -25,6 +25,13 @@
         <converters:PriorityToForegroundConverter x:Key="PriorityToForeground" />
         <converters:PriorityToLabelConverter x:Key="PriorityToLabel" />
 
+        <Style x:Key="TaskMetadataIconStyle" TargetType="FontIcon">
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <!-- Caption text's visible ink sits below its line-box center.
+                 This 2px top margin gives centered glyphs a 1px optical adjustment. -->
+            <Setter Property="Margin" Value="0,2,0,0" />
+        </Style>
+
         <!-- Details-pane metadata rows (hatch-mobile 0c137fb): a glyph gutter, a label, and
              one value per row, grouped into sections that read as one card. Hand-rolled
              rather than SettingsCard: the pane is 280–360px, under SettingsCard's wrap
@@ -151,6 +158,7 @@
                                   IsTabStop="False">
                         <StackPanel Orientation="Horizontal" Spacing="8">
                             <FontIcon FontFamily="Segoe Fluent Icons"
+                                      Style="{StaticResource TaskMetadataIconStyle}"
                                       Glyph="&#xE70B;"
                                       FontSize="12"
                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -170,6 +178,7 @@
                                     x:Uid="Task_DateChipButton">
                                 <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
                                     <FontIcon Glyph="{x:Bind DueDate, Converter={StaticResource DueDateToChipGlyph}, Mode=OneWay}"
+                                              Style="{StaticResource TaskMetadataIconStyle}"
                                               FontSize="11"
                                               Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
                                               VerticalAlignment="Center" />
@@ -185,6 +194,7 @@
                                         ToolTipService.ToolTip="Steps"
                                         Visibility="{x:Bind HasSteps, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                                 <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE9D5;" FontSize="12"
+                                          Style="{StaticResource TaskMetadataIconStyle}"
                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" />
                                 <TextBlock Text="{x:Bind StepProgressLabel, Mode=OneWay}"
@@ -194,6 +204,7 @@
                             </StackPanel>
 
                             <FontIcon Glyph="&#xE895;"
+                                      Style="{StaticResource TaskMetadataIconStyle}"
                                       FontSize="12"
                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                       ToolTipService.ToolTip="Repeats"
@@ -204,6 +215,7 @@
                                         VerticalAlignment="Center"
                                         Visibility="{x:Bind HasCustomListName, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                                 <FontIcon Glyph="&#xE8FD;" FontSize="12"
+                                          Style="{StaticResource TaskMetadataIconStyle}"
                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" />
                                 <TextBlock Text="{x:Bind ListName, Mode=OneWay}"
@@ -256,9 +268,11 @@
                                         Visibility="{x:Bind HasPriority, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                                     <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
                                         <FontIcon Glyph="&#xE7C1;"
+                                                  Style="{StaticResource TaskMetadataIconStyle}"
                                                   FontSize="10"
                                                   Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
                                         <TextBlock Text="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, Mode=OneWay}"
+                                                   VerticalAlignment="Center"
                                                    Style="{ThemeResource CaptionTextBlockStyle}"
                                                    Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
                                     </StackPanel>
@@ -275,6 +289,7 @@
                                         x:Uid="Task_AddDateButton">
                                     <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
                                         <FontIcon Glyph="&#xE787;" FontSize="11"
+                                                  Style="{StaticResource TaskMetadataIconStyle}"
                                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                                                   VerticalAlignment="Center" />
                                         <TextBlock x:Uid="Task_AddDateText"
@@ -717,6 +732,7 @@
                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                                                         <FontIcon FontFamily="Segoe Fluent Icons"
+                                                                  Style="{StaticResource TaskMetadataIconStyle}"
                                                                   Glyph="&#xE70B;"
                                                                   FontSize="12"
                                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -729,6 +745,7 @@
                                                                     VerticalAlignment="Center"
                                                                     Visibility="{x:Bind DueDate, Converter={StaticResource DueDateToChipVisibility}, Mode=OneWay}">
                                                             <FontIcon Glyph="{x:Bind DueDate, Converter={StaticResource DueDateToChipGlyph}, Mode=OneWay}"
+                                                                      Style="{StaticResource TaskMetadataIconStyle}"
                                                                       FontSize="11"
                                                                       Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
                                                                       VerticalAlignment="Center" />
@@ -743,6 +760,7 @@
                                                                     ToolTipService.ToolTip="Steps"
                                                                     Visibility="{x:Bind HasSteps, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                                                             <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE9D5;"
+                                                                      Style="{StaticResource TaskMetadataIconStyle}"
                                                                       FontSize="12"
                                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                                       VerticalAlignment="Center" />
@@ -753,6 +771,7 @@
                                                         </StackPanel>
 
                                                         <FontIcon Glyph="&#xE895;"
+                                                                  Style="{StaticResource TaskMetadataIconStyle}"
                                                                   FontSize="12"
                                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                                   ToolTipService.ToolTip="Repeats"
@@ -764,6 +783,7 @@
                                                                     VerticalAlignment="Center"
                                                                     Visibility="{x:Bind HasCustomListName, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                                                             <FontIcon Glyph="&#xE8FD;"
+                                                                      Style="{StaticResource TaskMetadataIconStyle}"
                                                                       FontSize="12"
                                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                                                       VerticalAlignment="Center" />

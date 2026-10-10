@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 - Add a single-line task form with due dates, Important, page-aware defaults, and a Top/Bottom position preference; Bottom floats and responds to scrolling.
 
 ### Fixed
+- Align task-row metadata icons with their captions across task lists and My Day suggestions.
 - Unify application themes and page spacing, fix date preset crashes, and polish task entry, completed previews, and adaptive window branding.
 - Center and round the native search field with solid theme colours, and fix Escape returning from search.
 - Stabilize mascot visibility across fullscreen, temporary hide/restore, restart, and display changes.
