@@ -7,6 +7,10 @@ internal static class ThemeResourceHelper
 {
     private static readonly Windows.UI.ViewManagement.AccessibilitySettings Accessibility = new();
 
+    public static Windows.UI.Color GetColor(string key)
+        => TryFindInDictionary(Application.Current.Resources, key, ResolveThemeKey(), out var value)
+            && value is Windows.UI.Color color ? color : Microsoft.UI.Colors.Transparent;
+
     public static Brush GetBrush(string key)
     {
         if (TryFindInDictionary(Application.Current.Resources, key, ResolveThemeKey(), out var value)

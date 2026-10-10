@@ -71,6 +71,10 @@
 
   <!-- ── Task list row ──────────────────────────────────────── -->
   <data name="Task_Tooltip_MarkComplete" xml:space="preserve"><value>Mark as complete</value></data>
+  <data name="Task_Tooltip_MarkIncomplete" xml:space="preserve"><value>Mark as incomplete</value></data>
+  <data name="Task_CompletionName" xml:space="preserve"><value>{0}, priority: {1}</value></data>
+  <data name="Task_CompletionTooltip" xml:space="preserve"><value>{0}&#10;Priority: {1}</value></data>
+  <data name="Task_PriorityLabel" xml:space="preserve"><value>Priority: {0}</value></data>
   <data name="Task_Tooltip_ChangeDueDate" xml:space="preserve"><value>Change due date</value></data>
   <data name="Task_Tooltip_SetDueDate" xml:space="preserve"><value>Set a due date — makes this task appear in Planned</value></data>
   <data name="Task_Chip_AddDate" xml:space="preserve"><value>Add date</value></data>

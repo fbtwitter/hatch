@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:models="using:Hatch.Models"
     xmlns:converters="using:Hatch.Converters"
+    xmlns:controls="using:Hatch.Controls"
     xmlns:vm="using:Hatch.ViewModels"
     Background="Transparent">
 
@@ -13,6 +14,8 @@
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
         <converters:DueDateToStringConverter x:Key="DueDateToString" />
         <converters:DueDateToChipVisibilityConverter x:Key="DueDateToChipVisibility" />
+        <converters:PriorityToLabelConverter x:Key="PriorityToLabel" />
+        <converters:PriorityToContrastVisibilityConverter x:Key="PriorityToContrastVisibility" />
 
         <!-- Rounded, hover-highlighted row — simpler than TaskListPage's TaskListViewItemStyle
              since this list has no selection state (SelectionMode="None"), just hover/press. -->
@@ -102,7 +105,11 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <CheckBox Grid.Column="0"
+                        <controls:PriorityCheckBox Grid.Column="0"
+                                  Style="{StaticResource DefaultCheckBoxStyle}"
+                                  AutomationProperties.AutomationId="Search_TaskCheckBox"
+                                  Priority="{x:Bind Priority, Mode=OneWay}"
+                                  TaskTitle="{x:Bind Title, Mode=OneWay}"
                                   IsChecked="{x:Bind IsCompleted, Mode=TwoWay}"
                                   VerticalAlignment="Center" />
 
@@ -113,6 +120,10 @@
                                        Style="{ThemeResource BodyStrongTextBlockStyle}"
                                        TextTrimming="CharacterEllipsis" />
                             <StackPanel Orientation="Horizontal" Spacing="4">
+                                <TextBlock Text="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, ConverterParameter=Full, Mode=OneWay}"
+                                           Visibility="{x:Bind Priority, Converter={StaticResource PriorityToContrastVisibility}, Mode=OneWay}"
+                                           Style="{ThemeResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                 <TextBlock Text="{x:Bind ListName, Mode=OneWay}"
                                            Visibility="{x:Bind HasListName, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
                                            Style="{ThemeResource CaptionTextBlockStyle}"

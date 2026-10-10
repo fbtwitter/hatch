@@ -10,6 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 - Add a single-line task form with due dates, Important, page-aware defaults, and a Top/Bottom position preference; Bottom floats and responds to scrolling.
 
 ### Fixed
+- Preserve native checkbox pressed feedback and completion animation time with priority-coloured outlines, respecting Windows animation settings.
+- Fix priority-checkbox startup crashes and preserve native Fluent styling and outline colours when switching themes.
+- Replace task-row priority badges with themed checkbox outlines, retaining accessible priority labels and a Contrast text fallback.
 - Align task-row metadata icons with their captions across task lists and My Day suggestions.
 - Unify application themes and page spacing, fix date preset crashes, and polish task entry, completed previews, and adaptive window branding.
 - Center and round the native search field with solid theme colours, and fix Escape returning from search.
