@@ -38,6 +38,9 @@ public sealed partial class TaskListPage : Page
     private Button[]? _flyoutPresetBtns;
     private TodoItem? _flyoutTask;
     private bool _updatingFlyout;
+    private bool _updatingNewTaskCalendar;
+    private Storyboard? _composerStoryboard;
+    private ScrollViewer? _groupedTaskScrollViewer;
 
     private enum PaneLayoutMode { SideBySide, Overlay }
     private PaneLayoutMode _paneMode = PaneLayoutMode.SideBySide;
@@ -87,6 +90,8 @@ public sealed partial class TaskListPage : Page
     public void RestoreListBindings()
     {
         if (_vm == null) return;
+        _vm.ResetTaskComposerScroll(_vm.ActiveNavItem == "planned"
+            ? _groupedTaskScrollViewer?.VerticalOffset ?? 0 : FlatListView.VerticalOffset);
         FlatGroupsItemsControl.ItemsSource = _vm.FlatGroupedTasks;
         if (_vm.ActiveNavItem == "planned")
             RefreshPlannedGroups();
@@ -146,7 +151,11 @@ public sealed partial class TaskListPage : Page
 
         _vm = vm;
         DataContext = vm;
+        vm.ResetTaskComposerScroll();
+        AnimateTaskComposer(false);
         UpdateView(vm.ActiveNavItem);
+        vm.ResetTaskComposerScroll(vm.ActiveNavItem == "planned"
+            ? _groupedTaskScrollViewer?.VerticalOffset ?? 0 : FlatListView.VerticalOffset);
         vm.PropertyChanged += OnViewModelPropertyChanged;
         vm.FlatGroupMoveStarting += OnFlatGroupMoveStarting;
         vm.FlatGroupMoveCompleted += OnFlatGroupMoveCompleted;
@@ -164,6 +173,8 @@ public sealed partial class TaskListPage : Page
             _vm.PropertyChanged -= OnViewModelPropertyChanged;
             _vm.FlatGroupMoveStarting -= OnFlatGroupMoveStarting;
             _vm.FlatGroupMoveCompleted -= OnFlatGroupMoveCompleted;
+            _vm.SetNewTaskCalendarOpen(false);
+            _composerStoryboard?.Stop();
             // Close pane silently when navigating away — don't animate
             _vm.SelectedTask = null;
             _paneTransitionVersion++;
@@ -181,6 +192,14 @@ public sealed partial class TaskListPage : Page
 
         switch (args.PropertyName)
         {
+            case nameof(MainViewModel.IsTaskComposerVisible):
+                AnimateTaskComposer(true);
+                break;
+
+            case nameof(MainViewModel.IsTaskComposerFloating):
+                AnimateTaskComposer(false);
+                break;
+
             case nameof(MainViewModel.ActiveNavItem):
                 // Close pane when switching lists — selected task may leave the view.
                 // Always sync ListViews explicitly: if SelectedTask was already null the
@@ -188,6 +207,8 @@ public sealed partial class TaskListPage : Page
                 _vm.SelectedTask = null;
                 SyncListViewSelection(null);
                 UpdateView(_vm.ActiveNavItem);
+                _vm.ResetTaskComposerScroll(_vm.ActiveNavItem == "planned"
+                    ? _groupedTaskScrollViewer?.VerticalOffset ?? 0 : FlatListView.VerticalOffset);
                 break;
 
             case nameof(MainViewModel.PlannedGroups) or nameof(MainViewModel.IsPlannedEmpty)
@@ -623,6 +644,12 @@ public sealed partial class TaskListPage : Page
     private void TaskListView_Loaded(object sender, RoutedEventArgs e)
     {
         if (sender is not ListView listView) return;
+        if (ReferenceEquals(listView, GroupedListView))
+        {
+            _groupedTaskScrollViewer = FindTaskScrollViewer(listView);
+            if (_groupedTaskScrollViewer != null)
+                _groupedTaskScrollViewer.ViewChanged += TaskListScroll_ViewChanged;
+        }
         _taskListViews.Add(listView);
         var selectedTask = _vm?.SelectedTask;
         var wasSuppressing = _suppressSelectionChanged;
@@ -635,6 +662,11 @@ public sealed partial class TaskListPage : Page
 
     private void TaskListView_Unloaded(object sender, RoutedEventArgs e)
     {
+        if (ReferenceEquals(sender, GroupedListView) && _groupedTaskScrollViewer != null)
+        {
+            _groupedTaskScrollViewer.ViewChanged -= TaskListScroll_ViewChanged;
+            _groupedTaskScrollViewer = null;
+        }
         if (sender is ListView listView) _taskListViews.Remove(listView);
     }
 
@@ -819,10 +851,126 @@ public sealed partial class TaskListPage : Page
     private void NewTaskTextBox_KeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key == VirtualKey.Enter && ViewModel.AddTaskCommand.CanExecute(null))
+        {
             ViewModel.AddTaskCommand.Execute(null);
+            e.Handled = true;
+        }
     }
 
-    public void FocusNewTask() => NewTaskTextBox.Focus(FocusState.Programmatic);
+    private void NewTaskAddButton_Click(object sender, RoutedEventArgs e) => FocusNewTask();
+
+    public Thickness ComposerOuterMargin(bool floating, bool undoVisible, double undoHeight) =>
+        new(24, 12, 24, 12 + (floating && undoVisible ? undoHeight + 20 : 0));
+
+    public VerticalAlignment ComposerAlignment(bool floating) =>
+        floating ? VerticalAlignment.Bottom : VerticalAlignment.Stretch;
+
+    public Thickness ComposerScrollPadding(bool floating, double height) =>
+        new(0, 0, 0, ComposerScrollClearance(floating, height));
+
+    public double ComposerScrollClearance(bool floating, double height) => floating ? height + 24 : 0;
+
+    public Visibility ComposerDateLabelVisibility(double width, bool hasDate) =>
+        hasDate && width >= 420 ? Visibility.Visible : Visibility.Collapsed;
+
+    public FlyoutPlacementMode ComposerFlyoutPlacement(bool floating) =>
+        floating ? FlyoutPlacementMode.Top : FlyoutPlacementMode.Bottom;
+
+    private static ScrollViewer? FindTaskScrollViewer(DependencyObject root)
+    {
+        if (root is ScrollViewer scrollViewer) return scrollViewer;
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+        {
+            var result = FindTaskScrollViewer(VisualTreeHelper.GetChild(root, i));
+            if (result != null) return result;
+        }
+        return null;
+    }
+
+    private void TaskListScroll_ViewChanged(object? sender, ScrollViewerViewChangedEventArgs e)
+    {
+        if (_vm == null || sender is not ScrollViewer scrollViewer) return;
+        if (ReferenceEquals(scrollViewer, FlatListView) == (_vm.ActiveNavItem == "planned")) return;
+        _vm.UpdateTaskComposerScroll(scrollViewer.VerticalOffset);
+    }
+
+    private void TaskComposer_GotFocus(object sender, RoutedEventArgs e) => _vm?.RevealTaskComposer();
+
+    private void AnimateTaskComposer(bool animate)
+    {
+        if (_vm == null) return;
+        bool visible = _vm.IsTaskComposerVisible;
+        double opacity = TaskComposer.Opacity;
+        double offset = TaskComposerTranslate.Y;
+        _composerStoryboard?.Stop();
+        _composerStoryboard = null;
+        TaskComposer.IsHitTestVisible = visible;
+        double targetOffset = visible ? 0 : 16;
+        double targetOpacity = visible ? 1 : 0;
+        if (!animate || !_vm.IsTaskComposerFloating || !new Windows.UI.ViewManagement.UISettings().AnimationsEnabled)
+        {
+            TaskComposer.Opacity = targetOpacity;
+            TaskComposerTranslate.Y = targetOffset;
+            return;
+        }
+
+        _composerStoryboard = new Storyboard();
+        var slide = new DoubleAnimation
+        {
+            From = offset, To = targetOffset, Duration = new Duration(TimeSpan.FromMilliseconds(180)),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        var fade = new DoubleAnimation
+        {
+            From = opacity, To = targetOpacity, Duration = new Duration(TimeSpan.FromMilliseconds(180))
+        };
+        Storyboard.SetTarget(slide, TaskComposerTranslate);
+        Storyboard.SetTargetProperty(slide, "Y");
+        Storyboard.SetTarget(fade, TaskComposer);
+        Storyboard.SetTargetProperty(fade, "Opacity");
+        _composerStoryboard.Children.Add(slide);
+        _composerStoryboard.Children.Add(fade);
+        _composerStoryboard.Begin();
+    }
+
+    private void NewTaskDateFlyout_Opened(object sender, object e)
+    {
+        _vm?.SetNewTaskCalendarOpen(true);
+        _updatingNewTaskCalendar = true;
+        try
+        {
+            NewTaskCalendar.SelectedDates.Clear();
+            if (ViewModel.NewTaskDueDate is { } date)
+                NewTaskCalendar.SelectedDates.Add(date);
+            NewTaskCalendar.SetDisplayDate(ViewModel.NewTaskDueDate ?? DateTimeOffset.Now);
+        }
+        finally
+        {
+            _updatingNewTaskCalendar = false;
+        }
+    }
+
+    private void NewTaskDateFlyout_Closed(object sender, object e) => _vm?.SetNewTaskCalendarOpen(false);
+
+    private void NewTaskCalendar_SelectedDatesChanged(CalendarView sender, CalendarViewSelectedDatesChangedEventArgs args)
+    {
+        if (_updatingNewTaskCalendar) return;
+        ViewModel.NewTaskDueDate = args.AddedDates.Count > 0 ? args.AddedDates[0] : null;
+        NewTaskDateFlyout.Hide();
+        DispatcherQueue.TryEnqueue(() => FocusNewTask());
+    }
+
+    private void NewTaskClearDueDate_Click(object sender, RoutedEventArgs e)
+    {
+        NewTaskDateFlyout.Hide();
+        DispatcherQueue.TryEnqueue(() => FocusNewTask());
+    }
+
+    public void FocusNewTask()
+    {
+        _vm?.RevealTaskComposer();
+        NewTaskTextBox.Focus(FocusState.Programmatic);
+    }
 
     private void DeleteButton_Click(object sender, RoutedEventArgs e)
     {

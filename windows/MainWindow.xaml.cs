@@ -144,25 +144,33 @@ public sealed partial class MainWindow : Window
         if (!NativeMethods.GetMonitorInfo(hMonitor, ref mi)) return;
 
         NativeMethods.GetDpiForMonitor(hMonitor, NativeMethods.MDT_EFFECTIVE_DPI, out uint dpiX, out _);
-        double scale       = dpiX / 96.0;
-        int winWidth       = (int)Math.Round(logicalWidth  * scale);
-        int winHeight      = (int)Math.Round(logicalHeight * scale);
-        int scaledGap      = (int)Math.Round(gap * scale);
-
         var workArea = mi.rcWork;
+        double scale = dpiX > 0 ? dpiX / 96.0 : 1;
+        int workWidth = Math.Max(1, workArea.right - workArea.left);
+        int workHeight = Math.Max(1, workArea.bottom - workArea.top);
+        int scaledGap = Math.Clamp((int)Math.Round(gap * scale), 0,
+            (Math.Min(workWidth, workHeight) - 1) / 2);
+        int left = workArea.left + scaledGap;
+        int top = workArea.top + scaledGap;
+        int right = workArea.right - scaledGap;
+        int bottom = workArea.bottom - scaledGap;
+        int winWidth = Math.Clamp(resetSize ? (int)Math.Round(logicalWidth * scale) : AppWindow.Size.Width,
+            1, Math.Max(1, right - left));
+        int winHeight = Math.Clamp(resetSize ? (int)Math.Round(logicalHeight * scale) : AppWindow.Size.Height,
+            1, Math.Max(1, bottom - top));
 
         // Prefer left of mascot; flip to right if it doesn't fit
         int x = mascotX - winWidth - scaledGap;
-        if (x < workArea.left)
+        if (x < left)
             x = mascotX + windowSize + scaledGap;
 
         // Vertically centre the main window on the mascot
         int mascotCenterY = mascotY + windowSize / 2;
         int y = mascotCenterY - winHeight / 2;
-        y = Math.Clamp(y, workArea.top + scaledGap, workArea.bottom - winHeight);
-        x = Math.Clamp(x, workArea.left, workArea.right - winWidth);
+        y = Math.Clamp(y, top, bottom - winHeight);
+        x = Math.Clamp(x, left, right - winWidth);
 
-        if (resetSize)
+        if (AppWindow.Size.Width != winWidth || AppWindow.Size.Height != winHeight)
             AppWindow.Resize(new SizeInt32(winWidth, winHeight));
         AppWindow.Move(new PointInt32(x, y));
     }

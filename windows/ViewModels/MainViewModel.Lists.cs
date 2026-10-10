@@ -137,6 +137,7 @@ public sealed partial class MainViewModel
 
     private void RefreshListNames()
     {
+        OnPropertyChanged(nameof(NewTaskDestinationText));
         var listMap = CustomLists.ToDictionary(l => l.Id, l => l.Name);
         foreach (var task in Tasks)
             task.ListName = task.ListId == Guid.Empty

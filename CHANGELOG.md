@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+### Added
+- Add a single-line task form with due dates, Important, page-aware defaults, and a Top/Bottom position preference; Bottom floats and responds to scrolling.
+
 ## [0.27.0] - 2026-10-09
 
 ### Added

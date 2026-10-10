@@ -18,6 +18,18 @@ internal static class Strings
     public static string Header_Important => Get("Header_Important");
     public static string Header_Planned   => Get("Header_Planned");
     public static string Header_AllTasks  => Get("Header_AllTasks");
+    public static string NewTask_Destination(string destination) =>
+        string.Format(Get("NewTask_Destination"), destination);
+    public static string NewTask_SetDueDate => Get("NewTask_SetDueDate");
+    public static string NewTask_DueDateSelected(string date) =>
+        string.Format(Get("NewTask_DueDateSelected"), date);
+    public static string NewTask_DueDateRequired(string date) =>
+        string.Format(Get("NewTask_DueDateRequired"), date);
+    public static string NewTask_ImportantRequired => Get("NewTask_ImportantRequired");
+    public static string NewTask_Placeholder => Get("NewTask_Placeholder");
+    public static string NewTask_Placeholder_MyDay => Get("NewTask_Placeholder_MyDay");
+    public static string NewTask_Placeholder_Important => Get("NewTask_Placeholder_Important");
+    public static string NewTask_Placeholder_Planned => Get("NewTask_Placeholder_Planned");
     public static string MyDay_Greeting_Morning   => Get("MyDay_Greeting_Morning");
     public static string MyDay_Greeting_Afternoon => Get("MyDay_Greeting_Afternoon");
     public static string MyDay_Greeting_Evening   => Get("MyDay_Greeting_Evening");

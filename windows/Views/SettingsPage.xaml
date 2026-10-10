@@ -178,6 +178,33 @@
                     </Grid>
                 </Border>
 
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE70F;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,14,16,14">
+                            <TextBlock x:Uid="Settings_TaskInputPositionHeader"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock x:Uid="Settings_TaskInputPositionDescription"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="WrapWholeWords"/>
+                        </StackPanel>
+                        <ComboBox Grid.Column="2" VerticalAlignment="Center" MinWidth="130"
+                                  x:Uid="Settings_TaskInputPosition"
+                                  AutomationProperties.AutomationId="Settings_TaskInputPosition"
+                                  SelectedIndex="{x:Bind ViewModel.TaskInputPositionIndex, Mode=TwoWay}">
+                            <ComboBoxItem x:Uid="Settings_TaskInputPosition_Bottom"/>
+                            <ComboBoxItem x:Uid="Settings_TaskInputPosition_Top"/>
+                        </ComboBox>
+                    </Grid>
+                </Border>
+
                 <TextBlock x:Uid="Settings_SectionMascot"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"/>
 

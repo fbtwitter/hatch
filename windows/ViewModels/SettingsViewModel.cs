@@ -88,6 +88,19 @@ public sealed class SettingsViewModel : INotifyPropertyChanged
         }
     }
 
+    public int TaskInputPositionIndex
+    {
+        get => (int)_settings.Current.TaskInputPosition;
+        set
+        {
+            if (value is < 0 or > 1 || (int)_settings.Current.TaskInputPosition == value) return;
+            _settings.Current.TaskInputPosition = (TaskInputPosition)value;
+            App.MainWindowInstance?.ViewModel.NotifyTaskInputPositionChanged();
+            _settings.SaveDebounced();
+            OnPropertyChanged();
+        }
+    }
+
     public int BackdropIndex
     {
         get => (int)_settings.Current.Backdrop;

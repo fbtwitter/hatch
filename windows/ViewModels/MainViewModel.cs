@@ -38,6 +38,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         {
             if (_newTaskText == value) return;
             _newTaskText = value;
+            if (value.Length > 0) RevealTaskComposer();
             OnPropertyChanged();
             ((RelayCommand)AddTaskCommand).RaiseCanExecuteChanged();
         }
@@ -90,6 +91,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         AddTaskCommand = new RelayCommand(
             _ => AddTask(),
             _ => !string.IsNullOrWhiteSpace(NewTaskText));
+        ClearNewTaskDueDateCommand = new RelayCommand(_ => ClearNewTaskDueDate(), _ => CanClearNewTaskDueDate);
 
         UndoLastActionCommand = new RelayCommand(_ => UndoLastAction());
         ClearTagFilterCommand = new RelayCommand(_ => ActiveTagFilter = null);
@@ -227,18 +229,18 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
 
     private void AddTask()
     {
-        var task = new TodoItem { Title = NewTaskText.Trim(), ListName = Strings.List_Default_Name };
+        var task = new TodoItem
+        {
+            Title = NewTaskText.Trim(),
+            ListName = Strings.List_Default_Name,
+            DueDate = NewTaskDueDate,
+            IsStarred = NewTaskImportant
+        };
 
         switch (_activeNavItem)
         {
             case "myday":
                 task.SetMyDay(true);
-                break;
-            case "important":
-                task.IsStarred = true;
-                break;
-            case "planned":
-                task.DueDate = new DateTimeOffset(DateTime.Today);
                 break;
             default:
                 if (Guid.TryParse(_activeNavItem, out var listId))
@@ -249,10 +251,13 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
                 break;
         }
 
+        if (_activeTagFilter is { } tag) task.Tags.Add(tag);
+
         AttachTaskPropertyChangedHandler(task);
         _notificationScheduler.ScheduleForTask(task);
         Tasks.Insert(0, task);
         NewTaskText = string.Empty;
+        ResetNewTaskDetails();
         SaveAsync();
     }
 

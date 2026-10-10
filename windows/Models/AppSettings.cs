@@ -9,6 +9,7 @@ public sealed class TipTopicState
     public DateTime? QuietUntil { get; set; }
 }
 public enum AppBackdrop { None = 0, Mica = 1, MicaAlt = 2, DesktopAcrylic = 3 }
+public enum TaskInputPosition { Bottom = 0, Top = 1 }
 
 // How freely the mascot may show non-actionable messages. Actionable tips (overdue,
 // due today) ignore this entirely — they are shown at every level.
@@ -23,6 +24,7 @@ public sealed class AppSettings
 {
     public AppTheme Theme { get; set; } = AppTheme.SystemDefault;
     public AppBackdrop Backdrop { get; set; } = AppBackdrop.Mica;
+    public TaskInputPosition TaskInputPosition { get; set; } = TaskInputPosition.Bottom;
     public bool MinimizeToTray { get; set; } = true;
     public int MascotX { get; set; } = -1; // -1 = not yet set; use default on first launch
     public int MascotY { get; set; } = -1;
