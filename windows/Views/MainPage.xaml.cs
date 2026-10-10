@@ -70,6 +70,25 @@ public sealed partial class MainPage : Page
 
     public CornerRadius SearchCornerRadius(double height) => new(Math.Max(16, height / 2));
 
+    private void TitleBarSearchHost_Loaded(object sender, RoutedEventArgs e) => CenterSearchInWindow();
+
+    private void TitleBarSearchHost_SizeChanged(object sender, SizeChangedEventArgs e) => CenterSearchInWindow();
+
+    private void CenterSearchInWindow()
+    {
+        if (!TitleBarSearchHost.IsLoaded || TitleBarSearchHost.ActualWidth <= 0) return;
+
+        double left = TitleBarSearchHost.TransformToVisual(MainTitleBar)
+            .TransformPoint(new Windows.Foundation.Point(0, 0)).X;
+        double right = MainTitleBar.ActualWidth - left - TitleBarSearchHost.ActualWidth;
+        // Equalize the occupied sides without moving search outside native hit regions.
+        double compensation = Math.Min(Math.Abs(left - right),
+            Math.Max(0, TitleBarSearchHost.ActualWidth - TitleBarSearchBox.MinWidth));
+        TitleBarSearchHost.Padding = left < right
+            ? new Thickness(compensation, 0, 0, 0)
+            : new Thickness(0, 0, compensation, 0);
+    }
+
     private void TitleBarSearchBox_KeyDown(object sender, KeyRoutedEventArgs e)
     {
         if (e.Key != VirtualKey.Escape) return;
