@@ -47,6 +47,15 @@
   <data name="Header_Important" xml:space="preserve"><value>Important</value></data>
   <data name="Header_Planned" xml:space="preserve"><value>Planned</value></data>
   <data name="Header_AllTasks" xml:space="preserve"><value>All Tasks</value></data>
+  <data name="MyDay_Greeting_Morning" xml:space="preserve"><value>Good morning</value></data>
+  <data name="MyDay_Greeting_Afternoon" xml:space="preserve"><value>Good afternoon</value></data>
+  <data name="MyDay_Greeting_Evening" xml:space="preserve"><value>Good evening</value></data>
+  <data name="MyDay_Status_EmptyPlan" xml:space="preserve"><value>Nothing planned yet — add one below, or pull from Suggested.</value></data>
+  <data name="MyDay_Status_Progress" xml:space="preserve"><value>{0} of {1} done</value><comment>{0} = completed count, {1} = total My Day tasks</comment></data>
+  <data name="MyDay_Status_Remaining" xml:space="preserve"><value>{0} still to go</value><comment>{0} = open My Day task count</comment></data>
+  <data name="MyDay_Status_Complete" xml:space="preserve"><value>All {0} done for today.</value><comment>{0} = total My Day tasks</comment></data>
+  <data name="MyDay_Status_CompleteEvening" xml:space="preserve"><value>All {0} done. Rest easy.</value><comment>{0} = total My Day tasks</comment></data>
+  <data name="MyDayProgressBar.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>My Day progress</value></data>
 
   <!-- ── Empty states ───────────────────────────────────────── -->
   <data name="EmptyState_MyDay_Headline" xml:space="preserve"><value>Your day is clear</value></data>

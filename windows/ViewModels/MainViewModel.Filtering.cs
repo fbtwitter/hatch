@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Windows.Input;
 using Hatch.Helpers;
 using Hatch.Models;
@@ -22,6 +23,45 @@ public sealed partial class MainViewModel
 
     public bool IsTaskListEmpty => ActiveTasks.Count == 0;
     public bool IsPlannedEmpty => !Tasks.Any(t => t.DueDate != null && !t.IsCompleted);
+    public bool IsMyDayPage => _activeNavItem == "myday";
+    public string MyDayGreetingText => DateTime.Now.Hour switch
+    {
+        < 12 => Strings.MyDay_Greeting_Morning,
+        < 18 => Strings.MyDay_Greeting_Afternoon,
+        _ => Strings.MyDay_Greeting_Evening
+    };
+    public string MyDayDateText => DateTime.Now.ToString("dddd, d MMMM", CultureInfo.CurrentCulture);
+    public string MyDaySummaryText
+    {
+        get
+        {
+            if (!IsLoaded) return string.Empty;
+
+            var (open, done) = GetMyDayCounts();
+            int total = open + done;
+            if (total == 0) return Strings.MyDay_Status_EmptyPlan;
+
+            bool evening = DateTime.Now.Hour >= 18 || DateTime.Now.Hour < 5;
+            if (open == 0)
+                return evening
+                    ? Strings.MyDay_Status_CompleteEvening(total)
+                    : Strings.MyDay_Status_Complete(total);
+
+            return evening
+                ? Strings.MyDay_Status_Remaining(open)
+                : Strings.MyDay_Status_Progress(done, total);
+        }
+    }
+    public bool HasMyDayProgress => IsLoaded && GetMyDayCounts().Open > 0;
+    public double MyDayProgressPercent
+    {
+        get
+        {
+            var (open, done) = GetMyDayCounts();
+            int total = open + done;
+            return total == 0 ? 0 : done * 100.0 / total;
+        }
+    }
 
     public string? ActiveTagFilter
     {
@@ -47,6 +87,7 @@ public sealed partial class MainViewModel
             _activeNavItem = value;
             _activeTagFilter = null;
             _openGroup.CanReorderItems = value == "myday";
+            NotifyMyDayPageChanged();
             if (value == "alltasks")
                 _completedGroup.SetPreviewLimit(true);
             OnPropertyChanged();
@@ -139,8 +180,37 @@ public sealed partial class MainViewModel
         RebuildFlatGroups();
         OnPropertyChanged(nameof(IsTaskListEmpty));
         OnPropertyChanged(nameof(ShowEmptyState));
+        NotifyMyDayHeaderChanged();
         BadgeVersion++;
         OnPropertyChanged(nameof(BadgeVersion));
+    }
+
+    private (int Open, int Done) GetMyDayCounts()
+    {
+        int open = 0;
+        int done = 0;
+        foreach (var task in Tasks)
+        {
+            if (!task.IsInMyDay) continue;
+            if (task.IsCompleted) done++;
+            else open++;
+        }
+        return (open, done);
+    }
+
+    private void NotifyMyDayHeaderChanged()
+    {
+        OnPropertyChanged(nameof(MyDaySummaryText));
+        OnPropertyChanged(nameof(HasMyDayProgress));
+        OnPropertyChanged(nameof(MyDayProgressPercent));
+    }
+
+    private void NotifyMyDayPageChanged()
+    {
+        OnPropertyChanged(nameof(IsMyDayPage));
+        OnPropertyChanged(nameof(MyDayGreetingText));
+        OnPropertyChanged(nameof(MyDayDateText));
+        NotifyMyDayHeaderChanged();
     }
 
     public void ReorderMyDayTasks(IEnumerable<TodoItem> reorderedOpenTasks)
