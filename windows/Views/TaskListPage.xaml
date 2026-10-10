@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:models="using:Hatch.Models"
     xmlns:converters="using:Hatch.Converters"
+    xmlns:controls="using:Hatch.Controls"
     xmlns:vm="using:Hatch.ViewModels"
     Background="Transparent">
 
@@ -21,9 +22,8 @@
         <converters:BoolToStarTooltipConverter x:Key="BoolToStarTooltip" />
         <converters:TagsToVisibilityConverter x:Key="TagsToVisibility" />
         <converters:TagsPreviewConverter x:Key="TaskTagsPreview" />
-        <converters:PriorityToBrushConverter x:Key="PriorityToBrush" />
-        <converters:PriorityToForegroundConverter x:Key="PriorityToForeground" />
         <converters:PriorityToLabelConverter x:Key="PriorityToLabel" />
+        <converters:PriorityToContrastVisibilityConverter x:Key="PriorityToContrastVisibility" />
 
         <Style x:Key="TaskMetadataIconStyle" TargetType="FontIcon">
             <Setter Property="VerticalAlignment" Value="Center" />
@@ -137,11 +137,13 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <CheckBox Grid.Column="0"
+                <controls:PriorityCheckBox Grid.Column="0"
+                          Style="{StaticResource DefaultCheckBoxStyle}"
                           AutomationProperties.AutomationId="Task_CheckBox"
+                          Priority="{x:Bind Priority, Mode=OneWay}"
+                          TaskTitle="{x:Bind Title, Mode=OneWay}"
                           IsChecked="{x:Bind IsCompleted, Mode=TwoWay}"
-                          VerticalAlignment="Center"
-                          x:Uid="Task_CheckBox" />
+                          VerticalAlignment="Center" />
 
                 <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3"
                             Opacity="{x:Bind IsCompleted, Converter={StaticResource BoolToOpacity}, Mode=OneWay}">
@@ -157,6 +159,11 @@
                                   VerticalScrollMode="Disabled"
                                   IsTabStop="False">
                         <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock Text="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, ConverterParameter=Full, Mode=OneWay}"
+                                       Visibility="{x:Bind Priority, Converter={StaticResource PriorityToContrastVisibility}, Mode=OneWay}"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       VerticalAlignment="Center" />
                             <FontIcon FontFamily="Segoe Fluent Icons"
                                       Style="{StaticResource TaskMetadataIconStyle}"
                                       Glyph="&#xE70B;"
@@ -256,28 +263,8 @@
                                 </ItemsRepeater.ItemTemplate>
                             </ItemsRepeater>
 
-                            <!-- Desktop-only priority and quick add-date affordances follow the
-                                 shared mobile metadata marks. -->
                             <StackPanel Orientation="Horizontal" Spacing="8"
                                         Visibility="{x:Bind IsCompleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
-                                <Border Background="{x:Bind Priority, Converter={StaticResource PriorityToBrush}, Mode=OneWay}"
-                                        CornerRadius="4"
-                                        Padding="6,2"
-                                        VerticalAlignment="Center"
-                                        ToolTipService.ToolTip="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, Mode=OneWay}"
-                                        Visibility="{x:Bind HasPriority, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                                    <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                                        <FontIcon Glyph="&#xE7C1;"
-                                                  Style="{StaticResource TaskMetadataIconStyle}"
-                                                  FontSize="10"
-                                                  Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
-                                        <TextBlock Text="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, Mode=OneWay}"
-                                                   VerticalAlignment="Center"
-                                                   Style="{ThemeResource CaptionTextBlockStyle}"
-                                                   Foreground="{x:Bind Priority, Converter={StaticResource PriorityToForeground}, Mode=OneWay}" />
-                                    </StackPanel>
-                                </Border>
-
                                 <Button Tag="{x:Bind}"
                                         AutomationProperties.AutomationId="Task_AddDateButton"
                                         Click="ChipDateButton_Click"
@@ -731,6 +718,11 @@
                                                                TextTrimming="CharacterEllipsis"
                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                                                        <TextBlock Text="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, ConverterParameter=Full, Mode=OneWay}"
+                                                                   Visibility="{x:Bind Priority, Converter={StaticResource PriorityToContrastVisibility}, Mode=OneWay}"
+                                                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                   VerticalAlignment="Center" />
                                                         <FontIcon FontFamily="Segoe Fluent Icons"
                                                                   Style="{StaticResource TaskMetadataIconStyle}"
                                                                   Glyph="&#xE70B;"

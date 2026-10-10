@@ -57,6 +57,13 @@ internal static class Strings
 
     // ── Task row ─────────────────────────────────────────────
     public static string Task_Tooltip_MarkComplete  => Get("Task_Tooltip_MarkComplete");
+    public static string Task_Tooltip_MarkIncomplete => Get("Task_Tooltip_MarkIncomplete");
+    public static string Task_CompletionName(string title, string priority) =>
+        string.Format(Get("Task_CompletionName"), title, priority);
+    public static string Task_CompletionTooltip(string action, string priority) =>
+        string.Format(Get("Task_CompletionTooltip"), action, priority);
+    public static string Task_PriorityLabel(string priority) =>
+        string.Format(Get("Task_PriorityLabel"), priority);
     public static string Task_Tooltip_ChangeDueDate => Get("Task_Tooltip_ChangeDueDate");
     public static string Task_Tooltip_SetDueDate    => Get("Task_Tooltip_SetDueDate");
     public static string Task_Chip_AddDate          => Get("Task_Chip_AddDate");

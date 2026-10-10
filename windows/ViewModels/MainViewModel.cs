@@ -15,6 +15,8 @@ namespace Hatch.ViewModels;
 // and task CRUD (the paths every other concern depends on).
 public sealed partial class MainViewModel : INotifyPropertyChanged
 {
+    private static readonly Windows.UI.ViewManagement.UISettings SystemUiSettings = new();
+    private readonly Dictionary<Guid, DispatcherQueueTimer> _pendingCompletedChanges = [];
     private readonly TaskStorageService _storage;
     private readonly SettingsService _settingsService;
     private readonly SyncService _syncService;
@@ -298,7 +300,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             {
                 if (e.PropertyName == nameof(TodoItem.IsCompleted))
                 {
-                    ApplyCompletedChange(task);
+                    QueueCompletedChange(task);
                     RefreshSuggestions();
                     if (task.IsCompleted) TaskCompletedLocally?.Invoke();
                     if (task.IsCompleted && task.IsInMyDay &&
@@ -335,11 +337,56 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         SaveAsync();
     }
 
+    private void QueueCompletedChange(TodoItem task)
+    {
+        string sourceNavItem = _activeNavItem;
+        bool completed = task.IsCompleted;
+        _pendingCompletedChanges.Remove(task.Id);
+        if (!SystemUiSettings.AnimationsEnabled)
+        {
+            ApplyCompletedChange(task, sourceNavItem);
+            return;
+        }
+
+        // Keep the native check animation visible before removing/moving the row.
+        var timer = _dispatcherQueue.CreateTimer();
+        _pendingCompletedChanges[task.Id] = timer;
+        timer.Interval = TimeSpan.FromMilliseconds(250);
+        timer.IsRepeating = false;
+        Windows.Foundation.TypedEventHandler<DispatcherQueueTimer, object>? onTick = null;
+        onTick = (_, _) =>
+        {
+            timer.Stop();
+            timer.Tick -= onTick;
+            if (_pendingCompletedChanges.TryGetValue(task.Id, out var latest) && latest == timer)
+            {
+                _pendingCompletedChanges.Remove(task.Id);
+                if (Tasks.Contains(task) && task.IsCompleted == completed)
+                    ApplyCompletedChange(task, sourceNavItem);
+            }
+        };
+        timer.Tick += onTick;
+        timer.Start();
+    }
+
     // Surgical update for IsCompleted — avoids Clear()+rebuild which causes item
     // container destruction and the resulting checkbox blink / access violation.
-    private void ApplyCompletedChange(TodoItem task)
+    private void ApplyCompletedChange(TodoItem task, string sourceNavItem)
     {
         var spawned = task.IsCompleted ? TrySpawnNextRecurrence(task) : null;
+
+        // Navigation already rebuilt the new page from the task's current state.
+        if (_activeNavItem != sourceNavItem)
+        {
+            if (task.IsCompleted)
+            {
+                _notificationScheduler.UnscheduleForTask(task.Id);
+                ShowCompletionUndoBar(task, spawned);
+            }
+            else
+                _notificationScheduler.ScheduleForTask(task);
+            return;
+        }
 
         switch (_activeNavItem)
         {
@@ -393,36 +440,24 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             case "myday":
             case "alltasks":
             default:
-                // Delay the group move so the strikethrough/fade animation is visible
-                // before the task moves between groups.
-                var timer = _dispatcherQueue.CreateTimer();
-                timer.Interval = TimeSpan.FromMilliseconds(250);
-                timer.IsRepeating = false;
-                Windows.Foundation.TypedEventHandler<DispatcherQueueTimer, object>? onTick = null;
-                onTick = (_, _) =>
+                if (ActiveTasks.Contains(task))
                 {
-                    timer.Stop();
-                    timer.Tick -= onTick;
                     FlatGroupMoveStarting?.Invoke();
                     MoveBetweenFlatGroups(task);
                     FlatGroupMoveCompleted?.Invoke();
-                    OnPropertyChanged(nameof(IsTaskListEmpty));
-                    OnPropertyChanged(nameof(ShowEmptyState));
-                    BadgeVersion++;
-                    OnPropertyChanged(nameof(BadgeVersion));
+                }
+                OnPropertyChanged(nameof(IsTaskListEmpty));
+                OnPropertyChanged(nameof(ShowEmptyState));
+                BadgeVersion++;
+                OnPropertyChanged(nameof(BadgeVersion));
 
-                    if (task.IsCompleted && Tasks.Contains(task))
-                    {
-                        _notificationScheduler.UnscheduleForTask(task.Id);
-                        ShowCompletionUndoBar(task, spawned);
-                    }
-                    else
-                    {
-                        _notificationScheduler.ScheduleForTask(task);
-                    }
-                };
-                timer.Tick += onTick;
-                timer.Start();
+                if (task.IsCompleted)
+                {
+                    _notificationScheduler.UnscheduleForTask(task.Id);
+                    ShowCompletionUndoBar(task, spawned);
+                }
+                else
+                    _notificationScheduler.ScheduleForTask(task);
                 break;
         }
     }
