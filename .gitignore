@@ -39,3 +39,6 @@ windows/Services/Secrets.cs
 # Only screenshots under docs are published
 /docs/*
 !/docs/screenshots/
+
+# Local backend migrations — never publish
+/supabase/
