@@ -55,7 +55,11 @@ public sealed partial class TaskListPage : Page
         this.InitializeComponent();
         NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
         SizeChanged += OnPageSizeChanged;
-        Loaded += (_, _) => ApplyPaneLayout(ActualWidth);
+        Loaded += (_, _) =>
+        {
+            ApplyPaneLayout(ActualWidth);
+            RefreshBottomControlsLayout();
+        };
 
         // Fires for every pointer press on the page, even those handled by child controls,
         // so we can detect clicks outside the details pane.
@@ -144,6 +148,7 @@ public sealed partial class TaskListPage : Page
         vm.ResetTaskComposerScroll();
         AnimateTaskComposer(false);
         UpdateView(vm.ActiveNavItem);
+        RefreshBottomControlsLayout();
         vm.ResetTaskComposerScroll(vm.ActiveNavItem == "planned"
             ? _groupedTaskScrollViewer?.VerticalOffset ?? 0 : FlatListView.VerticalOffset);
         vm.PropertyChanged += OnViewModelPropertyChanged;
@@ -189,10 +194,16 @@ public sealed partial class TaskListPage : Page
 
             case nameof(MainViewModel.IsTaskComposerVisible):
                 AnimateTaskComposer(true);
+                RefreshBottomControlsLayout();
                 break;
 
             case nameof(MainViewModel.IsTaskComposerFloating):
                 AnimateTaskComposer(false);
+                RefreshBottomControlsLayout();
+                break;
+
+            case nameof(MainViewModel.IsUndoBarVisible):
+                RefreshBottomControlsLayout();
                 break;
 
             case nameof(MainViewModel.ActiveNavItem):
@@ -882,11 +893,11 @@ public sealed partial class TaskListPage : Page
             ? PageContentSpacing - TaskContentInset(navItem, taskListEmpty, suggestionsVisible)
             : PageContentSpacing / 2);
 
-    public Thickness ComposerOuterMargin(bool floating, bool undoVisible, double undoHeight,
+    public Thickness ComposerOuterMargin(bool floating,
         string navItem, bool taskListEmpty, bool suggestionsVisible)
     {
         if (floating)
-            return new(24, 12, 24, undoVisible ? undoHeight + 20 : 0);
+            return new(24, 12, 24, 0);
 
         // The header (or active tag filter) already contributes 8px above the form.
         // Deduct the first content's own inset so every view has the same visible gap.
@@ -897,10 +908,24 @@ public sealed partial class TaskListPage : Page
     public VerticalAlignment ComposerAlignment(bool floating) =>
         floating ? VerticalAlignment.Bottom : VerticalAlignment.Stretch;
 
-    public Thickness ComposerScrollPadding(bool floating, double height) =>
-        new(0, 0, 0, ComposerScrollClearance(floating, height));
+    private void BottomControls_SizeChanged(object sender, SizeChangedEventArgs e) =>
+        RefreshBottomControlsLayout();
 
-    public double ComposerScrollClearance(bool floating, double height) => floating ? height + 24 : 0;
+    private void RefreshBottomControlsLayout()
+    {
+        if (_vm == null) return;
+
+        const double undoGap = 4;
+        // ActualHeight does not notify bindings; read it after native size changes.
+        double composerClearance = _vm.IsTaskComposerFloating && _vm.IsTaskComposerVisible
+            ? TaskComposer.ActualHeight + undoGap : 0;
+        UndoInfoBar.Margin = new(24, 0, 24, composerClearance);
+        // Keep scroll extent stable while the composer animates out of view.
+        double scrollClearance = (_vm.IsTaskComposerFloating ? TaskComposer.ActualHeight + 24 : 0)
+            + (_vm.IsUndoBarVisible ? UndoInfoBar.ActualHeight + undoGap : 0);
+        TaskScrollContent.Padding = new(0, 0, 0, scrollClearance);
+        TaskListBottomClearance.Height = scrollClearance;
+    }
 
     public Visibility ComposerDateLabelVisibility(double width, bool hasDate) =>
         hasDate && width >= 420 ? Visibility.Visible : Visibility.Collapsed;

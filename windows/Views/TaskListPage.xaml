@@ -459,11 +459,12 @@
 
             <ContentControl x:Name="TaskComposer" Grid.Row="{x:Bind ViewModel.TaskComposerRow, Mode=OneWay}"
                     AutomationProperties.AutomationId="TaskComposer"
-                    Margin="{x:Bind ComposerOuterMargin(ViewModel.IsTaskComposerFloating, ViewModel.IsUndoBarVisible, UndoInfoBar.ActualHeight, ViewModel.ActiveNavItem, ViewModel.IsTaskListEmpty, ViewModel.SuggestionsVisible), Mode=OneWay}"
+                    Margin="{x:Bind ComposerOuterMargin(ViewModel.IsTaskComposerFloating, ViewModel.ActiveNavItem, ViewModel.IsTaskListEmpty, ViewModel.SuggestionsVisible), Mode=OneWay}"
                     VerticalAlignment="{x:Bind ComposerAlignment(ViewModel.IsTaskComposerFloating), Mode=OneWay}"
                     IsEnabled="{x:Bind ViewModel.IsTaskComposerVisible, Mode=OneWay}"
                     IsTabStop="False" HorizontalContentAlignment="Stretch"
                     Canvas.ZIndex="1" GotFocus="TaskComposer_GotFocus"
+                    SizeChanged="BottomControls_SizeChanged"
                     HorizontalAlignment="Stretch">
                 <ContentControl.RenderTransform>
                     <TranslateTransform x:Name="TaskComposerTranslate" />
@@ -537,11 +538,6 @@
             </ContentControl>
 
             <Grid Grid.Row="3">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-
                 <!-- Empty state — flat views -->
                 <StackPanel Grid.Row="0" HorizontalAlignment="Center"
                             VerticalAlignment="Center"
@@ -575,8 +571,7 @@
                               AutomationProperties.AutomationId="FlatListView"
                               ViewChanged="TaskListScroll_ViewChanged"
                               HorizontalScrollBarVisibility="Disabled">
-                    <Grid Width="{x:Bind FlatListView.ViewportWidth, Mode=OneWay}"
-                          Padding="{x:Bind ComposerScrollPadding(ViewModel.IsTaskComposerFloating, TaskComposer.ActualHeight), Mode=OneWay}">
+                    <Grid x:Name="TaskScrollContent" Width="{x:Bind FlatListView.ViewportWidth, Mode=OneWay}">
                         <StackPanel MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
                             <ItemsControl x:Name="FlatGroupsItemsControl"
                                           ItemsSource="{x:Bind ViewModel.FlatGroupedTasks, Mode=OneWay}"
@@ -850,7 +845,7 @@
                           ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
                           Visibility="Collapsed">
                     <ListView.Footer>
-                        <Border Height="{x:Bind ComposerScrollClearance(ViewModel.IsTaskComposerFloating, TaskComposer.ActualHeight), Mode=OneWay}"
+                        <Border x:Name="TaskListBottomClearance"
                                 IsHitTestVisible="False" />
                     </ListView.Footer>
                     <ListView.ItemContainerTransitions>
@@ -892,14 +887,19 @@
                                   VerticalAlignment="Center" />
                 </Grid>
 
-                <InfoBar Grid.Row="1"
+                <InfoBar Grid.Row="0"
                          x:Name="UndoInfoBar"
                          AutomationProperties.AutomationId="UndoInfoBar"
                          IsOpen="{x:Bind ViewModel.IsUndoBarVisible, Mode=OneWay}"
+                         Visibility="{x:Bind ViewModel.IsUndoBarVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
                          Message="{x:Bind ViewModel.UndoMessage, Mode=OneWay}"
                          IsClosable="True"
                          Severity="Informational"
-                         Margin="16,8,16,0"
+                         Background="{ThemeResource SolidBackgroundFillColorSecondaryBrush}"
+                         VerticalAlignment="Bottom"
+                         Canvas.ZIndex="2"
+                         Margin="24,0,24,0"
+                         SizeChanged="BottomControls_SizeChanged"
                          MaxWidth="{StaticResource PageMaxRowWidth}" HorizontalAlignment="Stretch"
                          Closed="UndoInfoBar_Closed">
                     <InfoBar.ActionButton>
