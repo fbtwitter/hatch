@@ -39,7 +39,14 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         set
         {
             if (_newTaskText == value) return;
+            if (value.Length > 0 && IsNewTaskDueDateRequired)
+                _draftDueDateDefault ??= NewTaskDueDate;
             _newTaskText = value;
+            if (value.Length == 0 && !_hasNewTaskDueDateChoice && !_hasNewTaskImportantChoice)
+            {
+                _draftDueDateDefault = null;
+                NotifyNewTaskDetailsChanged();
+            }
             if (value.Length > 0) RevealTaskComposer();
             OnPropertyChanged();
             ((RelayCommand)AddTaskCommand).RaiseCanExecuteChanged();
@@ -96,6 +103,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             _ => AddTask(),
             _ => !string.IsNullOrWhiteSpace(NewTaskText));
         ClearNewTaskDueDateCommand = new RelayCommand(_ => ClearNewTaskDueDate(), _ => CanClearNewTaskDueDate);
+        SelectPlannedViewCommand = new RelayCommand(view => IsPlannedCalendar = Equals(view, "calendar"));
 
         UndoLastActionCommand = new RelayCommand(_ => UndoLastAction());
         ClearTagFilterCommand = new RelayCommand(_ => ActiveTagFilter = null);
@@ -334,6 +342,9 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         if (IsSearchActive && e.PropertyName is nameof(TodoItem.Title) or nameof(TodoItem.Notes) or nameof(TodoItem.Tags))
             _dispatcherQueue.TryEnqueue(RefreshSearchResults);
 
+        if (IsPlannedPage && IsTagFilterActive && e.PropertyName == nameof(TodoItem.Tags))
+            _dispatcherQueue.TryEnqueue(RefreshActiveTasks);
+
         SaveAsync();
     }
 
@@ -401,7 +412,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
                 else
                 {
                     _notificationScheduler.ScheduleForTask(task);
-                    if (!ActiveTasks.Contains(task) && task.DueDate != null)
+                    if (!ActiveTasks.Contains(task) && MatchesPlannedTask(task))
                         ActiveTasks.Add(task);   // unchecked: re-insert (order refresh below)
                 }
                 NotifyPlannedGroupsChanged();
@@ -475,7 +486,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         {
             case "planned":
                 // Planned shows tasks with a date and not completed.
-                bool shouldBeInPlanned = task.DueDate != null && !task.IsCompleted;
+                bool shouldBeInPlanned = MatchesPlannedTask(task);
                 bool isInPlanned = ActiveTasks.Contains(task);
                 if (shouldBeInPlanned && !isInPlanned)
                     ActiveTasks.Add(task);
@@ -736,6 +747,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             _isLoaded = value;
             OnPropertyChanged();
             OnPropertyChanged(nameof(ShowEmptyState));
+            OnPropertyChanged(nameof(IsPlannedDayEmpty));
             NotifyMyDayHeaderChanged();
         }
     }

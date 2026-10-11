@@ -658,4 +658,19 @@
   <data name="Settings_Update_Installing" xml:space="preserve"><value>Windows is preparing the update. Hatch will close and restart.</value></data>
   <data name="Settings_Update_Restarting" xml:space="preserve"><value>The update is ready. Restart Hatch to finish installing it.</value></data>
   <data name="Settings_Update_InstallFailed" xml:space="preserve"><value>Couldn’t start the update. Try again later.</value></data>
+  <data name="PlannedViewSelector.ToolTipService.ToolTip" xml:space="preserve"><value>Change Planned view</value></data>
+  <data name="PlannedViewSelector.AutomationProperties.HelpText" xml:space="preserve"><value>Choose Agenda or Calendar.</value></data>
+  <data name="PlannedAgendaItem.Text" xml:space="preserve"><value>Agenda</value></data>
+  <data name="PlannedCalendarItem.Text" xml:space="preserve"><value>Calendar</value></data>
+  <data name="PlannedCalendar.AutomationProperties.Name" xml:space="preserve"><value>Task due dates</value></data>
+  <data name="PlannedDayList.AutomationProperties.Name" xml:space="preserve"><value>Tasks due on the selected day</value></data>
+  <data name="PlannedTodayButton.Content" xml:space="preserve"><value>Today</value></data>
+  <data name="PlannedDateButton.ToolTipService.ToolTip" xml:space="preserve"><value>Choose a date</value></data>
+  <data name="PlannedDateButton.AutomationProperties.HelpText" xml:space="preserve"><value>Open the calendar to choose which day's tasks to show.</value></data>
+  <data name="PlannedDayEmptyText.Text" xml:space="preserve"><value>No tasks due on this day. Add a task to plan ahead.</value></data>
+  <data name="PlannedCalendar_Overdue" xml:space="preserve"><value>Overdue · {0}</value></data>
+  <data name="PlannedCalendar_OneTask" xml:space="preserve"><value>1 task</value></data>
+  <data name="PlannedCalendar_TaskCount" xml:space="preserve"><value>{0} tasks</value></data>
+  <data name="PlannedCalendar_DateOneTask" xml:space="preserve"><value>{0}: 1 task due.</value></data>
+  <data name="PlannedCalendar_DateTasks" xml:space="preserve"><value>{0}: {1} tasks due.</value></data>
 </root>

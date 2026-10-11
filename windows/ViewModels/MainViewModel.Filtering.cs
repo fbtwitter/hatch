@@ -22,7 +22,7 @@ public sealed partial class MainViewModel
     public ICommand ClearTagFilterCommand { get; private set; } = null!;
 
     public bool IsTaskListEmpty => ActiveTasks.Count == 0;
-    public bool IsPlannedEmpty => !Tasks.Any(t => t.DueDate != null && !t.IsCompleted);
+    public bool IsPlannedEmpty => !Tasks.Any(MatchesPlannedTask);
     public bool IsMyDayPage => _activeNavItem == "myday";
     public string MyDayGreetingText => DateTime.Now.Hour switch
     {
@@ -84,9 +84,11 @@ public sealed partial class MainViewModel
         set
         {
             if (_activeNavItem == value) return;
+            PreserveTaskDraftDueDate();
             _activeNavItem = value;
-            ResetTaskComposerScroll();
             _activeTagFilter = null;
+            ResetPlannedView();
+            ResetTaskComposerScroll();
             _openGroup.CanReorderItems = value == "myday";
             NotifyMyDayPageChanged();
             NotifyNewTaskDetailsChanged();
@@ -171,7 +173,7 @@ public sealed partial class MainViewModel
             // Important excludes completed tasks entirely, like Planned — a done task
             // isn't something to act on anymore, even if it's still starred.
             "important" => TaskSorting.ForImportant(Tasks.Where(t => t.IsStarred && !t.IsCompleted)),
-            "planned"   => Tasks.Where(t => t.DueDate != null && !t.IsCompleted).OrderBy(t => t.DueDate),
+            "planned"   => Tasks.Where(MatchesPlannedTask).OrderBy(t => t.DueDate),
             _           => TaskSorting.NewestFirst(Tasks.Where(MatchesFilter))
         };
 
@@ -179,6 +181,7 @@ public sealed partial class MainViewModel
             ActiveTasks.Add(task);
 
         RebuildFlatGroups();
+        if (IsPlannedPage) NotifyPlannedGroupsChanged();
         OnPropertyChanged(nameof(IsTaskListEmpty));
         OnPropertyChanged(nameof(ShowEmptyState));
         NotifyMyDayHeaderChanged();
@@ -309,7 +312,7 @@ public sealed partial class MainViewModel
         var tomorrow = today.AddDays(1);
         var weekEnd = today.AddDays(7 - (int)today.DayOfWeek);
 
-        var tasksWithDue = Tasks.Where(t => t.DueDate != null && !t.IsCompleted).GroupBy(t =>
+        var tasksWithDue = Tasks.Where(MatchesPlannedTask).GroupBy(t =>
         {
             // The day as written, never through ToLocalTime — see TipEngine.
             var dueDate = t.DueDate!.Value.Date;
@@ -342,6 +345,7 @@ public sealed partial class MainViewModel
     private void NotifyPlannedGroupsChanged()
     {
         _cachedPlannedGroups = null;
+        RefreshPlannedCalendar();
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(PlannedGroups)));
     }
 

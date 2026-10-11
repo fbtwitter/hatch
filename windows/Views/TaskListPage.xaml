@@ -401,6 +401,10 @@
 
             <Grid Grid.Row="0" Padding="{x:Bind TaskHeaderPadding(ViewModel.IsTaskComposerFloating, ViewModel.IsTagFilterActive, ViewModel.ActiveNavItem, ViewModel.IsTaskListEmpty, ViewModel.SuggestionsVisible), Mode=OneWay}"
                   MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
                 <TextBlock x:Name="HeaderText" Text="My Tasks"
                            Style="{ThemeResource TitleTextBlockStyle}"
                            FontSize="36"
@@ -429,6 +433,31 @@
                                      Visibility="{x:Bind ViewModel.HasMyDayProgress, Converter={StaticResource BoolToVisibility}, Mode=OneWay}" />
                     </StackPanel>
                 </StackPanel>
+                <DropDownButton x:Name="PlannedViewSelector" x:Uid="PlannedViewSelector" Grid.Column="1"
+                                AutomationProperties.AutomationId="PlannedViewSelector"
+                                VerticalAlignment="Center" Margin="16,0,0,0"
+                                Visibility="{x:Bind ViewModel.IsPlannedPage, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <DropDownButton.Flyout>
+                        <MenuFlyout Placement="Bottom">
+                            <RadioMenuFlyoutItem x:Name="PlannedAgendaItem" x:Uid="PlannedAgendaItem"
+                                                AutomationProperties.AutomationId="PlannedAgendaItem"
+                                                Text="Agenda" GroupName="PlannedView" IsChecked="True"
+                                                Command="{x:Bind ViewModel.SelectPlannedViewCommand}" CommandParameter="agenda">
+                                <RadioMenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xED28;" />
+                                </RadioMenuFlyoutItem.Icon>
+                            </RadioMenuFlyoutItem>
+                            <RadioMenuFlyoutItem x:Name="PlannedCalendarItem" x:Uid="PlannedCalendarItem"
+                                                AutomationProperties.AutomationId="PlannedCalendarItem"
+                                                Text="Calendar" GroupName="PlannedView"
+                                                Command="{x:Bind ViewModel.SelectPlannedViewCommand}" CommandParameter="calendar">
+                                <RadioMenuFlyoutItem.Icon>
+                                    <FontIcon Glyph="&#xE787;" />
+                                </RadioMenuFlyoutItem.Icon>
+                            </RadioMenuFlyoutItem>
+                        </MenuFlyout>
+                    </DropDownButton.Flyout>
+                </DropDownButton>
             </Grid>
 
             <StackPanel Grid.Row="1"
@@ -538,8 +567,12 @@
             </ContentControl>
 
             <Grid Grid.Row="3">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
                 <!-- Empty state — flat views -->
-                <StackPanel Grid.Row="0" HorizontalAlignment="Center"
+                <StackPanel Grid.Row="1" HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Spacing="8"
                             MaxWidth="260"
@@ -567,7 +600,7 @@
                      ScrollViewer's extent runs wider than its viewport once the per-group
                      ListViews are inside it, and a MaxWidth+Stretch child centres itself against
                      the extent — which parked the whole list ~240px right of the header. -->
-                <ScrollViewer Grid.Row="0" x:Name="FlatListView"
+                <ScrollViewer Grid.Row="1" x:Name="FlatListView"
                               AutomationProperties.AutomationId="FlatListView"
                               ViewChanged="TaskListScroll_ViewChanged"
                               HorizontalScrollBarVisibility="Disabled">
@@ -834,7 +867,7 @@
                 </ScrollViewer>
 
                 <!-- Grouped list — Planned view only. Padding insets rows without moving the ScrollBar (it's a margin on ScrollContentPresenter) — keep it near the flat lists' inset or rows misalign. -->
-                <ListView Grid.Row="0" x:Name="GroupedListView"
+                <ListView Grid.Row="1" x:Name="GroupedListView"
                           ItemsSource="{x:Bind PlannedGroupsSource.View, Mode=OneWay}"
                           SelectionMode="Single"
                           SelectionChanged="TaskListView_SelectionChanged"
@@ -876,7 +909,115 @@
                     </ListView.GroupStyle>
                 </ListView>
 
-                <Grid Grid.Row="0"
+                <Grid Grid.Row="1" x:Name="PlannedCalendarLayout" Margin="24,16,24,0"
+                      MaxWidth="{StaticResource PageMaxRowWidth}" HorizontalAlignment="Stretch"
+                      ColumnSpacing="16" SizeChanged="PlannedCalendarLayout_SizeChanged"
+                      Visibility="{x:Bind ViewModel.IsPlannedCalendarVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <ScrollViewer x:Name="PlannedCalendarSidebar" Grid.Column="0" Grid.RowSpan="2"
+                                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                                  IsTabStop="False" Visibility="Collapsed">
+                        <ContentControl x:Name="PlannedWideCalendarHost" IsTabStop="False"
+                                        HorizontalContentAlignment="Stretch">
+                            <CalendarView x:Name="PlannedCalendar" x:Uid="PlannedCalendar"
+                                          AutomationProperties.AutomationId="PlannedCalendar"
+                                          Width="320" MinWidth="0" SelectionMode="Single"
+                                          Background="Transparent" BorderThickness="0"
+                                          IsTodayHighlighted="True" NumberOfWeeksInView="6"
+                                          SelectedDatesChanged="PlannedCalendar_SelectedDatesChanged"
+                                          CalendarViewDayItemChanging="PlannedCalendar_DayItemChanging"
+                                          Loaded="PlannedCalendar_Loaded"
+                                          ActualThemeChanged="PlannedCalendar_ActualThemeChanged">
+                                <CalendarView.Resources>
+                                    <Thickness x:Key="CalendarViewWeekDayPadding">0,12</Thickness>
+                                </CalendarView.Resources>
+                            </CalendarView>
+                        </ContentControl>
+                    </ScrollViewer>
+                    <Grid x:Name="PlannedDayHeader" Grid.Column="1" ColumnSpacing="12" Margin="0,0,0,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="4">
+                            <Grid>
+                                <TextBlock x:Name="PlannedWideDateLabel"
+                                           AutomationProperties.AutomationId="PlannedSelectedDate"
+                                           Visibility="Collapsed"
+                                           Text="{x:Bind ViewModel.PlannedSelectedDateLabel, Mode=OneWay}"
+                                           Style="{StaticResource BodyStrongTextBlockStyle}"
+                                           TextWrapping="WrapWholeWords" />
+                                <Button x:Name="PlannedDateButton" x:Uid="PlannedDateButton"
+                                        AutomationProperties.AutomationId="PlannedDateButton"
+                                        AutomationProperties.Name="{x:Bind ViewModel.PlannedSelectedDateLabel, Mode=OneWay}"
+                                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                        Style="{StaticResource SubtleButtonStyle}" Padding="0,4">
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <FontIcon Glyph="&#xE787;" FontSize="16" VerticalAlignment="Center" />
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{x:Bind ViewModel.PlannedSelectedDateLabel, Mode=OneWay}"
+                                                   Style="{StaticResource BodyStrongTextBlockStyle}"
+                                                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                        <FontIcon Grid.Column="2" Glyph="&#xE70D;" FontSize="12" VerticalAlignment="Center" />
+                                    </Grid>
+                                    <Button.Flyout>
+                                        <Flyout x:Name="PlannedDateFlyout" Placement="Bottom"
+                                                Opened="PlannedDateFlyout_Opened">
+                                            <ContentControl x:Name="PlannedCompactCalendarHost" IsTabStop="False" />
+                                        </Flyout>
+                                    </Button.Flyout>
+                                </Button>
+                            </Grid>
+                            <TextBlock Text="{x:Bind ViewModel.PlannedDayCountLabel, Mode=OneWay}"
+                                       Style="{StaticResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+                            <Button x:Name="PlannedOverdueButton"
+                                    AutomationProperties.AutomationId="PlannedOverdueButton"
+                                    Content="{x:Bind ViewModel.PlannedOverdueLabel, Mode=OneWay}"
+                                    Visibility="{x:Bind ViewModel.HasPlannedCalendarOverdue, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                    Click="PlannedOverdue_Click" />
+                            <Button x:Uid="PlannedTodayButton"
+                                    AutomationProperties.AutomationId="PlannedTodayButton"
+                                    Content="Today" Click="PlannedToday_Click" />
+                        </StackPanel>
+                    </Grid>
+                    <ListView x:Name="PlannedDayList" x:Uid="PlannedDayList" Grid.Column="1" Grid.Row="1"
+                              AutomationProperties.AutomationId="PlannedDayList"
+                              ItemsSource="{x:Bind ViewModel.PlannedDayTasks, Mode=OneWay}"
+                              ItemTemplate="{StaticResource TaskItemTemplate}"
+                              ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
+                              SelectionMode="Single" Padding="0" HorizontalContentAlignment="Stretch"
+                              SelectionChanged="TaskListView_SelectionChanged"
+                              Loaded="TaskListView_Loaded" Unloaded="TaskListView_Unloaded"
+                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListView.Header>
+                            <TextBlock x:Uid="PlannedDayEmptyText"
+                                       Visibility="{x:Bind ViewModel.IsPlannedDayEmpty, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                       Text="No tasks due on this day. Add a task to plan ahead."
+                                       Style="{StaticResource BodyTextBlockStyle}" TextWrapping="WrapWholeWords"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </ListView.Header>
+                        <ListView.Footer>
+                            <Border x:Name="PlannedDayBottomClearance" IsHitTestVisible="False" />
+                        </ListView.Footer>
+                    </ListView>
+                </Grid>
+
+                <Grid Grid.Row="1"
                       Background="Transparent"
                       Visibility="{x:Bind ViewModel.IsLoaded, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
                     <ProgressRing x:Uid="TaskList_LoadingRing"
@@ -887,7 +1028,7 @@
                                   VerticalAlignment="Center" />
                 </Grid>
 
-                <InfoBar Grid.Row="0"
+                <InfoBar Grid.Row="1"
                          x:Name="UndoInfoBar"
                          AutomationProperties.AutomationId="UndoInfoBar"
                          IsOpen="{x:Bind ViewModel.IsUndoBarVisible, Mode=OneWay}"

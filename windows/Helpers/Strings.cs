@@ -18,6 +18,12 @@ internal static class Strings
     public static string Header_Important => Get("Header_Important");
     public static string Header_Planned   => Get("Header_Planned");
     public static string Header_AllTasks  => Get("Header_AllTasks");
+    public static string PlannedCalendar_Overdue(int count) =>
+        string.Format(Get("PlannedCalendar_Overdue"), count);
+    public static string PlannedCalendar_TaskCount(int count) => count == 1
+        ? Get("PlannedCalendar_OneTask") : string.Format(Get("PlannedCalendar_TaskCount"), count);
+    public static string PlannedCalendar_DateTasks(string date, int count) =>
+        string.Format(Get(count == 1 ? "PlannedCalendar_DateOneTask" : "PlannedCalendar_DateTasks"), date, count);
     public static string NewTask_Destination(string destination) =>
         string.Format(Get("NewTask_Destination"), destination);
     public static string NewTask_SetDueDate => Get("NewTask_SetDueDate");

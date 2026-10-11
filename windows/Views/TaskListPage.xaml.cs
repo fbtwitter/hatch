@@ -84,6 +84,7 @@ public sealed partial class TaskListPage : Page
     {
         FlatGroupsItemsControl.ItemsSource = null;
         GroupedListView.ItemsSource = null;
+        PlannedDayList.ItemsSource = null;
     }
 
     // Restores from the ViewModel's current state, never from a snapshot taken at hide
@@ -93,9 +94,9 @@ public sealed partial class TaskListPage : Page
     public void RestoreListBindings()
     {
         if (_vm == null) return;
-        _vm.ResetTaskComposerScroll(_vm.ActiveNavItem == "planned"
-            ? _groupedTaskScrollViewer?.VerticalOffset ?? 0 : FlatListView.VerticalOffset);
+        _vm.ResetTaskComposerScroll(ActiveTaskScrollViewer?.VerticalOffset ?? 0);
         FlatGroupsItemsControl.ItemsSource = _vm.FlatGroupedTasks;
+        PlannedDayList.ItemsSource = _vm.PlannedDayTasks;
         if (_vm.ActiveNavItem == "planned")
             RefreshPlannedGroups();
     }
@@ -145,12 +146,12 @@ public sealed partial class TaskListPage : Page
 
         _vm = vm;
         DataContext = vm;
+        vm.ResetPlannedView();
         vm.ResetTaskComposerScroll();
         AnimateTaskComposer(false);
         UpdateView(vm.ActiveNavItem);
         RefreshBottomControlsLayout();
-        vm.ResetTaskComposerScroll(vm.ActiveNavItem == "planned"
-            ? _groupedTaskScrollViewer?.VerticalOffset ?? 0 : FlatListView.VerticalOffset);
+        vm.ResetTaskComposerScroll(ActiveTaskScrollViewer?.VerticalOffset ?? 0);
         vm.PropertyChanged += OnViewModelPropertyChanged;
         vm.FlatGroupMoveStarting += OnFlatGroupMoveStarting;
         vm.FlatGroupMoveCompleted += OnFlatGroupMoveCompleted;
@@ -190,6 +191,21 @@ public sealed partial class TaskListPage : Page
             case nameof(MainViewModel.ThemeVersion):
                 if (_vm.ActiveNavItem == "planned")
                     RefreshPlannedGroups();
+                RefreshPlannedCalendarMarkers();
+                break;
+
+            case nameof(MainViewModel.IsPlannedCalendar):
+                SyncPlannedViewControls(true);
+                RefreshBottomControlsLayout();
+                break;
+
+            case nameof(MainViewModel.SelectedPlannedDate):
+                SyncPlannedCalendarSelection(false);
+                _plannedDayScrollViewer?.ChangeView(null, 0, null, true);
+                break;
+
+            case nameof(MainViewModel.PlannedCalendarVersion):
+                RefreshPlannedCalendarMarkers();
                 break;
 
             case nameof(MainViewModel.IsTaskComposerVisible):
@@ -213,13 +229,13 @@ public sealed partial class TaskListPage : Page
                 _vm.SelectedTask = null;
                 SyncListViewSelection(null);
                 UpdateView(_vm.ActiveNavItem);
-                _vm.ResetTaskComposerScroll(_vm.ActiveNavItem == "planned"
-                    ? _groupedTaskScrollViewer?.VerticalOffset ?? 0 : FlatListView.VerticalOffset);
+                _vm.ResetTaskComposerScroll(ActiveTaskScrollViewer?.VerticalOffset ?? 0);
                 break;
 
             case nameof(MainViewModel.PlannedGroups) or nameof(MainViewModel.IsPlannedEmpty)
                 when _vm.ActiveNavItem == "planned":
-                GroupedListView.Visibility = _vm.IsPlannedEmpty ? Visibility.Collapsed : Visibility.Visible;
+                GroupedListView.Visibility = _vm.IsPlannedEmpty || _vm.IsPlannedCalendar
+                    ? Visibility.Collapsed : Visibility.Visible;
                 RefreshPlannedGroups();
                 break;
 
@@ -656,6 +672,12 @@ public sealed partial class TaskListPage : Page
             if (_groupedTaskScrollViewer != null)
                 _groupedTaskScrollViewer.ViewChanged += TaskListScroll_ViewChanged;
         }
+        if (ReferenceEquals(listView, PlannedDayList))
+        {
+            _plannedDayScrollViewer = FindTaskScrollViewer(listView);
+            if (_plannedDayScrollViewer != null)
+                _plannedDayScrollViewer.ViewChanged += TaskListScroll_ViewChanged;
+        }
         _taskListViews.Add(listView);
         var selectedTask = _vm?.SelectedTask;
         var wasSuppressing = _suppressSelectionChanged;
@@ -668,6 +690,11 @@ public sealed partial class TaskListPage : Page
 
     private void TaskListView_Unloaded(object sender, RoutedEventArgs e)
     {
+        if (ReferenceEquals(sender, PlannedDayList) && _plannedDayScrollViewer != null)
+        {
+            _plannedDayScrollViewer.ViewChanged -= TaskListScroll_ViewChanged;
+            _plannedDayScrollViewer = null;
+        }
         if (ReferenceEquals(sender, GroupedListView) && _groupedTaskScrollViewer != null)
         {
             _groupedTaskScrollViewer.ViewChanged -= TaskListScroll_ViewChanged;
@@ -692,7 +719,7 @@ public sealed partial class TaskListPage : Page
 
         var isPlanned = navItem == "planned";
         FlatListView.Visibility    = isPlanned ? Visibility.Collapsed : Visibility.Visible;
-        GroupedListView.Visibility = isPlanned && !(_vm?.IsPlannedEmpty ?? true) ? Visibility.Visible : Visibility.Collapsed;
+        SyncPlannedViewControls();
 
         if (isPlanned)
             RefreshPlannedGroups();
@@ -731,6 +758,7 @@ public sealed partial class TaskListPage : Page
 
     private void OnPageKeyDown(object sender, KeyRoutedEventArgs e)
     {
+        if (IsPlannedCalendarControlFocused()) return;
         bool isCtrl = (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control)
                        & CoreVirtualKeyStates.Down) != 0;
 
@@ -815,7 +843,8 @@ public sealed partial class TaskListPage : Page
     private List<TodoItem> GetVisibleTasksInOrder()
     {
         if (_vm?.ActiveNavItem == "planned")
-            return ViewModel.PlannedGroups.SelectMany(g => g.Items).ToList();
+            return _vm.IsPlannedCalendar ? [.. _vm.PlannedDayTasks]
+                : ViewModel.PlannedGroups.SelectMany(g => g.Items).ToList();
         var groups = ViewModel.FlatGroupedTasks;
         var result = new List<TodoItem>(groups[0].Items);
         if (groups.Count > 1 && groups[1].IsExpanded)
@@ -879,7 +908,7 @@ public sealed partial class TaskListPage : Page
     }
 
     private static double TaskContentInset(string navItem, bool taskListEmpty, bool suggestionsVisible) =>
-        taskListEmpty ? (suggestionsVisible ? 12 : 0) : (navItem == "planned" ? PageContentSpacing : 4);
+        navItem == "planned" ? PageContentSpacing : taskListEmpty ? (suggestionsVisible ? 12 : 0) : 4;
 
     public Thickness TaskHeaderPadding(bool floating, bool tagFiltered,
         string navItem, bool taskListEmpty, bool suggestionsVisible) =>
@@ -925,6 +954,8 @@ public sealed partial class TaskListPage : Page
             + (_vm.IsUndoBarVisible ? UndoInfoBar.ActualHeight + undoGap : 0);
         TaskScrollContent.Padding = new(0, 0, 0, scrollClearance);
         TaskListBottomClearance.Height = scrollClearance;
+        PlannedDayBottomClearance.Height = scrollClearance;
+        PlannedCalendarSidebar.Padding = new(0, 0, 0, scrollClearance);
     }
 
     public Visibility ComposerDateLabelVisibility(double width, bool hasDate) =>
@@ -947,7 +978,7 @@ public sealed partial class TaskListPage : Page
     private void TaskListScroll_ViewChanged(object? sender, ScrollViewerViewChangedEventArgs e)
     {
         if (_vm == null || sender is not ScrollViewer scrollViewer) return;
-        if (ReferenceEquals(scrollViewer, FlatListView) == (_vm.ActiveNavItem == "planned")) return;
+        if (!ReferenceEquals(scrollViewer, ActiveTaskScrollViewer)) return;
         _vm.UpdateTaskComposerScroll(scrollViewer.VerticalOffset);
     }
 
@@ -998,8 +1029,8 @@ public sealed partial class TaskListPage : Page
         {
             NewTaskCalendar.SelectedDates.Clear();
             if (ViewModel.NewTaskDueDate is { } date)
-                NewTaskCalendar.SelectedDates.Add(date);
-            NewTaskCalendar.SetDisplayDate(ViewModel.NewTaskDueDate ?? DateTimeOffset.Now);
+                NewTaskCalendar.SelectedDates.Add(ToNativeCalendarDate(date));
+            NewTaskCalendar.SetDisplayDate(ToNativeCalendarDate(ViewModel.NewTaskDueDate ?? DateTimeOffset.Now));
         }
         finally
         {
@@ -1012,7 +1043,7 @@ public sealed partial class TaskListPage : Page
     private void NewTaskCalendar_SelectedDatesChanged(CalendarView sender, CalendarViewSelectedDatesChangedEventArgs args)
     {
         if (_updatingNewTaskCalendar) return;
-        ViewModel.NewTaskDueDate = args.AddedDates.Count > 0 ? args.AddedDates[0] : null;
+        ViewModel.NewTaskDueDate = args.AddedDates.Count > 0 ? args.AddedDates[0].ToLocalTime() : null;
         NewTaskDateFlyout.Hide();
         DispatcherQueue.TryEnqueue(() => FocusNewTask());
     }

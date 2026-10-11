@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$ArtifactRoot = (Join-Path $env:TEMP "Hatch.UiRegression"),
-    [ValidateSet('default', 'proactive-action', 'proactive-no-action', 'oversized-quick-add', 'proactive-collapse-reopen', 'workflows-light', 'workflows-dark', 'onboarding')]
+    [ValidateSet('default', 'proactive-action', 'proactive-no-action', 'oversized-quick-add', 'proactive-collapse-reopen', 'workflows-light', 'workflows-dark', 'planned-light', 'planned-dark', 'onboarding')]
     [string[]]$Profile
 )
 
@@ -44,7 +44,7 @@ if ($buildExitCode -ne 0) {
 }
 
 $profiles = @(
-    [pscustomobject]@{ Name = "default"; Filter = "FullyQualifiedName!~TaskWorkflowTests&FullyQualifiedName!~OnboardingTests"; Variables = @{} },
+    [pscustomobject]@{ Name = "default"; Filter = "FullyQualifiedName!~TaskWorkflowTests&FullyQualifiedName!~PlannedWorkflowTests&FullyQualifiedName!~OnboardingTests"; Variables = @{} },
     [pscustomobject]@{
         Name = "proactive-action"
         Filter = "FullyQualifiedName~CompanionLayoutTests.TipSurfaces_MatchWidthAndVerticalSpacing"
@@ -76,6 +76,16 @@ $profiles = @(
         Variables = @{ HATCH_TEST_THEME = "2" }
     },
     [pscustomobject]@{
+        Name = "planned-light"
+        Filter = "FullyQualifiedName~PlannedWorkflowTests"
+        Variables = @{ HATCH_TEST_PLANNED = "1"; HATCH_TEST_THEME = "1" }
+    },
+    [pscustomobject]@{
+        Name = "planned-dark"
+        Filter = "FullyQualifiedName~PlannedWorkflowTests"
+        Variables = @{ HATCH_TEST_PLANNED = "1"; HATCH_TEST_THEME = "2" }
+    },
+    [pscustomobject]@{
         Name = "onboarding"
         Filter = "FullyQualifiedName~OnboardingTests"
         Variables = @{ HATCH_TEST_ONBOARDING = "1" }
@@ -90,6 +100,7 @@ $profileVariables = @(
     "HATCH_APP_EXE",
     "HATCH_TEST_MUTE",
     "HATCH_TEST_THEME",
+    "HATCH_TEST_PLANNED",
     "HATCH_TEST_ONBOARDING",
     "HATCH_TEST_PROACTIVE",
     "HATCH_TEST_NO_ACTION_TIP",
@@ -156,7 +167,7 @@ try {
             $passed = @($testResults | Where-Object { $_.outcome -eq 'Passed' }).Count
             $skipped = @($testResults | Where-Object { $_.outcome -eq 'NotExecuted' }).Count
             $failed = @($testResults | Where-Object { $_.outcome -notin @('Passed', 'NotExecuted') }).Count
-            $minimumPassed = if ($testProfile.Name -eq 'default') { 9 } elseif ($testProfile.Name -like 'workflows-*') { 8 } else { 1 }
+            $minimumPassed = if ($testProfile.Name -eq 'default') { 9 } elseif ($testProfile.Name -like 'workflows-*') { 8 } elseif ($testProfile.Name -like 'planned-*') { 10 } else { 1 }
             $allowedSkipped = if ($testProfile.Name -eq 'default') { 2 } else { 0 }
             if ($passed -lt $minimumPassed -or $skipped -gt $allowedSkipped -or $failed -gt 0) {
                 throw "Expected at least $minimumPassed passes, at most $allowedSkipped skips, and no other outcomes; got $passed passes, $skipped skips, $failed failures."

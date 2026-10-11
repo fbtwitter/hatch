@@ -70,12 +70,24 @@ public static class TestSetup
             MascotX = int.TryParse(Environment.GetEnvironmentVariable("HATCH_TEST_MASCOT_X"), out var x) ? x : 700,
             MascotY = int.TryParse(Environment.GetEnvironmentVariable("HATCH_TEST_MASCOT_Y"), out var y) ? y : 500,
             MascotSize = 120, HideWhenFullscreen = false, MinimizeToTray = true,
+            ShowMascot = Environment.GetEnvironmentVariable("HATCH_TEST_PLANNED") != "1",
             ShowTipsAutomatically = Environment.GetEnvironmentVariable("HATCH_TEST_PROACTIVE") == "1",
             ActiveNavItem = "alltasks", MuteAnimation = Environment.GetEnvironmentVariable("HATCH_TEST_MUTE") == "1",
             CustomTips = customTips
         }));
         object[] tasks;
-        if (!proactiveTip)
+        if (Environment.GetEnvironmentVariable("HATCH_TEST_PLANNED") == "1")
+        {
+            tasks = new[] { ("Planned today", 0, 0), ("Planned future", 2, 0),
+                ("Planned overdue", -2, 0), ("Planned daily", 0, 1) }
+                .Select(item => (object)new
+                {
+                    Id = Guid.NewGuid(), Title = item.Item1, CreatedAt = DateTimeOffset.UtcNow, IsCompleted = false,
+                    DueDate = new DateTimeOffset(DateTime.SpecifyKind(DateTime.Today.AddDays(item.Item2), DateTimeKind.Unspecified), TimeSpan.Zero),
+                    Recurrence = item.Item3
+                }).ToArray();
+        }
+        else if (!proactiveTip)
         {
             tasks = [new { Id = Guid.NewGuid(), Title = "_RuntimeProbe_", CreatedAt = DateTimeOffset.UtcNow }];
         }

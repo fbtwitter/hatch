@@ -8,6 +8,7 @@ namespace Hatch.ViewModels;
 public sealed partial class MainViewModel
 {
     private DateTimeOffset? _newTaskDueDate;
+    private DateTimeOffset? _draftDueDateDefault;
     private bool _newTaskImportant;
     private bool _hasNewTaskDueDateChoice;
     private bool _hasNewTaskImportantChoice;
@@ -36,7 +37,8 @@ public sealed partial class MainViewModel
     {
         get => _hasNewTaskDueDateChoice && _newTaskDueDate.HasValue ? _newTaskDueDate
             : IsNewTaskDueDateRequired
-                ? new DateTimeOffset(DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Unspecified), TimeSpan.Zero)
+                ? _draftDueDateDefault ?? (IsPlannedCalendar
+                    ? SelectedPlannedDate : PlannedDate(DateTime.Today))
                 : null;
         set
         {
@@ -56,6 +58,7 @@ public sealed partial class MainViewModel
         {
             if (!CanChangeNewTaskImportant) return;
             if (NewTaskImportant == value) return;
+            if (IsNewTaskDueDateRequired) _draftDueDateDefault ??= NewTaskDueDate;
             _newTaskImportant = value;
             _hasNewTaskImportantChoice = true;
             NotifyNewTaskDetailsChanged();
@@ -149,10 +152,17 @@ public sealed partial class MainViewModel
     private void ResetNewTaskDetails()
     {
         _newTaskDueDate = null;
+        _draftDueDateDefault = null;
         _newTaskImportant = false;
         _hasNewTaskDueDateChoice = false;
         _hasNewTaskImportantChoice = false;
         NotifyNewTaskDetailsChanged();
+    }
+
+    private void PreserveTaskDraftDueDate()
+    {
+        if (IsNewTaskDueDateRequired && (NewTaskText.Length > 0 || _hasNewTaskImportantChoice))
+            _draftDueDateDefault ??= NewTaskDueDate;
     }
 
     private void NotifyNewTaskDetailsChanged()
