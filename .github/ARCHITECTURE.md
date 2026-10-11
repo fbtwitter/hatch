@@ -39,5 +39,3 @@ sync and update checks; it does not request `internetClientServer`.
 
 A `v*.*.*` tag builds and signs the MSIX bundle, publishes a GitHub release, and updates the
 App Installer feed. Microsoft Store submission is currently manual.
-
-Supporting specifications and architecture decisions are maintained locally.
