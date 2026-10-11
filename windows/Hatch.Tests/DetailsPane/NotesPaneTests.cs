@@ -177,6 +177,19 @@ public class NotesPaneTests
         var notes = Find("PaneNotesBox").AsTextBox();
         notes.Text = string.Empty;
         WaitForText(notes, string.Empty);
+        // UIA reports Text before WinUI has arranged the resized editor.
+        // Do not reuse the preceding test's expanded height as an empty baseline.
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        double previousHeight = notes.BoundingRectangle.Height;
+        int stableSamples = 0;
+        while (stableSamples < 4 && DateTime.UtcNow < deadline)
+        {
+            Thread.Sleep(100);
+            double height = notes.BoundingRectangle.Height;
+            stableSamples = Math.Abs(height - previousHeight) < 1 ? stableSamples + 1 : 0;
+            previousHeight = height;
+        }
+        Assert.IsTrue(stableSamples >= 4, "Wait for the empty notes editor to finish resizing.");
     }
 
     private static void EnterAndWait(TextBox notes, string expected)

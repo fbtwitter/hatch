@@ -152,10 +152,22 @@ public sealed class TaskWorkflowTests
         Find("FlatListView").Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
         var completedList = Find("CompletedTasks_List");
         Assert.AreEqual(5, completedList.FindAllDescendants(cf => cf.ByAutomationId("Task_CheckBox")).Length);
-        var showMore = Find("CompletedTasks_ShowMore");
+        // Expansion changes the scroll extent after the UIA call returns.
+        // Follow that extent until the button is actually in the viewport.
+        var showMore = WaitFor(() =>
+        {
+            Find("FlatListView").Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
+            return Main.FindFirstDescendant(cf => cf.ByAutomationId("CompletedTasks_ShowMore"));
+        }, "CompletedTasks_ShowMore");
         Assert.AreEqual("Show 2 more", showMore.Name);
         showMore.AsButton().Invoke();
         Find("FlatListView").Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
+
+        completedList = WaitFor(() =>
+        {
+            var list = Main.FindFirstDescendant(cf => cf.ByAutomationId("CompletedTasks_List"));
+            return list?.FindAllDescendants(cf => cf.ByAutomationId("Task_CheckBox")).Length == 7 ? list : null;
+        }, "seven completed tasks");
 
         Assert.AreEqual(7, completedList.FindAllDescendants(cf => cf.ByAutomationId("Task_CheckBox")).Length,
             "Show more should reveal the remaining completed tasks.");
