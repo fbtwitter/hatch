@@ -13,18 +13,18 @@ the previous sub-50 MB idle target was disproven and is not a release gate. See
 
 | Task-flow update | Status |
 |---|---|
-| Native checkbox pressed feedback and completion animation time across task pages | Implemented for the next release; user accepted appearance; Debug x64 build passes; reduced-motion behaviour remains unverified; earlier checkbox checks predate this refinement |
-| Undo 4px above the Bottom task form, with scroll clearance for both controls | Implemented for the next release; native size updates and solid theme background; Debug x64 build passes; user accepted spacing |
-| Priority carried by native Fluent checkbox outlines, with accessible labels and Contrast text fallback | Implemented locally; startup crash corrected; Debug x64 build and 22 focused Light/Dark checks pass; Contrast and alternate DPI/text scaling remain unverified |
-| Task-row metadata icon alignment | Implemented for the next release; Debug x64 build and 18 focused Light/Dark geometry checks pass; alternate DPI/text scaling and Contrast remain unverified |
-| Single-line task form with due dates, Important, page-aware creation, and fixed Top or floating Bottom placement | Implemented for the next release |
-| Consistent themes and 24px page spacing, safe date presets, Completed previews across task pages, and adaptive window branding | Implemented for the next release |
-| Equal 16px gaps around the Top task form across task pages | Implemented locally; Debug x64 build passes |
-| Consistent 16px page-header and section gaps across task pages, Settings, Summary, Search, and onboarding | Implemented locally; Debug x64 build passes |
-| Native outlined due-date button matching Important in the task form | Implemented locally; Debug x64 build passes |
-| Window-centered search with a clean idle surface and full rounded accent focus outline | Implemented locally; Debug x64 build passes |
-| Centered, solid native search field with rounded corners and reliable keyboard exit | Implemented locally; 13 focused UI checks pass |
-| Consistent mascot hiding and restoration across fullscreen, settings, restart, and display changes | Implemented locally; eight focused regression checks pass and user confirmed YouTube fullscreen hide/return; slideshow and exclusive-game checks remain unverified |
+| Native checkbox pressed feedback and completion animation time across task pages | Included in v0.28.0; user accepted appearance; Debug x64 build passes; reduced-motion behaviour remains unverified; earlier checkbox checks predate this refinement |
+| Undo 4px above the Bottom task form, with scroll clearance for both controls | Included in v0.28.0; native size updates and solid theme background; Debug x64 build passes; user accepted spacing |
+| Priority carried by native Fluent checkbox outlines, with accessible labels and Contrast text fallback | Included in v0.28.0; startup crash corrected; Debug x64 build and 22 focused Light/Dark checks pass; Contrast and alternate DPI/text scaling remain unverified |
+| Task-row metadata icon alignment | Included in v0.28.0; Debug x64 build and 18 focused Light/Dark geometry checks pass; alternate DPI/text scaling and Contrast remain unverified |
+| Single-line task form with due dates, Important, page-aware creation, and fixed Top or floating Bottom placement | Included in v0.28.0 |
+| Consistent themes and 24px page spacing, safe date presets, Completed previews across task pages, and adaptive window branding | Included in v0.28.0 |
+| Equal 16px gaps around the Top task form across task pages | Included in v0.28.0; Debug x64 build passes |
+| Consistent 16px page-header and section gaps across task pages, Settings, Summary, Search, and onboarding | Included in v0.28.0; Debug x64 build passes |
+| Native outlined due-date button matching Important in the task form | Included in v0.28.0; Debug x64 build passes |
+| Window-centered search with a clean idle surface and full rounded accent focus outline | Included in v0.28.0; Debug x64 build passes |
+| Centered, solid native search field with rounded corners and reliable keyboard exit | Included in v0.28.0; 13 focused UI checks pass |
+| Consistent mascot hiding and restoration across fullscreen, settings, restart, and display changes | Included in v0.28.0; eight focused regression checks pass and user confirmed YouTube fullscreen hide/return; slideshow and exclusive-game checks remain unverified |
 
 ## Later candidates
 

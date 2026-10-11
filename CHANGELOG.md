@@ -6,24 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
-### Added
-- Add a single-line task form with due dates, Important, page-aware defaults, and a Top/Bottom position preference; Bottom floats and responds to scrolling.
+## [0.28.0] - 2026-10-11
 
-### Fixed
-- Preserve native checkbox pressed feedback and completion animation time with priority-coloured outlines, respecting Windows animation settings.
-- Keep Undo 4px above the bottom task form through native size changes, with a solid theme background and scroll clearance.
-- Fix priority-checkbox startup crashes and preserve native Fluent styling and outline colours when switching themes.
-- Replace task-row priority badges with themed checkbox outlines, retaining accessible priority labels and a Contrast text fallback.
-- Align task-row metadata icons with their captions across task lists and My Day suggestions.
-- Unify application themes and page spacing, fix date preset crashes, and polish task entry, completed previews, and adaptive window branding.
-- Center and round the native search field with solid theme colours, and fix Escape returning from search.
-- Stabilize mascot visibility across fullscreen, temporary hide/restore, restart, and display changes.
-- Honor fullscreen hiding for videos, slideshows, and games even when the mascot is always on top.
-- Equalize the gaps above and below the Top task form across task pages.
-- Give the task form's due-date control a visible native button outline.
-- Give search a clean idle surface and highlight its full rounded border when focused.
-- Balance title-bar spacing to center search relative to the window.
-- Standardize title and section gaps across task pages, Settings, Summary, Search, and onboarding.
+- Add My Day greetings and page-aware task capture with due dates, Important, and Top or floating Bottom placement; refine themes, search, task rows, undo placement, and mascot fullscreen behaviour.
 
 ## [0.27.0] - 2026-10-09
 
