@@ -1118,10 +1118,10 @@
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
 
-                    <CheckBox x:Name="PaneCompleteCheck"
+                    <controls:PriorityCheckBox x:Name="PaneCompleteCheck"
                               Grid.Column="0"
+                              Style="{StaticResource DefaultCheckBoxStyle}"
                               AutomationProperties.AutomationId="PaneCompleteCheck"
-                              AutomationProperties.Name="Mark complete"
                               MinWidth="0" MinHeight="0" Padding="0"
                               VerticalAlignment="Center"
                               Click="PaneCompleteCheck_Click" />

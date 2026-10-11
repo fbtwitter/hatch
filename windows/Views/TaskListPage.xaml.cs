@@ -364,6 +364,8 @@ public sealed partial class TaskListPage : Page
     {
         _updatingPane = true;
         PaneTitleBox.Text = task.Title;
+        PaneCompleteCheck.Priority = task.Priority;
+        PaneCompleteCheck.TaskTitle = task.Title;
         PaneCompleteCheck.IsChecked = task.IsCompleted;
         // TextBox has no TextDecorations, so a completed title dims instead of
         // striking through — the same 0.5 the row uses via BoolToOpacityConverter.
@@ -503,6 +505,7 @@ public sealed partial class TaskListPage : Page
     {
         if (_updatingPane || _paneTask == null) return;
         ViewModel.UpdateTaskTitle(_paneTask, PaneTitleBox.Text);
+        PaneCompleteCheck.TaskTitle = _paneTask.Title;
     }
 
     private void PaneNotesBox_TextChanged(object sender, TextChangedEventArgs e)
@@ -521,6 +524,7 @@ public sealed partial class TaskListPage : Page
     {
         if (_updatingPane || _paneTask == null) return;
         ViewModel.SetTaskPriority(_paneTask, (TaskPriority)PanePriorityCombo.SelectedIndex);
+        PaneCompleteCheck.Priority = _paneTask.Priority;
     }
 
     private void PaneListCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
