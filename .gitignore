@@ -26,6 +26,10 @@ signing.pfx
 # Build configuration
 windows/Services/Secrets.cs
 
+# Local profiling tools and regression results
+/.dev-tools/
+/.local-tools/
+
 # Documentation
 /docs/*
 !/docs/screenshots/
