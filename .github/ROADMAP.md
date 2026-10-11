@@ -13,9 +13,10 @@ the previous sub-50 MB idle target was disproven and is not a release gate. See
 
 | Task-flow update | Status |
 |---|---|
+| Planned Agenda and Calendar views using existing due dates | Included in v0.29.0; draft dates, completion, recurrence, Undo and Overdue checks pass; compact/wide layouts reviewed in Light, Dark, Contrast and 125%/200% text |
 | Native checkbox pressed feedback and completion animation time across task pages | Included in v0.28.0; user accepted appearance; Debug x64 build passes; reduced-motion behaviour remains unverified; earlier checkbox checks predate this refinement |
 | Undo 4px above the Bottom task form, with scroll clearance for both controls | Included in v0.28.0; native size updates and solid theme background; Debug x64 build passes; user accepted spacing |
-| Priority carried by native Fluent checkbox outlines, with accessible labels and Contrast text fallback | Included in v0.28.0; startup crash corrected; Debug x64 build and 22 focused Light/Dark checks pass; Contrast and alternate DPI/text scaling remain unverified |
+| Priority carried by native Fluent checkbox outlines, with accessible labels and Contrast text fallback | Task rows included in v0.28.0 and task details in v0.29.0; Medium details outline visually confirmed in Dark; 22 earlier focused Light/Dark checks cover rows; other details interactions and alternate DPI/text scaling remain unverified |
 | Task-row metadata icon alignment | Included in v0.28.0; Debug x64 build and 18 focused Light/Dark geometry checks pass; alternate DPI/text scaling and Contrast remain unverified |
 | Single-line task form with due dates, Important, page-aware creation, and fixed Top or floating Bottom placement | Included in v0.28.0 |
 | Consistent themes and 24px page spacing, safe date presets, Completed previews across task pages, and adaptive window branding | Included in v0.28.0 |
@@ -44,7 +45,7 @@ move into a release.
 - Mandatory accounts
 - Multi-user collaboration or team integration
 - A web version
-- A calendar view or custom theme system for v1.0
+- A custom theme system for v1.0
 
 ## How priorities are chosen
 
