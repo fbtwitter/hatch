@@ -15,14 +15,42 @@
   </p>
 </div>
 
-![Hatch My Day screen](docs/screenshots/02-my-day.png)
+![Hatch My Day with a daily plan, task priorities, and completed tasks](docs/screenshots/02-my-day.png)
+
+Capture a task when it comes to mind. Choose what matters today, and keep upcoming deadlines in view.
 
 ## Features
 
-- Capture tasks from the always-on-top desktop mascot.
-- Organize work with My Day, custom lists, tags, due dates, recurrence, and checklists.
+- **Quick capture:** add tasks from the desktop mascot, with optional due dates and an Important mark.
+- **Your daily plan:** choose tasks for My Day and see your progress as you complete them.
+- **Upcoming deadlines:** browse Planned as an agenda or calendar, see tasks due on a selected day, and jump to overdue tasks.
+- **Details when you need them:** organize tasks with custom lists, notes, tags, priorities, recurring tasks, and checklists.
 - Use Focus Mode and the Windows 11 My Day widget.
 - Keep tasks on your device or enable end-to-end encrypted sync with the [Android companion](https://github.com/fbtwitter/hatch-mobile).
+
+## A closer look
+
+### Capture from your desktop
+
+Click the mascot to open Quick Add. Give the task a title, choose its list, and add a due date or mark it Important before saving.
+
+<p align="center">
+  <img src="docs/screenshots/08-mascot-quick-add.png" width="552" alt="Hatch desktop mascot beside its open Quick Add bubble, with a sample task, list, due date, and Important button">
+</p>
+
+### See what's due
+
+Planned opens as an agenda. Switch to Calendar to browse deadlines by day; choosing a date also sets the due date for a fresh task draft. An Overdue shortcut keeps missed deadlines within reach.
+
+![Hatch Planned calendar with due-date markers and tasks for the selected day](docs/screenshots/06-planned-calendar.png)
+
+### Keep the next step clear
+
+Break a bigger task into steps and keep useful notes alongside it. Set a due date and priority, or use the separate Important star to keep it within reach.
+
+![Hatch task details with notes, a checklist, due date, and a priority-coloured completion checkbox](docs/screenshots/07-task-details.png)
+
+*The task-list examples use sample tasks.* [Browse all screenshots](docs/screenshots/).
 
 ## Install
 
