@@ -112,6 +112,7 @@ internal static class NativeMethods
     internal const uint WS_BORDER                 = 0x00800000;
     internal const uint WS_DLGFRAME               = 0x00400000;
     internal const uint WS_EX_TOOLWINDOW           = 0x00000080;
+    internal const uint WS_EX_TOPMOST              = 0x00000008;
     internal const uint WS_EX_WINDOWEDGE          = 0x00000100;
     internal const uint WS_EX_NOREDIRECTIONBITMAP = 0x00200000;
     internal const uint SWP_FRAMECHANGED          = 0x0020;

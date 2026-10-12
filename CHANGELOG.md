@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.29.1] - 2026-10-12
+
+- Restore the mascot's Always on Top state when it is lost, using the existing visibility check while preserving fullscreen hiding and idle behavior.
+
 ## [0.29.0] - 2026-10-11
 
 - Add an optional Planned calendar with a compact view selector, responsive date navigation, due-date markers, selected-day tasks, an Overdue shortcut, and selected-date defaults for fresh task drafts; extend native priority checkbox outlines to task details.

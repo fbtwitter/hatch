@@ -85,6 +85,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         NativeMethods.SetWindowPos(_hwnd, IntPtr.Zero, 0, 0, 0, 0,
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_FRAMECHANGED |
             NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
+        ApplyAlwaysOnTop(App.Settings.MascotAlwaysOnTop);
     }
 
     public MascotWindow(
@@ -205,6 +206,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         AppWindow.Move(new PointInt32(ViewModel.X, ViewModel.Y));
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
+        ViewModel.VisibilityRefreshed += EnsureAlwaysOnTop;
         ViewModel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(MascotViewModel.IsBubbleOpen))
@@ -263,6 +265,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
                 App.MainWindowInstance.Activated -= OnMainWindowActivatedForCelebration;
             UnregisterHotKey();
             ViewModel.MainWindowActionRequested -= OnMainWindowActionRequested;
+            ViewModel.VisibilityRefreshed -= EnsureAlwaysOnTop;
             App.TipCoordinator.QuickTipsAvailabilityChanged -= OnQuickTipsAvailabilityChanged;
             App.TipCoordinator.PendingTipChanged -= RefreshPendingTipIndicator;
             _bubbleWindow?.Close();
@@ -787,6 +790,16 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         NativeMethods.SetWindowPos(_hwnd, insert,
             0, 0, 0, 0,
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
+    }
+
+    private void EnsureAlwaysOnTop()
+    {
+        if (!_startupInitialized || !ViewModel.IsVisible || ViewModel.IsMascotHidden ||
+            !App.Settings.MascotAlwaysOnTop) return;
+
+        var exStyle = NativeMethods.GetWindowLong(_hwnd, NativeMethods.GWL_EXSTYLE);
+        if ((exStyle & NativeMethods.WS_EX_TOPMOST) == 0)
+            ApplyAlwaysOnTop(true);
     }
 
     private void ResetInactivity()

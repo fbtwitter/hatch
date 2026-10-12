@@ -13,6 +13,7 @@ the previous sub-50 MB idle target was disproven and is not a release gate. See
 
 | Task-flow update | Status |
 |---|---|
+| Recover a lost native Always on Top state without taking focus | Included in v0.29.1; three recovery repeats and normal/maximized overlap checks pass; saved off/hidden preferences respected; idle resource comparison remains close to baseline; intermittent user-reported occlusion was not reproduced |
 | Planned Agenda and Calendar views using existing due dates | Included in v0.29.0; draft dates, completion, recurrence, Undo and Overdue checks pass; compact/wide layouts reviewed in Light, Dark, Contrast and 125%/200% text |
 | Native checkbox pressed feedback and completion animation time across task pages | Included in v0.28.0; user accepted appearance; Debug x64 build passes; reduced-motion behaviour remains unverified; earlier checkbox checks predate this refinement |
 | Undo 4px above the Bottom task form, with scroll clearance for both controls | Included in v0.28.0; native size updates and solid theme background; Debug x64 build passes; user accepted spacing |

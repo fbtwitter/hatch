@@ -97,6 +97,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
             !(_settings.Current.HideWhenFullscreen &&
               IsForegroundWindowFullscreen());
         if (!IsVisible) CloseBubble();
+        VisibilityRefreshed?.Invoke();
     }
 
     public void RefreshPosition() => ClampToWorkArea();
@@ -174,6 +175,7 @@ public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
     // MascotWindow owns the popup and records a daily slot only after showing it.
     public event Action<Tip>? ProactiveTipDue;
     internal event Action<MainWindowAction>? MainWindowActionRequested;
+    internal event Action? VisibilityRefreshed;
 
     // Called from the dispatcher-queued fullscreen-poll tick — already on the UI thread.
     private void CheckProactiveTipDue()
