@@ -60,17 +60,40 @@ Break a bigger task into steps and keep useful notes alongside it. Set a due dat
 
 ## Build and run without an IDE
 
-On Windows 10 (build 17763+) or Windows 11, install the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) and the [Windows App SDK 2.5.1 runtime](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads). The Debug build is unpackaged and needs that runtime installed. You also need internet access for the first NuGet restore. Visual Studio or JetBrains Rider does not need to be open.
+### Requirements
 
-Open PowerShell in the repository root and run:
+- Windows 10 (build 17763+) or Windows 11.
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
+- [Windows App SDK 2.5.1 runtime](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads) for the unpackaged Debug build.
+- Internet access for the first NuGet restore.
 
-```powershell
-dotnet restore .\windows\hatch.csproj -p:Platform=x64
-dotnet build .\windows\hatch.csproj -c Debug --no-restore -p:Platform=x64
-dotnet run --project .\windows\hatch.csproj -c Debug --no-build -p:Platform=x64 --no-launch-profile
-```
+For a new PC, follow Microsoft's [command-line WinUI setup guide](https://learn.microsoft.com/en-us/windows/apps/get-started/start-here?tabs=stable).
 
-The `dotnet build` command builds Hatch without opening it; only `dotnet run` launches the app. Use the full word `Debug` for the configuration. If you are setting up a new PC, Microsoft's [command-line WinUI setup guide](https://learn.microsoft.com/en-us/windows/apps/get-started/start-here?tabs=stable) covers the required development tools. See the [contributing guide](.github/CONTRIBUTING.md) for more project details.
+### Commands
+
+Open PowerShell in the repository root:
+
+1. Restore dependencies:
+
+   ```powershell
+   dotnet restore .\windows\hatch.csproj -p:Platform=x64
+   ```
+
+2. Build the x64 Debug app:
+
+   ```powershell
+   dotnet build .\windows\hatch.csproj -c Debug --no-restore -p:Platform=x64
+   ```
+
+3. Launch Hatch:
+
+   ```powershell
+   dotnet run --project .\windows\hatch.csproj -c Debug --no-build -p:Platform=x64 --no-launch-profile
+   ```
+
+Hatch starts with the desktop mascot. Use its **Show Main Window** action to open the task pages.
+
+See the [contributing guide](.github/CONTRIBUTING.md) for development and testing instructions.
 
 ## Privacy
 
@@ -80,9 +103,41 @@ Read the [privacy policy](PRIVACY.md).
 
 ## Troubleshooting
 
-**Crash diagnostics:** Hatch writes startup and unhandled exception details to `%LocalAppData%\Hatch\crash.log` in Debug and installed builds. The log stays on your device and may contain task data in exception details. Some native WinUI crashes bypass this log. To capture a local minidump for those crashes during development, run `windows\scripts\enable-crash-dumps.ps1` from an elevated PowerShell window. Windows saves dumps to `%LocalAppData%\CrashDumps` for the crashing user. Dumps may contain task data, so review them before sharing. This opt-in setting applies to `hatch.exe` until you remove its `HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\hatch.exe` registry key.
+### Hatch crashes
 
-**Remove the shadow around the mascot:** Search Windows for **Adjust the appearance and performance of Windows**, then clear **Show shadows under windows**. Windows does not offer a per-app setting to disable this shadow.
+1. Press **Win + R**, enter `%LocalAppData%\Hatch`, and open `crash.log`.
+2. Check the latest entries for startup or unhandled exceptions. This log is available in both Debug and installed builds.
+
+Some native crashes are not recorded in the log. For development diagnostics, use the optional steps below.
+
+<details>
+<summary>Capture a crash dump</summary>
+
+1. Open **PowerShell as administrator** and navigate to the repository root.
+2. Enable local crash dumps:
+
+   ```powershell
+   .\windows\scripts\enable-crash-dumps.ps1
+   ```
+
+3. Reproduce the crash, then open `%LocalAppData%\CrashDumps` for the Windows user running Hatch.
+
+To stop collecting dumps, remove this registry key using **Registry Editor as administrator**:
+
+```text
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\Windows Error Reporting\LocalDumps\hatch.exe
+```
+
+</details>
+
+Logs and dumps stay on your device and may contain task data. Review them before sharing.
+
+### Remove the mascot shadow
+
+1. Search Windows for **Adjust the appearance and performance of Windows**.
+2. Clear **Show shadows under windows** and select **Apply**.
+
+This setting affects all windows; Windows has no per-app shadow setting.
 
 ## Project links
 
