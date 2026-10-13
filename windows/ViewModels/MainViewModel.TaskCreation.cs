@@ -7,6 +7,18 @@ namespace Hatch.ViewModels;
 
 public sealed partial class MainViewModel
 {
+    private bool _isTaskPageActive;
+
+    public bool HasActiveTaskDraft => _isTaskPageActive && !string.IsNullOrWhiteSpace(NewTaskText);
+
+    public void SetTaskPageActive(bool active)
+    {
+        if (_isTaskPageActive == active) return;
+        var hadDraft = HasActiveTaskDraft;
+        _isTaskPageActive = active;
+        if (hadDraft != HasActiveTaskDraft) OnPropertyChanged(nameof(HasActiveTaskDraft));
+    }
+
     private DateTimeOffset? _newTaskDueDate;
     private DateTimeOffset? _draftDueDateDefault;
     private bool _newTaskImportant;

@@ -7,6 +7,17 @@ namespace Hatch.ViewModels;
 public sealed partial class QuickAddViewModel : INotifyPropertyChanged
 {
     private bool _isImportant;
+    private bool _hasTaskDraft;
+
+    public bool HasTaskDraft => _hasTaskDraft;
+
+    public void SetTaskDraft(string? text)
+    {
+        var hasDraft = !string.IsNullOrWhiteSpace(text);
+        if (_hasTaskDraft == hasDraft) return;
+        _hasTaskDraft = hasDraft;
+        PropertyChanged?.Invoke(this, new(nameof(HasTaskDraft)));
+    }
 
     public bool IsImportant
     {

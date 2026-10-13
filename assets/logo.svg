@@ -1,11 +1,30 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512">
-  <title>Hatch Logo — Mark A · Cracked Egg + Paperclip</title>
-  
-  <path d="M50 6 C72 6 88 32 88 58 C88 80 72 94 50 94 C28 94 12 80 12 58 C12 32 28 6 50 6 Z" fill="#ffd966" stroke="#1a1a1a" stroke-width="3.5" stroke-linejoin="round"></path>
-  
-  <path d="M14 50 L24 56 L32 48 L42 58 L52 50 L60 60 L70 52 L80 60 L86 54" fill="none" stroke="#1a1a1a" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"></path>
-  
-  <g transform="translate(36 22)">
-    <path d="M4 36 Q4 40 8 40 L20 40 Q24 40 24 36 L24 10 Q24 4 18 4 L10 4 Q4 4 4 10 L4 30 Q4 33 7 33 Q10 33 10 30 L10 14 Q10 11 13 11 L15 11 Q18 11 18 14 L18 30" fill="none" stroke="#1a73e8" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"></path>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512" role="img" aria-labelledby="title">
+  <title id="title">Hatch — expressive egg and blue paperclip</title>
+  <defs>
+    <linearGradient id="shell" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0" stop-color="#fff3b1" />
+      <stop offset=".32" stop-color="#ffdf72" />
+      <stop offset=".76" stop-color="#f2b943" />
+      <stop offset="1" stop-color="#d9912b" />
+    </linearGradient>
+  </defs>
+  <path d="M50 6 C72 6 88 32 88 58 C88 80 72 94 50 94 C28 94 12 80 12 58 C12 32 28 6 50 6 Z" fill="url(#shell)" stroke="#292b35" stroke-width="2.4" stroke-linejoin="round" />
+  <path d="M29 26 C20 38 18 46 18 58" fill="none" stroke="#fff8d6" stroke-width="2" opacity=".57" stroke-linecap="round" />
+  <path d="M14 50 L24 56 L32 48 L42 58 L52 50 L60 60 L70 52 L80 60 L86 54" fill="none" stroke="#292b35" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M40 58 Q40 62 44 62 L56 62 Q60 62 60 58 L60 32 Q60 26 54 26 L46 26 Q40 26 40 32 L40 52 Q40 55 43 55 Q46 55 46 52 L46 36 Q46 33 49 33 L51 33 Q54 33 54 36 L54 52" fill="none" stroke="#174e91" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M40 58 Q40 62 44 62 L56 62 Q60 62 60 58 L60 32 Q60 26 54 26 L46 26 Q40 26 40 32 L40 52 Q40 55 43 55 Q46 55 46 52 L46 36 Q46 33 49 33 L51 33 Q54 33 54 36 L54 52" fill="none" stroke="#1a73e8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M40 58 Q40 62 44 62 L56 62 Q60 62 60 58 L60 32 Q60 26 54 26 L46 26 Q40 26 40 32 L40 52 Q40 55 43 55 Q46 55 46 52 L46 36 Q46 33 49 33 L51 33 Q54 33 54 36 L54 52" fill="none" stroke="#b8e0ff" stroke-width=".85" opacity=".78" transform="translate(-.45 -.45)" stroke-linecap="round" stroke-linejoin="round" />
+  <g fill="#df815b" opacity=".22">
+    <ellipse cx="32" cy="73" rx="2.7" ry="1.05" />
+    <ellipse cx="68" cy="73" rx="2.7" ry="1.05" />
   </g>
+  <g fill="#292b35">
+    <ellipse cx="40" cy="69" rx="1.875" ry="2.7" />
+    <ellipse cx="60" cy="69" rx="1.875" ry="2.7" />
+  </g>
+  <g fill="white">
+    <ellipse cx="39.45" cy="67.96" rx=".54" ry=".65" />
+    <ellipse cx="59.45" cy="67.96" rx=".54" ry=".65" />
+  </g>
+  <path d="M44 78 Q50 83 56 78" fill="none" stroke="#292b35" stroke-width="1.58" stroke-linecap="round" />
 </svg>

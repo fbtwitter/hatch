@@ -27,13 +27,13 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
     public MascotViewModel ViewModel { get; }
 
     private readonly IntPtr _hwnd;
-    private Storyboard? _idleAnimation;
     private Storyboard? _wiggleAnimation;
     private QuickAddBubbleWindow? _bubbleWindow;
     private bool _wigglePlayed = false;
     private bool _hasDragged = false;
     private bool _entrancePlayed = false;
     private bool _startupInitialized;
+    private bool _mainWindowActive;
     private Tip? _pendingProactiveTip;
 
     // Resume() only works after playback has started for the current source.
@@ -115,9 +115,13 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             AnimatedVisualPlayer.IsAnimatedVisualLoadedProperty, (_, _) =>
             {
                 if (!LottiePlayer.IsAnimatedVisualLoaded) return;
-                TryPlayEntrance();
-                UpdateAnimationState();
-                ShowPendingProactiveTip();
+                DispatcherQueue.TryEnqueue(() =>
+                {
+                    if (_animationClosed) return;
+                    TryPlayEntrance();
+                    UpdateAnimationState();
+                    ShowPendingProactiveTip();
+                });
             });
 
         FocusPopupBorder.SizeChanged += (_, _) => PositionMascotPopups();
@@ -137,7 +141,6 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
                 _bubbleWindow?.PositionRelativeToMascot(AppWindow.Position.X, AppWindow.Position.Y, AppWindow.Size.Width);
         };
 
-        _idleAnimation = MascotGrid.Resources["IdleAnimation"] as Storyboard;
         _idleFadeOut   = MascotGrid.Resources["IdleFadeOut"]   as Storyboard;
         _idleFadeIn    = MascotGrid.Resources["IdleFadeIn"]    as Storyboard;
         _hoverIn       = MascotGrid.Resources["HoverIn"]       as Storyboard;
@@ -148,8 +151,10 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         _inactivityTimer.Tick += (_, _) =>
         {
             _inactivityTimer.Stop();
+            if (ViewModel.IsBubbleOpen || ViewModel.IsTaskDraftActive || ProactiveTip.IsOpen || _focusViewModel != null) return;
             _isFaded = true;
-            _idleFadeOut?.Begin();
+            ViewModel.SetResting(true);
+            if (ViewModel.CanAnimate) _idleFadeOut?.Begin();
         };
         // Wiggle is built in code so it targets MascotGridTransform (works for both Canvas and Lottie)
         MascotGridTransform.CenterX = ViewModel.WindowSize / 2.0;
@@ -168,8 +173,13 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         App.MainWindowInstance?.ViewModel.TasksChanged += RefreshPendingTipIndicator;
         App.MainWindowInstance?.ViewModel.MyDayCompleted += OnMyDayCompleted;
         App.MainWindowInstance?.ViewModel.TaskCompletedLocally += PlayWiggleAnimation;
+        App.MainWindowInstance?.ViewModel.TaskAddedLocally += PlayWiggleAnimation;
+        App.MainWindowInstance?.ViewModel.PropertyChanged += OnMainTaskDraftChanged;
         if (App.MainWindowInstance != null)
+        {
             App.MainWindowInstance.Activated += OnMainWindowActivatedForCelebration;
+            App.MainWindowInstance.Activated += OnMainWindowActivatedForDraft;
+        }
         if (App.MainWindowInstance?.ViewModel.TakeSyncedMyDayCelebration() == true)
             OnMyDayCompleted(fromSync: true);
 
@@ -214,6 +224,8 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
                 RefreshPendingTipIndicator();
                 if (ViewModel.IsBubbleOpen)
                 {
+                    ResetInactivity();
+                    if (!_usingCustomAnimation) ViewModel.PlayReaction(MascotAnimationState.Greeting);
                     if (_currentProactiveTip != null && !_explicitTipDismissal)
                         App.TipCoordinator.SetPendingTip(_currentProactiveTip);
                     CloseProactiveTip();
@@ -237,6 +249,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
                 else
                 {
                     _bubbleWindow?.HideWindow();
+                    ResetInactivity();
                     if (_focusViewModel != null && ViewModel.IsVisible && !ViewModel.IsMascotHidden)
                         FocusPopup.IsOpen = true;
                 }
@@ -252,6 +265,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         };
         Closed += (_, _) =>
         {
+            CloseAnimationPlayback();
             _inactivityTimer?.Stop();
             _proactiveTipDismissTimer?.Stop();
             _focusViewModel?.Dispose();
@@ -261,13 +275,19 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             App.MainWindowInstance?.ViewModel.TasksChanged -= RefreshPendingTipIndicator;
             App.MainWindowInstance?.ViewModel.MyDayCompleted -= OnMyDayCompleted;
             App.MainWindowInstance?.ViewModel.TaskCompletedLocally -= PlayWiggleAnimation;
+            App.MainWindowInstance?.ViewModel.TaskAddedLocally -= PlayWiggleAnimation;
+            App.MainWindowInstance?.ViewModel.PropertyChanged -= OnMainTaskDraftChanged;
             if (App.MainWindowInstance != null)
+            {
                 App.MainWindowInstance.Activated -= OnMainWindowActivatedForCelebration;
+                App.MainWindowInstance.Activated -= OnMainWindowActivatedForDraft;
+            }
             UnregisterHotKey();
             ViewModel.MainWindowActionRequested -= OnMainWindowActionRequested;
             ViewModel.VisibilityRefreshed -= EnsureAlwaysOnTop;
             App.TipCoordinator.QuickTipsAvailabilityChanged -= OnQuickTipsAvailabilityChanged;
             App.TipCoordinator.PendingTipChanged -= RefreshPendingTipIndicator;
+            if (_bubbleWindow != null) _bubbleWindow.ViewModel.PropertyChanged -= OnQuickAddDraftChanged;
             _bubbleWindow?.Close();
             ViewModel.Dispose();
         };
@@ -313,8 +333,34 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             _bubbleWindow = new QuickAddBubbleWindow();
             App.BubbleWindowInstance = _bubbleWindow;
             _bubbleWindow.Dismissed += () => ViewModel.CloseBubble();
+            _bubbleWindow.ViewModel.PropertyChanged += OnQuickAddDraftChanged;
         }
         return _bubbleWindow;
+    }
+
+    private void OnQuickAddDraftChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(QuickAddViewModel.HasTaskDraft))
+            ViewModel.SetQuickAddDraftActive(_bubbleWindow?.ViewModel.HasTaskDraft == true);
+    }
+
+    private void OnMainTaskDraftChanged(object? sender, PropertyChangedEventArgs args)
+    {
+        if (args.PropertyName == nameof(MainViewModel.HasActiveTaskDraft)) RefreshMainTaskDraft();
+    }
+
+    private void OnMainWindowActivatedForDraft(object sender, WindowActivatedEventArgs args)
+    {
+        _mainWindowActive = args.WindowActivationState != WindowActivationState.Deactivated;
+        RefreshMainTaskDraft();
+    }
+
+    private void RefreshMainTaskDraft()
+    {
+        ViewModel.SetMainTaskDraftActive(_mainWindowActive &&
+            App.MainWindowInstance?.AppWindow.IsVisible == true &&
+            App.MainWindowInstance.ViewModel.HasActiveTaskDraft);
+        ResetInactivity();
     }
 
     private void OnProactiveTipDue(Tip tip)
@@ -355,6 +401,8 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         _proactiveHasFocus = false;
         UpdateProactiveTipChrome();
         ProactiveTip.IsOpen = true;
+        if (tip.Topic == "my-day-complete" && !_usingCustomAnimation)
+            ViewModel.PlayReaction(MascotAnimationState.Celebrate);
         App.TipCoordinator.RecordShown(tip, automatic: true);
         MascotSoundPlayer.Play();
 
@@ -416,7 +464,12 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         ProactiveTip.IsOpen = false;
     }
 
-    private void ProactiveTip_Opened(object? sender, object args) => PositionMascotPopups();
+    private void ProactiveTip_Opened(object? sender, object args)
+    {
+        ViewModel.SetPlanning(_currentProactiveTip?.Category == TipCategory.Planning);
+        ResetInactivity();
+        PositionMascotPopups();
+    }
 
     private void ProactiveTip_CloseClick(object sender, RoutedEventArgs args)
     {
@@ -547,6 +600,8 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         _proactiveTipStopwatch = null;
         var tip = _currentProactiveTip;
         _currentProactiveTip = null;
+        ViewModel.SetPlanning(false);
+        ResetInactivity();
         if (tip == null) return;
 
         if (_explicitTipDismissal)
@@ -632,7 +687,11 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
                 UpdateAnimationState();
                 break;
             case nameof(MascotViewModel.MuteAnimation):
+            case nameof(MascotViewModel.CanAnimate):
                 UpdateAnimationState();
+                break;
+            case nameof(MascotViewModel.AnimationState):
+                ApplyBuiltInAnimation();
                 break;
             case nameof(MascotViewModel.LottieFilePath):
                 ApplyLottieSource();
@@ -642,67 +701,6 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
                 AppWindow.Move(new PointInt32(ViewModel.X, ViewModel.Y));
                 break;
         }
-    }
-
-    private void ApplyLottieSource() => _ = ApplyLottieSourceAsync();
-
-    private async Task ApplyLottieSourceAsync()
-    {
-        _lottieStarted = false;
-
-        var path = ViewModel.LottieFilePath;
-        var hasFile = !string.IsNullOrEmpty(path) && File.Exists(path);
-
-        if (hasFile)
-        {
-            // Hide canvas immediately before the first await — prevents the canvas mascot
-            // from flashing on screen while the Lottie file is being read and decoded.
-            // The ring keeps the window from looking empty during the decode.
-            MascotRoot.Visibility = Visibility.Collapsed;
-            LottiePlayer.Visibility = Visibility.Collapsed;
-            MascotLoadingRing.Visibility = Visibility.Visible;
-            MascotLoadingRing.IsActive = true;
-            try
-            {
-                // LottieVisualSource.UriSource does not support file:// URIs — the internal
-                // UriLoader falls through to HttpClient which rejects file:// schemes.
-                // StorageFile.GetFileFromPathAsync requires package identity which is not
-                // available in unpackaged apps. Instead, read the file into a memory stream
-                // and supply it via SetSourceAsync(IRandomAccessStream).
-                var source = new LottieVisualSource();
-                using var fileStream = File.OpenRead(path!);
-                using var memStream = new Windows.Storage.Streams.InMemoryRandomAccessStream();
-                var outputStream = memStream.GetOutputStreamAt(0);
-                await fileStream.CopyToAsync(outputStream.AsStreamForWrite());
-                await outputStream.FlushAsync();
-                outputStream.Dispose();
-                memStream.Seek(0);
-                await source.SetSourceAsync(memStream);
-                LottiePlayer.Source = source;
-                LottiePlayer.Visibility = Visibility.Visible;
-                _idleAnimation?.Stop();
-            }
-            catch
-            {
-                LottiePlayer.Source = null;
-                LottiePlayer.Visibility = Visibility.Collapsed;
-                MascotRoot.Visibility = Visibility.Visible;
-            }
-        }
-        else
-        {
-            LottiePlayer.Source = null;
-            LottiePlayer.Visibility = Visibility.Collapsed;
-            MascotRoot.Visibility = Visibility.Visible;
-        }
-
-        MascotLoadingRing.IsActive = false;
-        MascotLoadingRing.Visibility = Visibility.Collapsed;
-
-        TryPlayEntrance();
-
-        UpdateAnimationState();
-        ShowPendingProactiveTip();
     }
 
     // Entrance runs once, on the first reveal where the mascot is actually on screen
@@ -721,9 +719,10 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
 
     private void PlayMascotEntrance()
     {
-        if (ViewModel.MuteAnimation) return;
+        if (!ViewModel.CanAnimate) return;
+        if (!_usingCustomAnimation) ViewModel.PlayReaction(MascotAnimationState.Greeting);
 
-        UIElement target = LottiePlayer.Visibility == Visibility.Visible ? LottiePlayer : MascotRoot;
+        UIElement target = LottiePlayer;
 
         // Zero out before Begin() — a frame can render between the reveal and the
         // storyboard's first tick, flashing the mascot at full opacity.
@@ -743,36 +742,6 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         sb.Begin();
     }
 
-    private void UpdateAnimationState()
-    {
-        var shouldPlay = ViewModel.IsVisible && !ViewModel.IsMascotHidden && !ViewModel.MuteAnimation;
-
-        if (LottiePlayer.Visibility == Visibility.Visible)
-        {
-            if (!LottiePlayer.IsAnimatedVisualLoaded) return;
-            if (!shouldPlay)
-            {
-                LottiePlayer.Pause();
-            }
-            else if (_lottieStarted)
-            {
-                // Resume from where Pause() left off (e.g. unmute)
-                LottiePlayer.Resume();
-            }
-            else
-            {
-                // First play for this source; Resume() cannot start it.
-                _lottieStarted = true;
-                _ = LottiePlayer.PlayAsync(0, 1, looped: true);
-            }
-        }
-        else
-        {
-            if (!shouldPlay) _idleAnimation?.Pause();
-            else             _idleAnimation?.Begin();
-        }
-    }
-    
     private void ApplyWindowResize()
     {
         var newSize = ViewModel.WindowSize;
@@ -805,24 +774,27 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
     private void ResetInactivity()
     {
         if (!ViewModel.IsVisible) return;
+        ViewModel.SetResting(false);
         _inactivityTimer?.Stop();
         if (_isFaded)
         {
             _isFaded = false;
-            _idleFadeIn?.Begin();
+            if (ViewModel.CanAnimate) _idleFadeIn?.Begin();
+            else MascotGrid.Opacity = 1;
+            if (!_usingCustomAnimation) ViewModel.PlayReaction(MascotAnimationState.Greeting);
         }
-        _inactivityTimer?.Start();
+        if (!ViewModel.IsBubbleOpen && !ViewModel.IsTaskDraftActive && _focusViewModel == null) _inactivityTimer?.Start();
     }
 
     private void OnPointerEntered(object sender, PointerRoutedEventArgs e)
     {
         ResetInactivity();
-        if (!FocusPopup.IsOpen) _hoverIn?.Begin();
+        if (ViewModel.CanAnimate && !FocusPopup.IsOpen) _hoverIn?.Begin();
     }
 
     private void OnPointerExited(object sender, PointerRoutedEventArgs e)
     {
-        if (!FocusPopup.IsOpen) _hoverOut?.Begin();
+        if (ViewModel.CanAnimate && !FocusPopup.IsOpen) _hoverOut?.Begin();
     }
 
     private void OnTapped(object sender, TappedRoutedEventArgs e)
@@ -858,6 +830,9 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         ViewModel.EndDrag();
         ((UIElement)sender).ReleasePointerCapture(e.Pointer);
     }
+
+    private void OnPointerCaptureLost(object sender, PointerRoutedEventArgs e)
+        => ViewModel.EndDrag();
 
     // Survives the call so Settings can read it when the page is first opened: the usual
     // case is the combination being taken at startup, long before anything is changed.
@@ -1114,6 +1089,8 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         _focusViewModel?.Dispose();
         var vm = new FocusModeViewModel(task, restored);
         _focusViewModel = vm;
+        ViewModel.SetFocusActive(true, vm.IsPaused);
+        _inactivityTimer?.Stop();
         RefreshPendingTipIndicator();
 
         // Disposing here, not only in the Exit button's handler: completing the task from the
@@ -1124,6 +1101,8 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             FocusPopup.IsOpen = false;
             vm.Dispose();
             _focusViewModel = null;
+            ViewModel.SetFocusActive(false);
+            ResetInactivity();
             RefreshPendingTipIndicator();
         });
         vm.SessionChanged += PersistFocusSession;
@@ -1156,6 +1135,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             FocusMinuteRing.Value = vm.MinuteProgress * 100;
         if (propertyName is null or nameof(FocusModeViewModel.IsPaused))
         {
+            ViewModel.SetFocusActive(true, vm.IsPaused);
             FocusPauseIcon.Glyph = vm.PauseResumeGlyph;
             AutomationProperties.SetName(FocusPauseButton, vm.PauseResumeLabel);
             ToolTipService.SetToolTip(FocusPauseButton, vm.PauseResumeLabel);
@@ -1250,7 +1230,13 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
 
     public void PlayWiggleAnimation()
     {
-        if (_wigglePlayed || ViewModel.MuteAnimation) return;
+        if (!ViewModel.CanAnimate) return;
+        if (!_usingCustomAnimation)
+        {
+            ViewModel.PlayReaction(MascotAnimationState.Celebrate);
+            return;
+        }
+        if (_wigglePlayed) return;
         _wigglePlayed = true;
         _wiggleAnimation?.Stop();
         _wiggleAnimation?.Begin();

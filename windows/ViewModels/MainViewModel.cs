@@ -39,6 +39,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         set
         {
             if (_newTaskText == value) return;
+            var hadDraft = HasActiveTaskDraft;
             if (value.Length > 0 && IsNewTaskDueDateRequired)
                 _draftDueDateDefault ??= NewTaskDueDate;
             _newTaskText = value;
@@ -49,6 +50,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             }
             if (value.Length > 0) RevealTaskComposer();
             OnPropertyChanged();
+            if (hadDraft != HasActiveTaskDraft) OnPropertyChanged(nameof(HasActiveTaskDraft));
             ((RelayCommand)AddTaskCommand).RaiseCanExecuteChanged();
         }
     }
@@ -271,6 +273,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         NewTaskText = string.Empty;
         ResetNewTaskDetails();
         SaveAsync();
+        TaskAddedLocally?.Invoke();
     }
 
     public void AttachTaskPropertyChangedHandler(TodoItem task)
@@ -701,6 +704,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     public event Action? TasksLoaded;
     public event Action? TasksChanged;
     public event Action? TaskCompletedLocally;
+    public event Action? TaskAddedLocally;
     public event Action<bool>? MyDayCompleted;
     private bool _syncedMyDayCelebrationPending;
 

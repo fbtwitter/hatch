@@ -123,7 +123,10 @@ public sealed partial class QuickAddBubbleWindow : Window
 
         // Disable Add when title is empty
         TaskTitleBox.TextChanged += (_, _) =>
-            AddButton.IsEnabled = !string.IsNullOrWhiteSpace(TaskTitleBox.Text);
+        {
+            ViewModel.SetTaskDraft(TaskTitleBox.Text);
+            AddButton.IsEnabled = ViewModel.HasTaskDraft;
+        };
         AddButton.IsEnabled = false;
 
         // Handle keyboard interactions
@@ -181,6 +184,7 @@ public sealed partial class QuickAddBubbleWindow : Window
     public void HideWindow()
     {
         _isClosed = true;
+        ViewModel.SetTaskDraft(null);
         _tipDismissCts?.Cancel();
         OnWindowClosed();
         NativeMethods.ShowWindow(_hwnd, SW_HIDE);
@@ -316,6 +320,7 @@ public sealed partial class QuickAddBubbleWindow : Window
         ListSelector.SelectedItem = selectedList;
 
         ViewModel.AddTask(mainVm, title, selectedList, DatePresetSelector.SelectedIndex);
+        ViewModel.SetTaskDraft(null);
 
         // Trigger mascot wiggle on first add in this session
         TriggerMascotWiggle();

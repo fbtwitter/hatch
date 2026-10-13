@@ -13,6 +13,7 @@ the previous sub-50 MB idle target was disproven and is not a release gate. See
 
 | Task-flow update | Status |
 |---|---|
+| Expressive mascot with native animation states and refreshed app icon | Included in v0.31.0; draft-aware thinking, local capture/completion reactions, focus pause/resume, idle wake and dragging; Debug x64 and native x64/ARM64 publishes pass; live state review and ARM64 hardware coverage remain limited |
 | Native AOT release executables for x64 and ARM64 | Included in v0.30.0; v0.30.1 corrects widget executable registration and validates packaged executable references; unit/integration and JIT/native UI regressions cover generated contracts and task workflows; live authentication, Windows integration hosts and ARM64 hardware remain unverified |
 | Planned native calendar stability, responsive date selection and title-bar theme consistency | Included in v0.30.0; native calendar/date/Undo checks and Light/Dark frame checks pass; user confirmed date switching and title-bar appearance |
 | Recover a lost native Always on Top state without taking focus | Included in v0.29.1; three recovery repeats and normal/maximized overlap checks pass; saved off/hidden preferences respected; idle resource comparison remains close to baseline; intermittent user-reported occlusion was not reproduced |

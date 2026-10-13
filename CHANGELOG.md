@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.31.0] - 2026-10-13
+
+- Introduce the expressive Hatch mascot and refreshed app icon, with native animation states for drafting, capture, completion, focus, rest and dragging.
+
 ## [0.30.1] - 2026-10-13
 
 - Fix the packaged My Day widget executable registration and validate manifest executable paths before publishing release bundles.

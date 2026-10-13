@@ -20,13 +20,12 @@ Bitmap RenderSvg(int w, int h, float paddingFraction = 0f, bool whiteBg = false)
     g.InterpolationMode = InterpolationMode.HighQualityBicubic;
     g.SmoothingMode     = SmoothingMode.AntiAlias;
 
-    int logoW   = (int)(w * (1f - paddingFraction * 2));
-    int logoH   = (int)(h * (1f - paddingFraction * 2));
-    int offsetX = (w - logoW) / 2;
-    int offsetY = (h - logoH) / 2;
+    int logoSize = (int)(Math.Min(w, h) * (1f - paddingFraction * 2));
+    int offsetX  = (w - logoSize) / 2;
+    int offsetY  = (h - logoSize) / 2;
 
-    using var logo = svg.Draw(logoW, logoH);
-    g.DrawImage(logo, offsetX, offsetY, logoW, logoH);
+    using var logo = svg.Draw(logoSize, logoSize);
+    g.DrawImage(logo, offsetX, offsetY, logoSize, logoSize);
     return canvas;
 }
 

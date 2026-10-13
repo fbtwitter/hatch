@@ -82,6 +82,7 @@ public sealed partial class TaskListPage : Page
     // so nothing is lost, just re-realized on the next layout pass.
     public void ReleaseListBindings()
     {
+        _vm?.SetTaskPageActive(false);
         FlatGroupsItemsControl.ItemsSource = null;
         GroupedListView.ItemsSource = null;
         PlannedDayList.ItemsSource = null;
@@ -94,6 +95,7 @@ public sealed partial class TaskListPage : Page
     public void RestoreListBindings()
     {
         if (_vm == null) return;
+        _vm.SetTaskPageActive(true);
         _vm.ResetTaskComposerScroll(ActiveTaskScrollViewer?.VerticalOffset ?? 0);
         FlatGroupsItemsControl.ItemsSource = _vm.FlatGroupedTasks;
         PlannedDayList.ItemsSource = _vm.PlannedDayTasks;
@@ -146,6 +148,7 @@ public sealed partial class TaskListPage : Page
 
         _vm = vm;
         DataContext = vm;
+        vm.SetTaskPageActive(true);
         vm.ResetPlannedView();
         vm.ResetTaskComposerScroll();
         AnimateTaskComposer(false);
@@ -166,6 +169,7 @@ public sealed partial class TaskListPage : Page
         base.OnNavigatedFrom(e);
         if (_vm != null)
         {
+            _vm.SetTaskPageActive(false);
             _vm.PropertyChanged -= OnViewModelPropertyChanged;
             _vm.FlatGroupMoveStarting -= OnFlatGroupMoveStarting;
             _vm.FlatGroupMoveCompleted -= OnFlatGroupMoveCompleted;

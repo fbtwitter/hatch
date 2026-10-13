@@ -23,7 +23,7 @@
     <!-- Keep in sync with Package.appxmanifest's Identity Version and the release tag.
          Packaged builds read the manifest; unpackaged Debug builds have no package
          identity and fall back to this via SettingsViewModel.AppVersion. -->
-    <Version>0.30.1</Version>
+    <Version>0.31.0</Version>
     <!-- Signing and package generation are handled by CI; disabled locally -->
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
     <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>
@@ -98,11 +98,13 @@
     <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.4.0" />
   </ItemGroup>
 
-  <!-- Auto-generate PNG assets from ../assets/logo.svg on first build if missing.
+  <!-- Generate package icons when their vector sources or renderer change.
        logo.svg lives at the repo root (shared with mobile/ and README.md), not under
        windows/ — everything else this target touches (AssetGen.csproj, the Assets
        output dir) stays windows-local. -->
-  <Target Name="EnsureAssets" BeforeTargets="PrepareForBuild" Condition="!Exists('$(MSBuildProjectDirectory)\Assets\Hatch.ico') Or !Exists('$(MSBuildProjectDirectory)\Assets\MyDayWidgetPreview.png') Or !Exists('$(MSBuildProjectDirectory)\Assets\Square150x150Logo.png')">
+  <Target Name="EnsureAssets" BeforeTargets="PrepareForBuild"
+          Inputs="$(MSBuildProjectDirectory)\..\assets\logo.svg;$(MSBuildProjectDirectory)\..\assets\widget-preview.svg;$(MSBuildProjectDirectory)\scripts\AssetGen\Program.cs;$(MSBuildProjectDirectory)\scripts\AssetGen\AssetGen.csproj"
+          Outputs="$(MSBuildProjectDirectory)\Assets\Hatch.ico;$(MSBuildProjectDirectory)\Assets\HatchHidden.ico;$(MSBuildProjectDirectory)\Assets\MyDayWidgetPreview.png;$(MSBuildProjectDirectory)\Assets\Square150x150Logo.png;$(MSBuildProjectDirectory)\Assets\Square44x44Logo.png;$(MSBuildProjectDirectory)\Assets\StoreLogo.png;$(MSBuildProjectDirectory)\Assets\SplashScreen.png">
     <Exec Command="dotnet run --project &quot;$(MSBuildProjectDirectory)\scripts\AssetGen\AssetGen.csproj&quot; -- &quot;$(MSBuildProjectDirectory)\..\assets\logo.svg&quot; &quot;$(MSBuildProjectDirectory)\Assets&quot;" WorkingDirectory="$(MSBuildProjectDirectory)" />
   </Target>
 

@@ -45,6 +45,7 @@ public sealed partial class MascotViewModel : INotifyPropertyChanged, IDisposabl
             if (_isVisible == value) return;
             _isVisible = value;
             OnPropertyChanged();
+            RefreshAnimationState();
         }
     }
 
@@ -83,11 +84,16 @@ public sealed partial class MascotViewModel : INotifyPropertyChanged, IDisposabl
             _settings.Current.MuteAnimation = value;
             _settings.SaveDebounced();
             OnPropertyChanged();
+            RefreshAnimationState();
         }
     }
 
     // Called by SettingsViewModel so MascotWindow responds without re-saving.
-    public void RaiseMuteChanged() => OnPropertyChanged(nameof(MuteAnimation));
+    public void RaiseMuteChanged()
+    {
+        OnPropertyChanged(nameof(MuteAnimation));
+        RefreshAnimationState();
+    }
 
     public void ApplyShowMascotChanged() => RefreshVisibility();
 
@@ -123,7 +129,9 @@ public sealed partial class MascotViewModel : INotifyPropertyChanged, IDisposabl
         {
             if (_isBubbleOpen == value) return;
             _isBubbleOpen = value;
+            if (!value) _hasQuickAddDraft = false;
             OnPropertyChanged();
+            RefreshAnimationState();
         }
     }
 
@@ -206,6 +214,7 @@ public sealed partial class MascotViewModel : INotifyPropertyChanged, IDisposabl
         _tipCoordinator = tipCoordinator;
         _dispatcher = dispatcher;
         _tasks = tasks;
+        InitializeAnimationSettings();
         _isVisible = _settings.Current.ShowMascot;
         ResetPositionCommand     = new RelayCommand(_ => ResetPosition());
         ShowMainWindowCommand    = new RelayCommand(_ => ShowMainWindow());
@@ -243,6 +252,7 @@ public sealed partial class MascotViewModel : INotifyPropertyChanged, IDisposabl
         _dragStartWindowX = windowX;
         _dragStartWindowY = windowY;
         _isDragging = true;
+        RefreshAnimationState();
     }
 
     public void ContinueDrag()
@@ -272,6 +282,7 @@ public sealed partial class MascotViewModel : INotifyPropertyChanged, IDisposabl
     {
         if (!_isDragging) return;
         _isDragging = false;
+        RefreshAnimationState();
         _settings.SaveDebounced();
     }
 
@@ -524,6 +535,7 @@ public sealed partial class MascotViewModel : INotifyPropertyChanged, IDisposabl
 
     public void Dispose()
     {
+        DisposeAnimationSettings();
         _cts?.Cancel();
         _cts?.Dispose();
         _pollTimer?.Dispose();

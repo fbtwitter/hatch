@@ -11,42 +11,10 @@
           PointerPressed="OnPointerPressed"
           PointerMoved="OnPointerMoved"
           PointerReleased="OnPointerReleased"
+          PointerCanceled="OnPointerCaptureLost"
+          PointerCaptureLost="OnPointerCaptureLost"
           Tapped="OnTapped">
         <Grid.Resources>
-            <!-- 4-second idle cycle: 2 gentle bobs + 1 blink at 2.8 s -->
-            <Storyboard x:Key="IdleAnimation" RepeatBehavior="Forever">
-
-                <DoubleAnimationUsingKeyFrames
-                    Storyboard.TargetName="MascotRoot"
-                    Storyboard.TargetProperty="(UIElement.RenderTransform).(CompositeTransform.TranslateY)">
-                    <EasingDoubleKeyFrame KeyTime="0:0:0" Value="0">
-                        <EasingDoubleKeyFrame.EasingFunction>
-                            <SineEase EasingMode="EaseInOut" />
-                        </EasingDoubleKeyFrame.EasingFunction>
-                    </EasingDoubleKeyFrame>
-                    <EasingDoubleKeyFrame KeyTime="0:0:1" Value="-5">
-                        <EasingDoubleKeyFrame.EasingFunction>
-                            <SineEase EasingMode="EaseInOut" />
-                        </EasingDoubleKeyFrame.EasingFunction>
-                    </EasingDoubleKeyFrame>
-                    <EasingDoubleKeyFrame KeyTime="0:0:2" Value="0">
-                        <EasingDoubleKeyFrame.EasingFunction>
-                            <SineEase EasingMode="EaseInOut" />
-                        </EasingDoubleKeyFrame.EasingFunction>
-                    </EasingDoubleKeyFrame>
-                    <EasingDoubleKeyFrame KeyTime="0:0:3" Value="-5">
-                        <EasingDoubleKeyFrame.EasingFunction>
-                            <SineEase EasingMode="EaseInOut" />
-                        </EasingDoubleKeyFrame.EasingFunction>
-                    </EasingDoubleKeyFrame>
-                    <EasingDoubleKeyFrame KeyTime="0:0:4" Value="0">
-                        <EasingDoubleKeyFrame.EasingFunction>
-                            <SineEase EasingMode="EaseInOut" />
-                        </EasingDoubleKeyFrame.EasingFunction>
-                    </EasingDoubleKeyFrame>
-                </DoubleAnimationUsingKeyFrames>
-
-            </Storyboard>
 
             <!-- Inactivity fade: full opacity → 0.4 over 2 s (starts after 30 s idle) -->
             <Storyboard x:Key="IdleFadeOut">
@@ -138,7 +106,7 @@
             <Grid.RenderTransform>
                 <CompositeTransform x:Name="MascotGridTransform" />
             </Grid.RenderTransform>
-        <!-- Lottie player — hidden until a .json file is set in Settings -->
+        <!-- Native Lottie mascot, with an optional custom JSON override. -->
         <AnimatedVisualPlayer x:Name="LottiePlayer"
                               Width="{x:Bind ViewModel.WindowSize, Mode=OneWay}"
                               Height="{x:Bind ViewModel.WindowSize, Mode=OneWay}"
@@ -147,66 +115,6 @@
                               AutoPlay="False"
                               Stretch="Uniform"
                               Visibility="Collapsed" />
-
-        <!--
-            Egg mascot — XAML vector shapes + Storyboard idle animation.
-
-            To swap in a Lottie asset, replace the Canvas below with:
-
-                <AnimatedVisualPlayer x:Name="MascotRoot"
-                                      Width="120" Height="120"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"
-                                      AutoPlay="True"
-                                      Stretch="Uniform"
-                                      Source="{StaticResource YourLottieSource}"/>
-
-            Then remove the Storyboard from Grid.Resources and the
-            _idleAnimation field + calls from MascotWindow.xaml.cs.
-        -->
-        <Viewbox x:Name="MascotRoot"
-                 Width="{x:Bind ViewModel.WindowSize, Mode=OneWay}"
-                 Height="{x:Bind ViewModel.WindowSize, Mode=OneWay}"
-                 Stretch="Uniform"
-                 HorizontalAlignment="Center"
-                 VerticalAlignment="Center">
-            <Viewbox.RenderTransform>
-                <CompositeTransform />
-            </Viewbox.RenderTransform>
-
-            <Canvas Width="100" Height="100">
-
-                <!-- Egg body — matches logo.svg -->
-                <Path Data="M50 6 C72 6 88 32 88 58 C88 80 72 94 50 94 C28 94 12 80 12 58 C12 32 28 6 50 6 Z"
-                      Fill="#FFD966"
-                      Stroke="#1A1A1A"
-                      StrokeThickness="3.5"
-                      StrokeLineJoin="Round" />
-
-                <Path Data="M14 50 L24 56 L32 48 L42 58 L52 50 L60 60 L70 52 L80 60 L86 54"
-                      Fill="Transparent"
-                      Stroke="#1A1A1A"
-                      StrokeThickness="3.5"
-                      StrokeLineJoin="Round"
-                      StrokeStartLineCap="Round"
-                      StrokeEndLineCap="Round" />
-
-                <!-- Paperclip — translated (36,22) to match logo.svg group transform -->
-                <Path
-                    Data="M4 36 Q4 40 8 40 L20 40 Q24 40 24 36 L24 10 Q24 4 18 4 L10 4 Q4 4 4 10 L4 30 Q4 33 7 33 Q10 33 10 30 L10 14 Q10 11 13 11 L15 11 Q18 11 18 14 L18 30"
-                    Fill="Transparent"
-                    Stroke="#1A73E8"
-                    StrokeThickness="3.2"
-                    StrokeStartLineCap="Round"
-                    StrokeEndLineCap="Round"
-                    StrokeLineJoin="Round">
-                    <Path.RenderTransform>
-                        <TranslateTransform X="36" Y="22" />
-                    </Path.RenderTransform>
-                </Path>
-
-            </Canvas>
-        </Viewbox>
 
         <!-- Startup loading indicator — shown while a Lottie source is decoding -->
         <ProgressRing x:Name="MascotLoadingRing"
