@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.30.1] - 2026-10-13
+
+- Fix the packaged My Day widget executable registration and validate manifest executable paths before publishing release bundles.
+
 ## [0.30.0] - 2026-10-13
 
 - Publish native x64/ARM64 builds, preserve task storage and optional encrypted sync with generated contracts, and fix Planned calendar crashes, date-switching delays, and title-bar theme consistency.

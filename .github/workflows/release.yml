@@ -208,6 +208,24 @@ jobs:
 
           if ($msixFiles.Count -eq 0) { Write-Error "No MSIX files found"; exit 1 }
 
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          foreach ($msix in $msixFiles) {
+            $archive = [IO.Compression.ZipFile]::OpenRead($msix.FullName)
+            try {
+              $stream = $archive.GetEntry('AppxManifest.xml').Open()
+              try {
+                $manifest = [xml]::new()
+                $manifest.Load($stream)
+              } finally { $stream.Dispose() }
+              foreach ($executable in $manifest.SelectNodes('//@Executable')) {
+                $path = $executable.Value.Replace('\', '/')
+                if (-not $archive.GetEntry($path)) {
+                  throw "Manifest executable '$path' is missing from $($msix.Name)."
+                }
+              }
+            } finally { $archive.Dispose() }
+          }
+
           # Copy them flat into a staging folder so MakeAppx /d can find them
           $stagingDir = "${{ github.workspace }}\BundleStaging"
           New-Item -ItemType Directory -Path $stagingDir -Force | Out-Null
