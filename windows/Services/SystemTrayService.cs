@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace Hatch.Services;
 
-public sealed class SystemTrayService : IDisposable
+public sealed partial class SystemTrayService : IDisposable
 {
     private const uint NIM_ADD = 0;
     private const uint NIM_MODIFY = 1;

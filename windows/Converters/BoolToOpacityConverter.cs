@@ -2,7 +2,7 @@ using Microsoft.UI.Xaml.Data;
 
 namespace Hatch.Converters;
 
-public sealed class BoolToOpacityConverter : IValueConverter
+public sealed partial class BoolToOpacityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
         => value is true ? 0.5 : 1.0;

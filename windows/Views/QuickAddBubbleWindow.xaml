@@ -1,7 +1,8 @@
 <Window
     x:Class="Hatch.Views.QuickAddBubbleWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:models="using:Hatch.Models">
 
     <Grid x:Name="BubbleRoot">
         <Grid.Resources>
@@ -241,7 +242,13 @@
                               x:Uid="QuickAdd_ListSelector"
                               AutomationProperties.AutomationId="Bubble_ListSelector"
                               AutomationProperties.Name="Add to list"
-                              HorizontalAlignment="Stretch"/>
+                              HorizontalAlignment="Stretch">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate x:DataType="models:TaskList">
+                                <TextBlock Text="{x:Bind Name, Mode=OneWay}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
                 </StackPanel>
 
                 <StackPanel>

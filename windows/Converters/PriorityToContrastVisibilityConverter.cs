@@ -5,7 +5,7 @@ using Windows.UI.ViewManagement;
 
 namespace Hatch.Converters;
 
-public sealed class PriorityToContrastVisibilityConverter : IValueConverter
+public sealed partial class PriorityToContrastVisibilityConverter : IValueConverter
 {
     private static readonly AccessibilitySettings Accessibility = new();
 

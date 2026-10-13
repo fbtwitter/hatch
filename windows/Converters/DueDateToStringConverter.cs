@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml.Data;
 
 namespace Hatch.Converters;
 
-public sealed class DueDateToStringConverter : IValueConverter
+public sealed partial class DueDateToStringConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, string language)
     {

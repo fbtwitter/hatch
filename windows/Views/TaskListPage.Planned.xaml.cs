@@ -100,7 +100,10 @@ public sealed partial class TaskListPage
         var date = day.Date.ToLocalTime();
         int count = _vm.GetPlannedTaskCount(date);
         var colour = ThemeResourceHelper.GetBrush("AccentTextFillColorPrimaryBrush") as SolidColorBrush;
-        day.SetDensityColors(count > 0 && colour != null ? [colour.Color] : []);
+        // Color arrays require boxed IReferenceArray support unavailable in Native AOT.
+        day.SetDensityColors(count > 0 && colour != null
+            ? new List<Windows.UI.Color> { colour.Color }
+            : null);
         var description = Strings.PlannedCalendar_DateTasks(date.ToString("D", CultureInfo.CurrentCulture), count);
         AutomationProperties.SetHelpText(day, description);
         ToolTipService.SetToolTip(day, description);

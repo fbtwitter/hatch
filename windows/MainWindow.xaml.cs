@@ -37,16 +37,20 @@ public sealed partial class MainWindow : Window
     {
         ViewModel = viewModel;
         InitializeComponent();
-        RootFrame.RequestedTheme = App.GetElementTheme(App.Settings.Theme);
-        RootFrame.ActualThemeChanged += (_, _) => ViewModel.NotifyThemeChanged();
+        RootFrame.ActualThemeChanged += (_, _) =>
+        {
+            ApplyNativeFrameTheme();
+            ViewModel.NotifyThemeChanged();
+        };
         _uiSettings.ColorValuesChanged += OnSystemColorsChanged;
         Closed += (_, _) => _uiSettings.ColorValuesChanged -= OnSystemColorsChanged;
         Title = "Hatch";
         AppWindow.Resize(new SizeInt32(620, 640));
         ExtendsContentIntoTitleBar = true;
-        AppWindow.TitleBar.PreferredTheme = TitleBarTheme.UseDefaultAppMode;
-
         _hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
+        // Set both XAML and native chrome themes before the first visible frame.
+        // Waiting for Activated briefly draws the title bar in Windows' app theme.
+        ApplyTheme(App.Settings.Theme);
 
         // Apply the app icon to the taskbar button, title bar, and Alt+Tab switcher.
         // The ICO is generated from logo.svg by AssetGen at build time.
@@ -299,6 +303,20 @@ public sealed partial class MainWindow : Window
             AppTheme.Dark  => TitleBarTheme.Dark,
             _              => TitleBarTheme.UseDefaultAppMode
         };
+        ApplyNativeFrameTheme();
+    }
+
+    private void ApplyNativeFrameTheme()
+    {
+        if (_hwnd == IntPtr.Zero || !OsVersionHelper.IsWindows11OrGreater) return;
+
+        // Caption-button theming does not update DWM's frame dark-mode setting.
+        // Let Windows draw its normal border using the effective XAML theme.
+        uint useDarkMode = RootFrame.ActualTheme == ElementTheme.Dark ? 1u : 0u;
+        int result = NativeMethods.DwmSetWindowAttribute(_hwnd,
+            NativeMethods.DWMWA_USE_IMMERSIVE_DARK_MODE, ref useDarkMode, sizeof(uint));
+        if (result < 0)
+            System.Diagnostics.Debug.WriteLine($"Window frame theme failed: 0x{result:X8}");
     }
 
     private void OnSystemColorsChanged(Windows.UI.ViewManagement.UISettings sender, object args)

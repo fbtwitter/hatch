@@ -10,7 +10,6 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
     <PackageReference Include="MSTest.TestAdapter" Version="4.3.3" />
     <PackageReference Include="MSTest.TestFramework" Version="4.3.3" />
-    <PackageReference Include="Supabase" Version="1.6.0" />
     <ProjectReference Include="..\Hatch.Core\Hatch.Core.csproj" />
   </ItemGroup>
   <!-- Exercise production storage and transfer orchestration without loading WinUI.
@@ -18,6 +17,7 @@
   <ItemGroup>
     <Compile Include="..\Helpers\AppDataPath.cs" Link="Source\AppDataPath.cs" />
     <Compile Include="..\Models\AppSettings.cs" Link="Source\AppSettings.cs" />
+    <Compile Include="..\Models\SettingsJsonContext.cs" Link="Source\SettingsJsonContext.cs" />
     <Compile Include="..\Models\SyncConflict.cs" Link="Source\SyncConflict.cs" />
     <Compile Include="..\Models\SyncConflictResolution.cs" Link="Source\SyncConflictResolution.cs" />
     <Compile Include="..\Services\TaskStorageService.cs" Link="Source\TaskStorageService.cs" />
@@ -25,5 +25,7 @@
     <Compile Include="..\Services\TaskTombstoneStore.cs" Link="Source\TaskTombstoneStore.cs" />
     <Compile Include="..\Services\SyncDecisions.cs" Link="Source\SyncDecisions.cs" />
     <Compile Include="..\Services\SyncService.cs" Link="Source\SyncService.cs" />
+    <Compile Include="..\Services\SupabaseSyncClient.cs" Link="Source\SupabaseSyncClient.cs" />
+    <Compile Include="..\Services\SyncApiJsonContext.cs" Link="Source\SyncApiJsonContext.cs" />
   </ItemGroup>
 </Project>

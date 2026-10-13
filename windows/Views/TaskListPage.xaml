@@ -1004,6 +1004,9 @@
                               SelectionChanged="TaskListView_SelectionChanged"
                               Loaded="TaskListView_Loaded" Unloaded="TaskListView_Unloaded"
                               ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListView.ItemContainerTransitions>
+                            <TransitionCollection />
+                        </ListView.ItemContainerTransitions>
                         <ListView.Header>
                             <TextBlock x:Uid="PlannedDayEmptyText"
                                        Visibility="{x:Bind ViewModel.IsPlannedDayEmpty, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"

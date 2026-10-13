@@ -2,7 +2,7 @@ using Microsoft.UI.Xaml.Data;
 
 namespace Hatch.Converters;
 
-public sealed class DueDateToChipBrushConverter : IValueConverter
+public sealed partial class DueDateToChipBrushConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, string language)
     {

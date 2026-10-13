@@ -4,7 +4,7 @@ namespace Hatch.Services
 {
     public sealed class SyncAccountService
     {
-        internal Supabase.Client? Client { get; set; }
+        internal SupabaseSyncClient? Client { get; set; }
         public bool IsSignedIn { get; set; } = true;
         public bool IsMfaChallengePending { get; set; }
         public bool HasPassphrase => SyncPassphraseStore.Load().Passphrase != null;

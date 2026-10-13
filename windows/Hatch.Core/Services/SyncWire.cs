@@ -18,11 +18,13 @@ public static class SyncWire
         IgnoreReadOnlyProperties = true
     };
 
+    private static readonly TaskJsonContext JsonContext = new(JsonOptions);
+
     public static string Serialize(TasksFile data)
-        => JsonSerializer.Serialize(data, JsonOptions);
+        => JsonSerializer.Serialize(data, JsonContext.TasksFile);
 
     public static TasksFile? Deserialize(string json)
-        => JsonSerializer.Deserialize<TasksFile>(json, JsonOptions);
+        => JsonSerializer.Deserialize(json, JsonContext.TasksFile);
 
     // Order-insensitive: SyncMerge.Merge rebuilds its result from a Dictionary, so it
     // doesn't preserve list order even when no task or list actually changed. A plain

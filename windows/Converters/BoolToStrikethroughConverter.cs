@@ -3,7 +3,7 @@ using Windows.UI.Text;
 
 namespace Hatch.Converters;
 
-public sealed class BoolToStrikethroughConverter : IValueConverter
+public sealed partial class BoolToStrikethroughConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
         => value is true ? TextDecorations.Strikethrough : TextDecorations.None;

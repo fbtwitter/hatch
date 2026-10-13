@@ -162,6 +162,13 @@ public static class TestSetup
 
     private static Application LaunchTestApp()
     {
+        var appAumid = Environment.GetEnvironmentVariable("HATCH_APP_AUMID");
+        if (!string.IsNullOrEmpty(appAumid))
+        {
+            return Application.LaunchStoreApp(appAumid,
+                $"--hatch-ui-test --hatch-ui-test-data-dir \"{DataDirectory}\" --hatch-ui-test-instance-key {TestInstanceKey}");
+        }
+
         // Pass an explicit environment and marker arguments to the child. The user's
         // normal Hatch instance may already own the production key, so this test run
         // uses isolated storage and a unique AppInstance key across its restarts.

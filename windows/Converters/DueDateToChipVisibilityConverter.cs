@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml.Data;
 
 namespace Hatch.Converters;
 
-public sealed class DueDateToChipVisibilityConverter : IValueConverter
+public sealed partial class DueDateToChipVisibilityConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, string language)
     {

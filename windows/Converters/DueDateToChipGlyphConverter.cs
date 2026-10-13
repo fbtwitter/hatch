@@ -2,7 +2,7 @@ using Microsoft.UI.Xaml.Data;
 
 namespace Hatch.Converters;
 
-public sealed class DueDateToChipGlyphConverter : IValueConverter
+public sealed partial class DueDateToChipGlyphConverter : IValueConverter
 {
     private const string CalendarGlyph = "\uE787";  // Calendar
     private const string WarningGlyph  = "\uE7BA";  // Warning

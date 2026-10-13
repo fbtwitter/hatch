@@ -2,7 +2,7 @@ using Microsoft.UI.Xaml.Data;
 
 namespace Hatch.Converters;
 
-public sealed class TagsPreviewConverter : IValueConverter
+public sealed partial class TagsPreviewConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {

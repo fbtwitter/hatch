@@ -290,7 +290,6 @@ public sealed partial class QuickAddBubbleWindow : Window
     private void RefreshListSelector(MainViewModel mainVm)
     {
         _defaultList.Name = Strings.List_Default_Name;
-        ListSelector.DisplayMemberPath = nameof(TaskList.Name);
         ListSelector.Items.Clear();
         ListSelector.Items.Add(_defaultList);
         foreach (var list in mainVm.CustomLists)

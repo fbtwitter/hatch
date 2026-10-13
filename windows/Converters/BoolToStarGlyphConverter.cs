@@ -2,7 +2,7 @@ using Microsoft.UI.Xaml.Data;
 
 namespace Hatch.Converters;
 
-public sealed class BoolToStarGlyphConverter : IValueConverter
+public sealed partial class BoolToStarGlyphConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {

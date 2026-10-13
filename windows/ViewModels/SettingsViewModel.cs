@@ -12,7 +12,7 @@ using Hatch.Views;
 
 namespace Hatch.ViewModels;
 
-public sealed class SettingsViewModel : INotifyPropertyChanged
+public sealed partial class SettingsViewModel : INotifyPropertyChanged
 {
     private readonly SettingsService _settings;
     private readonly SyncAccountService _syncAccountService;

@@ -9,6 +9,23 @@ Follow the [IDE-free build and run instructions](../README.md#build-and-run-with
 They use the x64 Debug configuration and list the required SDK and runtime. Run the commands
 from the repository root.
 
+### Native AOT release packages
+
+Install Visual Studio's **Desktop development with C++** workload, including ARM64
+C++ build tools when publishing ARM64. Install [WinApp CLI 0.7.1 or later](https://github.com/microsoft/winappCli).
+Then create an unsigned package from the repository root:
+
+```powershell
+winapp package .\windows\hatch.csproj --arch x64 --no-sign
+winapp package .\windows\hatch.csproj --arch x64 --arch arm64 --no-sign
+```
+
+Release uses `dotnet publish` to compile native code and package its published payload.
+`dotnet build` alone produces a JIT development build. AOT and trimming warnings fail
+the publish; fix their causes instead of suppressing them. Windows App SDK native libraries
+remain in the package, so the app is not a single-file executable. Local packaging does not
+install the package or add a certificate to Windows trust.
+
 Build the Debug x64 app and run the full regression scan:
 
 ```powershell
@@ -16,12 +33,24 @@ Build the Debug x64 app and run the full regression scan:
 ```
 
 The scan runs unit tests, real-file persistence and simulated sync integration tests,
-then eight FlaUI profiles, including Light/Dark task workflows and onboarding.
+then ten FlaUI profiles, including Light/Dark task workflows, Planned and onboarding.
 It gives each profile separate app data and measurement output. Run it in an interactive
 Windows desktop session; the FlaUI runner builds a self-contained unpackaged Release x64
 app and automates its real windows.
 
 New features should add behavioral regression cases covering their changes.
+
+To run the same ten UI profiles against an already registered native preview package:
+
+```powershell
+.\windows\scripts\run-ui-regression.ps1 -AppAumid "<registered-preview-AUMID>"
+```
+
+This uses packaged activation with isolated fixture data. Supply a separate development
+package identity; the runner does not build or install a package in this mode.
+The Auth integration tests exercise generated contracts, PKCE, refresh rotation, MFA,
+recovery codes and logout using synthetic HTTP responses. They do not verify a live
+account, browser sign-in, Credential Locker or remote service configuration.
 
 The Kotlin Multiplatform companion app is maintained in the
 [hatch-mobile repository](https://github.com/fbtwitter/hatch-mobile).
@@ -58,7 +87,10 @@ timers, or large collections, describe the expected impact and measure it when p
 ## CI and releases
 
 Pull requests, pushes to `main`, weekly runs and manual dispatch build the app and run
-the regression scan on a Windows runner. Runs upload TRX results, screenshots,
+the regression scan on a Windows runner, then publish Native AOT for x64 and ARM64.
+The existing UI regression runner uses a JIT build; native publishing checks compiler
+compatibility and does not replace runtime checks of the native packages.
+Runs upload TRX results, screenshots,
 and synthetic fixture data as artifacts; the `build-and-test` job fails if any profile
 fails. Branch protection must require that job's status to block merges. A
 `v*.*.*` tag triggers MSIX packaging, a GitHub release, and an App Installer feed update.

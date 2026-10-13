@@ -8,7 +8,7 @@ using Microsoft.UI.Dispatching;
 
 namespace Hatch.ViewModels;
 
-public sealed class SyncAccountViewModel : INotifyPropertyChanged
+public sealed partial class SyncAccountViewModel : INotifyPropertyChanged
 {
     private static readonly Windows.Globalization.DateTimeFormatting.DateTimeFormatter _lastSyncedFormatter =
         new("month.abbreviated day hour minute");

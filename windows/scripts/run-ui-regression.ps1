@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$ArtifactRoot = (Join-Path $env:TEMP "Hatch.UiRegression"),
+    [string]$AppAumid,
     [ValidateSet('default', 'proactive-action', 'proactive-no-action', 'oversized-quick-add', 'proactive-collapse-reopen', 'workflows-light', 'workflows-dark', 'planned-light', 'planned-dark', 'onboarding')]
     [string[]]$Profile
 )
@@ -19,18 +20,20 @@ $runId = [DateTime]::UtcNow.ToString("yyyyMMddTHHmmssfffZ")
 $runRoot = Join-Path $ArtifactRoot $runId
 New-Item -ItemType Directory -Path $runRoot -Force | Out-Null
 
-Write-Host "Building self-contained Release x64 app for UI tests..."
 $previousErrorActionPreference = $ErrorActionPreference
-$ErrorActionPreference = "Continue"
-& dotnet build $appProject --configuration Release -p:Platform=x64 -p:WindowsPackageType=None -p:EnableMsixTooling=false -p:GenerateAppxPackageOnBuild=false -p:WindowsAppSDKSelfContained=true -p:WindowsAppSDKDeploymentManagerInitialize=false -p:NuGetAudit=false -p:RestoreIgnoreFailedSources=true
-$appBuildExitCode = $LASTEXITCODE
-$ErrorActionPreference = $previousErrorActionPreference
-if ($appBuildExitCode -ne 0) {
-    throw "Self-contained app build failed with exit code $appBuildExitCode."
-}
+if (-not $AppAumid) {
+    Write-Host "Building self-contained Release x64 app for UI tests..."
+    $ErrorActionPreference = "Continue"
+    & dotnet build $appProject --configuration Release -p:Platform=x64 -p:WindowsPackageType=None -p:EnableMsixTooling=false -p:GenerateAppxPackageOnBuild=false -p:WindowsAppSDKSelfContained=true -p:WindowsAppSDKDeploymentManagerInitialize=false -p:NuGetAudit=false -p:RestoreIgnoreFailedSources=true
+    $appBuildExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $previousErrorActionPreference
+    if ($appBuildExitCode -ne 0) {
+        throw "Self-contained app build failed with exit code $appBuildExitCode."
+    }
 
-if (-not (Test-Path -LiteralPath $appExe)) {
-    throw "Self-contained UI test app was not produced at $appExe."
+    if (-not (Test-Path -LiteralPath $appExe)) {
+        throw "Self-contained UI test app was not produced at $appExe."
+    }
 }
 
 Write-Host "Building FlaUI test project..."
@@ -98,6 +101,7 @@ $profileVariables = @(
     "HATCH_UI_TEST_DATA_DIR",
     "HATCH_MEASUREMENTS_DIR",
     "HATCH_APP_EXE",
+    "HATCH_APP_AUMID",
     "HATCH_TEST_MUTE",
     "HATCH_TEST_THEME",
     "HATCH_TEST_PLANNED",
@@ -130,7 +134,8 @@ try {
 
         $env:HATCH_UI_TEST_DATA_DIR = $dataDirectory
         $env:HATCH_MEASUREMENTS_DIR = $measurementDirectory
-        $env:HATCH_APP_EXE = $appExe
+        if ($AppAumid) { $env:HATCH_APP_AUMID = $AppAumid }
+        else { $env:HATCH_APP_EXE = $appExe }
         $env:HATCH_TEST_MUTE = "1"
         foreach ($name in $testProfile.Variables.Keys) {
             [Environment]::SetEnvironmentVariable($name, $testProfile.Variables[$name], "Process")
@@ -200,6 +205,7 @@ finally {
 
 $summary = [pscustomobject]@{
     RunId = $runId
+    LaunchMode = if ($AppAumid) { 'RegisteredPackage' } else { 'UnpackagedJit' }
     Profiles = $results
 }
 $summary | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $runRoot "summary.json") -Encoding utf8

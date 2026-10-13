@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml.Media;
 
 namespace Hatch.Converters;
 
-public sealed class BoolToSelectionBackgroundConverter : IValueConverter
+public sealed partial class BoolToSelectionBackgroundConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {

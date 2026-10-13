@@ -1,6 +1,5 @@
 using System.Text.Json;
-using Supabase.Gotrue;
-using Supabase.Gotrue.Interfaces;
+using System.Text;
 
 namespace Hatch.Tests.Integration;
 
@@ -25,9 +24,12 @@ public sealed class SyncFailureTests
         _settings.Current.LastSyncedAt = _lastSync;
         await _storage.SaveAsync(new TasksFile { Tasks = [new TodoItem { Title = "Local must survive" }] });
         SyncPassphraseStore.Save("synthetic test passphrase");
-        var client = new Supabase.Client(_server.Url, "synthetic-key", new Supabase.SupabaseOptions { AutoRefreshToken = false });
-        client.Auth.SetPersistence(new MemorySession());
-        client.Auth.LoadSession();
+        var client = new SupabaseSyncClient(_server.Url, "synthetic-key");
+        _server.Respond = _ => (200, "{\"id\":\"test-user\"}");
+        var claims = JsonSerializer.Serialize(new { sub = "test-user", exp = DateTimeOffset.UtcNow.AddHours(1).ToUnixTimeSeconds() });
+        var payload = Convert.ToBase64String(Encoding.UTF8.GetBytes(claims)).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        await client.RestoreSessionAsync($"e30.{payload}.synthetic", "synthetic-refresh");
+        _server.Requests.Clear();
         _account = new() { Client = client };
         _sync = new(_settings, _account, _storage);
         _sync.TasksReceived += () => _received++;
@@ -39,6 +41,7 @@ public sealed class SyncFailureTests
         _sync.StopAutoSync();
         _settings.FlushPendingSave();
         SyncPassphraseStore.Clear();
+        try { await _account.Client!.SignOutAsync(); } catch { }
         await _server.DisposeAsync();
     }
 
@@ -51,7 +54,7 @@ public sealed class SyncFailureTests
         _server.Respond = _ => (status, "{\"message\":\"simulated remote failure\"}");
         var error = await _sync.PullIfNewerAsync(force: true);
         Assert.IsFalse(string.IsNullOrEmpty(error));
-        Assert.AreEqual(1, _server.Requests.Count, "The real SDK must reach the simulated transport.");
+        Assert.AreEqual(1, _server.Requests.Count, "The production client must reach the simulated transport.");
         await AssertLocalUnchanged();
     }
 
@@ -142,14 +145,4 @@ public sealed class SyncFailureTests
         Assert.AreEqual(0, _received);
     }
 
-    private sealed class MemorySession : IGotrueSessionPersistence<Session>
-    {
-        public void SaveSession(Session session) { }
-        public void DestroySession() { }
-        public Session LoadSession() => new()
-        {
-            AccessToken = "synthetic-token", RefreshToken = "synthetic-refresh",
-            User = new User { Id = "test-user" }
-        };
-    }
 }

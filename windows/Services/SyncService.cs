@@ -1,20 +1,18 @@
 using Hatch.Helpers;
 using Hatch.Models;
-using Supabase.Postgrest.Attributes;
-using Supabase.Postgrest.Models;
+using System.Text.Json.Serialization;
 
 namespace Hatch.Services;
 
-[Table("user_data")]
-internal sealed class UserDataRow : BaseModel
+internal sealed class UserDataRow
 {
-    [PrimaryKey("user_id", false)]
+    [JsonPropertyName("user_id")]
     public string UserId { get; set; } = "";
 
-    [Column("tasks_json")]
+    [JsonPropertyName("tasks_json")]
     public string TasksJson { get; set; } = "";
 
-    [Column("updated_at")]
+    [JsonPropertyName("updated_at")]
     public DateTime UpdatedAt { get; set; }
 }
 
@@ -44,8 +42,8 @@ public sealed class SyncService
         if (client == null || !_account.IsSignedIn) return true;
         try
         {
-            var response = await client.From<UserDataRow>().Get();
-            var json = response.Models.FirstOrDefault()?.TasksJson;
+            var row = await client.GetRowAsync();
+            var json = row?.TasksJson;
             if (string.IsNullOrEmpty(json) || !SyncCrypto.IsEncrypted(json)) return true;
             return SyncCrypto.TryDecrypt(json, passphrase) != null;
         }
@@ -63,8 +61,7 @@ public sealed class SyncService
         if (_account.IsMfaChallengePending) return Strings.Sync_Error_MfaRequired;
         try
         {
-            var response = await _account.Client.From<UserDataRow>().Get();
-            var row = response.Models.FirstOrDefault();
+            var row = await _account.Client.GetRowAsync();
             var (status, data) = SyncDecisions.ReadServerPayload(row?.TasksJson, oldPassphrase);
             if (status == ServerReadStatus.Unreadable) return Strings.Sync_Error_OldPassphraseWrong;
 
@@ -134,7 +131,7 @@ public sealed class SyncService
         if (client == null) return Strings.Sync_Error_NotReady;
         if (!_account.IsSignedIn) return Strings.Sync_Error_NotSignedIn;
         if (_account.IsMfaChallengePending) return Strings.Sync_Error_MfaRequired;
-        var userId = client.Auth.CurrentUser?.Id;
+        var userId = client.Session?.User?.Id;
         if (string.IsNullOrEmpty(userId)) return Strings.Sync_Error_NoUserId;
         var (passphrase, salt) = SyncPassphraseStore.Load();
         if (passphrase == null || salt == null) return Strings.Sync_Error_NoPassphrase;
@@ -158,7 +155,7 @@ public sealed class SyncService
             }
 
             var json = SyncWire.Serialize(data);
-            await client.From<UserDataRow>().Upsert(new UserDataRow
+            await client.UpsertAsync(new UserDataRow
             {
                 UserId = userId,
                 TasksJson = SyncCrypto.Encrypt(json, passphrase, salt),
@@ -175,13 +172,11 @@ public sealed class SyncService
     private async Task<(TasksFile? Merged, string? Error)> MergeWithServerAsync(TasksFile local)
     {
         // The row is whole-state: an unreadable newer row must block the upsert to avoid data loss.
-        var metadataResponse = await _account.Client!.From<UserDataRow>().Select("updated_at").Get();
-        var metadata = metadataResponse.Models.FirstOrDefault();
+        var metadata = await _account.Client!.GetRowAsync(metadataOnly: true);
         if (metadata == null || !SyncDecisions.IsServerNewer(metadata.UpdatedAt, _settings.Current.LastSyncedAt))
             return (null, null);
 
-        var response = await _account.Client.From<UserDataRow>().Get();
-        var row = response.Models.FirstOrDefault();
+        var row = await _account.Client.GetRowAsync();
         if (string.IsNullOrEmpty(row?.TasksJson)) return (null, null);
 
         if (!SyncDecisions.IsServerNewer(row.UpdatedAt, _settings.Current.LastSyncedAt))
@@ -219,18 +214,15 @@ public sealed class SyncService
             UserDataRow? row;
             if (force)
             {
-                var response = await client.From<UserDataRow>().Get();
-                row = response.Models.FirstOrDefault();
+                row = await client.GetRowAsync();
             }
             else
             {
-                var metadataResponse = await client.From<UserDataRow>().Select("updated_at").Get();
-                var metadata = metadataResponse.Models.FirstOrDefault();
+                var metadata = await client.GetRowAsync(metadataOnly: true);
                 if (metadata == null || !SyncDecisions.IsServerNewer(metadata.UpdatedAt, _settings.Current.LastSyncedAt))
                     return null;
 
-                var response = await client.From<UserDataRow>().Get();
-                row = response.Models.FirstOrDefault();
+                row = await client.GetRowAsync();
             }
 
             if (row?.TasksJson == null) return null;
@@ -259,8 +251,7 @@ public sealed class SyncService
         try
         {
             var localData = await _storage.LoadAsync();
-            var response = await client.From<UserDataRow>().Get();
-            var row = response.Models.FirstOrDefault();
+            var row = await client.GetRowAsync();
 
             var (serverData, readError) = ReadServerTasks(row);
             // CheckAndHandleConflictAsync performs a pull next, which surfaces this read error without overwriting the row.
@@ -326,8 +317,7 @@ public sealed class SyncService
         try
         {
             var local = await _storage.LoadAsync();
-            var response = await client.From<UserDataRow>().Get();
-            var row = response.Models.FirstOrDefault();
+            var row = await client.GetRowAsync();
             var (server, readError) = ReadServerTasks(row);
             if (readError != null) return readError;
 

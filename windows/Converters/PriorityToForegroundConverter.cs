@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml.Data;
 
 namespace Hatch.Converters;
 
-public sealed class PriorityToForegroundConverter : IValueConverter
+public sealed partial class PriorityToForegroundConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, string language)
         => ThemeResourceHelper.GetBrush(value switch

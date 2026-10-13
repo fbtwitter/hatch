@@ -60,6 +60,20 @@ jobs:
         shell: pwsh
         run: .\scripts\run-regression.ps1 -SkipBuild -ArtifactRoot "$env:RUNNER_TEMP\Hatch.Regression"
 
+      - name: Publish Native AOT (x64 and ARM64)
+        shell: pwsh
+        run: |
+          foreach ($arch in @('x64', 'arm64')) {
+            $output = Join-Path $env:RUNNER_TEMP "Hatch.NativeAot\$arch"
+            dotnet publish hatch.csproj -c Release -r "win-$arch" `
+              -p:Platform=$arch `
+              -p:PublishAppxPackage=false `
+              -p:GenerateAppxPackageOnBuild=false `
+              -p:BaseOutputPath="$output\build\" `
+              -p:PublishDir="$output\publish\"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
       - name: Upload regression artifacts
         if: always()
         uses: actions/upload-artifact@v4

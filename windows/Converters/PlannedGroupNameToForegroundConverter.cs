@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml.Data;
 
 namespace Hatch.Converters;
 
-public sealed class PlannedGroupNameToForegroundConverter : IValueConverter
+public sealed partial class PlannedGroupNameToForegroundConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, string language)
     {

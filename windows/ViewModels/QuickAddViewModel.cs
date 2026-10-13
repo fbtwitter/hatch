@@ -4,7 +4,7 @@ using Hatch.Models;
 
 namespace Hatch.ViewModels;
 
-public sealed class QuickAddViewModel : INotifyPropertyChanged
+public sealed partial class QuickAddViewModel : INotifyPropertyChanged
 {
     private bool _isImportant;
 

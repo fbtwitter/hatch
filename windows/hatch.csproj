@@ -10,11 +10,20 @@
     <Nullable>enable</Nullable>
     <UseWinUI>true</UseWinUI>
     <EnableXamlDiagnostics>false</EnableXamlDiagnostics>
+    <PublishAot>true</PublishAot>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <CsWinRTAotWarningLevel>2</CsWinRTAotWarningLevel>
+    <SuppressTrimAnalysisWarnings>false</SuppressTrimAnalysisWarnings>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <ILLinkTreatWarningsAsErrors>true</ILLinkTreatWarningsAsErrors>
+    <IlcTreatWarningsAsErrors>true</IlcTreatWarningsAsErrors>
+    <WarningsAsErrors>$(WarningsAsErrors);CsWinRT1028</WarningsAsErrors>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
     <Platforms>x64;x86;arm64</Platforms>
     <!-- Keep in sync with Package.appxmanifest's Identity Version and the release tag.
          Packaged builds read the manifest; unpackaged Debug builds have no package
          identity and fall back to this via SettingsViewModel.AppVersion. -->
-    <Version>0.29.1</Version>
+    <Version>0.30.0</Version>
     <!-- Signing and package generation are handled by CI; disabled locally -->
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
     <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>
@@ -37,7 +46,10 @@
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
     <WindowsPackageType>MSIX</WindowsPackageType>
     <EnableMsixTooling>true</EnableMsixTooling>
-    <GenerateAppxPackageOnBuild>true</GenerateAppxPackageOnBuild>
+    <!-- Package the published native payload; ordinary builds remain the JIT development path. -->
+    <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>
+    <PublishAppxPackage>true</PublishAppxPackage>
+    <IncludePublishItemsOutputGroup>true</IncludePublishItemsOutputGroup>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
   </PropertyGroup>
 
@@ -77,7 +89,6 @@
          actually loaded at runtime even before this change — this trims install size only. -->
     <PackageReference Include="Microsoft.WindowsAppSDK.ML" Version="2.1.94" ExcludeAssets="all" />
     <PackageReference Include="Microsoft.Windows.AI.MachineLearning" Version="2.1.74" ExcludeAssets="all" />
-    <PackageReference Include="Supabase" Version="1.6.0" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2526" PrivateAssets="all" />
     <!-- Required: MSIX build tasks were compiled against .NET 8 and probe for this assembly at build time -->
     <PackageReference Include="System.Security.Permissions" Version="10.0.10" />

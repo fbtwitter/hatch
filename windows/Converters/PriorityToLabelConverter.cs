@@ -4,7 +4,7 @@ using Microsoft.UI.Xaml.Data;
 
 namespace Hatch.Converters;
 
-public sealed class PriorityToLabelConverter : IValueConverter
+public sealed partial class PriorityToLabelConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {

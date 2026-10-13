@@ -115,7 +115,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             SaveAsync();
         });
 
-        _flatGroupedTasks = [_openGroup, _completedGroup];
+        _flatGroupedTasks = new List<CompletedTaskGroup> { _openGroup, _completedGroup };
         _completedGroup.ShowMoreCommand = new RelayCommand(_ => _completedGroup.ShowAllItems());
         _completedGroup.ResetPreviewLimit();
 

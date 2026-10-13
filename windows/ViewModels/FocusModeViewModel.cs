@@ -7,7 +7,7 @@ using Microsoft.UI.Dispatching;
 
 namespace Hatch.ViewModels;
 
-public sealed class FocusModeViewModel : INotifyPropertyChanged, IDisposable
+public sealed partial class FocusModeViewModel : INotifyPropertyChanged, IDisposable
 {
     private readonly TodoItem _task;
     private readonly DispatcherQueueTimer _tick;

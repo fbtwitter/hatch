@@ -358,7 +358,8 @@ public sealed partial class MainViewModel
         _completedGroupExpandedState[navItem] = expanded;
 }
 
-public sealed record PlannedGroup
+[WinRT.GeneratedBindableCustomProperty([nameof(Items)], [])]
+public sealed partial record PlannedGroup
 {
     public required string Name { get; init; }
     public required ObservableCollection<TodoItem> Items { get; init; }

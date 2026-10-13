@@ -1,9 +1,5 @@
 using Hatch.Helpers;
 using Hatch.Models;
-using SupabaseClient = Supabase.Client;
-using GotrueConstants = Supabase.Gotrue.Constants;
-using GotrueSignInOptions = Supabase.Gotrue.SignInOptions;
-using Supabase.Gotrue.Mfa;
 
 namespace Hatch.Services;
 
@@ -14,17 +10,17 @@ public sealed class SyncAccountService
     private const string SupabaseKey = Secrets.SupabaseKey;
 
     private readonly SettingsService _settings;
-    private SupabaseClient? _client;
+    private SupabaseSyncClient? _client;
     private string? _pkceVerifier;
 
     public SyncAccountService(SettingsService settings) => _settings = settings;
 
     // SyncService uses the same authenticated client for the user_data row.
-    internal SupabaseClient? Client => _client;
+    internal SupabaseSyncClient? Client => _client;
 
     public string? LastAuthError { get; private set; }
-    public bool IsSignedIn => _client?.Auth?.CurrentSession != null;
-    public string? UserEmail => _client?.Auth?.CurrentUser?.Email;
+    public bool IsSignedIn => _client?.Session != null;
+    public string? UserEmail => _client?.Session?.User?.Email;
     public bool HasPassphrase => SyncPassphraseStore.Load().Passphrase != null;
     public bool IsMfaChallengePending { get; private set; }
 
@@ -48,19 +44,22 @@ public sealed class SyncAccountService
 
     public async Task InitializeAsync()
     {
-        var options = new Supabase.SupabaseOptions { AutoRefreshToken = true };
-        _client = new SupabaseClient(SupabaseUrl, SupabaseKey, options);
-        _client.Auth.AddStateChangedListener(OnAuthStateChanged);
-        await _client.InitializeAsync();
+        _client = new SupabaseSyncClient(SupabaseUrl, SupabaseKey);
+        _client.SessionRefreshed = async session =>
+        {
+            await PersistSessionAsync(session);
+            await RefreshMfaChallengeStateAsync();
+            StateChanged?.Invoke();
+        };
+        _client.SessionRejected = () =>
+        {
+            SigningOut?.Invoke();
+            IsMfaChallengePending = false;
+            ClearTokens();
+            _settings.SaveDebounced();
+            StateChanged?.Invoke();
+        };
         await RestoreSessionAsync();
-    }
-
-    private async void OnAuthStateChanged(object? sender, GotrueConstants.AuthState state)
-    {
-        if (state != GotrueConstants.AuthState.TokenRefreshed) return;
-        var session = _client?.Auth.CurrentSession;
-        if (session?.AccessToken == null || session.RefreshToken == null) return;
-        await PersistSessionAsync(session);
     }
 
     private async Task RestoreSessionAsync()
@@ -69,12 +68,11 @@ public sealed class SyncAccountService
         if (string.IsNullOrEmpty(access) || string.IsNullOrEmpty(refresh)) return;
         try
         {
-            await _client!.Auth.SetSession(access, refresh);
+            await _client!.RestoreSessionAsync(access, refresh);
             await RefreshMfaChallengeStateAsync();
             StateChanged?.Invoke();
         }
-        catch (Supabase.Gotrue.Exceptions.GotrueException ex)
-            when (ex.Reason != Supabase.Gotrue.Exceptions.FailureHint.Reason.Offline)
+        catch (FormatException)
         {
             ClearTokens();
             _settings.SaveDebounced();
@@ -89,7 +87,7 @@ public sealed class SyncAccountService
         if (_client == null) return Strings.Sync_Error_NotReady;
         try
         {
-            var session = await _client.Auth.SignIn(email, password);
+            var session = await _client.SignInAsync(email, password);
             if (session?.AccessToken == null) return Strings.Sync_Error_SignInFailed;
             await PersistSessionAsync(session);
             await RefreshMfaChallengeStateAsync();
@@ -104,7 +102,7 @@ public sealed class SyncAccountService
         if (_client == null) return Strings.Sync_Error_NotReady;
         try
         {
-            var session = await _client.Auth.SignUp(email, password);
+            var session = await _client.SignUpAsync(email, password);
             if (session?.AccessToken != null)
             {
                 await PersistSessionAsync(session);
@@ -119,8 +117,9 @@ public sealed class SyncAccountService
 
     public async Task SignOutAsync()
     {
-        try { await (_client?.Auth?.SignOut() ?? Task.CompletedTask); } catch { }
         SigningOut?.Invoke();
+        try { await (_client?.SignOutAsync() ?? Task.CompletedTask); } catch { }
+        _pkceVerifier = null;
         IsMfaChallengePending = false;
         SyncPassphraseStore.Clear();
         ClearTokens();
@@ -128,52 +127,20 @@ public sealed class SyncAccountService
         StateChanged?.Invoke();
     }
 
-    public async Task<(string? Url, string? Error)> GetGitHubSignInUrlAsync()
+    public Task<(string? Url, string? Error)> GetGitHubSignInUrlAsync()
     {
-        if (_client == null) return (null, Strings.Sync_Error_NotReady);
-        try
-        {
-            var state = await _client.Auth.SignIn(
-                GotrueConstants.Provider.Github,
-                new GotrueSignInOptions
-                {
-                    RedirectTo = "hatch://auth-callback",
-                    // PKCE keeps a hijacked hatch:// redirect from exposing usable session tokens.
-                    FlowType = GotrueConstants.OAuthFlowType.PKCE
-                });
-
-            var url = state?.Uri?.ToString();
-            if (string.IsNullOrEmpty(url)) return (null, "GitHub sign-in returned no URL.");
-
-            // GoTrue's client-side state breaks its server-tracked OAuth state when forwarded to GitHub.
-            url = RemoveQueryParam(url, "state");
-            _pkceVerifier = state!.PKCEVerifier;
-            return (url, null);
-        }
-        catch (Exception ex) { return (null, ex.Message); }
+        if (_client == null) return Task.FromResult<(string?, string?)>((null, Strings.Sync_Error_NotReady));
+        var (url, verifier) = SupabaseSyncClient.GitHubSignInUrl(SupabaseUrl);
+        _pkceVerifier = verifier;
+        return Task.FromResult<(string?, string?)>((url, null));
     }
-
-    private static string RemoveQueryParam(string url, string paramName)
-    {
-        var uri = new Uri(url);
-        var query = SyncDecisions.ParseQueryString(uri.Query.TrimStart('?'))
-            .Where(kv => kv.Key != paramName)
-            .Select(kv => $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}");
-        return new UriBuilder(uri) { Query = string.Join("&", query) }.Uri.ToString();
-    }
-
     public async Task<(MfaFactorInfo? Factor, string? Error)> EnrollMfaAsync()
     {
         if (_client == null) return (null, Strings.Sync_Error_NotReady);
         if (!IsSignedIn) return (null, Strings.Sync_Error_NotSignedIn);
         try
         {
-            var result = await _client.Auth.Enroll(new MfaEnrollParams
-            {
-                FactorType = "totp",
-                Issuer = "Hatch",
-                FriendlyName = $"Hatch {DateTime.Now:yyyy-MM-dd HH:mm}"
-            });
+            var result = await _client.EnrollAsync($"Hatch {DateTime.Now:yyyy-MM-dd HH:mm}");
 
             if (result?.Id == null || result.Totp == null)
                 return (null, "Could not start authenticator setup.");
@@ -189,11 +156,7 @@ public sealed class SyncAccountService
         if (_client == null) return Strings.Sync_Error_NotReady;
         try
         {
-            var session = await _client.Auth.ChallengeAndVerify(new MfaChallengeAndVerifyParams
-            {
-                FactorId = factorId,
-                Code = code.Trim()
-            });
+            var session = await _client.VerifyMfaAsync(factorId, code.Trim());
             if (session == null) return "That code was not accepted.";
 
             await PersistSessionAsync(session);
@@ -208,7 +171,7 @@ public sealed class SyncAccountService
         if (_client == null) return Strings.Sync_Error_NotReady;
         try
         {
-            await _client.Auth.Unenroll(new MfaUnenrollParams { FactorId = factorId });
+            await _client.UnenrollAsync(factorId);
             await RefreshMfaChallengeStateAsync();
             StateChanged?.Invoke();
             return null;
@@ -216,19 +179,13 @@ public sealed class SyncAccountService
         catch (Exception ex) { return ex.Message; }
     }
 
-    public async Task<MfaFactorInfo?> GetVerifiedMfaFactorAsync()
+    public Task<MfaFactorInfo?> GetVerifiedMfaFactorAsync()
     {
-        if (_client == null || !IsSignedIn) return null;
-        try
-        {
-            var factors = await _client.Auth.ListFactors();
-            var verified = factors?.Totp?.FirstOrDefault(f => f.Status == "verified");
-            return verified == null ? null : new MfaFactorInfo(verified.Id, null, null, null);
-        }
-        catch { return null; }
+        var verified = _client?.VerifiedTotp;
+        return Task.FromResult(verified == null ? null : new MfaFactorInfo(verified.Id, null, null, null));
     }
 
-    public async Task RefreshMfaChallengeStateAsync()
+    public Task RefreshMfaChallengeStateAsync()
     {
         bool pending = false;
         if (_client != null && IsSignedIn)
@@ -236,9 +193,9 @@ public sealed class SyncAccountService
             try
             {
                 // NextLevel reaches aal2 when a verified factor exists, without another network request.
-                var aal = await _client.Auth.GetAuthenticatorAssuranceLevel();
+                var aal = _client.AssuranceLevel();
                 pending = SyncDecisions.IsMfaChallengePending(
-                    aal?.CurrentLevel?.ToString(), aal?.NextLevel?.ToString());
+                    aal.Current, aal.Next);
             }
             catch
             {
@@ -246,9 +203,10 @@ public sealed class SyncAccountService
             }
         }
 
-        if (pending == IsMfaChallengePending) return;
+        if (pending == IsMfaChallengePending) return Task.CompletedTask;
         IsMfaChallengePending = pending;
         StateChanged?.Invoke();
+        return Task.CompletedTask;
     }
 
     public async Task<(string[]? Codes, string? Error)> GenerateRecoveryCodesAsync()
@@ -257,7 +215,7 @@ public sealed class SyncAccountService
         if (!IsSignedIn) return (null, Strings.Sync_Error_NotSignedIn);
         try
         {
-            var codes = await _client.Rpc<string[]>("generate_mfa_recovery_codes", null);
+            var codes = await _client.GenerateRecoveryCodesAsync();
             return codes is { Length: > 0 } ? (codes, null) : (null, "Could not create recovery codes.");
         }
         catch (Exception ex) { return (null, ex.Message); }
@@ -269,8 +227,7 @@ public sealed class SyncAccountService
         if (!IsSignedIn) return Strings.Sync_Error_NotSignedIn;
         try
         {
-            var accepted = await _client.Rpc<bool>(
-                "redeem_mfa_recovery_code", new Dictionary<string, object> { ["code"] = code.Trim() });
+            var accepted = await _client.RedeemRecoveryCodeAsync(code.Trim());
             if (!accepted) return Strings.Sync_Error_BadRecoveryCode;
 
             // GoTrue cannot mint an aal2 token outside its challenge flow, so recovery removes the factor.
@@ -325,7 +282,7 @@ public sealed class SyncAccountService
                 return;
             }
 
-            var session = await _client.Auth.ExchangeCodeForSession(_pkceVerifier, code);
+            var session = await _client.ExchangeCodeAsync(_pkceVerifier, code);
             _pkceVerifier = null;
 
             if (session != null)
@@ -344,10 +301,10 @@ public sealed class SyncAccountService
         }
     }
 
-    private async Task PersistSessionAsync(Supabase.Gotrue.Session session)
+    private async Task PersistSessionAsync(SyncSession session)
     {
         SyncTokenStore.Save(session.AccessToken, session.RefreshToken);
-        _settings.Current.SyncUserEmail = _client?.Auth.CurrentUser?.Email;
+        _settings.Current.SyncUserEmail = _client?.Session?.User?.Email;
         await _settings.SaveAsync();
     }
 

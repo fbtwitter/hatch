@@ -5,7 +5,7 @@ using System.Text;
 
 namespace Hatch.Tests.Integration;
 
-// Minimal HTTP fixture, bound to loopback only. Real Supabase SDK requests reach it.
+// Minimal HTTP fixture, bound to loopback only. Production sync requests reach it.
 internal sealed class LoopbackServer : IAsyncDisposable
 {
     private readonly TcpListener _listener = new(IPAddress.Loopback, 0);

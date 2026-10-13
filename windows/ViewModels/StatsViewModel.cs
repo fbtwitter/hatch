@@ -8,7 +8,7 @@ using Hatch.Models;
 
 namespace Hatch.ViewModels;
 
-public sealed class StatsViewModel : INotifyPropertyChanged
+public sealed partial class StatsViewModel : INotifyPropertyChanged
 {
     // Reused from the nav rail (MainPage.xaml) so a tile's icon matches the destination
     // it navigates to: Sun = My Day, Calendar = Planned (Due today routes there too),

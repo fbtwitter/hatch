@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.30.0] - 2026-10-13
+
+- Publish native x64/ARM64 builds, preserve task storage and optional encrypted sync with generated contracts, and fix Planned calendar crashes, date-switching delays, and title-bar theme consistency.
+
 ## [0.29.1] - 2026-10-12
 
 - Restore the mascot's Always on Top state when it is lost, using the existing visibility check while preserving fullscreen hiding and idle behavior.

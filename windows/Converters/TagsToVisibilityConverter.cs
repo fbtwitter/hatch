@@ -3,7 +3,7 @@ using Microsoft.UI.Xaml.Data;
 
 namespace Hatch.Converters;
 
-public sealed class TagsToVisibilityConverter : IValueConverter
+public sealed partial class TagsToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
         => value is List<string> { Count: > 0 } ? Visibility.Visible : Visibility.Collapsed;

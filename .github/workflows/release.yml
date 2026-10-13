@@ -164,47 +164,26 @@ jobs:
           "CERT_THUMBPRINT=$($cert.Thumbprint)" | Out-File $env:GITHUB_ENV -Append
           Write-Host "Certificate thumbprint: $($cert.Thumbprint)"
 
-      - name: Restore dependencies
+      - name: Publish x64 Native AOT MSIX
         shell: pwsh
         run: |
-          msbuild hatch.csproj /t:Restore /p:Configuration=Release /p:Platform=x64 /nowarn:NETSDK1233
-          msbuild hatch.csproj /t:Restore /p:Configuration=Release /p:Platform=arm64 /nowarn:NETSDK1233
-
-      - name: Build x64 MSIX
-        shell: pwsh
-        run: |
-          msbuild hatch.csproj `
-            /p:Configuration=Release `
-            /p:Platform=x64 `
-            /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
-            /p:AppxPackageSigningEnabled=true `
-            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}" `
-            /nowarn:NETSDK1233
+          dotnet publish hatch.csproj -c Release -r win-x64 `
+            -p:Platform=x64 `
+            -p:AppxBundle=Never `
+            -p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
+            -p:AppxPackageSigningEnabled=true `
+            -p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Build x86 MSIX
-        continue-on-error: true
+      - name: Publish ARM64 Native AOT MSIX
         shell: pwsh
         run: |
-          msbuild hatch.csproj `
-            /p:Configuration=Release `
-            /p:Platform=x86 `
-            /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
-            /p:AppxPackageSigningEnabled=true `
-            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}" `
-            /nowarn:NETSDK1233
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-      - name: Build arm64 MSIX
-        shell: pwsh
-        run: |
-          msbuild hatch.csproj `
-            /p:Configuration=Release `
-            /p:Platform=arm64 `
-            /p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
-            /p:AppxPackageSigningEnabled=true `
-            /p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}" `
-            /nowarn:NETSDK1233
+          dotnet publish hatch.csproj -c Release -r win-arm64 `
+            -p:Platform=arm64 `
+            -p:AppxBundle=Never `
+            -p:AppxPackageDir="${{ github.workspace }}\AppxPackages\" `
+            -p:AppxPackageSigningEnabled=true `
+            -p:PackageCertificateThumbprint="${{ env.CERT_THUMBPRINT }}"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Collect MSIX files and create bundle

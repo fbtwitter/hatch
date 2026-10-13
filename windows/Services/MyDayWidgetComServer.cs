@@ -1,11 +1,13 @@
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using Microsoft.Windows.Widgets.Providers;
 using WinRT;
 
 namespace Hatch.Services;
 
-internal static class MyDayWidgetComServer
+internal static partial class MyDayWidgetComServer
 {
+    private static readonly StrategyBasedComWrappers ComWrappers = new();
     private static readonly Guid ClassId = Guid.Parse("8F0AEEA3-75D7-4B2C-8BF0-4238E0042B16");
     private const string ServerArgument = "-RegisterProcessAsComServer";
     private const uint CoWaitInfinite = uint.MaxValue;
@@ -17,12 +19,18 @@ internal static class MyDayWidgetComServer
 
     internal static void Run()
     {
-        Marshal.ThrowExceptionForHR(CoRegisterClassObject(
-            ClassId,
-            new WidgetProviderFactory<MyDayWidgetProvider>(),
-            ClsctxLocalServer,
-            RegclsMultipleUse,
-            out var cookie));
+        var factory = new WidgetProviderFactory();
+        var factoryPointer = ComWrappers.GetOrCreateComInterfaceForObject(factory, CreateComInterfaceFlags.None);
+        uint cookie;
+        try
+        {
+            Marshal.ThrowExceptionForHR(CoRegisterClassObject(
+                ClassId, factoryPointer, ClsctxLocalServer, RegclsMultipleUse, out cookie));
+        }
+        finally
+        {
+            Marshal.Release(factoryPointer);
+        }
 
         try
         {
@@ -50,7 +58,7 @@ internal static class MyDayWidgetComServer
     [DllImport("ole32.dll", PreserveSig = true)]
     private static extern int CoRegisterClassObject(
         [MarshalAs(UnmanagedType.LPStruct)] Guid classId,
-        [MarshalAs(UnmanagedType.IUnknown)] object classFactory,
+        IntPtr classFactory,
         uint context,
         uint flags,
         out uint registrationCookie);
@@ -66,22 +74,19 @@ internal static class MyDayWidgetComServer
         [In] IntPtr[] handles,
         out uint index);
 
-    [ComImport]
-    [ComVisible(false)]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    [GeneratedComInterface]
     [Guid("00000001-0000-0000-C000-000000000046")]
-    private interface IClassFactory
+    internal partial interface IClassFactory
     {
         [PreserveSig]
         int CreateInstance(IntPtr outerUnknown, ref Guid interfaceId, out IntPtr instance);
 
         [PreserveSig]
-        int LockServer(bool locked);
+        int LockServer([MarshalAs(UnmanagedType.Bool)] bool locked);
     }
 
-    [ComVisible(true)]
-    private sealed class WidgetProviderFactory<T> : IClassFactory
-        where T : IWidgetProvider, new()
+    [GeneratedComClass]
+    internal sealed partial class WidgetProviderFactory : IClassFactory
     {
         public int CreateInstance(IntPtr outerUnknown, ref Guid interfaceId, out IntPtr instance)
         {
@@ -93,8 +98,15 @@ internal static class MyDayWidgetComServer
                 interfaceId != Guid.Parse("00000000-0000-0000-C000-000000000046"))
                 return unchecked((int)0x80004002); // E_NOINTERFACE
 
-            instance = MarshalInspectable<IWidgetProvider>.FromManaged(new T());
-            return 0;
+            var inspectable = MarshalInspectable<IWidgetProvider>.FromManaged(new MyDayWidgetProvider());
+            try
+            {
+                return Marshal.QueryInterface(inspectable, in interfaceId, out instance);
+            }
+            finally
+            {
+                Marshal.Release(inspectable);
+            }
         }
 
         public int LockServer(bool locked) => 0;

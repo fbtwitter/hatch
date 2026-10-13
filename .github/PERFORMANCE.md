@@ -37,6 +37,27 @@ A separate helper invoking the native style check 100,000 times allocated zero m
 bytes; that result measures the check alone. This short comparison does not establish
 long-term memory stability or performance on other hardware.
 
+### Native AOT focus-session check — 2026-10-13
+
+A packaged Release/x64 native preview ran the existing automated focus-session test
+with isolated sample data on the same development PC. After warmup, it opened and
+closed Focus Mode 100 times.
+
+| Measurement | Warmed process | After 100 sessions |
+|---|---|---|
+| Private bytes | 133.3 MiB | 135.5 MiB |
+| Working set | 159.6 MiB | 161.8 MiB |
+| Handles | 1,296 | 1,506 |
+
+This short automation run does not establish long-term stability or a startup/CPU
+improvement. Handle count increased during the run; it needs longer observation before
+drawing a conclusion about retention. These figures are not an idle benchmark or a
+controlled comparison with earlier releases.
+
+The replacement sync client shares one HTTP connection pool and runs one cancellable
+token-refresh loop while signed in. It starts no refresh loop for local-only use, and
+preserves the existing sync interval and save debounce.
+
 ## Current guidance
 
 - Do not describe the old 50 MB, 100 MB, or 120 MB figures as measured budgets.

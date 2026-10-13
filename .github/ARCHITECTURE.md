@@ -7,8 +7,8 @@ provides quick task capture; the main window handles task management and setting
 
 - .NET 10, C# 14, Windows App SDK 2.5.1, WinUI 3.
 - Windows 10 build 17763 or later and Windows 11.
-- Release MSIX packages for x64 and ARM64. The x86 release step is optional and currently
-  skips package generation.
+- Release MSIX packages contain Native AOT executables for x64 and ARM64.
+- Debug uses the regular .NET build path for development.
 
 ## Application structure
 
@@ -23,6 +23,8 @@ The Windows app is under `windows/`.
 
 Views bind to ViewModels; services own asynchronous I/O. `TaskStorageService` is the only
 writer to `tasks.json`. Settings are stored through `SettingsService`.
+Task, settings and sync API JSON use generated serializer contexts. WinRT-facing types
+and the widget COM factory use generated interop support.
 
 ## Data and sync
 
@@ -30,6 +32,11 @@ Tasks and settings are stored locally under `%LocalAppData%\Hatch\`. Sync is opt
 requires sign-in. Task data is encrypted on the device before upload. Startup and unhandled
 exceptions may append to a local `crash.log`; Hatch has no remote crash reporting or analytics.
 See the [privacy policy](../PRIVACY.md).
+
+`SupabaseSyncClient` uses `HttpClient` for Hatch's authentication, MFA, recovery-code RPCs
+and encrypted `user_data` row. It serializes session changes and refreshes, persists rotated
+tokens through Credential Locker, and keeps saved sessions during transient network failures.
+The generic Supabase SDK is not used because its serialization paths require reflection.
 
 ## Windows and release boundaries
 

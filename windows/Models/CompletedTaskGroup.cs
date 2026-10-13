@@ -7,7 +7,7 @@ using Hatch.Helpers;
 
 namespace Hatch.Models;
 
-public sealed class CompletedTaskGroup : INotifyPropertyChanged
+public sealed partial class CompletedTaskGroup : INotifyPropertyChanged
 {
     private const int PreviewItemCount = 5;
     private string _name = string.Empty;

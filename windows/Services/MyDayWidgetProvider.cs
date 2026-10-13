@@ -5,7 +5,7 @@ using Windows.System;
 
 namespace Hatch.Services;
 
-internal sealed class MyDayWidgetProvider : IWidgetProvider
+internal sealed partial class MyDayWidgetProvider : IWidgetProvider
 {
     internal const string DefinitionId = "Hatch_MyDay";
     internal static readonly ManualResetEvent EmptyWidgetListEvent = new(false);

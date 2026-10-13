@@ -133,6 +133,7 @@ internal static class NativeMethods
     [DllImport("dwmapi.dll")]
     internal static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref MARGINS pMarInset);
 
+    internal const uint DWMWA_USE_IMMERSIVE_DARK_MODE  = 20;
     internal const uint DWMWA_WINDOW_CORNER_PREFERENCE = 33;
     internal const uint DWMWCP_DONOTROUND             = 1;   // opt out of Win11 rounded corners
     internal const uint DWMWA_BORDER_COLOR            = 34;

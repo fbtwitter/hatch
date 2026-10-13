@@ -5,7 +5,7 @@ namespace Hatch.Services;
 
 public sealed class SettingsService
 {
-    private static readonly JsonSerializerOptions _options = new() { WriteIndented = true };
+    private static readonly SettingsJsonContext JsonContext = new(new JsonSerializerOptions { WriteIndented = true });
 
     // SaveAsync is called fire-and-forget from many settings setters — serialize the
     // writes so they can't interleave on the same file.
@@ -30,7 +30,7 @@ public sealed class SettingsService
         try
         {
             var json = await File.ReadAllTextAsync(_filePath);
-            Current = JsonSerializer.Deserialize<AppSettings>(json) ?? new();
+            Current = JsonSerializer.Deserialize(json, SettingsJsonContext.Default.AppSettings) ?? new();
         }
         catch { Current = new(); }
     }
@@ -70,7 +70,7 @@ public sealed class SettingsService
         _debounceToken.Cancel();
         try
         {
-            var json = JsonSerializer.Serialize(Current, _options);
+            var json = JsonSerializer.Serialize(Current, JsonContext.AppSettings);
             var tmpPath = _filePath + ".exit.tmp";
             File.WriteAllText(tmpPath, json);
             File.Move(tmpPath, _filePath, overwrite: true);
@@ -83,7 +83,7 @@ public sealed class SettingsService
         // An explicit immediate save supersedes any pending debounced one.
         _debounceToken?.Cancel();
 
-        var json = JsonSerializer.Serialize(Current, _options);
+        var json = JsonSerializer.Serialize(Current, JsonContext.AppSettings);
         await _fileLock.WaitAsync();
         try
         {

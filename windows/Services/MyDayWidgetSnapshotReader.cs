@@ -17,8 +17,8 @@ internal static class MyDayWidgetSnapshotReader
             using var reader = new StreamReader(stream);
             var json = await reader.ReadToEndAsync();
             return json.TrimStart().StartsWith('[')
-                ? new TasksFile { Tasks = JsonSerializer.Deserialize<List<TodoItem>>(json) ?? [] }
-                : JsonSerializer.Deserialize<TasksFile>(json) ?? new TasksFile();
+                ? new TasksFile { Tasks = JsonSerializer.Deserialize(json, TaskJsonContext.Default.ListTodoItem) ?? [] }
+                : JsonSerializer.Deserialize(json, TaskJsonContext.Default.TasksFile) ?? new TasksFile();
         }
         catch
         {

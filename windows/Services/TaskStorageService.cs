@@ -7,8 +7,6 @@ public sealed class TaskStorageService
 {
     private readonly string _filePath;
 
-    private static readonly JsonSerializerOptions _options = new();
-
     // Serializes all readers/writers of tasks.json across instances — the debounced
     // ViewModel save and SyncService pulls run on different threads and would otherwise
     // interleave writes to the same file.
@@ -35,12 +33,12 @@ public sealed class TaskStorageService
             // Migration: old format was a plain array of TodoItem
             if (json.TrimStart().StartsWith('['))
             {
-                var tasks = JsonSerializer.Deserialize<List<TodoItem>>(json) ?? [];
+                var tasks = JsonSerializer.Deserialize(json, TaskJsonContext.Default.ListTodoItem) ?? [];
                 file = new TasksFile { Tasks = tasks };
             }
             else
             {
-                file = JsonSerializer.Deserialize<TasksFile>(json) ?? new TasksFile();
+                file = JsonSerializer.Deserialize(json, TaskJsonContext.Default.TasksFile) ?? new TasksFile();
             }
 
             var today = DateOnly.FromDateTime(DateTime.Today);
@@ -95,7 +93,7 @@ public sealed class TaskStorageService
     // Write to a temp file first so a crash mid-write can never corrupt the only copy.
     private async Task WriteFileAsync(TasksFile data)
     {
-        var json = JsonSerializer.Serialize(data, _options);
+        var json = JsonSerializer.Serialize(data, TaskJsonContext.Default.TasksFile);
         var tmpPath = _filePath + ".tmp";
         await File.WriteAllTextAsync(tmpPath, json);
         File.Move(tmpPath, _filePath, overwrite: true);

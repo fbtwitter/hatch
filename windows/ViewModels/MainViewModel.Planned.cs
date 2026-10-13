@@ -51,7 +51,7 @@ public sealed partial class MainViewModel
             SelectedTask = null;
             OnPropertyChanged();
             OnPropertyChanged(nameof(PlannedSelectedDateLabel));
-            RefreshPlannedCalendar();
+            RefreshPlannedCalendar(rebuildDateCounts: false);
             ResetTaskComposerScroll();
             NotifyNewTaskDetailsChanged();
         }
@@ -90,18 +90,24 @@ public sealed partial class MainViewModel
         OnPropertyChanged(nameof(ShowEmptyState));
     }
 
-    private void RefreshPlannedCalendar()
+    private void RefreshPlannedCalendar(bool rebuildDateCounts = true)
     {
-        _plannedDateCounts.Clear();
-        _plannedOverdueCount = 0;
+        if (rebuildDateCounts)
+        {
+            _plannedDateCounts.Clear();
+            _plannedOverdueCount = 0;
+        }
         var selectedDayTasks = new List<TodoItem>();
         if (IsPlannedPage)
         {
             foreach (var task in Tasks.Where(MatchesPlannedTask))
             {
                 var date = task.DueDate!.Value.Date;
-                _plannedDateCounts[date] = _plannedDateCounts.GetValueOrDefault(date) + 1;
-                if (date < DateTime.Today) _plannedOverdueCount++;
+                if (rebuildDateCounts)
+                {
+                    _plannedDateCounts[date] = _plannedDateCounts.GetValueOrDefault(date) + 1;
+                    if (date < DateTime.Today) _plannedOverdueCount++;
+                }
                 if (date == SelectedPlannedDate.Date) selectedDayTasks.Add(task);
             }
         }
@@ -116,11 +122,14 @@ public sealed partial class MainViewModel
             else if (current != i) PlannedDayTasks.Move(current, i);
         }
 
-        PlannedCalendarVersion++;
-        OnPropertyChanged(nameof(PlannedCalendarVersion));
+        if (rebuildDateCounts)
+        {
+            PlannedCalendarVersion++;
+            OnPropertyChanged(nameof(PlannedCalendarVersion));
+            OnPropertyChanged(nameof(PlannedOverdueLabel));
+            OnPropertyChanged(nameof(HasPlannedCalendarOverdue));
+        }
         OnPropertyChanged(nameof(PlannedDayCountLabel));
         OnPropertyChanged(nameof(IsPlannedDayEmpty));
-        OnPropertyChanged(nameof(PlannedOverdueLabel));
-        OnPropertyChanged(nameof(HasPlannedCalendarOverdue));
     }
 }

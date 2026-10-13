@@ -15,7 +15,7 @@ internal enum MainWindowAction
     Toggle
 }
 
-public sealed class MascotViewModel : INotifyPropertyChanged, IDisposable
+public sealed partial class MascotViewModel : INotifyPropertyChanged, IDisposable
 {
     private const int EdgePadding = 20;
 

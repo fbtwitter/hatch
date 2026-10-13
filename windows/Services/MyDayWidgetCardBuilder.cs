@@ -55,7 +55,7 @@ internal static class MyDayWidgetCardBuilder
             ["selectAction"] = Execute("myday", "Open My Day"),
             ["columns"] = new JsonArray
             {
-                new JsonObject
+                (JsonNode)new JsonObject
                 {
                     ["type"] = "Column",
                     ["width"] = "stretch",
@@ -65,7 +65,7 @@ internal static class MyDayWidgetCardBuilder
                         Text(snapshot.Date.ToDateTime(TimeOnly.MinValue).ToString("dddd, d MMMM", WidgetCulture), "small", "default", true)
                     }
                 },
-                new JsonObject
+                (JsonNode)new JsonObject
                 {
                     ["type"] = "Column",
                     ["width"] = "auto",
@@ -73,7 +73,7 @@ internal static class MyDayWidgetCardBuilder
                     ["selectAction"] = Execute("add", "Add a task"),
                     ["items"] = new JsonArray
                     {
-                        new JsonObject
+                        (JsonNode)new JsonObject
                         {
                             ["type"] = "TextBlock",
                             ["text"] = "+",
@@ -85,7 +85,7 @@ internal static class MyDayWidgetCardBuilder
                 }
             }
         };
-        body.Add(header);
+        body.Add((JsonNode)header);
 
         var status = snapshot.Total == 0
             ? "Nothing planned yet"
@@ -122,11 +122,11 @@ internal static class MyDayWidgetCardBuilder
         }.ToJsonString();
     }
 
-    private static JsonObject BuildTaskRow(MyDayWidgetTask task)
+    private static JsonNode BuildTaskRow(MyDayWidgetTask task)
     {
         var details = new JsonArray
         {
-            new JsonObject
+            (JsonNode)new JsonObject
             {
                 ["type"] = "TextBlock",
                 ["text"] = task.Title,
@@ -139,7 +139,7 @@ internal static class MyDayWidgetCardBuilder
 
         var columns = new JsonArray
         {
-            new JsonObject
+            (JsonNode)new JsonObject
             {
                 ["type"] = "Column",
                 ["width"] = "auto",
@@ -147,7 +147,7 @@ internal static class MyDayWidgetCardBuilder
                 ["selectAction"] = Execute($"complete:{task.Id}", $"Complete {task.Title}"),
                 ["items"] = new JsonArray
                 {
-                    new JsonObject
+                    (JsonNode)new JsonObject
                     {
                         ["type"] = "TextBlock",
                         ["text"] = "○",
@@ -156,7 +156,7 @@ internal static class MyDayWidgetCardBuilder
                     }
                 }
             },
-            new JsonObject
+            (JsonNode)new JsonObject
             {
                 ["type"] = "Column",
                 ["width"] = "stretch",
@@ -167,7 +167,7 @@ internal static class MyDayWidgetCardBuilder
 
         if (task.IsStarred)
         {
-            columns.Add(new JsonObject
+            columns.Add((JsonNode)new JsonObject
             {
                 ["type"] = "Column",
                 ["width"] = "auto",
@@ -175,7 +175,7 @@ internal static class MyDayWidgetCardBuilder
                 ["selectAction"] = Execute($"open:{task.Id}", $"Open {task.Title}"),
                 ["items"] = new JsonArray
                 {
-                    new JsonObject
+                    (JsonNode)new JsonObject
                     {
                         ["type"] = "TextBlock",
                         ["text"] = "★",
@@ -192,7 +192,7 @@ internal static class MyDayWidgetCardBuilder
             ["spacing"] = "small",
             ["items"] = new JsonArray
             {
-                new JsonObject { ["type"] = "ColumnSet", ["columns"] = columns }
+                (JsonNode)new JsonObject { ["type"] = "ColumnSet", ["columns"] = columns }
             }
         };
     }
@@ -226,7 +226,7 @@ internal static class MyDayWidgetCardBuilder
         _ => "default"
     };
 
-    private static JsonObject Text(string value, string size = "default", string color = "default", bool wrap = false, string? weight = null)
+    private static JsonNode Text(string value, string size = "default", string color = "default", bool wrap = false, string? weight = null)
     {
         var block = new JsonObject
         {
@@ -240,7 +240,7 @@ internal static class MyDayWidgetCardBuilder
         return block;
     }
 
-    private static JsonObject Execute(string verb, string title) => new()
+    private static JsonNode Execute(string verb, string title) => new JsonObject()
     {
         ["type"] = "Action.Execute",
         ["verb"] = verb,

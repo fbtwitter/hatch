@@ -34,6 +34,9 @@
     <Compile Include="..\Helpers\MascotPopupPlacement.cs" Link="Source\Helpers\MascotPopupPlacement.cs" />
     <Compile Include="..\Services\TipEngine.cs" Link="Source\Services\TipEngine.cs" />
     <Compile Include="..\Services\SyncDecisions.cs" Link="Source\Services\SyncDecisions.cs" />
+    <Compile Include="..\Services\MyDayWidgetCardBuilder.cs" Link="Source\Services\MyDayWidgetCardBuilder.cs" />
+    <Compile Include="..\Services\MyDayWidgetSnapshot.cs" Link="Source\Services\MyDayWidgetSnapshot.cs" />
+    <Compile Include="..\Services\MyDayWidgetTask.cs" Link="Source\Services\MyDayWidgetTask.cs" />
     <Compile Include="..\Helpers\RecoveryKit.cs" Link="Source\Helpers\RecoveryKit.cs" />
     <Compile Include="..\Helpers\MascotOpenPageHelper.cs" Link="Source\Helpers\MascotOpenPageHelper.cs" />
   </ItemGroup>
