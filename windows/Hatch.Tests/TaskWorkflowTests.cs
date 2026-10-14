@@ -314,7 +314,7 @@ public sealed class TaskWorkflowTests
                 Assert.AreEqual(buttonWidth, button.BoundingRectangle.Width, 1, "Preset grid columns must be equal.");
                 Assert.AreEqual(Find("PaneDueDatePicker").BoundingRectangle.Height, button.BoundingRectangle.Height, 1,
                     "Presets must match the Due date control height.");
-                button.AsButton().Invoke();
+                button.Patterns.Toggle.Pattern.Toggle();
                 WaitForSaved(title, task => task.GetProperty("DueDate").ValueKind == JsonValueKind.String
                     && task.GetProperty("DueDate").GetDateTimeOffset().Date == expected
                     && task.GetProperty("DueDate").GetDateTimeOffset().Offset == TimeSpan.Zero);
@@ -322,11 +322,11 @@ public sealed class TaskWorkflowTests
                     "selected preset " + label);
                 Assert.IsTrue(Find("PaneRepeatCombo").IsEnabled);
                 CaptureState($"due-preset-{width}-{id}");
-                Find(id).AsButton().Invoke();
+                Find(id).Patterns.Toggle.Pattern.Toggle();
                 WaitForSaved(title, task => task.GetProperty("DueDate").ValueKind == JsonValueKind.Null);
                 Assert.IsFalse(Find("PaneRepeatCombo").IsEnabled);
             }
-            Find("PaneDuePreset_NextWeek").Click();
+            Find("PaneDuePreset_NextWeek").Patterns.Toggle.Pattern.Toggle();
             WaitForSaved(title, task => task.GetProperty("DueDate").ValueKind == JsonValueKind.String);
             TestSetup.Restart();
             Main.Patterns.Transform.Pattern.Resize(width, 760);
@@ -411,9 +411,16 @@ public sealed class TaskWorkflowTests
             TestSetup.Restart();
             Find("Nav_AllTasks").Click();
             var restoredScroller = Find("FlatListView");
-            if (restoredScroller.Patterns.Scroll.Pattern.VerticallyScrollable.Value)
-                restoredScroller.Patterns.Scroll.Pattern.SetScrollPercent(-1, 0);
-            Assert.IsNotNull(Named(editedTitle));
+            AutomationElement? restoredTask = null;
+            for (int percent = 0; percent <= 100; percent += 10)
+            {
+                if (restoredScroller.Patterns.Scroll.Pattern.VerticallyScrollable.Value)
+                    restoredScroller.Patterns.Scroll.Pattern.SetScrollPercent(-1, percent);
+                Thread.Sleep(100);
+                restoredTask = Main.FindFirstDescendant(cf => cf.ByName(editedTitle));
+                if (restoredTask is not null) break;
+            }
+            Assert.IsNotNull(restoredTask, "The edited task should remain visible in the All Tasks list after restart.");
         }
         finally { Main.Patterns.Transform.Pattern.Resize(originalBounds.Width, originalBounds.Height); }
     }
