@@ -267,9 +267,9 @@ public sealed class TaskWorkflowTests
 
         WaitFor(() =>
         {
-            var summary = Main.FindFirstDescendant(cf => cf.ByAutomationId("Suggestions_Summary"));
+            var description = Main.FindFirstDescendant(cf => cf.ByName("Choose tasks to add to your My Day plan."));
             var button = Main.FindFirstDescendant(cf => cf.ByAutomationId("Suggestions_Button"));
-            return (summary is null || summary.IsOffscreen) && (button is null || button.IsOffscreen) ? Main : null;
+            return (description is null || description.IsOffscreen) && (button is null || button.IsOffscreen) ? Main : null;
         }, "empty suggestions popup and anchor dismissed");
         WaitForSaved(title, task => task.GetProperty("IsInMyDay").GetBoolean());
         CaptureState("myday-suggestions-exhausted");
