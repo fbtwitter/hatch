@@ -10,6 +10,7 @@ public sealed partial class QuickAddViewModel : INotifyPropertyChanged
     private bool _hasTaskDraft;
 
     public bool HasTaskDraft => _hasTaskDraft;
+    public bool KeepOpenAfterAdding => App.Settings.KeepQuickAddOpen;
 
     public void SetTaskDraft(string? text)
     {

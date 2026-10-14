@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using FlaUI.Core.Capturing;
 using FlaUI.Core.Input;
 using FlaUI.Core.WindowsAPI;
@@ -174,6 +175,239 @@ public sealed class TaskWorkflowTests
         var moreButton = Main.FindFirstDescendant(cf => cf.ByAutomationId("CompletedTasks_ShowMore"));
         Assert.IsTrue(moreButton is null || moreButton.IsOffscreen,
             "Show more should disappear after the remaining completed tasks are shown.");
+    }
+
+    [TestMethod]
+    public void MyDaySuggestions_StaysOffPageAndRefillsShortlist()
+    {
+        Find("Nav_MyDay").Click();
+        Find("Nav_AllTasks").Click();
+        for (int i = 0; i < 7; i++)
+        {
+            Main.Focus();
+            Find("NewTask_TextBox").Focus();
+            CreateTask();
+        }
+        Find("Nav_MyDay").Click();
+        var hiddenList = Main.FindFirstDescendant(cf => cf.ByAutomationId("Suggestions_List"));
+        Assert.IsTrue(hiddenList is null || hiddenList.IsOffscreen,
+            "Suggestions must not occupy the My Day task page before they are requested.");
+        CaptureState("myday-suggestions-closed");
+
+        Find("Suggestions_Button").AsButton().Invoke();
+        var summary = Find("Suggestions_Summary");
+        Assert.IsTrue(summary.Name.StartsWith("Showing 5 of ", StringComparison.Ordinal));
+        int total = int.Parse(summary.Name.Split(' ')[^1], System.Globalization.CultureInfo.InvariantCulture);
+        Assert.AreEqual("Show all", Find("Suggestions_Toggle").Name);
+        CaptureState("myday-suggestions-preview");
+
+        Find("Suggestions_Toggle").AsButton().Invoke();
+        WaitFor(() => Find("Suggestions_Summary").Name == $"Showing {total} of {total}"
+            ? Find("Suggestions_Summary") : null, "all suggestions");
+        Assert.AreEqual("Show fewer", Find("Suggestions_Toggle").Name);
+        Assert.IsTrue(Find("Suggestions_List").BoundingRectangle.Bottom < Main.BoundingRectangle.Bottom,
+            "The expanded suggestions list must stay inside its separate scrollable surface.");
+        CaptureState("myday-suggestions-all");
+
+        Find("Suggestions_Toggle").AsButton().Invoke();
+        WaitFor(() => Find("Suggestions_Summary").Name == $"Showing 5 of {total}"
+            ? Find("Suggestions_Summary") : null, "five suggestions");
+        var add = Find("Suggestions_List").FindFirstDescendant(cf => cf.ByAutomationId("Suggestion_AddButton"));
+        Assert.IsNotNull(add);
+        var title = add.Parent?.FindFirstDescendant(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.Text))?.Name
+            ?? throw new AssertFailedException("The suggestion row must expose its task title.");
+        add.AsButton().Invoke();
+        WaitForSaved(title, task => task.GetProperty("IsInMyDay").GetBoolean());
+        WaitFor(() => Find("Suggestions_Summary").Name == $"Showing 5 of {total - 1}"
+            ? Find("Suggestions_Summary") : null, "refilled shortlist");
+        Assert.IsTrue(Find("Suggestions_List").FindFirstDescendant(cf => cf.ByName(title)) is null,
+            "A chosen task must leave the suggestions.");
+
+        Keyboard.Press(VirtualKeyShort.ESCAPE);
+        Named(title);
+        hiddenList = Main.FindFirstDescendant(cf => cf.ByAutomationId("Suggestions_List"));
+        Assert.IsTrue(hiddenList is null || hiddenList.IsOffscreen);
+        CaptureState("myday-suggestions-chosen");
+        Find("Suggestions_Button").AsButton().Invoke();
+        Assert.AreEqual($"Showing 5 of {total - 1}", Find("Suggestions_Summary").Name);
+        var suggestedTitle = Find("Suggestions_List").FindFirstDescendant(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.Text));
+        Assert.IsNotNull(suggestedTitle);
+        var selectedTitle = suggestedTitle.Name;
+        suggestedTitle.Click();
+        Assert.AreEqual(selectedTitle, Find("PaneTitleBox").AsTextBox().Text);
+        hiddenList = Main.FindFirstDescendant(cf => cf.ByAutomationId("Suggestions_List"));
+        Assert.IsTrue(hiddenList is null || hiddenList.IsOffscreen,
+            "Opening task details must dismiss the suggestions surface.");
+    }
+
+    [TestMethod]
+    public void MyDaySuggestions_ClosesWhenLastSuggestionIsAdded()
+    {
+        Find("Nav_AllTasks").Click();
+        Main.Focus();
+        Find("NewTask_TextBox").Focus();
+        var title = CreateTask();
+        Find("Nav_MyDay").Click();
+        Find("Suggestions_Button").AsButton().Invoke();
+        using var saved = JsonDocument.Parse(File.ReadAllText(Path.Combine(TestSetup.DataDirectory, "tasks.json")));
+        int total = saved.RootElement.GetProperty("Tasks").EnumerateArray().Count(task =>
+            !task.GetProperty("IsCompleted").GetBoolean() && !task.GetProperty("IsDeleted").GetBoolean()
+            && !task.GetProperty("IsInMyDay").GetBoolean());
+        Assert.IsTrue(total > 0);
+
+        for (int remaining = total; remaining > 0; remaining--)
+        {
+            var add = Find("Suggestions_List").FindFirstDescendant(cf => cf.ByAutomationId("Suggestion_AddButton"));
+            Assert.IsNotNull(add);
+            var suggestedTitle = add.Parent?.FindFirstDescendant(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.Text))?.Name
+                ?? throw new AssertFailedException("The suggestion must expose its task title.");
+            add.AsButton().Invoke();
+            WaitForSaved(suggestedTitle, task => task.GetProperty("IsInMyDay").GetBoolean());
+        }
+
+        WaitFor(() =>
+        {
+            var summary = Main.FindFirstDescendant(cf => cf.ByAutomationId("Suggestions_Summary"));
+            var button = Main.FindFirstDescendant(cf => cf.ByAutomationId("Suggestions_Button"));
+            return (summary is null || summary.IsOffscreen) && (button is null || button.IsOffscreen) ? Main : null;
+        }, "empty suggestions popup and anchor dismissed");
+        WaitForSaved(title, task => task.GetProperty("IsInMyDay").GetBoolean());
+        CaptureState("myday-suggestions-exhausted");
+    }
+
+    [TestMethod]
+    [DataRow(620)]
+    [DataRow(1000)]
+    public void TaskDetails_DueDatePresetsSelectClearAndPersist(int width)
+    {
+        var originalBounds = Main.BoundingRectangle;
+        try
+        {
+            Main.Patterns.Transform.Pattern.Resize(width, 760);
+            Find("Nav_AllTasks").Click();
+            Main.Focus();
+            Find("NewTask_TextBox").Focus();
+            var title = CreateTask();
+            Named(title).Click();
+            ScrollToPresets();
+            var today = DateTime.Today;
+            var weekend = today;
+            while (weekend.DayOfWeek != DayOfWeek.Saturday) weekend = weekend.AddDays(1);
+            var nextWeek = today.AddDays(1);
+            while (nextWeek.DayOfWeek != DayOfWeek.Monday) nextWeek = nextWeek.AddDays(1);
+            var presets = new[]
+            {
+                ("PaneDuePreset_Today", "Today", today),
+                ("PaneDuePreset_Tomorrow", "Tomorrow", today.AddDays(1)),
+                ("PaneDuePreset_Weekend", "This weekend", weekend),
+                ("PaneDuePreset_NextWeek", "Next week", nextWeek)
+            };
+            var viewport = Find("DetailsPaneScrollViewer").BoundingRectangle;
+            var buttonWidth = Find(presets[0].Item1).BoundingRectangle.Width;
+            foreach (var (id, label, expected) in presets)
+            {
+                var button = Find(id);
+                Assert.AreEqual(label, button.Name);
+                Assert.IsTrue(viewport.Contains(button.BoundingRectangle), "Preset must fit inside the details pane.");
+                Assert.AreEqual(buttonWidth, button.BoundingRectangle.Width, 1, "Preset grid columns must be equal.");
+                Assert.AreEqual(Find("PaneDueDatePicker").BoundingRectangle.Height, button.BoundingRectangle.Height, 1,
+                    "Presets must match the Due date control height.");
+                button.Click();
+                WaitForSaved(title, task => task.GetProperty("DueDate").ValueKind == JsonValueKind.String
+                    && task.GetProperty("DueDate").GetDateTimeOffset().Date == expected
+                    && task.GetProperty("DueDate").GetDateTimeOffset().Offset == TimeSpan.Zero);
+                WaitFor(() => Find(id).Patterns.Toggle.Pattern.ToggleState == FlaUI.Core.Definitions.ToggleState.On ? Find(id) : null,
+                    "selected preset " + label);
+                Assert.IsTrue(Find("PaneRepeatCombo").IsEnabled);
+                CaptureState($"due-preset-{width}-{id}");
+                Find(id).Click();
+                WaitForSaved(title, task => task.GetProperty("DueDate").ValueKind == JsonValueKind.Null);
+                Assert.IsFalse(Find("PaneRepeatCombo").IsEnabled);
+            }
+            Find("PaneDuePreset_NextWeek").Click();
+            WaitForSaved(title, task => task.GetProperty("DueDate").ValueKind == JsonValueKind.String);
+            TestSetup.Restart();
+            Main.Patterns.Transform.Pattern.Resize(width, 760);
+            Find("Nav_AllTasks").Click();
+            Named(title).Click();
+            ScrollToPresets();
+            Assert.AreEqual(FlaUI.Core.Definitions.ToggleState.On, Find("PaneDuePreset_NextWeek").Patterns.Toggle.Pattern.ToggleState);
+            Assert.AreEqual(nextWeek, WaitForSaved(title, _ => true).GetProperty("DueDate").GetDateTimeOffset().Date);
+        }
+        finally { Main.Patterns.Transform.Pattern.Resize(originalBounds.Width, originalBounds.Height); }
+
+        static void ScrollToPresets()
+        {
+            var viewport = Find("DetailsPaneScrollViewer");
+            for (int percent = 0; percent <= 100; percent += 10)
+            {
+                if (viewport.Patterns.Scroll.Pattern.VerticallyScrollable.Value)
+                    viewport.Patterns.Scroll.Pattern.SetScrollPercent(-1, percent);
+                Thread.Sleep(100);
+                var first = Main.FindFirstDescendant(cf => cf.ByAutomationId("PaneDuePreset_Today"));
+                var last = Main.FindFirstDescendant(cf => cf.ByAutomationId("PaneDuePreset_NextWeek"));
+                if (first is not null && last is not null && viewport.BoundingRectangle.Contains(first.BoundingRectangle)
+                    && viewport.BoundingRectangle.Contains(last.BoundingRectangle)) return;
+            }
+            Assert.Fail("The due-date presets could not be brought into view.");
+        }
+    }
+
+    [TestMethod]
+    [DataRow(620, 2)]
+    [DataRow(1000, 9)]
+    public void TaskDetails_FooterShowsTimestampsAndDeleteSupportsUndo(int width, int ageDays)
+    {
+        var originalBounds = Main.BoundingRectangle;
+        try
+        {
+            Main.Patterns.Transform.Pattern.Resize(width, 760);
+            Find("Nav_AllTasks").Click();
+            Main.Focus();
+            Find("NewTask_TextBox").Focus();
+            var title = CreateTask();
+            var path = Path.Combine(TestSetup.DataDirectory, "tasks.json");
+            var data = JsonNode.Parse(File.ReadAllText(path))!;
+            var fixtureTask = data["Tasks"]!.AsArray().Single(task => task!["Title"]!.GetValue<string>() == title)!;
+            fixtureTask["CreatedAt"] = JsonValue.Create(DateTime.UtcNow.AddDays(-ageDays));
+            fixtureTask["UpdatedAt"] = JsonValue.Create(DateTimeOffset.UtcNow.AddMinutes(-5));
+            var fixture = data.ToJsonString();
+            TestSetup.Restart(() => File.WriteAllText(path, fixture));
+            Main.Patterns.Transform.Pattern.Resize(width, 760);
+            Find("Nav_AllTasks").Click();
+            Named(title).Click();
+            var viewport = Find("DetailsPaneScrollViewer");
+            if (viewport.Patterns.Scroll.Pattern.VerticallyScrollable.Value)
+                viewport.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
+            var created = Find("PaneCreatedAtText");
+            var updated = Find("PaneUpdatedAtText");
+            var delete = Find("Pane_DeleteTask");
+            Assert.AreEqual("Delete task", delete.Name);
+            if (ageDays == 2) Assert.AreEqual("2 days ago", created.Name);
+            else Assert.IsTrue(created.Name.Length > 0 && !created.Name.Contains("ago", StringComparison.Ordinal),
+                "Older timestamps must show an absolute date.");
+            StringAssert.EndsWith(updated.Name, "min ago");
+            var initialCreated = created.Name;
+            Assert.IsTrue(created.BoundingRectangle.Top < updated.BoundingRectangle.Top);
+            Assert.AreEqual(created.BoundingRectangle.Right, updated.BoundingRectangle.Right, 1,
+                "Timestamp values must share the right edge.");
+            Assert.IsTrue(delete.BoundingRectangle.Top > updated.BoundingRectangle.Bottom);
+            Assert.IsTrue(viewport.BoundingRectangle.Contains(delete.BoundingRectangle));
+            CaptureState("task-footer-" + width);
+            var editedTitle = title + " edited";
+            EnterAndWait(Find("PaneTitleBox").AsTextBox(), editedTitle);
+            WaitForSaved(editedTitle, _ => true);
+            WaitFor(() => Find("PaneUpdatedAtText").Name == "just now" ? Find("PaneUpdatedAtText") : null, "updated timestamp after edit");
+            Assert.AreEqual(initialCreated, Find("PaneCreatedAtText").Name);
+            Find("Pane_DeleteTask").AsButton().Invoke();
+            WaitForSaved(editedTitle, task => task.GetProperty("IsDeleted").GetBoolean());
+            Find("UndoButton").AsButton().Invoke();
+            WaitForSaved(editedTitle, task => !task.GetProperty("IsDeleted").GetBoolean());
+            TestSetup.Restart();
+            Find("Nav_AllTasks").Click();
+            Assert.IsNotNull(Named(editedTitle));
+        }
+        finally { Main.Patterns.Transform.Pattern.Resize(originalBounds.Width, originalBounds.Height); }
     }
 
     private static string CreateTask()

@@ -353,6 +353,27 @@
                                 <MenuFlyoutItem Tag="{x:Bind}"
                                                 x:Uid="Task_DeleteMenuItem"
                                                 Click="DeleteButton_Click">
+                                    <MenuFlyoutItem.Resources>
+                                        <ResourceDictionary>
+                                            <ResourceDictionary.ThemeDictionaries>
+                                                <ResourceDictionary x:Key="Default">
+                                                    <StaticResource x:Key="MenuFlyoutItemForeground" ResourceKey="SystemFillColorCriticalBrush" />
+                                                    <StaticResource x:Key="MenuFlyoutItemForegroundPointerOver" ResourceKey="SystemFillColorCriticalBrush" />
+                                                    <StaticResource x:Key="MenuFlyoutItemForegroundPressed" ResourceKey="SystemFillColorCriticalBrush" />
+                                                </ResourceDictionary>
+                                                <ResourceDictionary x:Key="Light">
+                                                    <StaticResource x:Key="MenuFlyoutItemForeground" ResourceKey="SystemFillColorCriticalBrush" />
+                                                    <StaticResource x:Key="MenuFlyoutItemForegroundPointerOver" ResourceKey="SystemFillColorCriticalBrush" />
+                                                    <StaticResource x:Key="MenuFlyoutItemForegroundPressed" ResourceKey="SystemFillColorCriticalBrush" />
+                                                </ResourceDictionary>
+                                                <ResourceDictionary x:Key="HighContrast">
+                                                    <StaticResource x:Key="MenuFlyoutItemForeground" ResourceKey="SystemColorButtonTextColorBrush" />
+                                                    <StaticResource x:Key="MenuFlyoutItemForegroundPointerOver" ResourceKey="SystemColorHighlightTextColorBrush" />
+                                                    <StaticResource x:Key="MenuFlyoutItemForegroundPressed" ResourceKey="SystemColorHighlightTextColorBrush" />
+                                                </ResourceDictionary>
+                                            </ResourceDictionary.ThemeDictionaries>
+                                        </ResourceDictionary>
+                                    </MenuFlyoutItem.Resources>
                                     <MenuFlyoutItem.Icon>
                                         <FontIcon Glyph="&#xE74D;" />
                                     </MenuFlyoutItem.Icon>
@@ -382,7 +403,7 @@
     </Page.Resources>
 
     <!-- Root: two columns — task list | details pane -->
-    <Grid Margin="0,0,0,24">
+    <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="Auto" />
@@ -391,7 +412,7 @@
         <!-- Left column: header + add row + task list. Deliberately uncapped — each row below
              caps its own content instead, so the scrolling controls span the full column and
              their scrollbars track its right edge rather than a capped content edge. -->
-        <Grid Grid.Column="0">
+        <Grid Grid.Column="0" Margin="0,0,0,24">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -399,13 +420,14 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
-            <Grid Grid.Row="0" Padding="{x:Bind TaskHeaderPadding(ViewModel.IsTaskComposerFloating, ViewModel.IsTagFilterActive, ViewModel.ActiveNavItem, ViewModel.IsTaskListEmpty, ViewModel.SuggestionsVisible), Mode=OneWay}"
+            <Grid Grid.Row="0" Padding="{x:Bind TaskHeaderPadding(ViewModel.IsTaskComposerFloating, ViewModel.IsTagFilterActive), Mode=OneWay}"
                   MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock x:Name="HeaderText" Text="My Tasks"
+                           AutomationProperties.AutomationId="TaskPage_Title"
                            Style="{ThemeResource TitleTextBlockStyle}"
                            FontSize="36"
                            VerticalAlignment="Center"
@@ -420,18 +442,107 @@
                     <StackPanel Spacing="6"
                                 Visibility="{x:Bind ViewModel.IsLoaded, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                         <TextBlock Text="{x:Bind ViewModel.MyDaySummaryText, Mode=OneWay}"
+                                   AutomationProperties.AutomationId="MyDay_Summary"
                                    Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                   MinHeight="22"
                                    TextWrapping="WrapWholeWords" />
-                        <ProgressBar x:Uid="MyDayProgressBar"
-                                     Height="4"
-                                     MaxWidth="280"
-                                     HorizontalAlignment="Left"
-                                     IsTabStop="False"
-                                     Minimum="0"
-                                     Maximum="100"
-                                     Value="{x:Bind ViewModel.MyDayProgressPercent, Mode=OneWay}"
-                                     Visibility="{x:Bind ViewModel.HasMyDayProgress, Converter={StaticResource BoolToVisibility}, Mode=OneWay}" />
+                        <Grid Height="4" MaxWidth="280" HorizontalAlignment="Left">
+                            <ProgressBar x:Uid="MyDayProgressBar"
+                                         Height="4"
+                                         IsTabStop="False"
+                                         Minimum="0"
+                                         Maximum="100"
+                                         Value="{x:Bind ViewModel.MyDayProgressPercent, Mode=OneWay}"
+                                         Visibility="{x:Bind ViewModel.HasMyDayProgress, Converter={StaticResource BoolToVisibility}, Mode=OneWay}" />
+                        </Grid>
                     </StackPanel>
+                    <!-- The progress slot and stack spacing supply 14 DIPs of the 16-DIP gap. -->
+                    <Button x:Uid="Suggestions_Button" x:Name="SuggestionsButton"
+                            AutomationProperties.AutomationId="Suggestions_Button"
+                            HorizontalAlignment="Left" Margin="0,2,0,0"
+                            Visibility="{x:Bind ViewModel.SuggestionsVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <TextBlock x:Uid="Suggestions_ButtonLabel" Text="Suggestions" VerticalAlignment="Center" />
+                            <InfoBadge Value="{x:Bind ViewModel.SuggestionsCount, Mode=OneWay}" VerticalAlignment="Center" />
+                        </StackPanel>
+                        <Button.Flyout>
+                            <Flyout x:Name="SuggestionsFlyout" Placement="BottomEdgeAlignedLeft"
+                                    Opened="SuggestionsFlyout_Opened" Closed="SuggestionsFlyout_Closed">
+                                <Flyout.FlyoutPresenterStyle>
+                                    <Style TargetType="FlyoutPresenter">
+                                        <Setter Property="MinWidth" Value="0" />
+                                        <Setter Property="MaxWidth" Value="400" />
+                                    </Style>
+                                </Flyout.FlyoutPresenterStyle>
+                                <StackPanel Spacing="12">
+                                    <TextBlock x:Uid="Suggestions_Description"
+                                               Text="Choose tasks to add to your My Day plan."
+                                               Style="{ThemeResource BodyStrongTextBlockStyle}" TextWrapping="WrapWholeWords" />
+                                    <TextBlock x:Uid="Suggestions_Empty" Text="No more tasks to suggest."
+                                               TextWrapping="WrapWholeWords"
+                                               Visibility="{x:Bind ViewModel.HasSuggestions, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}" />
+                                    <ListView x:Name="SuggestionsList" AutomationProperties.AutomationId="Suggestions_List"
+                                              ItemsSource="{x:Bind ViewModel.MySuggestions, Mode=OneWay}"
+                                              ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
+                                              MaxHeight="320" SelectionMode="Single" HorizontalContentAlignment="Stretch"
+                                              SelectionChanged="TaskListView_SelectionChanged"
+                                              Loaded="TaskListView_Loaded" Unloaded="TaskListView_Unloaded"
+                                              ScrollViewer.VerticalScrollBarVisibility="Auto"
+                                              ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                                        <ListView.ItemTemplate>
+                                            <DataTemplate x:DataType="models:TodoItem">
+                                                <Grid Padding="12,8" ColumnSpacing="12">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*" />
+                                                        <ColumnDefinition Width="Auto" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <StackPanel Spacing="2" VerticalAlignment="Center">
+                                                        <TextBlock Text="{x:Bind Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                                                        <TextBlock Text="{x:Bind DueDate, Converter={StaticResource DueDateToString}, Mode=OneWay}"
+                                                                   Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
+                                                                   Style="{ThemeResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis"
+                                                                   Visibility="{x:Bind DueDate, Converter={StaticResource DueDateToChipVisibility}, Mode=OneWay}" />
+                                                        <TextBlock x:Uid="Suggestions_NoDate" Text="No due date"
+                                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                                                   Visibility="{x:Bind DueDate, Converter={StaticResource DueDateToChipVisibility}, ConverterParameter=Invert, Mode=OneWay}" />
+                                                        <TextBlock Text="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, ConverterParameter=Full, Mode=OneWay}"
+                                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                   Style="{ThemeResource CaptionTextBlockStyle}" TextTrimming="CharacterEllipsis"
+                                                                   Visibility="{x:Bind HasPriority, Converter={StaticResource BoolToVisibility}, Mode=OneWay}" />
+                                                        <TextBlock Text="{x:Bind ListName, Mode=OneWay}" TextTrimming="CharacterEllipsis"
+                                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                                   Style="{ThemeResource CaptionTextBlockStyle}"
+                                                                   Visibility="{x:Bind HasCustomListName, Converter={StaticResource BoolToVisibility}, Mode=OneWay}" />
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1" Tag="{x:Bind}" x:Uid="Suggestion_AddButton"
+                                                            AutomationProperties.AutomationId="Suggestion_AddButton"
+                                                            Click="SuggestionAddButton_Click" VerticalAlignment="Center"
+                                                            Style="{ThemeResource AccentButtonStyle}" Padding="8" MinWidth="0">
+                                                        <FontIcon Glyph="&#xE710;" FontSize="14" />
+                                                    </Button>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ListView.ItemTemplate>
+                                    </ListView>
+                                    <Grid ColumnSpacing="12"
+                                          Visibility="{x:Bind ViewModel.CanExpandSuggestions, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{x:Bind ViewModel.SuggestionsSummaryText, Mode=OneWay}"
+                                                   AutomationProperties.AutomationId="Suggestions_Summary"
+                                                   TextWrapping="WrapWholeWords" VerticalAlignment="Center"
+                                                   Style="{ThemeResource CaptionTextBlockStyle}" />
+                                        <Button Grid.Column="1" AutomationProperties.AutomationId="Suggestions_Toggle"
+                                                Content="{x:Bind ViewModel.SuggestionsToggleLabel, Mode=OneWay}"
+                                                Command="{x:Bind ViewModel.ToggleSuggestionsCommand}" />
+                                    </Grid>
+                                </StackPanel>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
                 </StackPanel>
                 <DropDownButton x:Name="PlannedViewSelector" x:Uid="PlannedViewSelector" Grid.Column="1"
                                 AutomationProperties.AutomationId="PlannedViewSelector"
@@ -463,7 +574,7 @@
             <StackPanel Grid.Row="1"
                         Orientation="Horizontal"
                         Spacing="8"
-                        Padding="{x:Bind TaskTagFilterPadding(ViewModel.IsTaskComposerFloating, ViewModel.ActiveNavItem, ViewModel.IsTaskListEmpty, ViewModel.SuggestionsVisible), Mode=OneWay}"
+                        Padding="{x:Bind TaskTagFilterPadding(ViewModel.IsTaskComposerFloating), Mode=OneWay}"
                         MaxWidth="{StaticResource PageMaxWidth}" HorizontalAlignment="Stretch"
                         Visibility="{x:Bind ViewModel.IsTagFilterActive, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                 <TextBlock x:Uid="TagFilter_ShowingText"
@@ -488,7 +599,7 @@
 
             <ContentControl x:Name="TaskComposer" Grid.Row="{x:Bind ViewModel.TaskComposerRow, Mode=OneWay}"
                     AutomationProperties.AutomationId="TaskComposer"
-                    Margin="{x:Bind ComposerOuterMargin(ViewModel.IsTaskComposerFloating, ViewModel.ActiveNavItem, ViewModel.IsTaskListEmpty, ViewModel.SuggestionsVisible), Mode=OneWay}"
+                    Margin="{x:Bind ComposerOuterMargin(ViewModel.IsTaskComposerFloating), Mode=OneWay}"
                     VerticalAlignment="{x:Bind ComposerAlignment(ViewModel.IsTaskComposerFloating), Mode=OneWay}"
                     IsEnabled="{x:Bind ViewModel.IsTaskComposerVisible, Mode=OneWay}"
                     IsTabStop="False" HorizontalContentAlignment="Stretch"
@@ -625,7 +736,7 @@
                                                       HorizontalAlignment="Stretch"
                                                       HorizontalContentAlignment="Stretch"
                                                       Padding="4"
-                                                      Margin="24,4"
+                                                      Margin="24,0,24,4"
                                                       CornerRadius="{ThemeResource ControlCornerRadius}"
                                                       Visibility="{x:Bind ShowExpander, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
                                                 <Expander.Resources>
@@ -693,7 +804,7 @@
                                                       Loaded="TaskListView_Loaded"
                                                       Unloaded="TaskListView_Unloaded"
                                                       IsTabStop="False"
-                                                      Margin="20,4"
+                                                      Margin="20,0,20,8"
                                                       Visibility="{x:Bind ShowFlatList, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
                                                       ScrollViewer.VerticalScrollBarVisibility="Disabled"
                                                       ScrollViewer.HorizontalScrollBarVisibility="Disabled">
@@ -706,161 +817,6 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
 
-                            <!-- Suggestions — My Day only, shows tasks from previous days not yet completed -->
-                            <StackPanel Margin="20,12,20,0"
-                                        Spacing="4"
-                                        Visibility="{x:Bind ViewModel.SuggestionsVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                                <StackPanel Orientation="Horizontal" Spacing="6" Margin="8,0,0,12">
-                                    <TextBlock x:Uid="Suggestions_Header"
-                                               Text="Suggested"
-                                               Style="{ThemeResource CaptionTextBlockStyle}"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                    <InfoBadge Value="{x:Bind ViewModel.SuggestionsCount, Mode=OneWay}"
-                                               VerticalAlignment="Center" />
-                                </StackPanel>
-                                <!-- Native ListView, not a Button ItemsRepeater — gets the selection indicator for free. Background must stay Transparent or it masks it. -->
-                                <ListView ItemsSource="{x:Bind ViewModel.MySuggestions, Mode=OneWay}"
-                                          ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
-                                          SelectionMode="Single"
-                                          SelectionChanged="TaskListView_SelectionChanged"
-                                          Loaded="TaskListView_Loaded"
-                                          Unloaded="TaskListView_Unloaded"
-                                          IsTabStop="False"
-                                          ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                                    <ListView.ItemContainerTransitions>
-                                        <TransitionCollection />
-                                    </ListView.ItemContainerTransitions>
-                                    <ListView.ItemTemplate>
-                                        <DataTemplate x:DataType="models:TodoItem">
-                                            <Grid Tag="{x:Bind}"
-                                                  Padding="12, 8,12, 8"
-                                                  ColumnSpacing="8"
-                                                  Background="Transparent">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*" />
-                                                    <ColumnDefinition Width="Auto" />
-                                                </Grid.ColumnDefinitions>
-                                                <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
-                                                    <TextBlock Text="{x:Bind Title, Mode=OneWay}"
-                                                               TextTrimming="CharacterEllipsis"
-                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                                                        <TextBlock Text="{x:Bind Priority, Converter={StaticResource PriorityToLabel}, ConverterParameter=Full, Mode=OneWay}"
-                                                                   Visibility="{x:Bind Priority, Converter={StaticResource PriorityToContrastVisibility}, Mode=OneWay}"
-                                                                   Style="{ThemeResource CaptionTextBlockStyle}"
-                                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                                   VerticalAlignment="Center" />
-                                                        <FontIcon FontFamily="Segoe Fluent Icons"
-                                                                  Style="{StaticResource TaskMetadataIconStyle}"
-                                                                  Glyph="&#xE70B;"
-                                                                  FontSize="12"
-                                                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                                  ToolTipService.ToolTip="Has notes"
-                                                                  AutomationProperties.Name="Has notes"
-                                                                  VerticalAlignment="Center"
-                                                                  Visibility="{x:Bind HasNotes, Converter={StaticResource BoolToVisibility}, Mode=OneWay}" />
-
-                                                        <StackPanel Orientation="Horizontal" Spacing="3"
-                                                                    VerticalAlignment="Center"
-                                                                    Visibility="{x:Bind DueDate, Converter={StaticResource DueDateToChipVisibility}, Mode=OneWay}">
-                                                            <FontIcon Glyph="{x:Bind DueDate, Converter={StaticResource DueDateToChipGlyph}, Mode=OneWay}"
-                                                                      Style="{StaticResource TaskMetadataIconStyle}"
-                                                                      FontSize="11"
-                                                                      Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
-                                                                      VerticalAlignment="Center" />
-                                                            <TextBlock Text="{x:Bind DueDate, Converter={StaticResource DueDateToString}, Mode=OneWay}"
-                                                                       Style="{ThemeResource CaptionTextBlockStyle}"
-                                                                       Foreground="{x:Bind DueDate, Converter={StaticResource DueDateToChipForeground}, Mode=OneWay}"
-                                                                       VerticalAlignment="Center" />
-                                                        </StackPanel>
-
-                                                        <StackPanel Orientation="Horizontal" Spacing="3"
-                                                                    VerticalAlignment="Center"
-                                                                    ToolTipService.ToolTip="Steps"
-                                                                    Visibility="{x:Bind HasSteps, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                                                            <FontIcon FontFamily="Segoe Fluent Icons" Glyph="&#xE9D5;"
-                                                                      Style="{StaticResource TaskMetadataIconStyle}"
-                                                                      FontSize="12"
-                                                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                                      VerticalAlignment="Center" />
-                                                            <TextBlock Text="{x:Bind StepProgressLabel, Mode=OneWay}"
-                                                                       Style="{ThemeResource CaptionTextBlockStyle}"
-                                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                                       VerticalAlignment="Center" />
-                                                        </StackPanel>
-
-                                                        <FontIcon Glyph="&#xE895;"
-                                                                  Style="{StaticResource TaskMetadataIconStyle}"
-                                                                  FontSize="12"
-                                                                  Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                                  ToolTipService.ToolTip="Repeats"
-                                                                  AutomationProperties.Name="Repeats"
-                                                                  VerticalAlignment="Center"
-                                                                  Visibility="{x:Bind HasRecurrence, Converter={StaticResource BoolToVisibility}, Mode=OneWay}" />
-
-                                                        <StackPanel Orientation="Horizontal" Spacing="3"
-                                                                    VerticalAlignment="Center"
-                                                                    Visibility="{x:Bind HasCustomListName, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                                                            <FontIcon Glyph="&#xE8FD;"
-                                                                      Style="{StaticResource TaskMetadataIconStyle}"
-                                                                      FontSize="12"
-                                                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                                      VerticalAlignment="Center" />
-                                                            <TextBlock Text="{x:Bind ListName, Mode=OneWay}"
-                                                                       Style="{ThemeResource CaptionTextBlockStyle}"
-                                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                                       TextTrimming="CharacterEllipsis"
-                                                                       MaxWidth="96"
-                                                                       VerticalAlignment="Center" />
-                                                        </StackPanel>
-
-                                                        <ItemsRepeater ItemsSource="{x:Bind Tags, Converter={StaticResource TaskTagsPreview}, Mode=OneWay}"
-                                                                       Visibility="{x:Bind Tags, Converter={StaticResource TagsToVisibility}, Mode=OneWay}"
-                                                                       VerticalAlignment="Center">
-                                                            <ItemsRepeater.Layout>
-                                                                <StackLayout Orientation="Horizontal" Spacing="8" />
-                                                            </ItemsRepeater.Layout>
-                                                            <ItemsRepeater.ItemTemplate>
-                                                                <DataTemplate x:DataType="x:String">
-                                                                    <Button Tag="{x:Bind}"
-                                                                            Click="TagChipInRow_Click"
-                                                                            Background="Transparent"
-                                                                            BorderThickness="0"
-                                                                            Padding="0"
-                                                                            MinWidth="0"
-                                                                            MinHeight="0"
-                                                                            MaxWidth="96"
-                                                                            IsTabStop="False"
-                                                                            VerticalAlignment="Center">
-                                                                        <TextBlock Style="{ThemeResource CaptionTextBlockStyle}"
-                                                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                                                                   TextTrimming="CharacterEllipsis"
-                                                                                   MaxLines="1">
-                                                                            <Run Text="#" />
-                                                                            <Run Text="{x:Bind}" />
-                                                                        </TextBlock>
-                                                                    </Button>
-                                                                </DataTemplate>
-                                                            </ItemsRepeater.ItemTemplate>
-                                                        </ItemsRepeater>
-                                                    </StackPanel>
-                                                </StackPanel>
-                                                <Button Grid.Column="1" Tag="{x:Bind}"
-                                                        x:Uid="Suggestion_AddButton"
-                                                        AutomationProperties.Name="Add to My Day"
-                                                        Click="SuggestionAddButton_Click"
-                                                        Style="{ThemeResource AccentButtonStyle}"
-                                                        Padding="8"
-                                                        MinWidth="0"
-                                                        ToolTipService.ToolTip="Add to My Day">
-                                                    <FontIcon Glyph="&#xE710;" FontSize="14" />
-                                                </Button>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ListView.ItemTemplate>
-                                </ListView>
-                            </StackPanel>
 
                         </StackPanel>
                     </Grid>
@@ -868,6 +824,7 @@
 
                 <!-- Grouped list — Planned view only. Padding insets rows without moving the ScrollBar (it's a margin on ScrollContentPresenter) — keep it near the flat lists' inset or rows misalign. -->
                 <ListView Grid.Row="1" x:Name="GroupedListView"
+                          AutomationProperties.AutomationId="GroupedListView"
                           ItemsSource="{x:Bind PlannedGroupsSource.View, Mode=OneWay}"
                           SelectionMode="Single"
                           SelectionChanged="TaskListView_SelectionChanged"
@@ -902,14 +859,14 @@
                                     <TextBlock Text="{x:Bind Name, Mode=OneTime}"
                                                Style="{ThemeResource BodyStrongTextBlockStyle}"
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               Margin="0,16,0,16" />
+                                               Margin="0,0,0,16" />
                                 </DataTemplate>
                             </GroupStyle.HeaderTemplate>
                         </GroupStyle>
                     </ListView.GroupStyle>
                 </ListView>
 
-                <Grid Grid.Row="1" x:Name="PlannedCalendarLayout" Margin="24,16,24,0"
+                <Grid Grid.Row="1" x:Name="PlannedCalendarLayout" Margin="24,0,24,0"
                       MaxWidth="{StaticResource PageMaxRowWidth}" HorizontalAlignment="Stretch"
                       ColumnSpacing="16" SizeChanged="PlannedCalendarLayout_SizeChanged"
                       Visibility="{x:Bind ViewModel.IsPlannedCalendarVisible, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
@@ -981,6 +938,7 @@
                                 </Button>
                             </Grid>
                             <TextBlock Text="{x:Bind ViewModel.PlannedDayCountLabel, Mode=OneWay}"
+                                       AutomationProperties.AutomationId="PlannedDay_Count"
                                        Style="{StaticResource CaptionTextBlockStyle}"
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                         </StackPanel>
@@ -1146,6 +1104,7 @@
                 </Grid>
 
                 <ScrollViewer x:Name="DetailsPaneScrollViewer"
+                              AutomationProperties.AutomationId="DetailsPaneScrollViewer"
                               Grid.Row="2"
                               HorizontalScrollBarVisibility="Disabled"
                               VerticalScrollBarVisibility="Auto">
@@ -1358,6 +1317,37 @@
                                                             DateChanged="PaneDueDatePicker_DateChanged" />
                                     </Grid>
 
+                                    <Grid Margin="38,0,12,8" ColumnSpacing="8" RowSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <ToggleButton x:Uid="PaneDuePreset_Today"
+                                                      AutomationProperties.AutomationId="PaneDuePreset_Today"
+                                                      HorizontalAlignment="Stretch" MinWidth="0" MinHeight="32" FontSize="12" Padding="6,5"
+                                                      IsChecked="{x:Bind vm:MainViewModel.IsDueDatePresetSelected(ViewModel.SelectedTaskDueDate, 0), Mode=OneWay}"
+                                                      Command="{x:Bind ViewModel.ToggleSelectedTaskDueDatePresetCommand}" CommandParameter="0" />
+                                        <ToggleButton Grid.Column="1" x:Uid="PaneDuePreset_Tomorrow"
+                                                      AutomationProperties.AutomationId="PaneDuePreset_Tomorrow"
+                                                      HorizontalAlignment="Stretch" MinWidth="0" MinHeight="32" FontSize="12" Padding="6,5"
+                                                      IsChecked="{x:Bind vm:MainViewModel.IsDueDatePresetSelected(ViewModel.SelectedTaskDueDate, 1), Mode=OneWay}"
+                                                      Command="{x:Bind ViewModel.ToggleSelectedTaskDueDatePresetCommand}" CommandParameter="1" />
+                                        <ToggleButton Grid.Row="1" x:Uid="PaneDuePreset_Weekend"
+                                                      AutomationProperties.AutomationId="PaneDuePreset_Weekend"
+                                                      HorizontalAlignment="Stretch" MinWidth="0" MinHeight="32" FontSize="12" Padding="6,5"
+                                                      IsChecked="{x:Bind vm:MainViewModel.IsDueDatePresetSelected(ViewModel.SelectedTaskDueDate, 2), Mode=OneWay}"
+                                                      Command="{x:Bind ViewModel.ToggleSelectedTaskDueDatePresetCommand}" CommandParameter="2" />
+                                        <ToggleButton Grid.Row="1" Grid.Column="1" x:Uid="PaneDuePreset_NextWeek"
+                                                      AutomationProperties.AutomationId="PaneDuePreset_NextWeek"
+                                                      HorizontalAlignment="Stretch" MinWidth="0" MinHeight="32" FontSize="12" Padding="6,5"
+                                                      IsChecked="{x:Bind vm:MainViewModel.IsDueDatePresetSelected(ViewModel.SelectedTaskDueDate, 3), Mode=OneWay}"
+                                                      Command="{x:Bind ViewModel.ToggleSelectedTaskDueDatePresetCommand}" CommandParameter="3" />
+                                    </Grid>
+
                                     <Border Style="{StaticResource PaneRowDividerStyle}" />
 
                                     <Grid Style="{StaticResource PaneRowGridStyle}">
@@ -1544,30 +1534,63 @@
                             </Border>
                         </StackPanel>
 
-                        <Grid ColumnSpacing="24">
+                        <Grid ColumnSpacing="12" RowSpacing="2">
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0" Spacing="4">
-                                <TextBlock x:Uid="Pane_CreatedLabel"
-                                           Text="Created"
-                                           Style="{ThemeResource CaptionTextBlockStyle}"
-                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                                <TextBlock x:Name="PaneCreatedAtText"
-                                           Style="{ThemeResource CaptionTextBlockStyle}"
-                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="1" Spacing="4">
-                                <TextBlock x:Uid="Pane_UpdatedLabel"
-                                           Text="Updated"
-                                           Style="{ThemeResource CaptionTextBlockStyle}"
-                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                                <TextBlock x:Name="PaneUpdatedAtText"
-                                           Style="{ThemeResource CaptionTextBlockStyle}"
-                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
-                            </StackPanel>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <TextBlock x:Uid="Pane_CreatedLabel" Text="Created"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <TextBlock x:Name="PaneCreatedAtText" Grid.Column="1"
+                                       HorizontalAlignment="Right"
+                                       AutomationProperties.AutomationId="PaneCreatedAtText"
+                                       Text="{x:Bind ViewModel.SelectedTaskCreatedAtText, Mode=OneWay}"
+                                       ToolTipService.ToolTip="{x:Bind ViewModel.SelectedTaskCreatedAtTooltip, Mode=OneWay}"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                            <TextBlock Grid.Row="1" x:Uid="Pane_UpdatedLabel" Text="Last updated"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <TextBlock x:Name="PaneUpdatedAtText" Grid.Row="1" Grid.Column="1"
+                                       HorizontalAlignment="Right"
+                                       AutomationProperties.AutomationId="PaneUpdatedAtText"
+                                       Text="{x:Bind ViewModel.SelectedTaskUpdatedAtText, Mode=OneWay}"
+                                       ToolTipService.ToolTip="{x:Bind ViewModel.SelectedTaskUpdatedAtTooltip, Mode=OneWay}"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
                         </Grid>
+
+                        <Button x:Uid="Pane_DeleteTask" AutomationProperties.AutomationId="Pane_DeleteTask"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                Margin="0,4,0,0"
+                                Command="{x:Bind ViewModel.DeleteSelectedTaskCommand}">
+                            <Button.Resources>
+                                <ResourceDictionary>
+                                    <ResourceDictionary.ThemeDictionaries>
+                                        <ResourceDictionary x:Key="Default">
+                                            <StaticResource x:Key="ButtonForeground" ResourceKey="SystemFillColorCriticalBrush" />
+                                            <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="SystemFillColorCriticalBrush" />
+                                            <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="SystemFillColorCriticalBrush" />
+                                        </ResourceDictionary>
+                                        <ResourceDictionary x:Key="Light">
+                                            <StaticResource x:Key="ButtonForeground" ResourceKey="SystemFillColorCriticalBrush" />
+                                            <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="SystemFillColorCriticalBrush" />
+                                            <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="SystemFillColorCriticalBrush" />
+                                        </ResourceDictionary>
+                                        <ResourceDictionary x:Key="HighContrast">
+                                            <StaticResource x:Key="ButtonForeground" ResourceKey="SystemColorButtonTextColorBrush" />
+                                            <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="SystemControlHighlightBaseHighBrush" />
+                                            <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="SystemControlHighlightBaseHighBrush" />
+                                        </ResourceDictionary>
+                                    </ResourceDictionary.ThemeDictionaries>
+                                </ResourceDictionary>
+                            </Button.Resources>
+                        </Button>
 
                     </StackPanel>
                 </ScrollViewer>

@@ -130,14 +130,17 @@ public sealed partial class QuickAddBubbleWindow : Window
         AddButton.IsEnabled = false;
 
         // Handle keyboard interactions
-        TaskTitleBox.KeyDown += (_, e) =>
+        BubbleRoot.KeyDown += (_, e) =>
         {
             if (e.Key == Windows.System.VirtualKey.Escape)
             {
                 HideWindow();
                 e.Handled = true;
             }
-            else if (e.Key == Windows.System.VirtualKey.Enter)
+        };
+        TaskTitleBox.KeyDown += (_, e) =>
+        {
+            if (e.Key == Windows.System.VirtualKey.Enter)
             {
                 if (AddButton.IsEnabled)
                     AddButton_Click(AddButton, null!);
@@ -210,6 +213,7 @@ public sealed partial class QuickAddBubbleWindow : Window
 
         // Reset form to initial state
         TaskTitleBox.Text = string.Empty;
+        CaptureStatusText.Visibility = Visibility.Collapsed;
         ViewModel.IsImportant = false;
         AddButton.IsEnabled = false;
         DatePresetSelector.SelectedIndex = 0;
@@ -324,6 +328,16 @@ public sealed partial class QuickAddBubbleWindow : Window
 
         // Trigger mascot wiggle on first add in this session
         TriggerMascotWiggle();
+
+        if (ViewModel.KeepOpenAfterAdding)
+        {
+            TaskTitleBox.Text = string.Empty;
+            CaptureStatusText.Text = string.Format(Strings.Get("QuickAdd_ConfirmAddedTo"), selectedList.Name);
+            CaptureStatusText.Visibility = Visibility.Visible;
+            FitWindowToContent();
+            TaskTitleBox.Focus(FocusState.Programmatic);
+            return;
+        }
 
         // Show confirmation state
         await ShowConfirmationAsync();

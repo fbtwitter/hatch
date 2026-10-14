@@ -87,6 +87,10 @@ internal static class Strings
     public static string UndoMessage_TaskCompleted => Get("UndoMessage_TaskCompleted");
     public static string UndoMessage_TaskDeleted   => Get("UndoMessage_TaskDeleted");
     public static string TaskList_ShowMoreCompleted(int count) => string.Format(Get("TaskList_ShowMoreCompleted"), count);
+    public static string Suggestions_ShowAll => Get("Suggestions_ShowAll");
+    public static string Suggestions_ShowFewer => Get("Suggestions_ShowFewer");
+    public static string Suggestions_Summary(int shown, int total) =>
+        string.Format(Get("Suggestions_Summary"), shown, total);
 
     // ── New task ─────────────────────────────────────────────
     // PlaceholderText and tooltip are set via x:Uid in XAML.

@@ -50,7 +50,7 @@
   <data name="MyDay_Greeting_Morning" xml:space="preserve"><value>Good morning</value></data>
   <data name="MyDay_Greeting_Afternoon" xml:space="preserve"><value>Good afternoon</value></data>
   <data name="MyDay_Greeting_Evening" xml:space="preserve"><value>Good evening</value></data>
-  <data name="MyDay_Status_EmptyPlan" xml:space="preserve"><value>Nothing planned yet — add one below, or pull from Suggested.</value></data>
+  <data name="MyDay_Status_EmptyPlan" xml:space="preserve"><value>Nothing planned yet — add a task or choose Suggestions.</value></data>
   <data name="MyDay_Status_Progress" xml:space="preserve"><value>{0} of {1} done</value><comment>{0} = completed count, {1} = total My Day tasks</comment></data>
   <data name="MyDay_Status_Remaining" xml:space="preserve"><value>{0} still to go</value><comment>{0} = open My Day task count</comment></data>
   <data name="MyDay_Status_Complete" xml:space="preserve"><value>All {0} done for today.</value><comment>{0} = total My Day tasks</comment></data>
@@ -211,7 +211,14 @@
 
   <!-- ── Tag filter banner + suggestions (x:Uid mapped) ──────── -->
   <data name="TagFilter_ShowingText.Text" xml:space="preserve"><value>Showing:</value></data>
-  <data name="Suggestions_Header.Text" xml:space="preserve"><value>Suggested</value></data>
+  <data name="Suggestions_ButtonLabel.Text" xml:space="preserve"><value>Suggestions</value></data>
+  <data name="Suggestions_Button.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Choose suggestions for My Day</value></data>
+  <data name="Suggestions_Description.Text" xml:space="preserve"><value>Choose tasks to add to your My Day plan.</value></data>
+  <data name="Suggestions_NoDate.Text" xml:space="preserve"><value>No due date</value></data>
+  <data name="Suggestions_Empty.Text" xml:space="preserve"><value>No more tasks to suggest.</value></data>
+  <data name="Suggestions_ShowAll" xml:space="preserve"><value>Show all</value></data>
+  <data name="Suggestions_ShowFewer" xml:space="preserve"><value>Show fewer</value></data>
+  <data name="Suggestions_Summary" xml:space="preserve"><value>Showing {0} of {1}</value><comment>{0} = visible suggestions; {1} = total eligible tasks</comment></data>
   <data name="Suggestion_AddButton.ToolTipService.ToolTip" xml:space="preserve"><value>Add to My Day</value></data>
   <data name="Suggestion_AddButton.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Add to My Day</value></data>
 
@@ -249,7 +256,7 @@
   <data name="PaneStepInput.PlaceholderText" xml:space="preserve"><value>Add a step, press Enter</value></data>
   <data name="PaneStepRemove.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Remove step</value></data>
   <data name="Pane_CreatedLabel.Text" xml:space="preserve"><value>Created</value></data>
-  <data name="Pane_UpdatedLabel.Text" xml:space="preserve"><value>Updated</value></data>
+  <data name="Pane_UpdatedLabel.Text" xml:space="preserve"><value>Last updated</value></data>
 
   <!-- ── Priority chip labels (code-accessed) ────────────────── -->
   <data name="Priority_None" xml:space="preserve"><value>None</value></data>
@@ -673,4 +680,21 @@
   <data name="PlannedCalendar_TaskCount" xml:space="preserve"><value>{0} tasks</value></data>
   <data name="PlannedCalendar_DateOneTask" xml:space="preserve"><value>{0}: 1 task due.</value></data>
   <data name="PlannedCalendar_DateTasks" xml:space="preserve"><value>{0}: {1} tasks due.</value></data>
+  <data name="Settings_AfterQuickAddHeader.Text" xml:space="preserve"><value>After adding a task</value></data>
+  <data name="Settings_AfterQuickAdd.AutomationProperties.Name" xml:space="preserve"><value>After adding a task</value></data>
+  <data name="Settings_AfterQuickAdd_Close.Content" xml:space="preserve"><value>Close Quick Add</value></data>
+  <data name="Settings_AfterQuickAdd_KeepOpen.Content" xml:space="preserve"><value>Keep Quick Add open</value></data>
+  <data name="Settings_AfterQuickAddDescription.Text" xml:space="preserve"><value>Enter and Add Task follow this choice. Keep Quick Add open to capture another task with the same list and due date. Press Esc to close.</value></data>
+  <data name="Settings_AfterQuickAddDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Enter and Add Task follow this choice. Keep Quick Add open to capture another task with the same list and due date. Press Esc to close.</value></data>
+  <data name="PaneDuePreset_Today.Content" xml:space="preserve"><value>Today</value></data>
+  <data name="PaneDuePreset_Tomorrow.Content" xml:space="preserve"><value>Tomorrow</value></data>
+  <data name="PaneDuePreset_Weekend.Content" xml:space="preserve"><value>This weekend</value></data>
+  <data name="PaneDuePreset_NextWeek.Content" xml:space="preserve"><value>Next week</value></data>
+  <data name="Pane_DeleteTask.Content" xml:space="preserve"><value>Delete task</value></data>
+  <data name="TaskTimestamp_JustNow" xml:space="preserve"><value>just now</value></data>
+  <data name="TaskTimestamp_MinutesAgo" xml:space="preserve"><value>{0} min ago</value></data>
+  <data name="TaskTimestamp_AnHourAgo" xml:space="preserve"><value>an hour ago</value></data>
+  <data name="TaskTimestamp_HoursAgo" xml:space="preserve"><value>{0} hours ago</value></data>
+  <data name="TaskTimestamp_Yesterday" xml:space="preserve"><value>yesterday</value></data>
+  <data name="TaskTimestamp_DaysAgo" xml:space="preserve"><value>{0} days ago</value></data>
 </root>

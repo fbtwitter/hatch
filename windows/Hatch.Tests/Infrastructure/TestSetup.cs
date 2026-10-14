@@ -151,10 +151,11 @@ public static class TestSetup
         Auto?.Dispose();
     }
 
-    public static void Restart()
+    public static void Restart(Action? beforeLaunch = null)
     {
-        // Preserve the synthetic data directory; restart must never reseed the fixture.
+        // Retain the synthetic data directory so callers can check persistence across restarts.
         Cleanup();
+        beforeLaunch?.Invoke();
         Auto = new UIA3Automation();
         App = LaunchTestApp();
         MainWindow = FindMainWindow();

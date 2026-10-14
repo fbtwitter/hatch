@@ -173,6 +173,14 @@
                         HorizontalAlignment="Stretch"
                         Padding="8,10"
                         Style="{ThemeResource AccentButtonStyle}"/>
+
+                <TextBlock x:Name="CaptureStatusText"
+                           AutomationProperties.AutomationId="Bubble_CaptureStatus"
+                           AutomationProperties.LiveSetting="Polite"
+                           Visibility="Collapsed"
+                           Style="{ThemeResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           TextWrapping="Wrap"/>
                 <Border Height="1" Background="{ThemeResource DividerStrokeColorDefaultBrush}"/>
             </StackPanel>
 

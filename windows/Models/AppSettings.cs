@@ -25,6 +25,7 @@ public sealed class AppSettings
     public AppTheme Theme { get; set; } = AppTheme.SystemDefault;
     public AppBackdrop Backdrop { get; set; } = AppBackdrop.Mica;
     public TaskInputPosition TaskInputPosition { get; set; } = TaskInputPosition.Bottom;
+    public bool KeepQuickAddOpen { get; set; } = false;
     public bool MinimizeToTray { get; set; } = true;
     public int MascotX { get; set; } = -1; // (-1, -1) is unset; other negative monitor positions are valid.
     public int MascotY { get; set; } = -1;

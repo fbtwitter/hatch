@@ -47,9 +47,6 @@ public sealed partial class TaskListPage : Page
 
     private const double BreakpointWidth = 700;
 
-    private static readonly Windows.Globalization.DateTimeFormatting.DateTimeFormatter _timestampFormatter =
-        new("dayofweek.abbreviated month.abbreviated day year.full");
-
     public TaskListPage()
     {
         this.InitializeComponent();
@@ -226,7 +223,12 @@ public sealed partial class TaskListPage : Page
                 RefreshBottomControlsLayout();
                 break;
 
+            case nameof(MainViewModel.SuggestionsVisible):
+                if (!_vm.SuggestionsVisible) SuggestionsFlyout.Hide();
+                break;
+
             case nameof(MainViewModel.ActiveNavItem):
+                SuggestionsFlyout.Hide();
                 // Close pane when switching lists — selected task may leave the view.
                 // Always sync ListViews explicitly: if SelectedTask was already null the
                 // setter is a no-op and SyncListViewSelection would never be called.
@@ -250,6 +252,10 @@ public sealed partial class TaskListPage : Page
                 else
                     ClosePane();
                 break;
+
+            case nameof(MainViewModel.SelectedTaskDueDate):
+                SyncPaneDueDate();
+                break;
         }
     }
 
@@ -268,6 +274,13 @@ public sealed partial class TaskListPage : Page
             if (_paneMode == PaneLayoutMode.Overlay)
                 PaneScrim.Visibility = Visibility.Visible;
             AnimatePane(from: DetailsPaneRoot.Width, to: 0, durationMs: 200, easeOut: true);
+            // A row tap can leave focus in navigation or the composer. Keep Escape
+            // and arrow navigation on the task page without entering an edit field.
+            DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, () =>
+            {
+                if (IsLoaded && _vm?.SelectedTask != null)
+                    Focus(FocusState.Programmatic);
+            });
         }
         else
         {
@@ -405,16 +418,8 @@ public sealed partial class TaskListPage : Page
             }
         }
         PaneListCombo.SelectedIndex = selectedListIndex;
-        // The day as written, never through ToLocalTime (see TipEngine): converting here
-        // showed the previous day in the picker west of UTC, and re-picking that visible
-        // day silently committed the shifted date.
-        PaneDueDatePicker.Date = task.DueDate.HasValue
-            ? (DateTimeOffset?)new DateTimeOffset(task.DueDate.Value.Date, TimeSpan.Zero)
-            : null;
+        SyncPaneDueDate();
         PaneRepeatCombo.SelectedIndex = (int)task.Recurrence;
-        PaneRepeatCombo.IsEnabled = task.DueDate.HasValue;
-        PaneCreatedAtText.Text = _timestampFormatter.Format(task.CreatedAt.ToLocalTime());
-        PaneUpdatedAtText.Text = _timestampFormatter.Format(task.UpdatedAt.ToLocalTime());
         PaneTagInput.Text = string.Empty;
         PaneTagChips.ItemsSource = task.Tags;
         PaneStepInput.Text = string.Empty;
@@ -543,6 +548,12 @@ public sealed partial class TaskListPage : Page
             ViewModel.AddSuggestionToMyDayCommand.Execute(task);
     }
 
+    private void SuggestionsFlyout_Opened(object? sender, object e)
+        => ViewModel.ResetSuggestionsPreview();
+
+    private void SuggestionsFlyout_Closed(object? sender, object e)
+        => ViewModel.ResetSuggestionsPreview();
+
     private void PaneDueDatePicker_DateChanged(CalendarDatePicker sender, CalendarDatePickerDateChangedEventArgs args)
     {
         if (_updatingPane || _paneTask == null) return;
@@ -550,6 +561,17 @@ public sealed partial class TaskListPage : Page
             ? (DateTimeOffset?)new DateTimeOffset(args.NewDate.Value.ToLocalTime().Date, TimeSpan.Zero)
             : null);
         PaneRepeatCombo.IsEnabled = _paneTask.DueDate.HasValue;
+    }
+
+    private void SyncPaneDueDate()
+    {
+        if (_paneTask == null || _paneTask != ViewModel.SelectedTask) return;
+        _updatingPane = true;
+        // Preserve the written calendar day; DateChanged can arrive on a later dispatcher tick.
+        PaneDueDatePicker.Date = _paneTask.DueDate is { } date
+            ? new DateTimeOffset(date.Date, TimeSpan.Zero) : null;
+        PaneRepeatCombo.IsEnabled = _paneTask.DueDate.HasValue;
+        DispatcherQueue.TryEnqueue(() => _updatingPane = false);
     }
 
     private void PaneRepeatCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -651,6 +673,7 @@ public sealed partial class TaskListPage : Page
                     lv.SelectedItem = null;
             }
             _suppressSelectionChanged = false;
+            if (ReferenceEquals(sender, SuggestionsList)) SuggestionsFlyout.Hide();
             ViewModel.SelectedTask = task;
         }
     }
@@ -766,6 +789,13 @@ public sealed partial class TaskListPage : Page
 
     private void OnPageKeyDown(object sender, KeyRoutedEventArgs e)
     {
+        if (e.Key == VirtualKey.Escape && ViewModel.SelectedTask != null
+            && DetailsPaneRoot.Visibility == Visibility.Visible)
+        {
+            DetailsPaneRoot_KeyDown(sender, e);
+            return;
+        }
+
         if (IsPlannedCalendarControlFocused()) return;
         bool isCtrl = (InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control)
                        & CoreVirtualKeyStates.Down) != 0;
@@ -915,31 +945,23 @@ public sealed partial class TaskListPage : Page
         }
     }
 
-    private static double TaskContentInset(string navItem, bool taskListEmpty, bool suggestionsVisible) =>
-        navItem == "planned" ? PageContentSpacing : taskListEmpty ? (suggestionsVisible ? 12 : 0) : 4;
-
-    public Thickness TaskHeaderPadding(bool floating, bool tagFiltered,
-        string navItem, bool taskListEmpty, bool suggestionsVisible) =>
+    public Thickness TaskHeaderPadding(bool floating, bool tagFiltered) =>
         new(24, 24, 24, floating && !tagFiltered
-            ? PageContentSpacing - TaskContentInset(navItem, taskListEmpty, suggestionsVisible)
+            ? PageContentSpacing
             : PageContentSpacing / 2);
 
-    public Thickness TaskTagFilterPadding(bool floating,
-        string navItem, bool taskListEmpty, bool suggestionsVisible) =>
+    public Thickness TaskTagFilterPadding(bool floating) =>
         new(24, 0, 24, floating
-            ? PageContentSpacing - TaskContentInset(navItem, taskListEmpty, suggestionsVisible)
+            ? PageContentSpacing
             : PageContentSpacing / 2);
 
-    public Thickness ComposerOuterMargin(bool floating,
-        string navItem, bool taskListEmpty, bool suggestionsVisible)
+    public Thickness ComposerOuterMargin(bool floating)
     {
         if (floating)
             return new(24, 12, 24, 0);
 
-        // The header (or active tag filter) already contributes 8px above the form.
-        // Deduct the first content's own inset so every view has the same visible gap.
         return new(24, PageContentSpacing / 2, 24,
-            PageContentSpacing - TaskContentInset(navItem, taskListEmpty, suggestionsVisible));
+            PageContentSpacing);
     }
 
     public VerticalAlignment ComposerAlignment(bool floating) =>
@@ -1210,11 +1232,7 @@ public sealed partial class TaskListPage : Page
         ViewModel.UpdateTaskDueDate(_flyoutTask, date);
         if (_paneTask == _flyoutTask)
         {
-            _updatingPane = true;
-            PaneDueDatePicker.Date = date.HasValue
-                ? (DateTimeOffset?)new DateTimeOffset(date.Value.Date, TimeSpan.Zero)
-                : null;
-            _updatingPane = false;
+            SyncPaneDueDate();
         }
     }
 }

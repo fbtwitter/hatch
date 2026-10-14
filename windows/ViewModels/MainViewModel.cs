@@ -16,6 +16,8 @@ namespace Hatch.ViewModels;
 public sealed partial class MainViewModel : INotifyPropertyChanged
 {
     private static readonly Windows.UI.ViewManagement.UISettings SystemUiSettings = new();
+    private static readonly Windows.Globalization.DateTimeFormatting.DateTimeFormatter TaskTimestampFormatter =
+        new("day month.abbreviated year.full");
     private readonly Dictionary<Guid, DispatcherQueueTimer> _pendingCompletedChanges = [];
     private readonly TaskStorageService _storage;
     private readonly SettingsService _settingsService;
@@ -63,8 +65,18 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             if (_selectedTask == value) return;
             _selectedTask = value;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedTaskDueDate));
+            NotifySelectedTaskTimestampsChanged();
         }
     }
+
+    public DateTimeOffset? SelectedTaskDueDate => SelectedTask?.DueDate;
+    public ICommand ToggleSelectedTaskDueDatePresetCommand { get; }
+    public ICommand DeleteSelectedTaskCommand { get; }
+    public string SelectedTaskCreatedAtText => SelectedTask is { } task ? FormatTaskTimestamp(TaskSorting.CreatedInstant(task)) : string.Empty;
+    public string SelectedTaskUpdatedAtText => SelectedTask is { } task ? FormatTaskTimestamp(task.UpdatedAt.UtcDateTime) : string.Empty;
+    public string SelectedTaskCreatedAtTooltip => SelectedTask is { } task ? TaskSorting.CreatedInstant(task).ToLocalTime().ToString("g") : string.Empty;
+    public string SelectedTaskUpdatedAtTooltip => SelectedTask?.UpdatedAt.ToLocalTime().ToString("g") ?? string.Empty;
 
     public int BadgeVersion { get; private set; }
 
@@ -100,6 +112,13 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         _syncService = syncService;
         _notificationScheduler = notificationScheduler;
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
+        ToggleSelectedTaskDueDatePresetCommand = new RelayCommand(ToggleSelectedTaskDueDatePreset);
+        DeleteSelectedTaskCommand = new RelayCommand(_ =>
+        {
+            if (SelectedTask is not { } task) return;
+            SelectedTask = null;
+            DeleteTask(task);
+        });
 
         AddTaskCommand = new RelayCommand(
             _ => AddTask(),
@@ -115,6 +134,11 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             task.SetMyDay(true);
             RefreshSuggestions();
             SaveAsync();
+        });
+        ToggleSuggestionsCommand = new RelayCommand(_ =>
+        {
+            _showAllSuggestions = !_showAllSuggestions;
+            RefreshSuggestions();
         });
 
         _flatGroupedTasks = new List<CompletedTaskGroup> { _openGroup, _completedGroup };
@@ -298,6 +322,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         if (task.IsRefreshingDisplayBindings || !RealEditProperties.Contains(e.PropertyName)) return;
 
         task.UpdatedAt = DateTimeOffset.UtcNow;
+        if (task == SelectedTask) NotifySelectedTaskTimestampsChanged();
 
         bool filterProp = e.PropertyName is
             nameof(TodoItem.IsInMyDay) or
@@ -344,6 +369,9 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
 
         if (IsSearchActive && e.PropertyName is nameof(TodoItem.Title) or nameof(TodoItem.Notes) or nameof(TodoItem.Tags))
             _dispatcherQueue.TryEnqueue(RefreshSearchResults);
+
+        if (e.PropertyName == nameof(TodoItem.Priority))
+            _dispatcherQueue.TryEnqueue(RefreshSuggestions);
 
         if (IsPlannedPage && IsTagFilterActive && e.PropertyName == nameof(TodoItem.Tags))
             _dispatcherQueue.TryEnqueue(RefreshActiveTasks);
@@ -484,7 +512,9 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     // touch ActiveTasks when the view's filter/membership actually changes.
     private void ApplyDueDateChange(TodoItem task)
     {
+        if (task == SelectedTask) OnPropertyChanged(nameof(SelectedTaskDueDate));
         _notificationScheduler.ScheduleForTask(task);
+        RefreshSuggestions();
         switch (_activeNavItem)
         {
             case "planned":
@@ -614,6 +644,29 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         ShowUndoBar(Strings.UndoMessage_TaskDeleted, () => RestoreTask(task));
     }
 
+    private static string FormatTaskTimestamp(DateTime utc)
+    {
+        long minutes = Math.Max(0, (long)(DateTime.UtcNow - utc).TotalMinutes);
+        return minutes switch
+        {
+            < 1 => Strings.Get("TaskTimestamp_JustNow"),
+            < 60 => string.Format(Strings.Get("TaskTimestamp_MinutesAgo"), minutes),
+            < 120 => Strings.Get("TaskTimestamp_AnHourAgo"),
+            < 1440 => string.Format(Strings.Get("TaskTimestamp_HoursAgo"), minutes / 60),
+            < 2880 => Strings.Get("TaskTimestamp_Yesterday"),
+            < 10080 => string.Format(Strings.Get("TaskTimestamp_DaysAgo"), minutes / 1440),
+            _ => TaskTimestampFormatter.Format(new DateTimeOffset(utc).ToLocalTime())
+        };
+    }
+
+    private void NotifySelectedTaskTimestampsChanged()
+    {
+        OnPropertyChanged(nameof(SelectedTaskCreatedAtText));
+        OnPropertyChanged(nameof(SelectedTaskUpdatedAtText));
+        OnPropertyChanged(nameof(SelectedTaskCreatedAtTooltip));
+        OnPropertyChanged(nameof(SelectedTaskUpdatedAtTooltip));
+    }
+
     // The mechanics of removal, with no undo bar — used both by the user-facing
     // DeleteTask above and by ShowCompletionUndoBar's cleanup of a spawned
     // recurrence, which must not open a second, unrelated undo bar of its own.
@@ -661,6 +714,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
             else if (shouldBeInList && !inList)
                 ActiveTasks.Insert(0, task);
 
+            RefreshSuggestions();
             OnPropertyChanged(nameof(IsTaskListEmpty));
             OnPropertyChanged(nameof(ShowEmptyState));
             NotifyPlannedGroupsChanged();
@@ -697,6 +751,30 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
     public void UpdateTaskDueDate(TodoItem task, DateTimeOffset? newDueDate)
     {
         task.DueDate = newDueDate;
+    }
+
+    public static bool IsDueDatePresetSelected(DateTimeOffset? dueDate, int preset) =>
+        dueDate?.Date == GetDueDatePreset(preset);
+
+    private static DateTime GetDueDatePreset(int preset)
+    {
+        var today = DateTime.SpecifyKind(DateTime.Today, DateTimeKind.Unspecified);
+        return preset switch
+        {
+            0 => DueDatePresets.GetToday(today),
+            1 => DueDatePresets.GetTomorrow(today),
+            2 => DueDatePresets.GetThisWeekend(today),
+            3 => DueDatePresets.GetNextWeek(today),
+            _ => throw new ArgumentOutOfRangeException(nameof(preset))
+        };
+    }
+
+    private void ToggleSelectedTaskDueDatePreset(object? parameter)
+    {
+        if (SelectedTask is not { } task || parameter is not string value ||
+            !int.TryParse(value, out var preset) || preset is < 0 or > 3) return;
+        var date = GetDueDatePreset(preset);
+        UpdateTaskDueDate(task, task.DueDate?.Date == date ? null : new DateTimeOffset(date, TimeSpan.Zero));
     }
 
     // Raised at the end of every load, including a sync-pull reload. MascotWindow uses it

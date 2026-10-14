@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.32.0] - 2026-10-14
+
+- Refine My Day suggestions with a separate today-first shortlist that closes when empty, configurable repeated Quick Add, consistent task-page spacing, and full-height task details with date presets, relative timestamps, themed Delete/Undo and immediate Escape dismissal.
+
 ## [0.31.0] - 2026-10-13
 
 - Introduce the expressive Hatch mascot and refreshed app icon, with native animation states for drafting, capture, completion, focus, rest and dragging.

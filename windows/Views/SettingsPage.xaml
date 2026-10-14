@@ -711,6 +711,34 @@
                          x:Uid="Settings_HotkeyConflict"
                          AutomationProperties.AutomationId="Settings_HotkeyConflict"/>
 
+                <Border Style="{StaticResource ToggleCardBorderStyle}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <FontIcon Grid.Column="0" Glyph="&#xE710;" FontSize="16"
+                                  VerticalAlignment="Center" Margin="0,0,20,0"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center"
+                                    Margin="0,14,16,14">
+                            <TextBlock x:Uid="Settings_AfterQuickAddHeader"
+                                       Style="{ThemeResource BodyStrongTextBlockStyle}"/>
+                            <TextBlock x:Uid="Settings_AfterQuickAddDescription"
+                                       Style="{ThemeResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Margin="0,2,0,0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                        <ComboBox Grid.Column="2" VerticalAlignment="Center"
+                                  x:Uid="Settings_AfterQuickAdd"
+                                  AutomationProperties.AutomationId="Settings_AfterQuickAdd"
+                                  SelectedIndex="{x:Bind ViewModel.AfterQuickAddIndex, Mode=TwoWay}" MinWidth="165">
+                            <ComboBoxItem x:Uid="Settings_AfterQuickAdd_Close"/>
+                            <ComboBoxItem x:Uid="Settings_AfterQuickAdd_KeepOpen"/>
+                        </ComboBox>
+                    </Grid>
+                </Border>
+
                 <TextBlock x:Uid="Settings_SectionSync"
                            Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"/>
 

@@ -13,6 +13,11 @@ the previous sub-50 MB idle target was disproven and is not a release gate. See
 
 | Task-flow update | Status |
 |---|---|
+| Full-height task details with relative timestamps, themed Delete/Undo and immediate Escape dismissal | Included in v0.32.0; focused Light/Dark footer/Undo checks and core notification checks pass; native hover, pane height and immediate Escape reviewed in the preview |
+| Task-details due-date presets matching mobile's two-by-two layout | Included in v0.32.0; focused Light/Dark checks pass for matching picker height, selection, clearing and persistence |
+| Consistent task-page gaps while scrolling and balanced My Day Suggestions spacing | Included in v0.32.0; focused Light/Dark geometry checks pass across compact/wide layouts, both input positions and all-done state |
+| Configurable Quick Add capture: close after saving or keep open for another task | Included in v0.32.0; core/storage checks pass; the preference sits under Mascot beneath Quick-Add Hotkey |
+| My Day suggestions in a separate flyout with a five-task shortlist and today-first ordering | Included in v0.32.0; sorting and focused workflow checks cover expansion, refilling and closing the popup when empty |
 | Expressive mascot with native animation states and refreshed app icon | Included in v0.31.0; draft-aware thinking, local capture/completion reactions, focus pause/resume, idle wake and dragging; Debug x64 and native x64/ARM64 publishes pass; live state review and ARM64 hardware coverage remain limited |
 | Native AOT release executables for x64 and ARM64 | Included in v0.30.0; v0.30.1 corrects widget executable registration and validates packaged executable references; unit/integration and JIT/native UI regressions cover generated contracts and task workflows; live authentication, Windows integration hosts and ARM64 hardware remain unverified |
 | Planned native calendar stability, responsive date selection and title-bar theme consistency | Included in v0.30.0; native calendar/date/Undo checks and Light/Dark frame checks pass; user confirmed date switching and title-bar appearance |

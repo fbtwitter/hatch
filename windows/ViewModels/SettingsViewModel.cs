@@ -101,6 +101,18 @@ public sealed partial class SettingsViewModel : INotifyPropertyChanged
         }
     }
 
+    public int AfterQuickAddIndex
+    {
+        get => _settings.Current.KeepQuickAddOpen ? 1 : 0;
+        set
+        {
+            if (value is < 0 or > 1 || AfterQuickAddIndex == value) return;
+            _settings.Current.KeepQuickAddOpen = value == 1;
+            _settings.SaveDebounced();
+            OnPropertyChanged();
+        }
+    }
+
     public int BackdropIndex
     {
         get => (int)_settings.Current.Backdrop;

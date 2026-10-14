@@ -100,12 +100,26 @@ public sealed class StorageTests
         var settings = new SettingsService(_folder);
         settings.Current.Theme = AppTheme.Dark;
         settings.Current.ShowQuickTips = false;
+        settings.Current.KeepQuickAddOpen = true;
         settings.Current.CustomTips = ["Take a break"];
         settings.Current.TipTopics["planning"] = new() { Dismissals = 3, QuietUntil = DateTime.Today.AddDays(30) };
         await settings.SaveAsync();
         var reloaded = new SettingsService(_folder);
         await reloaded.LoadAsync();
         Assert.AreEqual(JsonSerializer.Serialize(settings.Current), JsonSerializer.Serialize(reloaded.Current));
+    }
+
+    [TestMethod]
+    public async Task Settings_QuickAddDefaultsToCloseForNewAndExistingSettings()
+    {
+        var settings = new SettingsService(_folder);
+        await settings.LoadAsync();
+        Assert.IsFalse(settings.Current.KeepQuickAddOpen);
+
+        await File.WriteAllTextAsync(Path.Combine(_folder, "settings.json"), "{\"Theme\":2}");
+        await settings.LoadAsync();
+        Assert.AreEqual(AppTheme.Dark, settings.Current.Theme);
+        Assert.IsFalse(settings.Current.KeepQuickAddOpen);
     }
 
     [TestMethod]

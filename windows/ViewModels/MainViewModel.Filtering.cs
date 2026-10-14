@@ -86,6 +86,7 @@ public sealed partial class MainViewModel
             if (_activeNavItem == value) return;
             PreserveTaskDraftDueDate();
             _activeNavItem = value;
+            _showAllSuggestions = false;
             _activeTagFilter = null;
             ResetPlannedView();
             ResetTaskComposerScroll();

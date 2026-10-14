@@ -18,7 +18,12 @@ public sealed class TodoItem : INotifyPropertyChanged
     public string Title
     {
         get => _title;
-        set { _title = value; OnPropertyChanged(); }
+        set
+        {
+            if (_title == value) return;
+            _title = value;
+            OnPropertyChanged();
+        }
     }
 
     public bool IsCompleted
@@ -99,7 +104,16 @@ public sealed class TodoItem : INotifyPropertyChanged
     public DateTimeOffset? DueDate
     {
         get => _dueDate;
-        set { _dueDate = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasMetaSeparator)); OnPropertyChanged(nameof(ShowAddDateHint)); OnPropertyChanged(nameof(HasListNameToDateSeparator)); }
+        set
+        {
+            if (_dueDate.HasValue == value.HasValue &&
+                (!_dueDate.HasValue || _dueDate.Value.EqualsExact(value.GetValueOrDefault()))) return;
+            _dueDate = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasMetaSeparator));
+            OnPropertyChanged(nameof(ShowAddDateHint));
+            OnPropertyChanged(nameof(HasListNameToDateSeparator));
+        }
     }
 
     public Guid ListId { get; set; } = Guid.Empty;
@@ -108,7 +122,13 @@ public sealed class TodoItem : INotifyPropertyChanged
     public TaskRecurrence Recurrence
     {
         get => _recurrence;
-        set { _recurrence = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasRecurrence)); }
+        set
+        {
+            if (_recurrence == value) return;
+            _recurrence = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasRecurrence));
+        }
     }
 
     public bool HasRecurrence => _recurrence != TaskRecurrence.None;
@@ -117,7 +137,13 @@ public sealed class TodoItem : INotifyPropertyChanged
     public TaskPriority Priority
     {
         get => _priority;
-        set { _priority = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasPriority)); }
+        set
+        {
+            if (_priority == value) return;
+            _priority = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasPriority));
+        }
     }
 
     public bool HasPriority => _priority != TaskPriority.None;
@@ -170,7 +196,13 @@ public sealed class TodoItem : INotifyPropertyChanged
     public string? Notes
     {
         get => _notes;
-        set { _notes = value; OnPropertyChanged(); OnPropertyChanged(nameof(HasNotes)); }
+        set
+        {
+            if (_notes == value) return;
+            _notes = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(HasNotes));
+        }
     }
 
     [JsonIgnore]

@@ -14,4 +14,12 @@ public static class TaskSorting
     // Important smart list: highest priority first, then newest-first within a tier.
     public static IEnumerable<TodoItem> ForImportant(IEnumerable<TodoItem> tasks) =>
         tasks.OrderByDescending(t => t.Priority).ThenByDescending(CreatedInstant);
+
+    public static IEnumerable<TodoItem> ForMyDaySuggestions(IEnumerable<TodoItem> tasks, DateTime today) =>
+        tasks.Where(t => !t.IsCompleted && !t.IsDeleted && !t.IsInMyDay)
+            .OrderBy(t => t.DueDate?.Date == today.Date ? 0 : t.DueDate?.Date < today.Date ? 1 : 2)
+            .ThenByDescending(t => t.Priority)
+            .ThenBy(t => t.DueDate?.Date ?? DateTime.MaxValue)
+            .ThenByDescending(CreatedInstant)
+            .ThenBy(t => t.Id);
 }
