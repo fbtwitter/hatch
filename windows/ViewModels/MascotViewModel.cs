@@ -36,6 +36,7 @@ public sealed partial class MascotViewModel : INotifyPropertyChanged, IDisposabl
     private int _bubbleX;
     private int _bubbleY;
     private bool _isMascotHidden;
+    private bool _wasFullscreen;
 
     public bool IsVisible
     {
@@ -99,14 +100,35 @@ public sealed partial class MascotViewModel : INotifyPropertyChanged, IDisposabl
 
     public void RefreshVisibility()
     {
+        bool isFullscreen = IsForegroundWindowFullscreen();
+        if (isFullscreen)
+        {
+            _wasFullscreen = true;
+        }
+        else if (_wasFullscreen)
+        {
+            _wasFullscreen = false;
+            // Fullscreen games can temporarily change display resolution. Restore the
+            // saved position only after the desktop mode returns, then clamp if a
+            // monitor was actually removed while fullscreen was active.
+            ClampToWorkArea();
+        }
+
         IsVisible = _settings.Current.ShowMascot && !IsMascotHidden &&
-            !(_settings.Current.HideWhenFullscreen &&
-              IsForegroundWindowFullscreen());
+            !(_settings.Current.HideWhenFullscreen && isFullscreen);
         if (!IsVisible) CloseBubble();
         VisibilityRefreshed?.Invoke();
     }
 
-    public void RefreshPosition() => ClampToWorkArea();
+    public void RefreshPosition()
+    {
+        // WM_DISPLAYCHANGE also fires when an exclusive-fullscreen app switches
+        // resolution. Do not persist that temporary work-area clamp as the user's
+        // position; RefreshVisibility clamps again when fullscreen ends.
+        if (_wasFullscreen || IsForegroundWindowFullscreen()) return;
+
+        ClampToWorkArea();
+    }
 
     public string? LottieFilePath => _settings.Current.LottieFilePath;
     public void RaiseLottieFileChanged() => OnPropertyChanged(nameof(LottieFilePath));

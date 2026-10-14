@@ -81,6 +81,9 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
     // ApplyWindowStyles() uses to push style changes to DWM.
     private void RevealMascotWindow()
     {
+        // Fullscreen apps can change the display mode and Windows may adjust hidden
+        // windows during that transition. Reapply the saved position before showing.
+        AppWindow.Move(new PointInt32(ViewModel.X, ViewModel.Y));
         ShowWindow(_hwnd, SW_SHOWNOACTIVATE);
         NativeMethods.SetWindowPos(_hwnd, IntPtr.Zero, 0, 0, 0, 0,
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_FRAMECHANGED |
