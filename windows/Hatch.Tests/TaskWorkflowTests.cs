@@ -220,6 +220,8 @@ public sealed class TaskWorkflowTests
         WaitForSaved(title, task => task.GetProperty("IsInMyDay").GetBoolean());
         WaitFor(() => Find("Suggestions_Summary").Name == $"Showing 5 of {total - 1}"
             ? Find("Suggestions_Summary") : null, "refilled shortlist");
+        WaitFor(() => Find("Suggestions_List").FindFirstDescendant(cf => cf.ByAutomationId("Suggestion_AddButton")),
+            "refilled suggestion row");
         Assert.IsTrue(Find("Suggestions_List").FindFirstDescendant(cf => cf.ByName(title)) is null,
             "A chosen task must leave the suggestions.");
 
@@ -312,7 +314,7 @@ public sealed class TaskWorkflowTests
                 Assert.AreEqual(buttonWidth, button.BoundingRectangle.Width, 1, "Preset grid columns must be equal.");
                 Assert.AreEqual(Find("PaneDueDatePicker").BoundingRectangle.Height, button.BoundingRectangle.Height, 1,
                     "Presets must match the Due date control height.");
-                button.Click();
+                button.AsButton().Invoke();
                 WaitForSaved(title, task => task.GetProperty("DueDate").ValueKind == JsonValueKind.String
                     && task.GetProperty("DueDate").GetDateTimeOffset().Date == expected
                     && task.GetProperty("DueDate").GetDateTimeOffset().Offset == TimeSpan.Zero);
@@ -320,7 +322,7 @@ public sealed class TaskWorkflowTests
                     "selected preset " + label);
                 Assert.IsTrue(Find("PaneRepeatCombo").IsEnabled);
                 CaptureState($"due-preset-{width}-{id}");
-                Find(id).Click();
+                Find(id).AsButton().Invoke();
                 WaitForSaved(title, task => task.GetProperty("DueDate").ValueKind == JsonValueKind.Null);
                 Assert.IsFalse(Find("PaneRepeatCombo").IsEnabled);
             }
@@ -410,7 +412,7 @@ public sealed class TaskWorkflowTests
             Find("Nav_AllTasks").Click();
             var restoredScroller = Find("FlatListView");
             if (restoredScroller.Patterns.Scroll.Pattern.VerticallyScrollable.Value)
-                restoredScroller.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
+                restoredScroller.Patterns.Scroll.Pattern.SetScrollPercent(-1, 0);
             Assert.IsNotNull(Named(editedTitle));
         }
         finally { Main.Patterns.Transform.Pattern.Resize(originalBounds.Width, originalBounds.Height); }
