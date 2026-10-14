@@ -40,6 +40,10 @@ public static class TestSetup
         try
         {
             MainWindow.FindFirstDescendant(cf => cf.ByAutomationId("Nav_AllTasks"))?.Click();
+            var viewport = MainWindow.FindFirstDescendant(cf => cf.ByAutomationId("FlatListView"));
+            if (viewport is { IsOffscreen: false } && viewport.Patterns.Scroll.IsSupported
+                && viewport.Patterns.Scroll.Pattern.VerticallyScrollable.Value)
+                viewport.Patterns.Scroll.Pattern.SetScrollPercent(-1, 0);
         }
         catch { }
 

@@ -257,8 +257,8 @@ public sealed class TaskWorkflowTests
 
         for (int remaining = total; remaining > 0; remaining--)
         {
-            var add = Find("Suggestions_List").FindFirstDescendant(cf => cf.ByAutomationId("Suggestion_AddButton"));
-            Assert.IsNotNull(add);
+            var add = WaitFor(() => Main.FindFirstDescendant(cf => cf.ByAutomationId("Suggestions_List"))?
+                .FindFirstDescendant(cf => cf.ByAutomationId("Suggestion_AddButton")), "next suggested task");
             var suggestedTitle = add.Parent?.FindFirstDescendant(cf => cf.ByControlType(FlaUI.Core.Definitions.ControlType.Text))?.Name
                 ?? throw new AssertFailedException("The suggestion must expose its task title.");
             add.AsButton().Invoke();
@@ -375,6 +375,9 @@ public sealed class TaskWorkflowTests
             TestSetup.Restart(() => File.WriteAllText(path, fixture));
             Main.Patterns.Transform.Pattern.Resize(width, 760);
             Find("Nav_AllTasks").Click();
+            var taskScroller = Find("FlatListView");
+            if (taskScroller.Patterns.Scroll.Pattern.VerticallyScrollable.Value)
+                taskScroller.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
             Named(title).Click();
             var viewport = Find("DetailsPaneScrollViewer");
             if (viewport.Patterns.Scroll.Pattern.VerticallyScrollable.Value)
@@ -405,6 +408,9 @@ public sealed class TaskWorkflowTests
             WaitForSaved(editedTitle, task => !task.GetProperty("IsDeleted").GetBoolean());
             TestSetup.Restart();
             Find("Nav_AllTasks").Click();
+            var restoredScroller = Find("FlatListView");
+            if (restoredScroller.Patterns.Scroll.Pattern.VerticallyScrollable.Value)
+                restoredScroller.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
             Assert.IsNotNull(Named(editedTitle));
         }
         finally { Main.Patterns.Transform.Pattern.Resize(originalBounds.Width, originalBounds.Height); }
