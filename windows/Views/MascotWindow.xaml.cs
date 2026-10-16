@@ -159,9 +159,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             ViewModel.SetResting(true);
             if (ViewModel.CanAnimate) _idleFadeOut?.Begin();
         };
-        // Wiggle is built in code so it targets MascotGridTransform (works for both Canvas and Lottie)
-        MascotGridTransform.CenterX = ViewModel.WindowSize / 2.0;
-        MascotGridTransform.CenterY = ViewModel.WindowSize / 2.0;
+        // The artwork's relative transform origin stays centered through DPI and size changes.
         _wiggleAnimation = BuildWiggleStoryboard();
 
         // Defer idle animation until after the window is shown to avoid startup lag
@@ -749,8 +747,6 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
     {
         var newSize = ViewModel.WindowSize;
         AppWindow.Resize(new SizeInt32(newSize, newSize));
-        MascotGridTransform.CenterX = newSize / 2.0;
-        MascotGridTransform.CenterY = newSize / 2.0;
 
         // Reapply the persisted position after the native size change.
         AppWindow.Move(new PointInt32(ViewModel.X, ViewModel.Y));

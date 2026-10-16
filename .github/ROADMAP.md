@@ -13,6 +13,7 @@ the previous sub-50 MB idle target was disproven and is not a release gate. See
 
 | Task-flow update | Status |
 |---|---|
+| Mascot breathing room on scaled laptop displays | Included in v0.32.2; proportional padding accommodates hover and wiggle while preserving saved window bounds |
 | Full-height task details with relative timestamps, themed Delete/Undo and immediate Escape dismissal | Included in v0.32.0; focused Light/Dark footer/Undo checks and core notification checks pass; native hover, pane height and immediate Escape reviewed in the preview |
 | Task-details due-date presets matching mobile's two-by-two layout | Included in v0.32.0; focused Light/Dark checks pass for matching picker height, selection, clearing and persistence |
 | Consistent task-page gaps while scrolling and balanced My Day Suggestions spacing | Included in v0.32.0; focused Light/Dark geometry checks pass across compact/wide layouts, both input positions and all-done state |

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.32.2] - 2026-10-16
+
+- Fit the mascot within its window at every display scale, with extra room for hover and wiggle animations.
+
 ## [0.32.1] - 2026-10-15
 
 - Keep the mascot at its saved position when it is hidden and restored around fullscreen display changes.

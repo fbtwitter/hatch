@@ -101,46 +101,45 @@
             </MenuFlyout>
         </Grid.ContextFlyout>
 
-        <!-- Keep mascot hover/wiggle transforms out of the popup coordinate system. -->
-        <Grid>
-            <Grid.RenderTransform>
-                <CompositeTransform x:Name="MascotGridTransform" />
-            </Grid.RenderTransform>
-        <!-- Native Lottie mascot, with an optional custom JSON override. -->
-        <AnimatedVisualPlayer x:Name="LottiePlayer"
-                              Width="{x:Bind ViewModel.WindowSize, Mode=OneWay}"
-                              Height="{x:Bind ViewModel.WindowSize, Mode=OneWay}"
-                              HorizontalAlignment="Center"
-                              VerticalAlignment="Center"
-                              AutoPlay="False"
-                              Stretch="Uniform"
-                              Visibility="Collapsed" />
+        <!-- Fit physical window bounds at any DPI; reserve room for hover and wiggle. -->
+        <Viewbox Stretch="Uniform">
+            <Grid Width="120" Height="120">
+                <Grid Margin="12" RenderTransformOrigin="0.5,0.5">
+                    <Grid.RenderTransform>
+                        <CompositeTransform x:Name="MascotGridTransform" />
+                    </Grid.RenderTransform>
+                    <!-- Native Lottie mascot, with an optional custom JSON override. -->
+                    <AnimatedVisualPlayer x:Name="LottiePlayer"
+                                          AutoPlay="False"
+                                          Stretch="Uniform"
+                                          Visibility="Collapsed" />
 
-        <!-- Startup loading indicator — shown while a Lottie source is decoding -->
-        <ProgressRing x:Name="MascotLoadingRing"
-                      x:Uid="Mascot_LoadingRing"
-                      AutomationProperties.Name="Loading mascot"
-                      Width="36" Height="36"
-                      IsActive="False"
-                      Visibility="Collapsed"
-                      HorizontalAlignment="Center"
-                      VerticalAlignment="Center" />
+                    <!-- Startup loading indicator — shown while a Lottie source is decoding -->
+                    <ProgressRing x:Name="MascotLoadingRing"
+                                  x:Uid="Mascot_LoadingRing"
+                                  AutomationProperties.Name="Loading mascot"
+                                  Width="36" Height="36"
+                                  IsActive="False"
+                                  Visibility="Collapsed"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
 
-        <Border x:Name="PendingTipIndicator" Width="18" Height="18"
-                AutomationProperties.AutomationId="Mascot_PendingTipIndicator"
-                HorizontalAlignment="Right" VerticalAlignment="Top"
-                Margin="0,5,5,0" CornerRadius="9"
-                Background="{ThemeResource AccentFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1" Visibility="Collapsed"
-                IsHitTestVisible="False"
-                AutomationProperties.Name="A tip is waiting in Quick Add">
-            <TextBlock Text="!" FontSize="11" FontWeight="Bold"
-                       Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
-                       HorizontalAlignment="Center" VerticalAlignment="Center" />
-        </Border>
-
-        </Grid>
+                    <Border x:Name="PendingTipIndicator" Width="18" Height="18"
+                            AutomationProperties.AutomationId="Mascot_PendingTipIndicator"
+                            HorizontalAlignment="Right" VerticalAlignment="Top"
+                            Margin="0,5,5,0" CornerRadius="9"
+                            Background="{ThemeResource AccentFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1" Visibility="Collapsed"
+                            IsHitTestVisible="False"
+                            AutomationProperties.Name="A tip is waiting in Quick Add">
+                        <TextBlock Text="!" FontSize="11" FontWeight="Bold"
+                                   Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                </Grid>
+            </Grid>
+        </Viewbox>
         <!-- Focus mode overlay — ShouldConstrainToRootBounds=False lets the popup
              render outside the mascot window bounds. Shaped like a now-playing bar
              (hatch-mobile d9ef4ac): what is running on top, the transport below.
