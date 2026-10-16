@@ -140,7 +140,9 @@ public sealed class PlannedWorkflowTests
     {
         SelectCalendar();
         var before = Saved("Planned overdue").GetProperty("DueDate").GetString();
-        Assert.AreEqual("Overdue · 1", Find("PlannedOverdueButton").Name);
+        int overdueCount = Tasks().Count(task => !Deleted(task) && !task.GetProperty("IsCompleted").GetBoolean()
+            && task.GetProperty("DueDate").GetDateTimeOffset().Date < DateTime.Today);
+        Assert.AreEqual($"Overdue · {overdueCount}", Find("PlannedOverdueButton").Name);
         Find("PlannedOverdueButton").Patterns.Invoke.Pattern.Invoke();
         Wait(() => Find("PlannedViewSelector").Name == "Agenda", "Overdue selects Agenda");
         Assert.IsNotNull(Named("Planned overdue"));
