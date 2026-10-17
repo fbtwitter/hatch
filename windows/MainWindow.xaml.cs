@@ -70,8 +70,13 @@ public sealed partial class MainWindow : Window
         _trayService.ExitRequested += OnExitRequested;
         _trayService.RestoreMascotRequested += RestoreMascot;
         _trayService.HideMascotRequested += OnHideMascotRequested;
+        _trayService.ToggleMascotClickThroughRequested += () => DispatcherQueue.TryEnqueue(() =>
+        {
+            if (App.MascotWindowInstance?.ViewModel is { } mascot)
+                mascot.ClickThrough = !mascot.ClickThrough;
+        });
 
-        if (App.Settings.MinimizeToTray)
+        if (App.Settings.MinimizeToTray || App.Settings.MascotClickThrough)
             _trayService.ShowIcon();
 
         AppWindow.Closing += OnWindowClosing;
@@ -331,7 +336,7 @@ public sealed partial class MainWindow : Window
 
     public void UpdateTrayBehavior(bool minimizeToTray)
     {
-        if (minimizeToTray) _trayService?.ShowIcon();
+        if (minimizeToTray || App.Settings.MascotClickThrough) _trayService?.ShowIcon();
         else                _trayService?.HideIcon();
     }
 

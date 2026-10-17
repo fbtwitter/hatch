@@ -80,13 +80,17 @@
         </Grid.Resources>
 
         <Grid.ContextFlyout>
-            <MenuFlyout ShouldConstrainToRootBounds="False">
+            <MenuFlyout x:Name="MascotContextMenu" ShouldConstrainToRootBounds="False">
                 <MenuFlyoutItem x:Uid="Mascot_MenuShowMain" Text="Show Main Window"
                                 Command="{x:Bind ViewModel.ShowMainWindowCommand}" />
                 <MenuFlyoutItem x:Uid="Mascot_MenuResetPosition" Text="Reset Position"
                                 Command="{x:Bind ViewModel.ResetPositionCommand}" />
                 <MenuFlyoutItem x:Uid="Mascot_MenuSettings" Text="Mascot Settings&#x2026;"
                                 Click="OnMascotSettingsMenuItemClick" />
+                <MenuFlyoutItem x:Uid="Mascot_MenuClickThrough"
+                                AutomationProperties.AutomationId="Mascot_ClickThrough"
+                                Text="{x:Bind ViewModel.ClickThroughMenuText, Mode=OneWay}"
+                                Command="{x:Bind ViewModel.ToggleClickThroughCommand}" />
                 <MenuFlyoutSeparator />
                 <MenuFlyoutSubItem x:Uid="Mascot_MenuHideFor" Text="Hide for...">
                     <MenuFlyoutItem x:Uid="Mascot_MenuHide1Hour" Text="1 hour"
@@ -155,7 +159,7 @@
                           VerticalScrollBarVisibility="Auto">
             <Border x:Name="FocusPopupBorder"
                     Padding="12,8"
-                    Width="280"
+                    MaxWidth="280"
                     CornerRadius="8"
                     Background="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
@@ -172,6 +176,7 @@
 
                     <TextBlock Grid.Row="0"
                                x:Name="FocusTaskTitle"
+                               AutomationProperties.AutomationId="FocusMode_TaskTitle"
                                Style="{ThemeResource BodyStrongTextBlockStyle}"
                                TextTrimming="CharacterEllipsis"
                                TextWrapping="NoWrap"/>

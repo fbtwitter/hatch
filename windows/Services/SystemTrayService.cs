@@ -19,6 +19,7 @@ public sealed partial class SystemTrayService : IDisposable
     private const uint MF_STRING = 0x00;
     private const uint MF_SEPARATOR = 0x800;
     private const uint MF_POPUP = 0x10;
+    private const uint MF_CHECKED = 0x08;
     private const uint TPM_RIGHTBUTTON = 0x02;
     private const uint TPM_RETURNCMD = 0x0100;
     private const int GWLP_WNDPROC = -4;
@@ -123,6 +124,7 @@ public sealed partial class SystemTrayService : IDisposable
     public event Action? ExitRequested;
     public event Action? RestoreMascotRequested;
     public event Action<HideDuration>? HideMascotRequested;
+    public event Action? ToggleMascotClickThroughRequested;
 
     public enum HideDuration { OneHour, ThreeHours, UntilTomorrow, UntilRestart }
 
@@ -232,6 +234,8 @@ public sealed partial class SystemTrayService : IDisposable
         string mainLabel = isMascotHidden ? "Restore Hatch" : "Open Hatch";
 
         AppendMenu(menu, MF_STRING, new IntPtr(1), mainLabel);
+        AppendMenu(menu, MF_STRING | (App.Settings.MascotClickThrough ? MF_CHECKED : 0),
+            new IntPtr(3), Hatch.Helpers.Strings.Get("Mascot_ClickThroughLabel"));
         AppendMenu(menu, MF_SEPARATOR, IntPtr.Zero, null);
 
         if (!isMascotHidden)
@@ -262,6 +266,7 @@ public sealed partial class SystemTrayService : IDisposable
         else if (cmd == 11) HideMascotRequested?.Invoke(HideDuration.ThreeHours);
         else if (cmd == 12) HideMascotRequested?.Invoke(HideDuration.UntilTomorrow);
         else if (cmd == 13) HideMascotRequested?.Invoke(HideDuration.UntilRestart);
+        else if (cmd == 3) ToggleMascotClickThroughRequested?.Invoke();
         else if (cmd == 2)
             ExitRequested?.Invoke();
     }

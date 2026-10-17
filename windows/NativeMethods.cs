@@ -73,6 +73,14 @@ internal static class NativeMethods
     internal static extern bool GetCursorPos(out POINT lpPoint);
 
     [DllImport("user32.dll")]
+    internal static extern short GetAsyncKeyState(int vKey);
+
+    internal const int VK_CONTROL = 0x11;
+    internal const int VK_LBUTTON = 0x01;
+    internal const int VK_RBUTTON = 0x02;
+    internal const int VK_MBUTTON = 0x04;
+
+    [DllImport("user32.dll")]
     internal static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
 
     [DllImport("user32.dll")]
@@ -113,6 +121,8 @@ internal static class NativeMethods
     internal const uint WS_DLGFRAME               = 0x00400000;
     internal const uint WS_EX_TOOLWINDOW           = 0x00000080;
     internal const uint WS_EX_TOPMOST              = 0x00000008;
+    internal const uint WS_EX_TRANSPARENT          = 0x00000020;
+    internal const uint WS_EX_LAYERED              = 0x00080000;
     internal const uint WS_EX_WINDOWEDGE          = 0x00000100;
     internal const uint WS_EX_NOREDIRECTIONBITMAP = 0x00200000;
     internal const uint SWP_FRAMECHANGED          = 0x0020;

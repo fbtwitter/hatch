@@ -697,4 +697,9 @@
   <data name="TaskTimestamp_HoursAgo" xml:space="preserve"><value>{0} hours ago</value></data>
   <data name="TaskTimestamp_Yesterday" xml:space="preserve"><value>yesterday</value></data>
   <data name="TaskTimestamp_DaysAgo" xml:space="preserve"><value>{0} days ago</value></data>
+  <data name="Mascot_EnableClickThrough" xml:space="preserve"><value>Enable click-through</value></data>
+  <data name="Mascot_DisableClickThrough" xml:space="preserve"><value>Disable click-through</value></data>
+  <data name="Mascot_MenuClickThrough.ToolTipService.ToolTip" xml:space="preserve"><value>Let clicks pass through Hatch. Hold Ctrl to click or drag Hatch, or turn this off from its tray menu.</value></data>
+  <data name="Mascot_MenuClickThrough.AutomationProperties.HelpText" xml:space="preserve"><value>Clicks reach the app behind Hatch. Hold Ctrl to click or drag Hatch, or turn this off from its tray menu.</value></data>
+  <data name="Mascot_ClickThroughLabel" xml:space="preserve"><value>Click-through (hold Ctrl to interact)</value></data>
 </root>

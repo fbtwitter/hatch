@@ -47,6 +47,8 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
     private Storyboard? _hoverIn;
     private Storyboard? _hoverOut;
     private DispatcherTimer? _inactivityTimer;
+    private DispatcherTimer? _clickThroughTimer;
+    private bool _mascotContextMenuOpen;
     private bool _isFaded = false;
     private FocusModeViewModel? _focusViewModel;
     private DispatcherTimer? _proactiveTipDismissTimer;
@@ -114,6 +116,13 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         InitializeComponent();
         ApplyTheme(App.Settings.Theme);
 
+        MascotContextMenu.Opened += (_, _) => _mascotContextMenuOpen = true;
+        MascotContextMenu.Closed += (_, _) =>
+        {
+            _mascotContextMenuOpen = false;
+            UpdateClickThrough();
+        };
+
         LottiePlayer.RegisterPropertyChangedCallback(
             AnimatedVisualPlayer.IsAnimatedVisualLoadedProperty, (_, _) =>
             {
@@ -135,6 +144,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             _mascotXamlRoot = MascotGrid.XamlRoot;
             _popupScale = _mascotXamlRoot.RasterizationScale;
             _mascotXamlRoot.Changed += OnMascotXamlRootChanged;
+            TryRestoreFocusSession();
         };
         AppWindow.Changed += (_, args) =>
         {
@@ -268,6 +278,9 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         {
             CloseAnimationPlayback();
             _inactivityTimer?.Stop();
+            _clickThroughTimer?.Stop();
+            if (_clickThroughTimer != null) _clickThroughTimer.Tick -= OnClickThroughTick;
+            _clickThroughTimer = null;
             _proactiveTipDismissTimer?.Stop();
             _focusViewModel?.Dispose();
             if (_mascotXamlRoot != null) _mascotXamlRoot.Changed -= OnMascotXamlRootChanged;
@@ -686,6 +699,11 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
                         FocusPopup.IsOpen = true;
                 }
                 UpdateAnimationState();
+                RefreshClickThrough();
+                break;
+            case nameof(MascotViewModel.ClickThrough):
+                App.MainWindowInstance?.UpdateTrayBehavior(App.Settings.MinimizeToTray);
+                RefreshClickThrough();
                 break;
             case nameof(MascotViewModel.MuteAnimation):
             case nameof(MascotViewModel.CanAnimate):
@@ -760,6 +778,56 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOACTIVATE);
     }
 
+    private void RefreshClickThrough()
+    {
+        if (!_startupInitialized || _animationClosed) return;
+        if (ViewModel.ClickThrough && ViewModel.IsVisible)
+        {
+            if (_clickThroughTimer == null)
+            {
+                _clickThroughTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(40) };
+                _clickThroughTimer.Tick += OnClickThroughTick;
+            }
+            _clickThroughTimer.Start();
+        }
+        else
+        {
+            _clickThroughTimer?.Stop();
+        }
+        UpdateClickThrough();
+    }
+
+    private void OnClickThroughTick(object? sender, object args) => UpdateClickThrough();
+
+    private void UpdateClickThrough()
+    {
+        if (!_startupInitialized || _animationClosed) return;
+
+        // Keep the recipient of a held mouse gesture until release, including drags
+        // started in another app before Ctrl was pressed.
+        if (ViewModel.ClickThrough && ViewModel.IsVisible &&
+            (ViewModel.IsDragging || NativeMethods.GetAsyncKeyState(NativeMethods.VK_LBUTTON) < 0 ||
+             NativeMethods.GetAsyncKeyState(NativeMethods.VK_RBUTTON) < 0 ||
+             NativeMethods.GetAsyncKeyState(NativeMethods.VK_MBUTTON) < 0)) return;
+
+        bool passThrough = ViewModel.ClickThrough && ViewModel.IsVisible &&
+            !_mascotContextMenuOpen && NativeMethods.GetAsyncKeyState(NativeMethods.VK_CONTROL) >= 0;
+        const uint inputStyles = NativeMethods.WS_EX_LAYERED | NativeMethods.WS_EX_TRANSPARENT;
+        var style = NativeMethods.GetWindowLong(_hwnd, NativeMethods.GWL_EXSTYLE);
+        var updated = style & ~inputStyles;
+        if (ViewModel.ClickThrough && ViewModel.IsVisible)
+        {
+            // NOREDIRECTIONBITMAP conflicts with layered input transparency. Leave
+            // the Composition pixels alone: SetLayeredWindowAttributes hides them.
+            // Keep layering while Ctrl is held so its removal cannot blank the art.
+            updated = (updated & ~NativeMethods.WS_EX_NOREDIRECTIONBITMAP) | NativeMethods.WS_EX_LAYERED;
+            if (passThrough) updated |= NativeMethods.WS_EX_TRANSPARENT;
+        }
+        if (updated == style) return;
+        NativeMethods.SetWindowLong(_hwnd, NativeMethods.GWL_EXSTYLE, updated);
+        if (!passThrough && ViewModel.ClickThrough) ResetInactivity();
+    }
+
     private void EnsureAlwaysOnTop()
     {
         if (!_startupInitialized || !ViewModel.IsVisible || ViewModel.IsMascotHidden ||
@@ -819,9 +887,8 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
 
     private void OnPointerMoved(object sender, PointerRoutedEventArgs e)
     {
-        if (ViewModel.IsDragging)
-            _hasDragged = true;
-        ViewModel.ContinueDrag();
+        // Capturing the pointer can raise PointerMoved without any cursor movement.
+        _hasDragged |= ViewModel.ContinueDrag();
     }
 
     private void OnPointerReleased(object sender, PointerRoutedEventArgs e)
@@ -994,6 +1061,9 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         }
         ApplyLottieSource();
 
+        // Apply after WinUI has settled the window's initial redirection styles.
+        DispatcherQueue.TryEnqueue(RefreshClickThrough);
+
         _mascotWindowShown = true;
         TryRestoreFocusSession();
 
@@ -1040,7 +1110,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
 
     private void TryRestoreFocusSession()
     {
-        if (!_mascotWindowShown || _focusRestoreDone) return;
+        if (!_mascotWindowShown || _focusRestoreDone || MascotGrid.XamlRoot == null) return;
 
         var settings = App.Settings;
         if (settings.FocusTaskId is not { } taskId) { _focusRestoreDone = true; return; }
@@ -1110,6 +1180,7 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
 
         ApplyFocusState(vm, null);
 
+        FocusPopup.XamlRoot = MascotGrid.XamlRoot;
         FocusPopup.IsOpen = true;
     }
 
@@ -1139,6 +1210,8 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             AutomationProperties.SetName(FocusPauseButton, vm.PauseResumeLabel);
             ToolTipService.SetToolTip(FocusPauseButton, vm.PauseResumeLabel);
         }
+        if (propertyName is null or nameof(FocusModeViewModel.Title) or nameof(FocusModeViewModel.ElapsedText))
+            PositionMascotPopups();
     }
 
     private static void PersistFocusSession(FocusSession? session)
@@ -1171,20 +1244,21 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         _placingPopups = true;
         try
         {
-            if (FocusPopup.IsOpen) PositionPopup(FocusPopup, FocusPopupViewport, FocusPopupBorder, 280);
+            if (FocusPopup.IsOpen) PositionPopup(FocusPopup, FocusPopupViewport, FocusPopupBorder, 280, sizeToContent: true);
             if (ProactiveTip.IsOpen) PositionPopup(ProactiveTip, ProactiveTipViewport, ProactiveTipContent, 308);
         }
         finally { _placingPopups = false; }
 
-        void PositionPopup(Popup popup, ScrollViewer viewport, FrameworkElement content, double width)
+        void PositionPopup(Popup popup, ScrollViewer viewport, FrameworkElement content, double width, bool sizeToContent = false)
         {
             int gap = (int)Math.Ceiling(12 * scale);
-            content.Width = Math.Max(1, Math.Min(width, (work.Width - 2 * gap) / scale));
-            content.Measure(new Windows.Foundation.Size(content.Width, double.PositiveInfinity));
+            double availableWidth = Math.Max(1, Math.Min(width, (work.Width - 2 * gap) / scale));
+            content.Width = sizeToContent ? double.NaN : availableWidth;
+            content.Measure(new Windows.Foundation.Size(availableWidth, double.PositiveInfinity));
             var desired = new System.Drawing.Size((int)Math.Ceiling(content.DesiredSize.Width * scale),
                 (int)Math.Ceiling(content.DesiredSize.Height * scale));
             var placement = MascotPopupPlacement.Place(work, mascot, desired, gap, preferAbove: true);
-            content.Width = placement.Width / scale;
+            if (!sizeToContent) content.Width = placement.Width / scale;
             viewport.Width = placement.Width / scale;
             viewport.Height = placement.Height / scale;
             popup.HorizontalOffset = (placement.X - mascot.X) / scale;

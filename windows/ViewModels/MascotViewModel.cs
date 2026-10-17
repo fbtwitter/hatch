@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Input;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
+using Hatch.Helpers;
 using Hatch.Models;
 using Hatch.Services;
 
@@ -75,6 +76,22 @@ public sealed partial class MascotViewModel : INotifyPropertyChanged, IDisposabl
     }
 
     public int WindowSize => _settings.Current.MascotSize;
+
+    public bool ClickThrough
+    {
+        get => _settings.Current.MascotClickThrough;
+        set
+        {
+            if (_settings.Current.MascotClickThrough == value) return;
+            _settings.Current.MascotClickThrough = value;
+            _settings.SaveDebounced();
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ClickThroughMenuText));
+        }
+    }
+
+    public string ClickThroughMenuText => Strings.Get(ClickThrough
+        ? "Mascot_DisableClickThrough" : "Mascot_EnableClickThrough");
 
     public bool MuteAnimation
     {
@@ -188,6 +205,7 @@ public sealed partial class MascotViewModel : INotifyPropertyChanged, IDisposabl
     public ICommand HideUntilTomorrowCommand  { get; }
     public ICommand HideUntilRestartCommand   { get; }
     public ICommand RestoreFromHideCommand    { get; }
+    public ICommand ToggleClickThroughCommand { get; }
 
     public bool IsMascotHidden
     {
@@ -247,6 +265,7 @@ public sealed partial class MascotViewModel : INotifyPropertyChanged, IDisposabl
         HideUntilTomorrowCommand = new RelayCommand(_ => HideFor(UntilTomorrow()));
         HideUntilRestartCommand  = new RelayCommand(_ => HideUntilRestart());
         RestoreFromHideCommand   = new RelayCommand(_ => RestoreFromHide());
+        ToggleClickThroughCommand = new RelayCommand(_ => ClickThrough = !ClickThrough);
         InitializePosition();
         CheckHideExpiration();
         RefreshVisibility();
@@ -277,9 +296,9 @@ public sealed partial class MascotViewModel : INotifyPropertyChanged, IDisposabl
         RefreshAnimationState();
     }
 
-    public void ContinueDrag()
+    public bool ContinueDrag()
     {
-        if (!_isDragging) return;
+        if (!_isDragging) return false;
         NativeMethods.GetCursorPos(out var cur);
         var newX = _dragStartWindowX + (cur.X - _dragStartCursor.X);
         var newY = _dragStartWindowY + (cur.Y - _dragStartCursor.Y);
@@ -298,6 +317,7 @@ public sealed partial class MascotViewModel : INotifyPropertyChanged, IDisposabl
 
         X = newX;
         Y = newY;
+        return cur.X != _dragStartCursor.X || cur.Y != _dragStartCursor.Y;
     }
 
     public void EndDrag()

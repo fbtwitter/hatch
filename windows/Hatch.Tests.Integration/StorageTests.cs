@@ -101,6 +101,7 @@ public sealed class StorageTests
         settings.Current.Theme = AppTheme.Dark;
         settings.Current.ShowQuickTips = false;
         settings.Current.KeepQuickAddOpen = true;
+        settings.Current.MascotClickThrough = true;
         settings.Current.CustomTips = ["Take a break"];
         settings.Current.TipTopics["planning"] = new() { Dismissals = 3, QuietUntil = DateTime.Today.AddDays(30) };
         await settings.SaveAsync();
