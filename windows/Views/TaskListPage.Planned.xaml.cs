@@ -141,6 +141,8 @@ public sealed partial class TaskListPage
         Grid.SetColumnSpan(PlannedDayHeader, wide ? 1 : 2);
         Grid.SetColumn(PlannedDayList, wide ? 1 : 0);
         Grid.SetColumnSpan(PlannedDayList, wide ? 1 : 2);
+        Grid.SetColumn(PlannedDayEmptyState, wide ? 1 : 0);
+        Grid.SetColumnSpan(PlannedDayEmptyState, wide ? 1 : 2);
     }
 
     private bool IsPlannedCalendarControlFocused()

@@ -979,6 +979,10 @@ public sealed partial class TaskListPage : Page
         double composerClearance = _vm.IsTaskComposerFloating && _vm.IsTaskComposerVisible
             ? TaskComposer.ActualHeight + undoGap : 0;
         UndoInfoBar.Margin = new(24, 0, 24, composerClearance);
+        double emptyStateClearance = composerClearance
+            + (_vm.IsUndoBarVisible ? UndoInfoBar.ActualHeight + undoGap : 0);
+        TaskEmptyState.Margin = new(24, 0, 24, emptyStateClearance);
+        PlannedDayEmptyState.Margin = new(24, 0, 24, emptyStateClearance);
         // Keep scroll extent stable while the composer animates out of view.
         double scrollClearance = (_vm.IsTaskComposerFloating ? TaskComposer.ActualHeight + 24 : 0)
             + (_vm.IsUndoBarVisible ? UndoInfoBar.ActualHeight + undoGap : 0);

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.33.1] - 2026-10-18
+
+- Center empty states within their content areas and move the automatic search icon to the left as a decorative glyph.
+
 ## [0.33.0] - 2026-10-18
 
 - Add optional mascot click-through with Ctrl interaction and tray recovery, a compact context menu, and a focus popup that fits short task titles.

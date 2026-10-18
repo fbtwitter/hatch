@@ -683,7 +683,7 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
                 <!-- Empty state — flat views -->
-                <StackPanel Grid.Row="1" HorizontalAlignment="Center"
+                <StackPanel x:Name="TaskEmptyState" Grid.Row="1" HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Spacing="8"
                             MaxWidth="260"
@@ -965,17 +965,18 @@
                         <ListView.ItemContainerTransitions>
                             <TransitionCollection />
                         </ListView.ItemContainerTransitions>
-                        <ListView.Header>
-                            <TextBlock x:Uid="PlannedDayEmptyText"
-                                       Visibility="{x:Bind ViewModel.IsPlannedDayEmpty, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                                       Text="No tasks due on this day. Add a task to plan ahead."
-                                       Style="{StaticResource BodyTextBlockStyle}" TextWrapping="WrapWholeWords"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        </ListView.Header>
                         <ListView.Footer>
                             <Border x:Name="PlannedDayBottomClearance" IsHitTestVisible="False" />
                         </ListView.Footer>
                     </ListView>
+                    <TextBlock x:Name="PlannedDayEmptyState" x:Uid="PlannedDayEmptyText"
+                               Grid.Column="1" Grid.Row="1"
+                               Visibility="{x:Bind ViewModel.IsPlannedDayEmpty, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                               Text="No tasks due on this day. Add a task to plan ahead."
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               TextAlignment="Center" MaxWidth="280"
+                               Style="{StaticResource BodyTextBlockStyle}" TextWrapping="WrapWholeWords"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </Grid>
 
                 <Grid Grid.Row="1"

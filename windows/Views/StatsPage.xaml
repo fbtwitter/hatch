@@ -265,6 +265,7 @@
                         Visibility="{x:Bind ViewModel.HasTodayTasks, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
                     <TextBlock x:Uid="Stats_EmptyToday" Text="Nothing due today."
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               VerticalAlignment="Center"
                                HorizontalAlignment="Center" Padding="8"/>
                 </Border>
             </StackPanel>
@@ -283,6 +284,7 @@
                         Visibility="{x:Bind ViewModel.HasUpcomingTasks, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert, Mode=OneWay}">
                     <TextBlock x:Uid="Stats_EmptyUpcoming" Text="Nothing due soon."
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               VerticalAlignment="Center"
                                HorizontalAlignment="Center" Padding="8"/>
                 </Border>
             </StackPanel>

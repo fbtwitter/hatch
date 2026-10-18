@@ -13,6 +13,7 @@ the previous sub-50 MB idle target was disproven and is not a release gate. See
 
 | Task-flow update | Status |
 |---|---|
+| Centered empty states and a decorative left search icon | Included in v0.33.1; task and calendar messages respect the bottom form, Summary cards center their messages, and typing still searches automatically |
 | Optional mascot click-through and compact focus popup | Included in v0.33.0; hold Ctrl to interact with Hatch or disable click-through from the tray; short focus titles size naturally |
 | Mascot breathing room on scaled laptop displays | Included in v0.32.2; proportional padding accommodates hover and wiggle while preserving saved window bounds |
 | Full-height task details with relative timestamps, themed Delete/Undo and immediate Escape dismissal | Included in v0.32.0; focused Light/Dark footer/Undo checks and core notification checks pass; native hover, pane height and immediate Escape reviewed in the preview |
