@@ -1,4 +1,6 @@
 using Hatch.Tests.Infrastructure;
+using FlaUI.Core.Input;
+using FlaUI.Core.WindowsAPI;
 
 namespace Hatch.Tests.DetailsPane;
 
@@ -173,12 +175,16 @@ public class NotesPaneTests
     }
 
     private void ClearNotesText()
+        => ClearNotesText(Find("PaneNotesBox").AsTextBox());
+
+    private static void ClearNotesText(TextBox notes)
     {
-        var notes = Find("PaneNotesBox").AsTextBox();
-        notes.Text = string.Empty;
+        notes.Focus();
+        using (Keyboard.Pressing(VirtualKeyShort.CONTROL))
+            Keyboard.Press(VirtualKeyShort.KEY_A);
+        Keyboard.Press(VirtualKeyShort.DELETE);
         WaitForText(notes, string.Empty);
-        // UIA reports Text before WinUI has arranged the resized editor.
-        // Do not reuse the preceding test's expanded height as an empty baseline.
+        // Let WinUI arrange the editor after the same keyboard input users use to clear it.
         var deadline = DateTime.UtcNow.AddSeconds(5);
         double previousHeight = notes.BoundingRectangle.Height;
         int stableSamples = 0;
@@ -194,9 +200,17 @@ public class NotesPaneTests
 
     private static void EnterAndWait(TextBox notes, string expected)
     {
+        ClearNotesText(notes);
         notes.Focus();
-        notes.Enter(expected);
-        WaitForText(notes, expected);
+        var lines = expected.Split(Environment.NewLine, StringSplitOptions.None);
+        var enteredLines = new List<string>(lines.Length);
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (i > 0) Keyboard.Press(VirtualKeyShort.RETURN);
+            Keyboard.Type(lines[i]);
+            enteredLines.Add(lines[i]);
+            WaitForText(notes, string.Join(Environment.NewLine, enteredLines));
+        }
     }
 
     private static void WaitForText(TextBox notes, string expected)

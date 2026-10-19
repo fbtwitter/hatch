@@ -29,8 +29,10 @@ public sealed class PlannedWorkflowTests
             try { TaskWorkflowTests.CaptureState("failed-" + TestContext.TestName); }
             catch (Exception ex) { TestContext.WriteLine(ex.Message); }
         }
-        Find("NewTask_TextBox").Patterns.Value.Pattern.SetValue(string.Empty);
         TestSetup.ResetUi();
+        var composer = Main.FindFirstDescendant(cf => cf.ByAutomationId("NewTask_TextBox"));
+        if (composer is { IsOffscreen: false } && composer.Patterns.Value.IsSupported)
+            composer.Patterns.Value.Pattern.SetValue(string.Empty);
     }
 
     [TestMethod]
@@ -94,7 +96,10 @@ public sealed class PlannedWorkflowTests
         var title = AddTask();
         var row = Named(title).Parent;
         while (row.FindFirstDescendant(cf => cf.ByAutomationId("Task_CheckBox")) is null) row = row.Parent;
-        row.FindFirstDescendant(cf => cf.ByAutomationId("Task_CheckBox"))!.Patterns.Toggle.Pattern.Toggle();
+        var checkbox = row.FindFirstDescendant(cf => cf.ByAutomationId("Task_CheckBox"))!;
+        checkbox.Click();
+        Wait(() => checkbox.Patterns.Toggle.Pattern.ToggleState == FlaUI.Core.Definitions.ToggleState.On,
+            "visible completion state");
         Wait(() => Saved(title).GetProperty("IsCompleted").GetBoolean(), "saved completion");
         var undoBar = Find("UndoInfoBar").BoundingRectangle;
         var input = Find("NewTask_TextBox").BoundingRectangle;
@@ -208,9 +213,39 @@ public sealed class PlannedWorkflowTests
     private static void SetComposerPosition(bool top)
     {
         Named("Settings").Patterns.SelectionItem.Pattern.Select();
-        var position = Visible(() => Main.FindFirstDescendant(cf => cf.ByAutomationId("Settings_TaskInputPosition")), "task input position");
+        SelectSettingsCategory("Quick Add");
+        var position = FindAny("Settings_TaskInputPosition");
+        if (position.Patterns.ScrollItem.IsSupported)
+            position.Patterns.ScrollItem.Pattern.ScrollIntoView();
         position.AsComboBox().Select(top ? 1 : 0);
         Find("Nav_Planned").Patterns.SelectionItem.Pattern.Select();
+    }
+
+    private static void SelectSettingsCategory(string name)
+    {
+        var originalBounds = Main.BoundingRectangle;
+        Main.Patterns.Transform.Pattern.Resize(1400, originalBounds.Height);
+        try
+        {
+            var item = Visible(() => Main.FindAllDescendants(cf => cf.ByName(name)
+                .And(cf.ByControlType(FlaUI.Core.Definitions.ControlType.TabItem)))
+                .FirstOrDefault(candidate => candidate.Patterns.SelectionItem.IsSupported), "Settings category " + name);
+            item.Patterns.SelectionItem.Pattern.Select();
+            Wait(() => item.Patterns.SelectionItem.Pattern.IsSelected, "selected Settings category " + name);
+            Wait(() => Main.FindFirstDescendant(cf => cf.ByAutomationId("Settings_TaskInputPosition")) is not null,
+                "Quick Add category content");
+        }
+        finally
+        {
+            Main.Patterns.Transform.Pattern.Resize(originalBounds.Width, originalBounds.Height);
+        }
+    }
+
+    private static AutomationElement FindAny(string id)
+    {
+        AutomationElement? element = null;
+        Wait(() => (element = Main.FindFirstDescendant(cf => cf.ByAutomationId(id))) is not null, id);
+        return element!;
     }
 
     private static string NewTitle() => "Planned check " + Guid.NewGuid().ToString("N")[..8];

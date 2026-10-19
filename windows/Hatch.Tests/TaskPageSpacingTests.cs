@@ -37,8 +37,11 @@ public sealed class TaskPageSpacingTests
             foreach (bool top in new[] { false, true })
             {
                 Named("Settings").Click();
-                var position = Find("Settings_TaskInputPosition");
+                SelectSettingsCategory("Quick Add");
+                var position = FindAny("Settings_TaskInputPosition");
                 if (position.Patterns.ScrollItem.IsSupported) position.Patterns.ScrollItem.Pattern.ScrollIntoView();
+                for (int attempt = 0; attempt < 60 && position.IsOffscreen; attempt++) Thread.Sleep(80);
+                Assert.IsFalse(position.IsOffscreen, "Task input position must be reachable after scrolling to it.");
                 position.AsComboBox().Select(top ? 1 : 0);
                 foreach (string navigation in new[] { "Nav_AllTasks", "Nav_Important", "Nav_MyDay", "Nav_Planned", "Runtime test list" })
                 {
@@ -115,7 +118,29 @@ public sealed class TaskPageSpacingTests
     }
 
     private static AutomationElement Find(string id) => Wait(() => Main.FindFirstDescendant(cf => cf.ByAutomationId(id)), id);
+    private static AutomationElement FindAny(string id)
+    {
+        for (int attempt = 0; attempt < 60; attempt++)
+        {
+            var element = Main.FindFirstDescendant(cf => cf.ByAutomationId(id));
+            if (element is not null) return element;
+            Thread.Sleep(80);
+        }
+        throw new AssertFailedException("Missing element: " + id);
+    }
+
     private static AutomationElement Named(string name) => Wait(() => Main.FindFirstDescendant(cf => cf.ByName(name)), name);
+    private static void SelectSettingsCategory(string name)
+    {
+        var item = Wait(() => Main.FindAllDescendants(cf => cf.ByName(name)
+                .And(cf.ByControlType(FlaUI.Core.Definitions.ControlType.TabItem)))
+            .FirstOrDefault(candidate => candidate.Patterns.SelectionItem.IsSupported), "Settings category " + name);
+        item.Patterns.SelectionItem.Pattern.Select();
+        WaitUntil(() => item.Patterns.SelectionItem.Pattern.IsSelected, "selected Settings category " + name);
+        WaitUntil(() => Main.FindFirstDescendant(cf => cf.ByAutomationId("Settings_TaskInputPosition")) is not null,
+            "Quick Add category content");
+    }
+
     private static AutomationElement Wait(Func<AutomationElement?> lookup, string description)
     {
         for (int attempt = 0; attempt < 60; attempt++)
@@ -125,6 +150,16 @@ public sealed class TaskPageSpacingTests
             Thread.Sleep(80);
         }
         throw new AssertFailedException("Missing visible element: " + description);
+    }
+
+    private static void WaitUntil(Func<bool> predicate, string description)
+    {
+        for (int attempt = 0; attempt < 60; attempt++)
+        {
+            if (predicate()) return;
+            Thread.Sleep(80);
+        }
+        throw new AssertFailedException("Timed out: " + description);
     }
 
     [DllImport("user32.dll")]

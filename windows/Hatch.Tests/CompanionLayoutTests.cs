@@ -72,19 +72,25 @@ public sealed class CompanionLayoutTests
         Assert.IsNotNull(settingsItem, "Settings navigation item must be reachable.");
         settingsItem.Click();
 
+        SelectSettingsCategory(main, "Tips");
         var sound = WaitFor(main, "Settings_MascotSound");
-        var tipTime = WaitFor(main, "Settings_TipTime");
         if (sound.Patterns.ScrollItem.IsSupported)
             sound.Patterns.ScrollItem.Pattern.ScrollIntoView();
         Thread.Sleep(600);
         Assert.IsFalse(sound.IsOffscreen, "Mascot sound choice must be visible after scrolling to it.");
         Assert.IsTrue(sound.BoundingRectangle.Width >= 140, "Sound choice needs room for its labels.");
-        Assert.IsTrue(tipTime.BoundingRectangle.Width >= 140, "Time window choice needs room for its labels.");
 
         var output = Environment.GetEnvironmentVariable("HATCH_MEASUREMENTS_DIR") ?? TestSetup.DataDirectory;
         Directory.CreateDirectory(output);
         using (var image = Capture.Rectangle(main.BoundingRectangle))
-            image.ToFile(Path.Combine(output, "companion-settings.png"));
+            image.ToFile(Path.Combine(output, "companion-settings-tips.png"));
+
+        var tipTime = WaitFor(main, "Settings_TipTime");
+        if (tipTime.Patterns.ScrollItem.IsSupported)
+            tipTime.Patterns.ScrollItem.Pattern.ScrollIntoView();
+        Thread.Sleep(300);
+        Assert.IsFalse(tipTime.IsOffscreen, "Tip timing choice must be visible after scrolling to it.");
+        Assert.IsTrue(tipTime.BoundingRectangle.Width >= 140, "Time window choice needs room for its labels.");
         var quietedTopics = WaitFor(main, "Settings_QuietedTopics");
         if (quietedTopics.Patterns.ScrollItem.IsSupported)
             quietedTopics.Patterns.ScrollItem.Pattern.ScrollIntoView();
@@ -123,6 +129,38 @@ public sealed class CompanionLayoutTests
         }
         Assert.Fail($"Missing {id}");
         throw new InvalidOperationException();
+    }
+
+    private static void SelectSettingsCategory(
+        FlaUI.Core.AutomationElements.Window window, string name)
+    {
+        var originalBounds = window.BoundingRectangle;
+        window.Patterns.Transform.Pattern.Resize(1400, originalBounds.Height);
+        try
+        {
+            FlaUI.Core.AutomationElements.AutomationElement? item = null;
+            for (var i = 0; i < 80; i++)
+            {
+                item = window.FindAllDescendants(cf => cf.ByName(name))
+                    .FirstOrDefault(candidate =>
+                        candidate.ControlType == FlaUI.Core.Definitions.ControlType.TabItem &&
+                        candidate.Patterns.SelectionItem.IsSupported && !candidate.IsOffscreen);
+                if (item is not null) break;
+                Thread.Sleep(100);
+            }
+            Assert.IsNotNull(item, $"Missing visible Settings category {name}");
+            item.Patterns.SelectionItem.Pattern.Select();
+            for (var i = 0; i < 80 && !item.Patterns.SelectionItem.Pattern.IsSelected; i++)
+                Thread.Sleep(100);
+            Assert.IsTrue(item.Patterns.SelectionItem.Pattern.IsSelected, $"Settings category {name} must be selected.");
+            if (name != "Tips")
+                Assert.Fail($"The layout test expected the Tips category, received {name}.");
+            WaitFor(window, "Settings_TipTime");
+        }
+        finally
+        {
+            window.Patterns.Transform.Pattern.Resize(originalBounds.Width, originalBounds.Height);
+        }
     }
 
     private static FlaUI.Core.AutomationElements.AutomationElement WaitForAnyWindow(string id)
