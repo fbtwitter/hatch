@@ -93,6 +93,19 @@ public sealed partial class MascotViewModel : INotifyPropertyChanged, IDisposabl
     public string ClickThroughMenuText => Strings.Get(ClickThrough
         ? "Mascot_DisableClickThrough" : "Mascot_EnableClickThrough");
 
+    public string ClickThroughMenuToolTip => string.Format(
+        Strings.Get("Mascot_MenuClickThroughToolTipFormat"), ClickThroughKeyLabel);
+
+    private string ClickThroughKeyLabel => _settings.Current.MascotClickThroughKey switch
+    {
+        (uint)NativeMethods.VK_CONTROL => "Ctrl",
+        (uint)NativeMethods.VK_SHIFT => "Shift",
+        (uint)NativeMethods.VK_MENU => "Alt",
+        _ => "Ctrl"
+    };
+
+    public void RaiseClickThroughKeyChanged() => OnPropertyChanged(nameof(ClickThroughMenuToolTip));
+
     public bool MuteAnimation
     {
         get => _settings.Current.MuteAnimation;

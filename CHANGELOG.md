@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.34.0] - 2026-10-19
+
+- Add categorized Settings, a customizable mascot click-through key, and direct key guidance in mascot help.
+
 ## [0.33.1] - 2026-10-18
 
 - Center empty states within their content areas and move the automatic search icon to the left as a decorative glyph.

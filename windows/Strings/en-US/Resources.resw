@@ -376,7 +376,7 @@
   <data name="Settings_OpenPage_Planned" xml:space="preserve"><value>Planned</value></data>
   <data name="Settings_OpenPage_AllTasks" xml:space="preserve"><value>All Tasks</value></data>
 
-  <data name="Settings_CustomTipsExpander.Header" xml:space="preserve"><value>Your own messages</value></data>
+  <data name="Settings_CustomTipsExpander.Text" xml:space="preserve"><value>Your own messages</value></data>
   <data name="Settings_CustomTipsExpanderDescription.Text" xml:space="preserve"><value>Added to Hatch's built-in lines and shown at random. Your own quotes, reminders, anything.</value></data>
   <data name="Settings_CustomTipsExpanderDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Added to Hatch's built-in lines and shown at random. Your own quotes, reminders, anything.</value></data>
   <data name="Settings_CustomTipInput.PlaceholderText" xml:space="preserve"><value>Write a line, press Enter</value></data>
@@ -487,6 +487,27 @@
   <data name="Settings_ImportTasksCardHeader.Text" xml:space="preserve"><value>Import tasks</value></data>
 
   <data name="Settings_PageTitle.Text" xml:space="preserve"><value>Settings</value></data>
+  <data name="Settings_NavGeneral.Content" xml:space="preserve"><value>General</value></data>
+  <data name="Settings_NavQuickAdd.Content" xml:space="preserve"><value>Quick Add</value></data>
+  <data name="Settings_NavMascot.Content" xml:space="preserve"><value>Mascot</value></data>
+  <data name="Settings_NavTips.Content" xml:space="preserve"><value>Tips</value></data>
+  <data name="Settings_NavSync.Content" xml:space="preserve"><value>Sync</value></data>
+  <data name="Settings_NavData.Content" xml:space="preserve"><value>Data</value></data>
+  <data name="Settings_NavAbout.Content" xml:space="preserve"><value>About</value></data>
+  <data name="Settings_Category_General_Title" xml:space="preserve"><value>General</value></data>
+  <data name="Settings_Category_General_Description" xml:space="preserve"><value>Startup, appearance, and the main window.</value></data>
+  <data name="Settings_Category_QuickAdd_Title" xml:space="preserve"><value>Quick Add</value></data>
+  <data name="Settings_Category_QuickAdd_Description" xml:space="preserve"><value>Choose how Quick Add opens and behaves after a task is saved.</value></data>
+  <data name="Settings_Category_Mascot_Title" xml:space="preserve"><value>Mascot</value></data>
+  <data name="Settings_Category_Mascot_Description" xml:space="preserve"><value>Control the mascot's visibility, interaction, and appearance.</value></data>
+  <data name="Settings_Category_Tips_Title" xml:space="preserve"><value>Tips &amp; personality</value></data>
+  <data name="Settings_Category_Tips_Description" xml:space="preserve"><value>Choose which tips Hatch shows and when they appear.</value></data>
+  <data name="Settings_Category_Sync_Title" xml:space="preserve"><value>Sync</value></data>
+  <data name="Settings_Category_Sync_Description" xml:space="preserve"><value>Sign in, protect synced data, and manage recovery.</value></data>
+  <data name="Settings_Category_Data_Title" xml:space="preserve"><value>Data</value></data>
+  <data name="Settings_Category_Data_Description" xml:space="preserve"><value>Work with the task data saved on this device.</value></data>
+  <data name="Settings_Category_About_Title" xml:space="preserve"><value>About</value></data>
+  <data name="Settings_Category_About_Description" xml:space="preserve"><value>Updates, support, and Hatch information.</value></data>
   <data name="Settings_SectionAppearance.Text" xml:space="preserve"><value>Appearance &amp; behavior</value></data>
   <data name="Settings_MinimizeToTrayHeader.Text" xml:space="preserve"><value>Minimize to System Tray</value></data>
   <data name="Settings_MinimizeToTray.AutomationProperties.Name" xml:space="preserve"><value>Minimize to System Tray</value></data>
@@ -519,6 +540,16 @@
   <data name="Settings_ShowMascot.AutomationProperties.Name" xml:space="preserve"><value>Show mascot</value></data>
   <data name="Settings_ShowMascot.OnContent" xml:space="preserve"><value>On</value></data>
   <data name="Settings_ShowMascot.OffContent" xml:space="preserve"><value>Off</value></data>
+  <data name="Settings_ClickThroughExpander.Text" xml:space="preserve"><value>Click-through</value></data>
+  <data name="Settings_ClickThroughDescriptionFormat" xml:space="preserve"><value>Clicks pass through Hatch. Hold {0} to click or drag Hatch</value></data>
+  <data name="Settings_ClickThrough.AutomationProperties.Name" xml:space="preserve"><value>Mascot click-through</value></data>
+  <data name="Settings_ClickThrough.OnContent" xml:space="preserve"><value>On</value></data>
+  <data name="Settings_ClickThrough.OffContent" xml:space="preserve"><value>Off</value></data>
+  <data name="Settings_ClickThroughKeyCard.Header" xml:space="preserve"><value>Hold to Interact</value></data>
+  <data name="Settings_ClickThroughKeyDescription" xml:space="preserve"><value>Hold this key while clicking or dragging Hatch when click-through is on</value></data>
+  <data name="Settings_ClickThroughKeyRecording" xml:space="preserve"><value>Press modifier...</value></data>
+  <data name="Settings_ClickThroughKeyRecordingDescription" xml:space="preserve"><value>Press Ctrl, Shift, or Alt. Press Esc to cancel.</value></data>
+  <data name="Settings_ClickThroughKeyRecordButton.AutomationProperties.Name" xml:space="preserve"><value>Record mascot interaction key</value></data>
   <data name="Settings_LockPositionHeader.Text" xml:space="preserve"><value>Lock Position</value></data>
   <data name="Settings_LockPositionDescription.Text" xml:space="preserve"><value>Prevent the mascot from being dragged</value></data>
   <data name="Settings_LockPositionDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Prevent the mascot from being dragged</value></data>
@@ -562,7 +593,7 @@
   <data name="Settings_LottieCard.Header" xml:space="preserve"><value>Lottie Animation File</value></data>
   <data name="Settings_BrowseLottie.Content" xml:space="preserve"><value>Browse</value></data>
   <data name="Settings_ClearLottie.Content" xml:space="preserve"><value>Clear</value></data>
-  <data name="Settings_MascotSizeExpander.Header" xml:space="preserve"><value>Mascot Size</value></data>
+  <data name="Settings_MascotSizeExpander.Text" xml:space="preserve"><value>Mascot Size</value></data>
   <data name="Settings_MascotSizeExpanderDescription.Text" xml:space="preserve"><value>Choose how large the mascot appears on screen</value></data>
   <data name="Settings_MascotSizeExpanderDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Choose how large the mascot appears on screen</value></data>
   <data name="Settings_MascotSizePresetsCard.Header" xml:space="preserve"><value>Presets</value></data>
@@ -591,7 +622,7 @@
   <data name="Settings_MfaCodeBox.AutomationProperties.Name" xml:space="preserve"><value>Authenticator code</value></data>
   <data name="Settings_MfaCodeBox.PlaceholderText" xml:space="preserve"><value>000000</value></data>
   <data name="Settings_RecoveryCodes.AutomationProperties.Name" xml:space="preserve"><value>Recovery codes</value></data>
-  <data name="Settings_SyncAcrossDevicesExpander.Header" xml:space="preserve"><value>Sync across devices</value></data>
+  <data name="Settings_SyncAcrossDevicesExpander.Text" xml:space="preserve"><value>Sync across devices</value></data>
   <data name="Settings_SyncAcrossDevicesExpanderDescription.Text" xml:space="preserve"><value>Sign in to keep your tasks in sync across PCs</value></data>
   <data name="Settings_SyncAcrossDevicesExpanderDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Sign in to keep your tasks in sync across PCs</value></data>
   <data name="Settings_SyncEmailLabel.Text" xml:space="preserve"><value>Email</value></data>
@@ -699,7 +730,6 @@
   <data name="TaskTimestamp_DaysAgo" xml:space="preserve"><value>{0} days ago</value></data>
   <data name="Mascot_EnableClickThrough" xml:space="preserve"><value>Enable click-through</value></data>
   <data name="Mascot_DisableClickThrough" xml:space="preserve"><value>Disable click-through</value></data>
-  <data name="Mascot_MenuClickThrough.ToolTipService.ToolTip" xml:space="preserve"><value>Let clicks pass through Hatch. Hold Ctrl to click or drag Hatch, or turn this off from its tray menu.</value></data>
-  <data name="Mascot_MenuClickThrough.AutomationProperties.HelpText" xml:space="preserve"><value>Clicks reach the app behind Hatch. Hold Ctrl to click or drag Hatch, or turn this off from its tray menu.</value></data>
-  <data name="Mascot_ClickThroughLabel" xml:space="preserve"><value>Click-through (hold Ctrl to interact)</value></data>
+  <data name="Mascot_MenuClickThroughToolTipFormat" xml:space="preserve"><value>Let clicks pass through Hatch. Hold {0} to click or drag Hatch, or turn this off from its tray menu.</value></data>
+  <data name="Mascot_ClickThroughLabel" xml:space="preserve"><value>Click-through</value></data>
 </root>

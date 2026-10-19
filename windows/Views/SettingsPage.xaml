@@ -9,16 +9,6 @@
     <Page.Resources>
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility"/>
         <x:Double x:Key="SettingsCardSpacing">8</x:Double>
-        <Style
-            x:Key="SettingsSectionHeaderTextBlockStyle"
-            BasedOn="{StaticResource BodyStrongTextBlockStyle}"
-            TargetType="TextBlock">
-            <Style.Setters>
-                <!-- The parent contributes another 8px on each side of a heading. -->
-                <Setter Property="Margin" Value="0,8,0,8"/>
-            </Style.Setters>
-        </Style>
-
         <!--
             Toggle card: flexible left column so the toggle always stays on the right.
             SettingsCard's built-in responsive wrap moves content below at narrow widths,
@@ -39,6 +29,17 @@
             <Style.Setters>
                 <Setter Property="FontSize" Value="12"/>
                 <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="MinWidth" Value="0"/>
+                <Setter Property="TextWrapping" Value="NoWrap"/>
+                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            </Style.Setters>
+        </Style>
+
+        <Style x:Key="SettingsExpanderHeaderTextBlockStyle" BasedOn="{StaticResource BodyStrongTextBlockStyle}" TargetType="TextBlock">
+            <Style.Setters>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="MinWidth" Value="0"/>
                 <Setter Property="TextWrapping" Value="NoWrap"/>
                 <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
             </Style.Setters>
@@ -48,23 +49,52 @@
         <Thickness x:Key="SettingsCardHeaderIconMargin">0,0,20,0</Thickness>
     </Page.Resources>
 
-    <!-- ScrollViewer spans the full page so its scrollbar tracks the window edge (PowerToys-style);
-         the cap sits on the StackPanel inside it. The title is the first child of that same
-         StackPanel rather than a pinned header above it: a header outside the ScrollViewer
-         centres against the page width while the cards centre against the scrolling area, and
-         those two widths differ, so they cannot be made to line up by capping them separately.
-         Sharing one container makes them aligned by construction. The title scrolls with the
-         list as a result, which is what Summary already does. -->
-    <ScrollViewer Margin="0,0,0,24" Padding="24,0,24,0" VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="{StaticResource SettingsCardSpacing}"
-                    MaxWidth="{StaticResource PageMaxRowWidth}" HorizontalAlignment="Stretch">
-
+    <Grid RowDefinitions="Auto,*">
+        <Grid Grid.Row="0" MaxWidth="{StaticResource PageMaxWidth}"
+              HorizontalAlignment="Stretch">
             <TextBlock x:Name="HeaderText" x:Uid="Settings_PageTitle"
-                       Style="{ThemeResource TitleLargeTextBlockStyle}"
-                       Margin="0,24,0,0"/>
+                       Margin="24,16,24,8"
+                       Style="{ThemeResource TitleLargeTextBlockStyle}"/>
+        </Grid>
 
-                <TextBlock x:Uid="Settings_SectionAppearance"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"/>
+        <NavigationView Grid.Row="1" x:Name="SettingsNavigation"
+                    MaxWidth="{StaticResource PageMaxWidth}"
+                    HorizontalAlignment="Stretch"
+                    PaneDisplayMode="Top"
+                    IsBackButtonVisible="Collapsed"
+                    IsSettingsVisible="False"
+                    SelectionChanged="SettingsNavigation_SelectionChanged">
+        <NavigationView.MenuItems>
+            <NavigationViewItem x:Uid="Settings_NavGeneral" Tag="General" IsSelected="True"/>
+            <NavigationViewItem x:Uid="Settings_NavQuickAdd" Tag="QuickAdd"/>
+            <NavigationViewItem x:Uid="Settings_NavMascot" Tag="Mascot"/>
+            <NavigationViewItem x:Uid="Settings_NavTips" Tag="Tips"/>
+            <NavigationViewItem x:Uid="Settings_NavSync" Tag="Sync"/>
+            <NavigationViewItem x:Uid="Settings_NavData" Tag="Data"/>
+            <NavigationViewItem x:Uid="Settings_NavAbout" Tag="About"/>
+        </NavigationView.MenuItems>
+
+        <NavigationView.Content>
+            <Grid RowDefinitions="Auto,*">
+                <StackPanel Grid.Row="0" Margin="24,16,24,12" Spacing="4"
+                            MaxWidth="{StaticResource PageMaxRowWidth}"
+                            HorizontalAlignment="Stretch">
+                    <TextBlock Text="{x:Bind ViewModel.SelectedSettingsCategoryTitle, Mode=OneWay}"
+                               Style="{ThemeResource SubtitleTextBlockStyle}"/>
+                    <TextBlock Text="{x:Bind ViewModel.SelectedSettingsCategoryDescription, Mode=OneWay}"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="1" Margin="0,0,0,24" Padding="24,0,24,0"
+                              VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="0" MaxWidth="{StaticResource PageMaxRowWidth}"
+                                HorizontalAlignment="Stretch">
+
+                        <StackPanel x:Name="GeneralSettingsSection"
+                                    Visibility="{x:Bind ViewModel.GeneralSettingsVisibility, Mode=OneWay}"
+                                    Spacing="{StaticResource SettingsCardSpacing}" Margin="0,0,0,8">
 
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
@@ -179,6 +209,10 @@
                     </Grid>
                 </Border>
 
+                        </StackPanel>
+                        <StackPanel x:Name="QuickAddSettingsSection"
+                                    Visibility="{x:Bind ViewModel.QuickAddSettingsVisibility, Mode=OneWay}"
+                                    Spacing="{StaticResource SettingsCardSpacing}" Margin="0,0,0,8">
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -206,8 +240,10 @@
                     </Grid>
                 </Border>
 
-                <TextBlock x:Uid="Settings_SectionMascot"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"/>
+                        </StackPanel>
+                        <StackPanel x:Name="MascotSettingsSection"
+                                    Visibility="{x:Bind ViewModel.MascotSettingsVisibility, Mode=OneWay}"
+                                    Spacing="{StaticResource SettingsCardSpacing}" Margin="0,0,0,8">
 
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
@@ -235,6 +271,48 @@
                                       VerticalAlignment="Center"/>
                     </Grid>
                 </Border>
+
+                <toolkit:SettingsExpander IsExpanded="True">
+                    <toolkit:SettingsExpander.Resources>
+                        <x:Double x:Key="SettingsCardWrapThreshold">0</x:Double>
+                        <x:Double x:Key="SettingsCardWrapNoIconThreshold">0</x:Double>
+                    </toolkit:SettingsExpander.Resources>
+                    <toolkit:SettingsExpander.Header>
+                        <TextBlock x:Uid="Settings_ClickThroughExpander"
+                                   Style="{StaticResource SettingsExpanderHeaderTextBlockStyle}"/>
+                    </toolkit:SettingsExpander.Header>
+                    <toolkit:SettingsExpander.Description>
+                        <TextBlock Text="{x:Bind ViewModel.MascotClickThroughDescription, Mode=OneWay}"
+                                   ToolTipService.ToolTip="{x:Bind ViewModel.MascotClickThroughDescription, Mode=OneWay}"
+                                   Style="{StaticResource SettingsDescriptionTextBlockStyle}"/>
+                    </toolkit:SettingsExpander.Description>
+                    <toolkit:SettingsExpander.HeaderIcon>
+                        <FontIcon Glyph="&#xE962;"/>
+                    </toolkit:SettingsExpander.HeaderIcon>
+                    <ToggleSwitch x:Uid="Settings_ClickThrough"
+                                  AutomationProperties.AutomationId="Settings_ClickThrough"
+                                  AutomationProperties.HelpText="{x:Bind ViewModel.MascotClickThroughDescription, Mode=OneWay}"
+                                  IsOn="{x:Bind ViewModel.MascotClickThrough, Mode=TwoWay}"
+                                  MinWidth="80"
+                                  VerticalAlignment="Center"/>
+                    <toolkit:SettingsExpander.Items>
+                        <toolkit:SettingsCard x:Uid="Settings_ClickThroughKeyCard">
+                            <toolkit:SettingsCard.Description>
+                                <TextBlock Text="{x:Bind ViewModel.ClickThroughKeyRecordDescription, Mode=OneWay}"
+                                           ToolTipService.ToolTip="{x:Bind ViewModel.ClickThroughKeyRecordDescription, Mode=OneWay}"
+                                           Style="{StaticResource SettingsDescriptionTextBlockStyle}"/>
+                            </toolkit:SettingsCard.Description>
+                            <Button x:Name="ClickThroughKeyRecordButton"
+                                    x:Uid="Settings_ClickThroughKeyRecordButton"
+                                    AutomationProperties.AutomationId="Settings_ClickThroughKeyRecordButton"
+                                    Content="{x:Bind ViewModel.ClickThroughKeyRecordButtonText, Mode=OneWay}"
+                                    MinWidth="120"
+                                    FontFamily="Consolas"
+                                    VerticalAlignment="Center"
+                                    Click="ClickThroughKeyRecordButton_Click"/>
+                        </toolkit:SettingsCard>
+                    </toolkit:SettingsExpander.Items>
+                </toolkit:SettingsExpander>
 
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
@@ -344,6 +422,10 @@
                     </Grid>
                 </Border>
 
+                        </StackPanel>
+                        <StackPanel x:Name="TipsSettingsSection"
+                                    Visibility="{x:Bind ViewModel.TipsSettingsVisibility, Mode=OneWay}"
+                                    Spacing="{StaticResource SettingsCardSpacing}" Margin="0,0,0,8">
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -502,6 +584,10 @@
                     </Grid>
                 </Border>
 
+                        </StackPanel>
+                        <StackPanel x:Name="GeneralBehaviorSettingsSection"
+                                    Visibility="{x:Bind ViewModel.GeneralSettingsVisibility, Mode=OneWay}"
+                                    Spacing="{StaticResource SettingsCardSpacing}" Margin="0,0,0,8">
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -528,6 +614,10 @@
                     </Grid>
                 </Border>
 
+                        </StackPanel>
+                        <StackPanel x:Name="TipsMoreSettingsSection"
+                                    Visibility="{x:Bind ViewModel.TipsSettingsVisibility, Mode=OneWay}"
+                                    Spacing="{StaticResource SettingsCardSpacing}" Margin="0,0,0,8">
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid ColumnSpacing="20">
                         <Grid.ColumnDefinitions>
@@ -549,7 +639,15 @@
                     </Grid>
                 </Border>
 
-                <toolkit:SettingsExpander x:Uid="Settings_CustomTipsExpander">
+                <toolkit:SettingsExpander>
+                    <toolkit:SettingsExpander.Resources>
+                        <x:Double x:Key="SettingsCardWrapThreshold">0</x:Double>
+                        <x:Double x:Key="SettingsCardWrapNoIconThreshold">0</x:Double>
+                    </toolkit:SettingsExpander.Resources>
+                    <toolkit:SettingsExpander.Header>
+                        <TextBlock x:Uid="Settings_CustomTipsExpander"
+                                   Style="{StaticResource SettingsExpanderHeaderTextBlockStyle}"/>
+                    </toolkit:SettingsExpander.Header>
                     <toolkit:SettingsExpander.Description>
                         <TextBlock x:Uid="Settings_CustomTipsExpanderDescription"
                                    Style="{StaticResource SettingsDescriptionTextBlockStyle}"/>
@@ -609,6 +707,10 @@
                     </toolkit:SettingsExpander.ItemsHeader>
                 </toolkit:SettingsExpander>
 
+                        </StackPanel>
+                        <StackPanel x:Name="MascotAppearanceSettingsSection"
+                                    Visibility="{x:Bind ViewModel.MascotSettingsVisibility, Mode=OneWay}"
+                                    Spacing="{StaticResource SettingsCardSpacing}" Margin="0,0,0,8">
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -640,7 +742,15 @@
                     </Grid>
                 </Border>
 
-                <toolkit:SettingsExpander x:Uid="Settings_MascotSizeExpander">
+                <toolkit:SettingsExpander>
+                    <toolkit:SettingsExpander.Resources>
+                        <x:Double x:Key="SettingsCardWrapThreshold">0</x:Double>
+                        <x:Double x:Key="SettingsCardWrapNoIconThreshold">0</x:Double>
+                    </toolkit:SettingsExpander.Resources>
+                    <toolkit:SettingsExpander.Header>
+                        <TextBlock x:Uid="Settings_MascotSizeExpander"
+                                   Style="{StaticResource SettingsExpanderHeaderTextBlockStyle}"/>
+                    </toolkit:SettingsExpander.Header>
                     <toolkit:SettingsExpander.Description>
                         <TextBlock x:Uid="Settings_MascotSizeExpanderDescription"
                                    Style="{StaticResource SettingsDescriptionTextBlockStyle}"/>
@@ -649,8 +759,9 @@
                         <FontIcon Glyph="&#xE744;"/>
                     </toolkit:SettingsExpander.HeaderIcon>
                     <TextBlock x:Name="MascotSizeHeaderLabel"
+                               Style="{StaticResource SettingsDescriptionTextBlockStyle}"
                                VerticalAlignment="Center"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                               TextAlignment="Right"/>
                     <toolkit:SettingsExpander.Items>
                         <toolkit:SettingsCard x:Uid="Settings_MascotSizePresetsCard">
                             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -672,6 +783,10 @@
                     </toolkit:SettingsExpander.Items>
                 </toolkit:SettingsExpander>
 
+                        </StackPanel>
+                        <StackPanel x:Name="QuickAddKeyboardSettingsSection"
+                                    Visibility="{x:Bind ViewModel.QuickAddSettingsVisibility, Mode=OneWay}"
+                                    Spacing="{StaticResource SettingsCardSpacing}" Margin="0,0,0,8">
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
                         <Grid.ColumnDefinitions>
@@ -739,8 +854,10 @@
                     </Grid>
                 </Border>
 
-                <TextBlock x:Uid="Settings_SectionSync"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"/>
+                        </StackPanel>
+                        <StackPanel x:Name="SyncSettingsSection"
+                                    Visibility="{x:Bind ViewModel.SyncSettingsVisibility, Mode=OneWay}"
+                                    Spacing="{StaticResource SettingsCardSpacing}" Margin="0,0,0,8">
 
                 <Border Style="{StaticResource ToggleCardBorderStyle}"
                         Visibility="{x:Bind ViewModel.SyncAccount.IsSyncSignedIn, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
@@ -1116,8 +1233,15 @@
                          IsClosable="False"/>
 
                 <toolkit:SettingsExpander
-                    x:Uid="Settings_SyncAcrossDevicesExpander"
                     Visibility="{x:Bind ViewModel.SyncAccount.IsSyncNotSignedIn, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <toolkit:SettingsExpander.Resources>
+                        <x:Double x:Key="SettingsCardWrapThreshold">0</x:Double>
+                        <x:Double x:Key="SettingsCardWrapNoIconThreshold">0</x:Double>
+                    </toolkit:SettingsExpander.Resources>
+                    <toolkit:SettingsExpander.Header>
+                        <TextBlock x:Uid="Settings_SyncAcrossDevicesExpander"
+                                   Style="{StaticResource SettingsExpanderHeaderTextBlockStyle}"/>
+                    </toolkit:SettingsExpander.Header>
                     <toolkit:SettingsExpander.Description>
                         <TextBlock x:Uid="Settings_SyncAcrossDevicesExpanderDescription"
                                    Style="{StaticResource SettingsDescriptionTextBlockStyle}"/>
@@ -1221,8 +1345,10 @@
                     </toolkit:SettingsExpander.ItemsHeader>
                 </toolkit:SettingsExpander>
 
-                <TextBlock x:Uid="Settings_SectionData"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"/>
+                        </StackPanel>
+                        <StackPanel x:Name="DataSettingsSection"
+                                    Visibility="{x:Bind ViewModel.DataSettingsVisibility, Mode=OneWay}"
+                                    Spacing="{StaticResource SettingsCardSpacing}" Margin="0,0,0,8">
 
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
@@ -1320,8 +1446,10 @@
                                TextWrapping="Wrap"/>
                 </toolkit:SettingsCard>
 
-                <TextBlock x:Uid="Settings_SectionAbout"
-                           Style="{StaticResource SettingsSectionHeaderTextBlockStyle}"/>
+                        </StackPanel>
+                        <StackPanel x:Name="AboutSettingsSection"
+                                    Visibility="{x:Bind ViewModel.AboutSettingsVisibility, Mode=OneWay}"
+                                    Spacing="{StaticResource SettingsCardSpacing}" Margin="0,0,0,8">
 
                 <Border Style="{StaticResource ToggleCardBorderStyle}">
                     <Grid>
@@ -1439,7 +1567,12 @@
                     </Button>
                 </StackPanel>
 
+                        </StackPanel>
         </StackPanel>
     </ScrollViewer>
+            </Grid>
+        </NavigationView.Content>
+        </NavigationView>
+    </Grid>
 </Page>
 

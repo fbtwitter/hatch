@@ -804,14 +804,15 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         if (!_startupInitialized || _animationClosed) return;
 
         // Keep the recipient of a held mouse gesture until release, including drags
-        // started in another app before Ctrl was pressed.
+        // started in another app before the interaction key was pressed.
         if (ViewModel.ClickThrough && ViewModel.IsVisible &&
             (ViewModel.IsDragging || NativeMethods.GetAsyncKeyState(NativeMethods.VK_LBUTTON) < 0 ||
              NativeMethods.GetAsyncKeyState(NativeMethods.VK_RBUTTON) < 0 ||
              NativeMethods.GetAsyncKeyState(NativeMethods.VK_MBUTTON) < 0)) return;
 
         bool passThrough = ViewModel.ClickThrough && ViewModel.IsVisible &&
-            !_mascotContextMenuOpen && NativeMethods.GetAsyncKeyState(NativeMethods.VK_CONTROL) >= 0;
+            !_mascotContextMenuOpen &&
+            NativeMethods.GetAsyncKeyState((int)App.Settings.MascotClickThroughKey) >= 0;
         const uint inputStyles = NativeMethods.WS_EX_LAYERED | NativeMethods.WS_EX_TRANSPARENT;
         var style = NativeMethods.GetWindowLong(_hwnd, NativeMethods.GWL_EXSTYLE);
         var updated = style & ~inputStyles;

@@ -87,8 +87,9 @@
                                 Command="{x:Bind ViewModel.ResetPositionCommand}" />
                 <MenuFlyoutItem x:Uid="Mascot_MenuSettings" Text="Mascot Settings&#x2026;"
                                 Click="OnMascotSettingsMenuItemClick" />
-                <MenuFlyoutItem x:Uid="Mascot_MenuClickThrough"
-                                AutomationProperties.AutomationId="Mascot_ClickThrough"
+                <MenuFlyoutItem AutomationProperties.AutomationId="Mascot_ClickThrough"
+                                AutomationProperties.HelpText="{x:Bind ViewModel.ClickThroughMenuToolTip, Mode=OneWay}"
+                                ToolTipService.ToolTip="{x:Bind ViewModel.ClickThroughMenuToolTip, Mode=OneWay}"
                                 Text="{x:Bind ViewModel.ClickThroughMenuText, Mode=OneWay}"
                                 Command="{x:Bind ViewModel.ToggleClickThroughCommand}" />
                 <MenuFlyoutSeparator />

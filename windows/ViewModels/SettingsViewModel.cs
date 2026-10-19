@@ -20,8 +20,50 @@ public sealed partial class SettingsViewModel : INotifyPropertyChanged
     private readonly TaskStorageService _taskStorage;
     private readonly UpdateService _updateService;
     private readonly IHotkeyRegistration? _hotkeyRegistration;
+    private readonly MascotViewModel? _mascotViewModel;
     private bool _isHotkeyRegistered;
     private bool _isRecordingHotkey;
+    private bool _isRecordingClickThroughKey;
+    private string _selectedSettingsCategory = "General";
+
+    public string SelectedSettingsCategory
+    {
+        get => _selectedSettingsCategory;
+        set
+        {
+            if (string.Equals(_selectedSettingsCategory, value, StringComparison.Ordinal)) return;
+            _selectedSettingsCategory = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(SelectedSettingsCategoryTitle));
+            OnPropertyChanged(nameof(SelectedSettingsCategoryDescription));
+            OnPropertyChanged(nameof(GeneralSettingsVisibility));
+            OnPropertyChanged(nameof(QuickAddSettingsVisibility));
+            OnPropertyChanged(nameof(MascotSettingsVisibility));
+            OnPropertyChanged(nameof(TipsSettingsVisibility));
+            OnPropertyChanged(nameof(SyncSettingsVisibility));
+            OnPropertyChanged(nameof(DataSettingsVisibility));
+            OnPropertyChanged(nameof(AboutSettingsVisibility));
+        }
+    }
+
+    public string SelectedSettingsCategoryTitle =>
+        Strings.Get($"Settings_Category_{_selectedSettingsCategory}_Title");
+
+    public string SelectedSettingsCategoryDescription =>
+        Strings.Get($"Settings_Category_{_selectedSettingsCategory}_Description");
+
+    public Visibility GeneralSettingsVisibility => CategoryVisibility("General");
+    public Visibility QuickAddSettingsVisibility => CategoryVisibility("QuickAdd");
+    public Visibility MascotSettingsVisibility => CategoryVisibility("Mascot");
+    public Visibility TipsSettingsVisibility => CategoryVisibility("Tips");
+    public Visibility SyncSettingsVisibility => CategoryVisibility("Sync");
+    public Visibility DataSettingsVisibility => CategoryVisibility("Data");
+    public Visibility AboutSettingsVisibility => CategoryVisibility("About");
+
+    private Visibility CategoryVisibility(string category) =>
+        string.Equals(_selectedSettingsCategory, category, StringComparison.Ordinal)
+            ? Visibility.Visible
+            : Visibility.Collapsed;
 
     public SyncAccountViewModel SyncAccount { get; }
     private readonly StartupRegistryService _startupRegistry = new();
@@ -47,6 +89,9 @@ public sealed partial class SettingsViewModel : INotifyPropertyChanged
         _taskStorage = taskStorage;
         _updateService = updateService;
         _hotkeyRegistration = hotkeyRegistration;
+        _mascotViewModel = App.MascotWindowInstance?.ViewModel;
+        if (_mascotViewModel is not null)
+            _mascotViewModel.PropertyChanged += OnMascotPropertyChanged;
         // Registration happens at mascot startup, before the Settings page is created.
         _isHotkeyRegistered = hotkeyRegistration?.IsRegistered ?? true;
         CheckForUpdatesCommand = new RelayCommand(async _ => await CheckForUpdatesAsync());
@@ -137,6 +182,100 @@ public sealed partial class SettingsViewModel : INotifyPropertyChanged
             App.MascotWindowInstance?.ViewModel.ApplyShowMascotChanged();
             OnPropertyChanged();
         }
+    }
+
+    public bool MascotClickThrough
+    {
+        get => _mascotViewModel?.ClickThrough ?? _settings.Current.MascotClickThrough;
+        set
+        {
+            if (MascotClickThrough == value) return;
+            if (_mascotViewModel is not null)
+            {
+                _mascotViewModel.ClickThrough = value;
+                return;
+            }
+
+            _settings.Current.MascotClickThrough = value;
+            _settings.SaveDebounced();
+            OnPropertyChanged();
+        }
+    }
+
+    public string MascotClickThroughDescription =>
+        string.Format(Strings.Get("Settings_ClickThroughDescriptionFormat"), MascotClickThroughKeyLabel);
+
+    public string MascotClickThroughKeyLabel => _settings.Current.MascotClickThroughKey switch
+    {
+        (uint)NativeMethods.VK_CONTROL => "Ctrl",
+        (uint)NativeMethods.VK_SHIFT => "Shift",
+        (uint)NativeMethods.VK_MENU => "Alt",
+        _ => "Ctrl"
+    };
+
+    public bool IsRecordingClickThroughKey
+    {
+        get => _isRecordingClickThroughKey;
+        private set
+        {
+            if (_isRecordingClickThroughKey == value) return;
+            _isRecordingClickThroughKey = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(ClickThroughKeyRecordButtonText));
+            OnPropertyChanged(nameof(ClickThroughKeyRecordDescription));
+        }
+    }
+
+    public string ClickThroughKeyRecordButtonText => IsRecordingClickThroughKey
+        ? Strings.Get("Settings_ClickThroughKeyRecording")
+        : MascotClickThroughKeyLabel;
+
+    public string ClickThroughKeyRecordDescription => Strings.Get(IsRecordingClickThroughKey
+        ? "Settings_ClickThroughKeyRecordingDescription"
+        : "Settings_ClickThroughKeyDescription");
+
+    public void BeginClickThroughKeyRecording() => IsRecordingClickThroughKey = true;
+
+    public void CancelClickThroughKeyRecording() => IsRecordingClickThroughKey = false;
+
+    public bool HandleClickThroughKeyRecordingKey(uint virtualKey)
+    {
+        if (!IsRecordingClickThroughKey) return false;
+        if (virtualKey == 0x1B)
+        {
+            CancelClickThroughKeyRecording();
+            return true;
+        }
+
+        uint modifierKey = virtualKey switch
+        {
+            0xA0 or 0xA1 => (uint)NativeMethods.VK_SHIFT,
+            0xA2 or 0xA3 => (uint)NativeMethods.VK_CONTROL,
+            0xA4 or 0xA5 => (uint)NativeMethods.VK_MENU,
+            _ => virtualKey
+        };
+        if (modifierKey != (uint)NativeMethods.VK_CONTROL &&
+            modifierKey != (uint)NativeMethods.VK_SHIFT &&
+            modifierKey != (uint)NativeMethods.VK_MENU) return true;
+
+        if (_settings.Current.MascotClickThroughKey != modifierKey)
+        {
+            _settings.Current.MascotClickThroughKey = modifierKey;
+            _settings.SaveDebounced();
+            _mascotViewModel?.RaiseClickThroughKeyChanged();
+            OnPropertyChanged(nameof(MascotClickThroughKeyLabel));
+            OnPropertyChanged(nameof(MascotClickThroughDescription));
+            OnPropertyChanged(nameof(ClickThroughKeyRecordButtonText));
+        }
+
+        CancelClickThroughKeyRecording();
+        return true;
+    }
+
+    private void OnMascotPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MascotViewModel.ClickThrough))
+            OnPropertyChanged(nameof(MascotClickThrough));
     }
 
     public bool MuteAnimation

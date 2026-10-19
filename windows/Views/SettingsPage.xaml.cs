@@ -24,6 +24,7 @@ public sealed partial class SettingsPage : Page
 {
     private readonly SettingsViewModel _viewModel;
     private bool _suppressHotkeyRecordClick;
+    private bool _suppressClickThroughKeyRecordClick;
     public SettingsViewModel ViewModel => _viewModel;
 
     public SettingsPage()
@@ -49,6 +50,14 @@ public sealed partial class SettingsPage : Page
             UIElement.KeyUpEvent,
             new KeyEventHandler(HotkeyRecordButton_KeyUp),
             true);
+        ClickThroughKeyRecordButton.AddHandler(
+            UIElement.KeyDownEvent,
+            new KeyEventHandler(ClickThroughKeyRecordButton_KeyDown),
+            true);
+        ClickThroughKeyRecordButton.AddHandler(
+            UIElement.KeyUpEvent,
+            new KeyEventHandler(ClickThroughKeyRecordButton_KeyUp),
+            true);
         _viewModel.SyncAccount.ConflictDetected += OnConflictDetected;
 
         // Initialise the mascot size slider/label.
@@ -67,6 +76,15 @@ public sealed partial class SettingsPage : Page
             App.TipCoordinator.QuickTipsAvailabilityChanged -= OnQuickTipsAvailabilityChanged;
             App.TipCoordinator.TopicsChanged -= RefreshQuietedTopics;
         };
+    }
+
+    private void SettingsNavigation_SelectionChanged(
+        NavigationView sender,
+        NavigationViewSelectionChangedEventArgs args)
+    {
+        if (DataContext is SettingsViewModel viewModel &&
+            args.SelectedItemContainer?.Tag is string category)
+            viewModel.SelectedSettingsCategory = category;
     }
 
     private void OnQuickTipsAvailabilityChanged(bool _) => _viewModel.RefreshQuickTipSettings();
@@ -470,6 +488,41 @@ public sealed partial class SettingsPage : Page
         if ((InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Menu) & CoreVirtualKeyStates.Down) != 0)
             modifiers |= NativeMethods.MOD_ALT;
         return modifiers;
+    }
+
+    private void ClickThroughKeyRecordButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_suppressClickThroughKeyRecordClick)
+        {
+            _suppressClickThroughKeyRecordClick = false;
+            return;
+        }
+
+        if (_viewModel.IsRecordingClickThroughKey)
+            _viewModel.CancelClickThroughKeyRecording();
+        else
+        {
+            _viewModel.BeginClickThroughKeyRecording();
+            ClickThroughKeyRecordButton.Focus(FocusState.Programmatic);
+        }
+    }
+
+    private void ClickThroughKeyRecordButton_KeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (!_viewModel.IsRecordingClickThroughKey) return;
+
+        if (e.Key is VirtualKey.Space or VirtualKey.Enter)
+            _suppressClickThroughKeyRecordClick = true;
+
+        e.Handled = _viewModel.HandleClickThroughKeyRecordingKey((uint)e.Key);
+    }
+
+    private void ClickThroughKeyRecordButton_KeyUp(object sender, KeyRoutedEventArgs e)
+    {
+        if (!_suppressClickThroughKeyRecordClick || e.Key is not (VirtualKey.Space or VirtualKey.Enter))
+            return;
+
+        DispatcherQueue.TryEnqueue(() => _suppressClickThroughKeyRecordClick = false);
     }
 
     private void SyncMascotSizeSlider()
