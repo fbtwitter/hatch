@@ -13,6 +13,7 @@ the previous sub-50 MB idle target was disproven and is not a release gate. See
 
 | Task-flow update | Status |
 |---|---|
+| Planned calendar events and task deadlines | Included in v0.35.0; optional Google and Microsoft connections, calendar file imports, and shared Agenda and Calendar views |
 | Settings categories and customizable mascot click-through key | Included in v0.34.0; related controls grouped under Mascot, expander descriptions retain hover help and right alignment, and mascot help names the configured Ctrl/Shift/Alt key |
 | Centered empty states and a decorative left search icon | Included in v0.33.1; task and calendar messages respect the bottom form, Summary cards center their messages, and typing still searches automatically |
 | Optional mascot click-through and compact focus popup | Included in v0.33.0; hold Ctrl to interact with Hatch or disable click-through from the tray; short focus titles size naturally |
