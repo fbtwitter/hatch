@@ -98,6 +98,15 @@
     <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.4.0" />
   </ItemGroup>
 
+  <!-- Optional local provider configuration; release builds can supply MSBuild properties. -->
+  <Import Project="..\.dev-tools\calendar.local.props" Condition="Exists('..\.dev-tools\calendar.local.props')" />
+
+  <ItemGroup>
+    <AssemblyMetadata Include="HatchCalendarClientId" Value="$(HatchCalendarClientId)" />
+    <AssemblyMetadata Include="HatchGoogleCalendarClientId" Value="$(HatchGoogleCalendarClientId)" />
+    <AssemblyMetadata Include="HatchGoogleCalendarClientSecret" Value="$(HatchGoogleCalendarClientSecret)" />
+  </ItemGroup>
+
   <!-- Generate package icons when their vector sources or renderer change.
        logo.svg lives at the repo root (shared with mobile/ and README.md), not under
        windows/ — everything else this target touches (AssetGen.csproj, the Assets

@@ -340,12 +340,12 @@ public sealed partial class MainWindow : Window
         else                _trayService?.HideIcon();
     }
 
-    public void NavigateToSettings()
+    public void NavigateToSettings(string? category = null)
     {
         EnsureContent();
         // RootFrame holds MainPage; ask it to navigate its ContentFrame to SettingsPage
         if (RootFrame.Content is MainPage mainPage)
-            mainPage.NavigateToSettingsPage();
+            mainPage.NavigateToSettingsPage(category);
     }
 
     public void NavigateTo(string tag)

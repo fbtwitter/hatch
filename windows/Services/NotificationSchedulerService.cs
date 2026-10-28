@@ -102,6 +102,8 @@ public sealed class NotificationSchedulerService
                 .Select(t => SnoozeTag(t.Id)).ToHashSet(StringComparer.Ordinal);
             foreach (var n in notifier.GetScheduledToastNotifications().ToList())
             {
+                if (!n.Tag.StartsWith("task-", StringComparison.Ordinal) &&
+                    !n.Tag.StartsWith("snooze-", StringComparison.Ordinal)) continue;
                 if (n.Tag.StartsWith("snooze-", StringComparison.Ordinal) && live.Contains(n.Tag))
                     continue;
                 notifier.RemoveFromSchedule(n);

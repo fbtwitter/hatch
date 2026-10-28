@@ -84,7 +84,21 @@ public sealed partial class SettingsPage : Page
     {
         if (DataContext is SettingsViewModel viewModel &&
             args.SelectedItemContainer?.Tag is string category)
+        {
             viewModel.SelectedSettingsCategory = category;
+            DispatcherQueue.TryEnqueue(() => SettingsContentScroll.ChangeView(null, 0, null, true));
+        }
+    }
+
+    protected override void OnNavigatedTo(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
+    {
+        base.OnNavigatedTo(e);
+        if (e.Parameter is not string category) return;
+        var item = SettingsNavigation.MenuItems.OfType<NavigationViewItem>().FirstOrDefault(item => Equals(item.Tag, category));
+        if (item == null) return;
+        _viewModel.SelectedSettingsCategory = category;
+        SettingsNavigation.SelectedItem = item;
+        DispatcherQueue.TryEnqueue(() => SettingsContentScroll.ChangeView(null, 0, null, true));
     }
 
     private void OnQuickTipsAvailabilityChanged(bool _) => _viewModel.RefreshQuickTipSettings();

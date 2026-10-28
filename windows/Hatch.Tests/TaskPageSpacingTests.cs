@@ -36,7 +36,7 @@ public sealed class TaskPageSpacingTests
             var scale = GetDpiForWindow(new IntPtr(Main.Properties.NativeWindowHandle.Value)) / 96.0;
             foreach (bool top in new[] { false, true })
             {
-                Named("Settings").Click();
+                Named("Settings").Patterns.SelectionItem.Pattern.Select();
                 SelectSettingsCategory("Quick Add");
                 var position = FindAny("Settings_TaskInputPosition");
                 if (position.Patterns.ScrollItem.IsSupported) position.Patterns.ScrollItem.Pattern.ScrollIntoView();
@@ -59,19 +59,23 @@ public sealed class TaskPageSpacingTests
                     if (navigation == "Nav_MyDay")
                         Assert.AreEqual(16 * scale, Find("Suggestions_Button").BoundingRectangle.Top - Find("MyDay_Summary").BoundingRectangle.Bottom,
                             2, "Suggestions must have the same section gap above it.");
+                    if (navigation == "Nav_Planned")
+                    {
+                        Find("PlannedAgendaItem").Patterns.SelectionItem.Pattern.Select();
+                        Thread.Sleep(350);
+                    }
                     CheckScrollGap(navigation == "Nav_Planned" ? "GroupedListView" : "FlatListView", top,
                         navigation == "Nav_MyDay" ? "Suggestions_Button" : "TaskPage_Title", scale);
                     if (navigation == "Nav_Planned")
                     {
-                        Find("PlannedViewSelector").Patterns.Invoke.Pattern.Invoke();
-                        Find("PlannedCalendarItem").Patterns.Toggle.Pattern.Toggle();
+                        Find("PlannedCalendarItem").Patterns.SelectionItem.Pattern.Select();
                         Thread.Sleep(350);
                         CheckScrollGap("PlannedDayList", false, "PlannedDay_Count", scale);
                     }
                 }
                 TaskWorkflowTests.CaptureState($"spacing-{width}-{(top ? "top" : "bottom")}");
             }
-            Find("Nav_MyDay").Click();
+            Find("Nav_MyDay").Patterns.SelectionItem.Pattern.Select();
             Thread.Sleep(350);
             var suggestionsTop = Find("Suggestions_Button").BoundingRectangle.Top;
             var listTop = Find("FlatListView").BoundingRectangle.Top;

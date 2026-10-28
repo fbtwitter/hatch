@@ -8,7 +8,7 @@ namespace Hatch.ViewModels;
 
 public sealed partial class MainViewModel
 {
-    private bool _isPlannedCalendar;
+    private bool _isPlannedCalendar = true;
     private DateTimeOffset _selectedPlannedDate = PlannedDate(DateTime.Today);
     private readonly Dictionary<DateTime, int> _plannedDateCounts = [];
     private int _plannedOverdueCount;
@@ -18,6 +18,7 @@ public sealed partial class MainViewModel
     public bool IsPlannedPage => _activeNavItem == "planned";
     public bool IsPlannedCalendarVisible => IsPlannedPage && IsPlannedCalendar;
     public bool HasPlannedCalendarOverdue => IsPlannedCalendarVisible && _plannedOverdueCount > 0;
+    public bool HasPlannedDayTasks => PlannedDayTasks.Count > 0;
     public bool IsPlannedDayEmpty => IsLoaded && PlannedDayTasks.Count == 0;
     public string PlannedOverdueLabel => Strings.PlannedCalendar_Overdue(_plannedOverdueCount);
     public string PlannedSelectedDateLabel => SelectedPlannedDate.ToString("D", CultureInfo.CurrentCulture);
@@ -60,7 +61,7 @@ public sealed partial class MainViewModel
     public void ResetPlannedView()
     {
         PreserveTaskDraftDueDate();
-        _isPlannedCalendar = false;
+        _isPlannedCalendar = true;
         _selectedPlannedDate = PlannedDate(DateTime.Today);
         NotifyPlannedViewChanged();
         OnPropertyChanged(nameof(SelectedPlannedDate));
@@ -130,6 +131,7 @@ public sealed partial class MainViewModel
             OnPropertyChanged(nameof(HasPlannedCalendarOverdue));
         }
         OnPropertyChanged(nameof(PlannedDayCountLabel));
+        OnPropertyChanged(nameof(HasPlannedDayTasks));
         OnPropertyChanged(nameof(IsPlannedDayEmpty));
     }
 }

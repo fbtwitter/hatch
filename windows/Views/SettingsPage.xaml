@@ -4,6 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:toolkit="using:CommunityToolkit.WinUI.Controls"
     xmlns:converters="using:Hatch.Converters"
+    xmlns:controls="using:Hatch.Controls"
     Background="Transparent">
 
     <Page.Resources>
@@ -70,6 +71,7 @@
             <NavigationViewItem x:Uid="Settings_NavMascot" Tag="Mascot"/>
             <NavigationViewItem x:Uid="Settings_NavTips" Tag="Tips"/>
             <NavigationViewItem x:Uid="Settings_NavSync" Tag="Sync"/>
+            <NavigationViewItem x:Uid="Settings_NavCalendars" Tag="Calendars" AutomationProperties.AutomationId="Settings_NavCalendars"/>
             <NavigationViewItem x:Uid="Settings_NavData" Tag="Data"/>
             <NavigationViewItem x:Uid="Settings_NavAbout" Tag="About"/>
         </NavigationView.MenuItems>
@@ -87,10 +89,14 @@
                                TextWrapping="Wrap"/>
                 </StackPanel>
 
-                <ScrollViewer Grid.Row="1" Margin="0,0,0,24" Padding="24,0,24,0"
+                <ScrollViewer x:Name="SettingsContentScroll" AutomationProperties.AutomationId="Settings_ContentScroll"
+                              Grid.Row="1" Margin="0,0,0,24" Padding="24,0,24,0"
                               VerticalScrollBarVisibility="Auto">
                     <StackPanel Spacing="0" MaxWidth="{StaticResource PageMaxRowWidth}"
                                 HorizontalAlignment="Stretch">
+
+                        <controls:CalendarSettingsPanel x:Name="CalendarSettings"
+                                                        x:Load="{x:Bind ViewModel.IsCalendarSettingsSelected, Mode=OneWay}" />
 
                         <StackPanel x:Name="GeneralSettingsSection"
                                     Visibility="{x:Bind ViewModel.GeneralSettingsVisibility, Mode=OneWay}"

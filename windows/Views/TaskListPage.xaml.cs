@@ -21,6 +21,7 @@ public sealed partial class TaskListPage : Page
 {
     private MainViewModel? _vm;
     internal MainViewModel ViewModel => (MainViewModel)DataContext;
+    public CalendarViewModel CalendarViewModel { get; }
 
     private UIElement? _savedFocusElement;
     private TodoItem? _paneTask;
@@ -49,13 +50,26 @@ public sealed partial class TaskListPage : Page
 
     public TaskListPage()
     {
+        CalendarViewModel = new(App.CalendarService);
         this.InitializeComponent();
+        PlannedViewSelector.SelectedItem = PlannedCalendarItem;
+        UpdatePlannedViewSelectorBackgrounds();
+        CalendarViewModel.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(CalendarViewModel.DayVersion))
+            {
+                RefreshPlannedCalendarMarkers();
+                if (_vm != null) RefreshPlannedGroups();
+            }
+        };
+        ActualThemeChanged += (_, _) => CalendarViewModel.RefreshTheme();
         NavigationCacheMode = Microsoft.UI.Xaml.Navigation.NavigationCacheMode.Enabled;
         SizeChanged += OnPageSizeChanged;
         Loaded += (_, _) =>
         {
             ApplyPaneLayout(ActualWidth);
             RefreshBottomControlsLayout();
+            QueuePlannedViewControlSync();
         };
 
         // Fires for every pointer press on the page, even those handled by child controls,
@@ -79,19 +93,19 @@ public sealed partial class TaskListPage : Page
     // so nothing is lost, just re-realized on the next layout pass.
     public void ReleaseListBindings()
     {
+        CalendarViewModel.Stop();
         _vm?.SetTaskPageActive(false);
         FlatGroupsItemsControl.ItemsSource = null;
         GroupedListView.ItemsSource = null;
         PlannedDayList.ItemsSource = null;
     }
 
-    // Restores from the ViewModel's current state, never from a snapshot taken at hide
-    // time: a sync pull landing while the window sits in the tray raises PlannedGroups,
-    // which reassigns PlannedGroupsSource.Source and so replaces .View entirely. Putting
-    // a captured .View back would show pre-pull data until the next refresh.
+    // Restore from current view-model state: sync or calendar refreshes can change either
+    // collection while the window sits in the tray, so agenda rows must be rebuilt here.
     public void RestoreListBindings()
     {
         if (_vm == null) return;
+        if (_vm.IsPlannedPage) _ = CalendarViewModel.StartAsync();
         _vm.SetTaskPageActive(true);
         _vm.ResetTaskComposerScroll(ActiveTaskScrollViewer?.VerticalOffset ?? 0);
         FlatGroupsItemsControl.ItemsSource = _vm.FlatGroupedTasks;
@@ -155,6 +169,7 @@ public sealed partial class TaskListPage : Page
         vm.PropertyChanged += OnViewModelPropertyChanged;
         vm.FlatGroupMoveStarting += OnFlatGroupMoveStarting;
         vm.FlatGroupMoveCompleted += OnFlatGroupMoveCompleted;
+        QueuePlannedViewControlSync();
 
         // Restore pane if a task was selected before navigation
         if (vm.SelectedTask != null)
@@ -164,6 +179,7 @@ public sealed partial class TaskListPage : Page
     protected override void OnNavigatedFrom(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
     {
         base.OnNavigatedFrom(e);
+        CalendarViewModel.Stop();
         if (_vm != null)
         {
             _vm.SetTaskPageActive(false);
@@ -197,10 +213,13 @@ public sealed partial class TaskListPage : Page
 
             case nameof(MainViewModel.IsPlannedCalendar):
                 SyncPlannedViewControls(true);
+                RefreshPlannedGroups();
                 RefreshBottomControlsLayout();
                 break;
 
             case nameof(MainViewModel.SelectedPlannedDate):
+                CalendarViewModel.SelectedDate = DateOnly.FromDateTime(_vm.SelectedPlannedDate.Date);
+                PlannedPastMeetings.IsExpanded = false;
                 SyncPlannedCalendarSelection(false);
                 _plannedDayScrollViewer?.ChangeView(null, 0, null, true);
                 break;
@@ -235,13 +254,12 @@ public sealed partial class TaskListPage : Page
                 _vm.SelectedTask = null;
                 SyncListViewSelection(null);
                 UpdateView(_vm.ActiveNavItem);
+                QueuePlannedViewControlSync();
                 _vm.ResetTaskComposerScroll(ActiveTaskScrollViewer?.VerticalOffset ?? 0);
                 break;
 
             case nameof(MainViewModel.PlannedGroups) or nameof(MainViewModel.IsPlannedEmpty)
                 when _vm.ActiveNavItem == "planned":
-                GroupedListView.Visibility = _vm.IsPlannedEmpty || _vm.IsPlannedCalendar
-                    ? Visibility.Collapsed : Visibility.Visible;
                 RefreshPlannedGroups();
                 break;
 
@@ -663,19 +681,32 @@ public sealed partial class TaskListPage : Page
     private void TaskListView_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_suppressSelectionChanged) return;
-        if (e.AddedItems.Count > 0 && e.AddedItems[0] is TodoItem task)
+        TodoItem? task = e.AddedItems.Count == 0 ? null : e.AddedItems[0] switch
         {
-            // Deselect all other task ListViews so only one row highlights at a time.
-            _suppressSelectionChanged = true;
-            foreach (var lv in _taskListViews)
+            TodoItem item => item,
+            PlannedAgendaEntry { HasTask: true } entry => entry.Task,
+            _ => null
+        };
+        if (task == null)
+        {
+            if (ReferenceEquals(sender, GroupedListView) && e.AddedItems.Count > 0)
             {
-                if (!ReferenceEquals(lv, sender))
-                    lv.SelectedItem = null;
+                var wasSuppressing = _suppressSelectionChanged;
+                _suppressSelectionChanged = true;
+                GroupedListView.SelectedItem = _vm?.SelectedTask is { } selectedTask
+                    ? _agendaEntries.FirstOrDefault(entry => entry.Task == selectedTask) : null;
+                _suppressSelectionChanged = wasSuppressing;
             }
-            _suppressSelectionChanged = false;
-            if (ReferenceEquals(sender, SuggestionsList)) SuggestionsFlyout.Hide();
-            ViewModel.SelectedTask = task;
+            return;
         }
+
+        // Deselect all other task ListViews so only one row highlights at a time.
+        _suppressSelectionChanged = true;
+        foreach (var lv in _taskListViews)
+            if (!ReferenceEquals(lv, sender)) lv.SelectedItem = null;
+        _suppressSelectionChanged = false;
+        if (ReferenceEquals(sender, SuggestionsList)) SuggestionsFlyout.Hide();
+        ViewModel.SelectedTask = task;
     }
 
     private void MyDayTasks_DragItemsCompleted(ListViewBase sender, DragItemsCompletedEventArgs e)
@@ -688,6 +719,8 @@ public sealed partial class TaskListPage : Page
         // TaskListView_Loaded also applies the selection if layout takes another frame.
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, () =>
         {
+            GroupedListView.SelectedItem = task == null
+                ? null : _agendaEntries.FirstOrDefault(entry => entry.Task == task);
             foreach (var lv in _taskListViews)
                 lv.SelectedItem = task != null && lv.Items.Contains(task) ? task : null;
             _suppressSelectionChanged = false;
@@ -709,14 +742,23 @@ public sealed partial class TaskListPage : Page
             if (_plannedDayScrollViewer != null)
                 _plannedDayScrollViewer.ViewChanged += TaskListScroll_ViewChanged;
         }
-        _taskListViews.Add(listView);
-        var selectedTask = _vm?.SelectedTask;
-        var wasSuppressing = _suppressSelectionChanged;
-        _suppressSelectionChanged = true;
-        listView.SelectedItem = selectedTask != null && listView.Items.Contains(selectedTask)
-            ? selectedTask
-            : null;
-        _suppressSelectionChanged = wasSuppressing;
+        if (ReferenceEquals(listView, GroupedListView))
+        {
+            var wasSuppressing = _suppressSelectionChanged;
+            _suppressSelectionChanged = true;
+            listView.SelectedItem = _vm?.SelectedTask is { } selectedTask
+                ? _agendaEntries.FirstOrDefault(entry => entry.Task == selectedTask) : null;
+            _suppressSelectionChanged = wasSuppressing;
+        }
+        if (!ReferenceEquals(listView, GroupedListView))
+        {
+            _taskListViews.Add(listView);
+            var selectedTask = _vm?.SelectedTask;
+            var wasSuppressing = _suppressSelectionChanged;
+            _suppressSelectionChanged = true;
+            listView.SelectedItem = selectedTask != null && listView.Items.Contains(selectedTask) ? selectedTask : null;
+            _suppressSelectionChanged = wasSuppressing;
+        }
     }
 
     private void TaskListView_Unloaded(object sender, RoutedEventArgs e)
@@ -750,27 +792,26 @@ public sealed partial class TaskListPage : Page
 
         var isPlanned = navItem == "planned";
         FlatListView.Visibility    = isPlanned ? Visibility.Collapsed : Visibility.Visible;
+        PlannedCalendarLayout.Visibility = isPlanned && _vm?.IsPlannedCalendar == true
+            ? Visibility.Visible : Visibility.Collapsed;
         SyncPlannedViewControls();
 
         if (isPlanned)
             RefreshPlannedGroups();
+        else
+            GroupedListView.Visibility = Visibility.Collapsed;
     }
 
     private void RefreshPlannedGroups()
     {
         if (_vm == null) return;
-        var cvs = (CollectionViewSource)Resources["PlannedGroupsSource"];
-        _suppressSelectionChanged = true;
-        cvs.Source = _vm.PlannedGroups;
-        // ICollectionView.CurrentItem auto-positions to the first item and WinUI fires
-        // SelectionChanged on a deferred frame — keep suppression active until after
-        // that frame, then clear any phantom selection.
-        DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Normal, () =>
-        {
-            if (ViewModel.SelectedTask == null)
-                GroupedListView.SelectedItem = null;
-            _suppressSelectionChanged = false;
-        });
+        BuildPlannedAgendaGroups();
+        _agendaEntries = _agendaGroups.SelectMany(group =>
+            new[] { PlannedAgendaEntry.ForDate(group.Name) }.Concat(group.Items)).ToList();
+        GroupedListView.ItemsSource = _agendaEntries;
+        SyncListViewSelection(_vm.SelectedTask);
+        GroupedListView.Visibility = _vm.IsPlannedPage && !_vm.IsPlannedCalendar && _agendaGroups.Count > 0
+            ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void OnFlatGroupMoveStarting()
@@ -882,7 +923,8 @@ public sealed partial class TaskListPage : Page
     {
         if (_vm?.ActiveNavItem == "planned")
             return _vm.IsPlannedCalendar ? [.. _vm.PlannedDayTasks]
-                : ViewModel.PlannedGroups.SelectMany(g => g.Items).ToList();
+                : _agendaGroups.SelectMany(group => group.Items).Where(entry => entry.Task != null)
+                    .Select(entry => entry.Task!).ToList();
         var groups = ViewModel.FlatGroupedTasks;
         var result = new List<TodoItem>(groups[0].Items);
         if (groups.Count > 1 && groups[1].IsExpanded)
@@ -982,7 +1024,6 @@ public sealed partial class TaskListPage : Page
         double emptyStateClearance = composerClearance
             + (_vm.IsUndoBarVisible ? UndoInfoBar.ActualHeight + undoGap : 0);
         TaskEmptyState.Margin = new(24, 0, 24, emptyStateClearance);
-        PlannedDayEmptyState.Margin = new(24, 0, 24, emptyStateClearance);
         // Keep scroll extent stable while the composer animates out of view.
         double scrollClearance = (_vm.IsTaskComposerFloating ? TaskComposer.ActualHeight + 24 : 0)
             + (_vm.IsUndoBarVisible ? UndoInfoBar.ActualHeight + undoGap : 0);

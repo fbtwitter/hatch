@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:models="using:Hatch.Models"
+    xmlns:helpers="using:Hatch.Helpers"
     xmlns:converters="using:Hatch.Converters"
     xmlns:controls="using:Hatch.Controls"
     xmlns:vm="using:Hatch.ViewModels"
@@ -24,6 +25,124 @@
         <converters:TagsPreviewConverter x:Key="TaskTagsPreview" />
         <converters:PriorityToLabelConverter x:Key="PriorityToLabel" />
         <converters:PriorityToContrastVisibilityConverter x:Key="PriorityToContrastVisibility" />
+
+        <DataTemplate x:Key="MeetingRowTemplate" x:DataType="vm:CalendarEventRow">
+            <Grid ColumnSpacing="10" Margin="0,1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="76" />
+                    <ColumnDefinition Width="2" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{x:Bind CompactTimeLabel, Mode=OneTime}" Style="{ThemeResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"
+                           HorizontalAlignment="Right" TextWrapping="Wrap" />
+                <Border Grid.Column="1" Width="2" Margin="0,8"
+                        Background="{ThemeResource AccentFillColorDefaultBrush}" CornerRadius="1"
+                        Opacity="{x:Bind TimelineMarkerOpacity}" />
+                <Button Grid.Column="2" Style="{StaticResource SubtleButtonStyle}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                        Padding="8,8" AutomationProperties.AutomationId="{x:Bind AutomationId}"
+                        AutomationProperties.Name="{x:Bind DetailsName}">
+                    <TextBlock Text="{x:Bind Subject}" Foreground="{x:Bind SubjectBrush}"
+                               VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
+                               ToolTipService.ToolTip="{x:Bind Subject}" />
+                    <Button.Flyout>
+                        <Flyout Placement="Bottom" ShouldConstrainToRootBounds="True">
+                            <Flyout.FlyoutPresenterStyle>
+                                <Style TargetType="FlyoutPresenter"><Setter Property="MaxWidth" Value="360" /></Style>
+                            </Flyout.FlyoutPresenterStyle>
+                            <ScrollViewer MaxHeight="320" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel MaxWidth="304" Spacing="8">
+                                    <TextBlock Text="{x:Bind Subject}" Style="{ThemeResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{x:Bind TimeLabel}" TextWrapping="Wrap" />
+                                    <TextBlock Text="{x:Bind SourceLabel}" TextWrapping="Wrap" Style="{ThemeResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <HyperlinkButton x:Uid="Calendar_JoinMeeting" AutomationProperties.AutomationId="Calendar_DetailJoin"
+                                                         NavigateUri="{x:Bind MeetingUri}" AutomationProperties.Name="{x:Bind JoinName}" Padding="0,4"
+                                                         Visibility="{x:Bind HasMeetingLink, Converter={StaticResource BoolToVisibility}}" />
+                                        <HyperlinkButton x:Uid="Calendar_OpenEvent" AutomationProperties.AutomationId="Calendar_OpenEvent"
+                                                         NavigateUri="{x:Bind EventUri}" AutomationProperties.Name="{x:Bind OpenName}" Padding="0,4"
+                                                         Visibility="{x:Bind HasEventLink, Converter={StaticResource BoolToVisibility}}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
+                <HyperlinkButton Grid.Column="3" x:Uid="Calendar_QuickJoin" AutomationProperties.AutomationId="Calendar_JoinMeeting"
+                                 NavigateUri="{x:Bind MeetingUri}" AutomationProperties.Name="{x:Bind JoinName}"
+                                 VerticalAlignment="Center" Padding="8,6"
+                                 Visibility="{x:Bind ShowQuickJoin, Converter={StaticResource BoolToVisibility}}" />
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="AgendaMeetingRowTemplate" x:DataType="vm:CalendarEventRow">
+            <Grid ColumnSpacing="10" Margin="0,1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="76" />
+                    <ColumnDefinition Width="2" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{x:Bind CompactTimeLabel}" Style="{ThemeResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center"
+                           HorizontalAlignment="Right" TextWrapping="Wrap" />
+                <Border Grid.Column="1" Width="2" Margin="0,8"
+                        Background="{ThemeResource AccentFillColorDefaultBrush}" CornerRadius="1"
+                        Opacity="{x:Bind TimelineMarkerOpacity, Mode=OneTime}" />
+                <Button Grid.Column="2" Style="{StaticResource SubtleButtonStyle}"
+                        HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                        Padding="8,8"
+                        AutomationProperties.AutomationId="Agenda_MeetingDetails"
+                        AutomationProperties.Name="{x:Bind DetailsName, Mode=OneTime}">
+                    <TextBlock Text="{x:Bind Subject, Mode=OneTime}" Foreground="{x:Bind SubjectBrush, Mode=OneTime}"
+                               VerticalAlignment="Center" TextWrapping="Wrap" MaxLines="2"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTipService.ToolTip="{x:Bind Subject, Mode=OneTime}" />
+                    <Button.Flyout>
+                        <Flyout Placement="Bottom" ShouldConstrainToRootBounds="True">
+                            <Flyout.FlyoutPresenterStyle>
+                                <Style TargetType="FlyoutPresenter">
+                                    <Setter Property="MaxWidth" Value="360" />
+                                </Style>
+                            </Flyout.FlyoutPresenterStyle>
+                            <ScrollViewer MaxHeight="320" HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel MaxWidth="304" Spacing="8">
+                                    <TextBlock Text="{x:Bind Subject, Mode=OneTime}"
+                                               Style="{ThemeResource BodyStrongTextBlockStyle}"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock Text="{x:Bind TimeLabel, Mode=OneTime}"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock Text="{x:Bind SourceLabel, Mode=OneTime}"
+                                               TextWrapping="Wrap"
+                                               Style="{ThemeResource CaptionTextBlockStyle}"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="12">
+                                        <HyperlinkButton x:Uid="Calendar_JoinMeeting"
+                                                         AutomationProperties.AutomationId="Agenda_DetailJoin"
+                                                         NavigateUri="{x:Bind MeetingUri, Mode=OneTime}"
+                                                         AutomationProperties.Name="{x:Bind JoinName, Mode=OneTime}"
+                                                         Padding="0,4"
+                                                         Visibility="{x:Bind HasMeetingLink, Converter={StaticResource BoolToVisibility}, Mode=OneTime}" />
+                                        <HyperlinkButton x:Uid="Calendar_OpenEvent"
+                                                         AutomationProperties.AutomationId="Agenda_OpenEvent"
+                                                         NavigateUri="{x:Bind EventUri, Mode=OneTime}"
+                                                         AutomationProperties.Name="{x:Bind OpenName, Mode=OneTime}"
+                                                         Padding="0,4"
+                                                         Visibility="{x:Bind HasEventLink, Converter={StaticResource BoolToVisibility}, Mode=OneTime}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
+                <HyperlinkButton Grid.Column="3" x:Uid="Calendar_QuickJoin" AutomationProperties.AutomationId="Agenda_JoinMeeting"
+                                 NavigateUri="{x:Bind MeetingUri, Mode=OneTime}" AutomationProperties.Name="{x:Bind JoinName, Mode=OneTime}"
+                                 VerticalAlignment="Center" Padding="8,6"
+                                 Visibility="{x:Bind ShowQuickJoin, Converter={StaticResource BoolToVisibility}, Mode=OneTime}" />
+            </Grid>
+        </DataTemplate>
 
         <Style x:Key="TaskMetadataIconStyle" TargetType="FontIcon">
             <Setter Property="VerticalAlignment" Value="Center" />
@@ -117,10 +236,6 @@
             </Setter>
         </Style>
 
-        <CollectionViewSource x:Name="PlannedGroupsSource"
-                              IsSourceGrouped="True"
-                              ItemsPath="Items" />
-
         <!-- Shared item template used by both flat and grouped lists -->
         <DataTemplate x:Key="TaskItemTemplate" x:DataType="models:TodoItem">
             <Grid Tag="{x:Bind}"
@@ -176,12 +291,14 @@
 
                             <Button Tag="{x:Bind}"
                                     AutomationProperties.AutomationId="Task_DateChipButton"
+                                    AutomationProperties.Name="{x:Bind DueDate, Converter={StaticResource DueDateToString}, Mode=OneWay}"
                                     Click="ChipDateButton_Click"
                                     Visibility="{x:Bind DueDate, Converter={StaticResource DueDateToChipVisibility}, Mode=OneWay}"
                                     Background="Transparent"
                                     Style="{StaticResource ChipButtonStyle}"
                                     Padding="0"
                                     VerticalAlignment="Center"
+                                    IsTabStop="True"
                                     x:Uid="Task_DateChipButton">
                                 <StackPanel Orientation="Horizontal" Spacing="3" VerticalAlignment="Center">
                                     <FontIcon Glyph="{x:Bind DueDate, Converter={StaticResource DueDateToChipGlyph}, Mode=OneWay}"
@@ -387,6 +504,33 @@
             </Grid>
         </DataTemplate>
 
+        <DataTemplate x:Key="PlannedAgendaEntryTemplate" x:DataType="vm:PlannedAgendaEntry">
+            <Grid>
+                <Grid Margin="4,20,4,4" ColumnSpacing="12"
+                      Visibility="{x:Bind HasDateTitle, Converter={StaticResource BoolToVisibility}}">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <TextBlock Text="{x:Bind DateTitle}" Style="{ThemeResource SubtitleTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorPrimaryBrush}" VerticalAlignment="Center" />
+                    <Border Grid.Column="1" Height="1" VerticalAlignment="Center"
+                            Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+                </Grid>
+                <Grid Margin="24,10,24,4" ColumnSpacing="12"
+                      Visibility="{x:Bind HasSectionTitle, Converter={StaticResource BoolToVisibility}}">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <TextBlock Text="{x:Bind SectionTitle}" Style="{ThemeResource BodyStrongTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                    <Border Grid.Column="1" Height="1" VerticalAlignment="Center"
+                            Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+                </Grid>
+                <Grid Visibility="{x:Bind HasMeeting, Converter={StaticResource BoolToVisibility}}">
+                    <ContentPresenter Content="{x:Bind Meeting}" ContentTemplate="{StaticResource AgendaMeetingRowTemplate}" />
+                </Grid>
+                <Grid Visibility="{x:Bind HasTask, Converter={StaticResource BoolToVisibility}}">
+                    <ContentPresenter Content="{x:Bind Task}" ContentTemplate="{StaticResource TaskItemTemplate}" />
+                </Grid>
+            </Grid>
+        </DataTemplate>
+
         <Style x:Key="TaskListViewItemStyle" TargetType="ListViewItem"
                BasedOn="{StaticResource DefaultListViewItemStyle}">
             <!-- BasedOn required — without it, no Template setter means no selection visuals. -->
@@ -400,6 +544,42 @@
             <Setter Property="Margin" Value="0, 0" />
             <Setter Property="IsTabStop" Value="False" />
         </Style>
+
+        <Style x:Key="PlannedAgendaItemStyle" TargetType="ListViewItem"
+               BasedOn="{StaticResource DefaultListViewItemStyle}">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="CornerRadius" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="MaxWidth" Value="{StaticResource PageMaxRowWidth}" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Setter Property="IsTabStop" Value="False" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListViewItem">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="{TemplateBinding CornerRadius}">
+                            <ContentPresenter Content="{TemplateBinding Content}"
+                                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                                              ContentTransitions="{TemplateBinding ContentTransitions}"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              Padding="{TemplateBinding Padding}" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <helpers:PlannedAgendaItemStyleSelector x:Key="PlannedAgendaItemStyleSelector"
+                                                TaskStyle="{StaticResource TaskListViewItemStyle}"
+                                                DefaultStyle="{StaticResource PlannedAgendaItemStyle}" />
+
     </Page.Resources>
 
     <!-- Root: two columns — task list | details pane -->
@@ -544,31 +724,47 @@
                         </Button.Flyout>
                     </Button>
                 </StackPanel>
-                <DropDownButton x:Name="PlannedViewSelector" x:Uid="PlannedViewSelector" Grid.Column="1"
-                                AutomationProperties.AutomationId="PlannedViewSelector"
-                                VerticalAlignment="Center" Margin="16,0,0,0"
-                                Visibility="{x:Bind ViewModel.IsPlannedPage, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                    <DropDownButton.Flyout>
-                        <MenuFlyout Placement="Bottom">
-                            <RadioMenuFlyoutItem x:Name="PlannedAgendaItem" x:Uid="PlannedAgendaItem"
-                                                AutomationProperties.AutomationId="PlannedAgendaItem"
-                                                Text="Agenda" GroupName="PlannedView" IsChecked="True"
-                                                Command="{x:Bind ViewModel.SelectPlannedViewCommand}" CommandParameter="agenda">
-                                <RadioMenuFlyoutItem.Icon>
-                                    <FontIcon Glyph="&#xED28;" />
-                                </RadioMenuFlyoutItem.Icon>
-                            </RadioMenuFlyoutItem>
-                            <RadioMenuFlyoutItem x:Name="PlannedCalendarItem" x:Uid="PlannedCalendarItem"
-                                                AutomationProperties.AutomationId="PlannedCalendarItem"
-                                                Text="Calendar" GroupName="PlannedView"
-                                                Command="{x:Bind ViewModel.SelectPlannedViewCommand}" CommandParameter="calendar">
-                                <RadioMenuFlyoutItem.Icon>
-                                    <FontIcon Glyph="&#xE787;" />
-                                </RadioMenuFlyoutItem.Icon>
-                            </RadioMenuFlyoutItem>
-                        </MenuFlyout>
-                    </DropDownButton.Flyout>
-                </DropDownButton>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
+                            Visibility="{x:Bind ViewModel.IsPlannedPage, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                <controls:CalendarSourcesButton x:Name="PlannedCalendarSources" />
+                <Border BorderBrush="Transparent"
+                        BorderThickness="0" CornerRadius="0" Padding="0"
+                        Background="Transparent"
+                        VerticalAlignment="Center"
+                        Visibility="{x:Bind ViewModel.IsPlannedPage, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                    <Grid>
+                        <SelectorBar x:Name="PlannedViewSelector" x:Uid="PlannedViewSelector"
+                                     AutomationProperties.AutomationId="PlannedViewSelector"
+                                     VerticalAlignment="Center" Background="Transparent"
+                                     SelectionChanged="PlannedViewSelector_SelectionChanged">
+                            <SelectorBar.Resources>
+                                <ResourceDictionary>
+                                    <StaticResource x:Key="SelectorBarItemBackground" ResourceKey="SystemControlTransparentBrush" />
+                                    <StaticResource x:Key="SelectorBarItemBackgroundPointerOver" ResourceKey="SubtleFillColorSecondaryBrush" />
+                                    <StaticResource x:Key="SelectorBarItemBackgroundPressed" ResourceKey="SubtleFillColorTertiaryBrush" />
+                                    <StaticResource x:Key="SelectorBarItemBackgroundSelected" ResourceKey="SubtleFillColorSecondaryBrush" />
+                                    <StaticResource x:Key="SelectorBarItemBackgroundSelectedPointerOver" ResourceKey="NavigationViewItemBackgroundSelectedPointerOver" />
+                                    <StaticResource x:Key="SelectorBarItemForegroundPointerOver" ResourceKey="TextFillColorPrimaryBrush" />
+                                    <StaticResource x:Key="SelectorBarItemForegroundPressed" ResourceKey="TextFillColorSecondaryBrush" />
+                                </ResourceDictionary>
+                            </SelectorBar.Resources>
+                            <SelectorBarItem x:Name="PlannedCalendarItem" x:Uid="PlannedCalendarItem"
+                                             AutomationProperties.AutomationId="PlannedCalendarItem"
+                                             Background="Transparent" Icon="CalendarDay"
+                                             PointerEntered="PlannedViewSelectorItem_PointerEntered"
+                                             PointerExited="PlannedViewSelectorItem_PointerExited" />
+                            <SelectorBarItem x:Name="PlannedAgendaItem" x:Uid="PlannedAgendaItem"
+                                             AutomationProperties.AutomationId="PlannedAgendaItem"
+                                             Background="Transparent" Icon="List"
+                                             PointerEntered="PlannedViewSelectorItem_PointerEntered"
+                                             PointerExited="PlannedViewSelectorItem_PointerExited" />
+                        </SelectorBar>
+                        <Border Width="1" Height="18" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                Background="{ThemeResource DividerStrokeColorDefaultBrush}"
+                                IsHitTestVisible="False" />
+                    </Grid>
+                </Border>
+                </StackPanel>
             </Grid>
 
             <StackPanel Grid.Row="1"
@@ -687,7 +883,7 @@
                             VerticalAlignment="Center"
                             Spacing="8"
                             MaxWidth="260"
-                            Visibility="{x:Bind ViewModel.ShowEmptyState, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
+                            Visibility="{x:Bind EmptyStateVisibility(ViewModel.ShowEmptyState, ViewModel.IsPlannedPage, ViewModel.IsPlannedCalendar, CalendarViewModel.HasAgendaEvents), Mode=OneWay}">
                     <FontIcon Glyph="{x:Bind ViewModel.EmptyStateGlyph, Mode=OneWay, FallbackValue=&#xE762;}"
                               FontSize="48"
                               Foreground="{ThemeResource TextFillColorDisabledBrush}"
@@ -825,14 +1021,13 @@
                 <!-- Grouped list — Planned view only. Padding insets rows without moving the ScrollBar (it's a margin on ScrollContentPresenter) — keep it near the flat lists' inset or rows misalign. -->
                 <ListView Grid.Row="1" x:Name="GroupedListView"
                           AutomationProperties.AutomationId="GroupedListView"
-                          ItemsSource="{x:Bind PlannedGroupsSource.View, Mode=OneWay}"
                           SelectionMode="Single"
                           SelectionChanged="TaskListView_SelectionChanged"
                           Loaded="TaskListView_Loaded"
                           Unloaded="TaskListView_Unloaded"
                           Padding="20,0,20,0"
-                          ItemTemplate="{StaticResource TaskItemTemplate}"
-                          ItemContainerStyle="{StaticResource TaskListViewItemStyle}"
+                          ItemTemplate="{StaticResource PlannedAgendaEntryTemplate}"
+                          ItemContainerStyleSelector="{StaticResource PlannedAgendaItemStyleSelector}"
                           Visibility="Collapsed">
                     <ListView.Footer>
                         <Border x:Name="TaskListBottomClearance"
@@ -841,29 +1036,6 @@
                     <ListView.ItemContainerTransitions>
                         <TransitionCollection />
                     </ListView.ItemContainerTransitions>
-                    <ListView.GroupStyle>
-                        <GroupStyle>
-                            <!-- The cap has to sit on the container, not the TextBlock inside it:
-                                 ListViewHeaderItem shrink-wraps its content, so a MaxWidth on the
-                                 header's own content has no room to centre within and the header
-                                 lands hard left of its rows. -->
-                            <GroupStyle.HeaderContainerStyle>
-                                <Style TargetType="ListViewHeaderItem">
-                                    <Setter Property="HorizontalAlignment" Value="Stretch" />
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                                    <Setter Property="MaxWidth" Value="{StaticResource PageMaxRowWidth}" />
-                                </Style>
-                            </GroupStyle.HeaderContainerStyle>
-                            <GroupStyle.HeaderTemplate>
-                                <DataTemplate x:DataType="vm:PlannedGroup">
-                                    <TextBlock Text="{x:Bind Name, Mode=OneTime}"
-                                               Style="{ThemeResource BodyStrongTextBlockStyle}"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               Margin="0,0,0,16" />
-                                </DataTemplate>
-                            </GroupStyle.HeaderTemplate>
-                        </GroupStyle>
-                    </ListView.GroupStyle>
                 </ListView>
 
                 <Grid Grid.Row="1" x:Name="PlannedCalendarLayout" Margin="24,0,24,0"
@@ -940,7 +1112,8 @@
                             <TextBlock Text="{x:Bind ViewModel.PlannedDayCountLabel, Mode=OneWay}"
                                        AutomationProperties.AutomationId="PlannedDay_Count"
                                        Style="{StaticResource CaptionTextBlockStyle}"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Visibility="{x:Bind ViewModel.HasPlannedDayTasks, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
                             <Button x:Name="PlannedOverdueButton"
@@ -962,6 +1135,27 @@
                               SelectionChanged="TaskListView_SelectionChanged"
                               Loaded="TaskListView_Loaded" Unloaded="TaskListView_Unloaded"
                               ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListView.Header>
+                            <StackPanel x:Name="PlannedMeetingsHeader" Spacing="8" HorizontalAlignment="Stretch" Margin="0,0,0,8">
+                                <InfoBar IsOpen="{x:Bind CalendarViewModel.HasMessage, Mode=OneWay}" IsClosable="False"
+                                         Message="{x:Bind CalendarViewModel.Message, Mode=OneWay}" Severity="Warning" />
+                                <TextBlock x:Uid="Calendar_Meetings" AutomationProperties.AutomationId="Planned_Meetings"
+                                           Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                                <TextBlock Text="{x:Bind CalendarViewModel.DayHint, Mode=OneWay}" AutomationProperties.AutomationId="Calendar_DayHint"
+                                           TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Visibility="{x:Bind CalendarViewModel.IsDayEmpty, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                                <ItemsControl ItemsSource="{x:Bind CalendarViewModel.DayEvents}" ItemTemplate="{StaticResource MeetingRowTemplate}" />
+                                <Expander x:Name="PlannedPastMeetings" x:Uid="Calendar_PastDay" AutomationProperties.AutomationId="Planned_PastMeetings"
+                                          HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                          Visibility="{x:Bind CalendarViewModel.HasPastDayEvents, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                                    <ItemsControl ItemsSource="{x:Bind CalendarViewModel.PastDayEvents}" ItemTemplate="{StaticResource MeetingRowTemplate}" />
+                                </Expander>
+                                <TextBlock x:Uid="Calendar_TasksDue" Style="{ThemeResource BodyStrongTextBlockStyle}" Margin="0,12,0,0" />
+                                <TextBlock x:Name="PlannedDayEmptyState" x:Uid="PlannedDayEmptyText" AutomationProperties.AutomationId="PlannedDay_Empty"
+                                           Visibility="{x:Bind ViewModel.IsPlannedDayEmpty, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
+                                           TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                        </ListView.Header>
                         <ListView.ItemContainerTransitions>
                             <TransitionCollection />
                         </ListView.ItemContainerTransitions>
@@ -969,14 +1163,6 @@
                             <Border x:Name="PlannedDayBottomClearance" IsHitTestVisible="False" />
                         </ListView.Footer>
                     </ListView>
-                    <TextBlock x:Name="PlannedDayEmptyState" x:Uid="PlannedDayEmptyText"
-                               Grid.Column="1" Grid.Row="1"
-                               Visibility="{x:Bind ViewModel.IsPlannedDayEmpty, Converter={StaticResource BoolToVisibility}, Mode=OneWay}"
-                               Text="No tasks due on this day. Add a task to plan ahead."
-                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                               TextAlignment="Center" MaxWidth="280"
-                               Style="{StaticResource BodyTextBlockStyle}" TextWrapping="WrapWholeWords"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </Grid>
 
                 <Grid Grid.Row="1"

@@ -11,6 +11,7 @@ using System.Collections.ObjectModel;
 // and collection expressions are not reliably discovered by the WinRT AOT generator.
 [assembly: WinRT.GeneratedWinRTExposedExternalType(typeof(List<CompletedTaskGroup>))]
 [assembly: WinRT.GeneratedWinRTExposedExternalType(typeof(List<PlannedGroup>))]
+[assembly: WinRT.GeneratedWinRTExposedExternalType(typeof(List<PlannedAgendaEntry>))]
 [assembly: WinRT.GeneratedWinRTExposedExternalType(typeof(List<Step>))]
 [assembly: WinRT.GeneratedWinRTExposedExternalType(typeof(List<string>))]
 [assembly: WinRT.GeneratedWinRTExposedExternalType(typeof(string[]))]
@@ -22,3 +23,7 @@ using System.Collections.ObjectModel;
 [assembly: WinRT.GeneratedWinRTExposedExternalType(typeof(ObservableCollection<RhythmBarInfo>))]
 [assembly: WinRT.GeneratedWinRTExposedExternalType(typeof(ObservableCollection<MascotOpenPageOption>))]
 [assembly: WinRT.GeneratedWinRTExposedExternalType(typeof(ObservableCollection<string>))]
+[assembly: WinRT.GeneratedWinRTExposedExternalType(typeof(ObservableCollection<CalendarAccountRow>))]
+[assembly: WinRT.GeneratedWinRTExposedExternalType(typeof(ObservableCollection<CalendarEventGroup>))]
+[assembly: WinRT.GeneratedWinRTExposedExternalType(typeof(ObservableCollection<CalendarEventRow>))]
+[assembly: WinRT.GeneratedWinRTExposedExternalType(typeof(List<CalendarEventRow>))]

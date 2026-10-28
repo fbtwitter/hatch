@@ -23,6 +23,23 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\Models\CalendarEvent.cs" Link="Source\Models\CalendarEvent.cs" />
+    <Compile Include="..\Models\CalendarAccount.cs" Link="Source\Models\CalendarAccount.cs" />
+    <Compile Include="..\Models\CalendarSource.cs" Link="Source\Models\CalendarSource.cs" />
+    <Compile Include="..\Models\CalendarProvider.cs" Link="Source\Models\CalendarProvider.cs" />
+    <Compile Include="..\Models\CalendarJsonContext.cs" Link="Source\Models\CalendarJsonContext.cs" />
+    <Compile Include="..\Helpers\CalendarEventParser.cs" Link="Source\Helpers\CalendarEventParser.cs" />
+    <Compile Include="..\Helpers\IcsCalendarImport.cs" Link="Source\Helpers\IcsCalendarImport.cs" />
+    <Compile Include="..\Helpers\GoogleCalendarEventParser.cs" Link="Source\Helpers\GoogleCalendarEventParser.cs" />
+    <Compile Include="..\Helpers\GoogleCalendarClient.cs" Link="Source\Helpers\GoogleCalendarClient.cs" />
+    <Compile Include="..\Helpers\GoogleCalendar.cs" Link="Source\Helpers\GoogleCalendar.cs" />
+    <Compile Include="..\Helpers\GoogleToken.cs" Link="Source\Helpers\GoogleToken.cs" />
+    <Compile Include="..\Helpers\GoogleCalendarSnapshot.cs" Link="Source\Helpers\GoogleCalendarSnapshot.cs" />
+    <Compile Include="..\Helpers\GoogleCalendarException.cs" Link="Source\Helpers\GoogleCalendarException.cs" />
+    <Compile Include="..\Helpers\CalendarOAuthCallback.cs" Link="Source\Helpers\CalendarOAuthCallback.cs" />
+    <Compile Include="..\Services\CalendarLoopbackReceiver.cs" Link="Source\Services\CalendarLoopbackReceiver.cs" />
+    <Compile Include="..\Helpers\CalendarReminderPlanner.cs" Link="Source\Helpers\CalendarReminderPlanner.cs" />
+    <Compile Include="..\Helpers\CalendarAgenda.cs" Link="Source\Helpers\CalendarAgenda.cs" />
     <Compile Include="..\Models\Tip.cs" Link="Source\Models\Tip.cs" />
     <Compile Include="..\Models\AppSettings.cs" Link="Source\Models\AppSettings.cs" />
     <Compile Include="..\Helpers\TipSchedule.cs" Link="Source\Helpers\TipSchedule.cs" />

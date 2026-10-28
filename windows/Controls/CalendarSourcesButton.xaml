@@ -1,0 +1,20 @@
+<UserControl
+    x:Class="Hatch.Controls.CalendarSourcesButton"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    MinHeight="44">
+    <HyperlinkButton AutomationProperties.AutomationId="Calendar_Settings"
+                      Padding="0" MinWidth="0" MinHeight="44" VerticalAlignment="Stretch"
+                      Click="OpenSettings_Click">
+        <HyperlinkButton.Resources>
+            <ResourceDictionary>
+                <SolidColorBrush x:Key="HyperlinkButtonBackground" Color="Transparent" />
+                <SolidColorBrush x:Key="HyperlinkButtonBackgroundPointerOver" Color="Transparent" />
+                <SolidColorBrush x:Key="HyperlinkButtonBackgroundPressed" Color="Transparent" />
+                <SolidColorBrush x:Key="HyperlinkButtonBorderBrushPointerOver" Color="Transparent" />
+                <SolidColorBrush x:Key="HyperlinkButtonBorderBrushPressed" Color="Transparent" />
+            </ResourceDictionary>
+        </HyperlinkButton.Resources>
+        <TextBlock x:Uid="Calendar_Settings" Text="Calendar settings" Margin="12" />
+    </HyperlinkButton>
+</UserControl>

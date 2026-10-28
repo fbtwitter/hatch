@@ -19,6 +19,7 @@ public partial class App : Application
     public static UpdateService UpdateService { get; } = new();
     public static SyncService SyncService { get; } = new(SettingsService, SyncAccountService, TaskStorage);
     public static NotificationSchedulerService NotificationScheduler { get; } = new();
+    public static CalendarService CalendarService { get; } = new();
     public static TipCoordinator TipCoordinator { get; } = new(SettingsService);
     public static MainWindow? MainWindowInstance { get; private set; }
     public static MascotWindow? MascotWindowInstance { get; private set; }
@@ -55,12 +56,16 @@ public partial class App : Application
     // AppInstance activation path the packaged build uses, so OnAppActivated is unchanged.
     private static void RegisterProtocolWhenUnpackaged()
     {
-        if (IsPackaged()) return;
+        if (Helpers.AppDataPath.IsUiTest || IsPackaged()) return;
         try
         {
             // Empty exePath means "this executable".
             ActivationRegistrationManager.RegisterForProtocolActivation(
                 scheme: "hatch", logo: string.Empty, displayName: "Hatch", exePath: string.Empty);
+#if DEBUG
+            ActivationRegistrationManager.RegisterForProtocolActivation(
+                scheme: "hatch-dev", logo: string.Empty, displayName: "Hatch development", exePath: string.Empty);
+#endif
         }
         catch
         {
@@ -92,6 +97,11 @@ public partial class App : Application
     private void HandleProtocolUri(Uri uri)
     {
         var queue = MainWindowInstance?.DispatcherQueue;
+        if (uri.Host == "calendar-auth-callback")
+        {
+            CalendarService.HandleOAuthCallback(uri);
+            return;
+        }
         if (uri.Host == "auth-callback")
         {
             if (queue != null)
@@ -112,6 +122,12 @@ public partial class App : Application
         if (uri.Host == "myday")
         {
             window.ShowMyDay();
+            return;
+        }
+        if (uri.Host == "calendar")
+        {
+            window.ShowMyDay();
+            window.NavigateTo("calendar");
             return;
         }
         if (uri.Host == "add")
@@ -198,6 +214,17 @@ public partial class App : Application
         }
     }
 
+    private static async Task RefreshCalendarAsync()
+    {
+        try { await CalendarService.InitializeAsync(); await CalendarService.RefreshAsync(); }
+        catch { }
+    }
+
+    private static void OnCalendarWindowActivated(object sender, WindowActivatedEventArgs args)
+    {
+        if (args.WindowActivationState != WindowActivationState.Deactivated) _ = RefreshCalendarAsync();
+    }
+
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
         try
@@ -263,6 +290,7 @@ public partial class App : Application
             var mainViewModel = new MainViewModel(
                 TaskStorage, SettingsService, SyncService, NotificationScheduler);
             MainWindowInstance = new MainWindow(mainViewModel);
+            MainWindowInstance.Activated += OnCalendarWindowActivated;
             // HATCH_UI_TEST=1 forces main window visible even during startup-launch suppression
             var uiTest = Helpers.AppDataPath.IsUiTest;
             // Mascot-only launch: the main window opens on demand (mascot click, tray,
@@ -290,6 +318,7 @@ public partial class App : Application
             // the mascot past the cold-start budget. A pull that lands after LoadAsync
             // reaches MainViewModel via TasksReceived → ReloadAsync.
             if (!Helpers.AppDataPath.IsUiTest) _ = InitializeSyncAsync();
+            _ = RefreshCalendarAsync();
         }
         catch (Exception ex)
         {
