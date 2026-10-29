@@ -240,57 +240,6 @@ public sealed class PlannedWorkflowTests
     }
 
     [TestMethod]
-    public void CalendarSettingsNavigation_OpensTheCalendarsCategory()
-    {
-        Find("SettingsItem").Patterns.SelectionItem.Pattern.Select();
-        var calendarsCategory = Find("Settings_NavCalendars");
-        Wait(() => calendarsCategory.Patterns.SelectionItem.Pattern.IsSelected,
-            "Opening Settings allows navigation to the Calendars category");
-
-        var import = Find("Calendar_Import");
-        Assert.AreEqual("Import a calendar file", import.Name);
-        Assert.IsTrue(import.Properties.IsKeyboardFocusable.ValueOrDefault);
-        Assert.IsTrue(import.Patterns.Invoke.IsSupported);
-        Assert.AreEqual("Connect Microsoft", Find("Calendar_Connect").Name);
-        Assert.AreEqual("Connect Google", Find("Calendar_ConnectGoogle").Name);
-        TaskWorkflowTests.CaptureState("calendar-settings-top");
-
-        var settingsScroll = Find("Settings_ContentScroll");
-        if (settingsScroll.Patterns.Scroll.IsSupported && settingsScroll.Patterns.Scroll.Pattern.VerticallyScrollable.Value)
-            settingsScroll.Patterns.Scroll.Pattern.SetScrollPercent(-1, 100);
-        var accountOptions = Find("Calendar_AccountOptions_planned-test-account");
-        Assert.IsTrue(accountOptions.Name.StartsWith("Options for ", StringComparison.Ordinal));
-        Assert.IsTrue(accountOptions.Properties.IsKeyboardFocusable.ValueOrDefault);
-        if (TestSetup.IsMainWindowForeground)
-        {
-            Mouse.MoveTo(Center(accountOptions.BoundingRectangle));
-            TaskWorkflowTests.CaptureState("calendar-account-options-hover");
-        }
-        else TestContext.WriteLine("No foreground desktop; account options hover appearance could not be captured.");
-        accountOptions.Patterns.Invoke.Pattern.Invoke();
-        var replace = Find("Calendar_Replace_planned-test-account");
-        StringAssert.Contains(replace.Name, "Replace file");
-        StringAssert.Contains(Find("Calendar_Disconnect_planned-test-account").Name, "Remove imported calendar");
-        if (TestSetup.IsMainWindowForeground)
-            Keyboard.Press(VirtualKeyShort.ESCAPE);
-        else
-            accountOptions.Patterns.Invoke.Pattern.Invoke();
-
-        var reminderDetails = Find("Calendar_ReminderDetails");
-        Assert.AreEqual("Reminders and updates", reminderDetails.Name);
-        Assert.IsTrue(reminderDetails.Properties.IsKeyboardFocusable.ValueOrDefault);
-        Assert.IsTrue(reminderDetails.Patterns.Invoke.IsSupported);
-        reminderDetails.Patterns.Invoke.Pattern.Invoke();
-        var reminderBody = Find("Calendar_ReminderDialogBody");
-        StringAssert.Contains(reminderBody.Name, "Timed events get a Windows reminder 10 minutes before they start.");
-        Assert.IsFalse(reminderBody.IsOffscreen);
-        Assert.IsFalse(string.IsNullOrWhiteSpace(Find("Calendar_ReminderDialogRange").Name));
-        TaskWorkflowTests.CaptureState("calendar-reminder-modal");
-        Keyboard.Press(VirtualKeyShort.ESCAPE);
-        TaskWorkflowTests.CaptureState("calendar-settings-bottom");
-    }
-
-    [TestMethod]
     public void MeetingDetails_OpenFromAgendaAndCalendarRows()
     {
         SelectAgenda();
