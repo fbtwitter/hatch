@@ -233,6 +233,14 @@ public sealed partial class MainWindow : Window
         NavigateToSettings();
     }
 
+    internal void ActivateAfterExternalAuthorization()
+    {
+        ShowWindow(_hwnd, SW_RESTORE);
+        AppWindow.Show(true);
+        RaiseAndActivate();
+        NativeMethods.SetForegroundWindow(_hwnd);
+    }
+
     private void RestoreNearMascot()
     {
         PositionNearMascot(resetSize: true);

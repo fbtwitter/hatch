@@ -2,21 +2,40 @@ namespace Hatch.Helpers;
 
 internal static class CalendarCacheFile
 {
-    internal static async Task ReplaceAsync(string temporary, string path, CancellationToken cancellationToken)
+    private const int SnapshotCount = 3;
+
+    internal static IEnumerable<string> ReadCandidates(string path)
     {
-        for (var attempt = 0; ; attempt++)
-        {
-            try
-            {
-                File.Move(temporary, path, overwrite: true);
-                return;
-            }
-            catch (Exception ex) when ((ex is IOException or UnauthorizedAccessException) && IsTransientLock(ex) && attempt < 3)
-            {
-                await Task.Delay(TimeSpan.FromMilliseconds(100 << attempt), cancellationToken);
-            }
-        }
+        var directory = Path.GetDirectoryName(path)!;
+        var prefix = Path.GetFileName(path) + ".snapshot-";
+        return Directory.Exists(directory)
+            ? Directory.EnumerateFiles(directory, prefix + "*.json", SearchOption.TopDirectoryOnly)
+                .OrderByDescending(Path.GetFileName, StringComparer.Ordinal)
+                .Append(path)
+            : [path];
     }
 
-    private static bool IsTransientLock(Exception error) => (error.HResult & 0xFFFF) is 5 or 32 or 33;
+    internal static Task<string> WriteSnapshotAsync(string temporary, string path, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var directory = Path.GetDirectoryName(path)!;
+        var snapshot = Path.Combine(directory,
+            $"{Path.GetFileName(path)}.snapshot-{DateTime.UtcNow.Ticks:D19}-{Guid.NewGuid():N}.json");
+        File.Move(temporary, snapshot);
+        PruneSnapshots(path, snapshot);
+        return Task.FromResult(snapshot);
+    }
+
+    private static void PruneSnapshots(string path, string current)
+    {
+        var candidates = ReadCandidates(path).ToArray();
+        var keep = candidates.Take(SnapshotCount).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        keep.Add(current);
+        keep.Add(path);
+        foreach (var candidate in candidates.Where(candidate => !keep.Contains(candidate)))
+        {
+            try { File.Delete(candidate); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        }
+    }
 }

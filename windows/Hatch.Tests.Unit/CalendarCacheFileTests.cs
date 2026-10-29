@@ -6,7 +6,7 @@ namespace Hatch.Tests.Unit;
 public sealed class CalendarCacheFileTests
 {
     [TestMethod]
-    public async Task ReplaceRetriesUntilWindowsSharingLockClears()
+    public async Task SnapshotWritesWithoutReplacingLockedLegacyCache()
     {
         if (!OperatingSystem.IsWindows()) Assert.Inconclusive("This check exercises Windows file sharing semantics.");
 
@@ -18,12 +18,13 @@ public sealed class CalendarCacheFileTests
             await File.WriteAllTextAsync(path, "previous");
             await File.WriteAllTextAsync(temporary, "updated");
             using var cacheLock = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-            using var releaseLock = new Timer(_ => cacheLock.Dispose(), null, 250, Timeout.Infinite);
 
-            await CalendarCacheFile.ReplaceAsync(temporary, path, CancellationToken.None);
+            var snapshot = await CalendarCacheFile.WriteSnapshotAsync(temporary, path, CancellationToken.None);
 
-            Assert.AreEqual("updated", await File.ReadAllTextAsync(path));
+            Assert.AreEqual("previous", await File.ReadAllTextAsync(path));
+            Assert.AreEqual("updated", await File.ReadAllTextAsync(snapshot));
             Assert.IsFalse(File.Exists(temporary));
+            CollectionAssert.AreEqual(new[] { snapshot, path }, CalendarCacheFile.ReadCandidates(path).ToArray());
         }
         finally
         {
@@ -32,7 +33,7 @@ public sealed class CalendarCacheFileTests
     }
 
     [TestMethod]
-    public async Task PersistentWindowsSharingLockLeavesExistingCacheUntouched()
+    public async Task NewSnapshotPreservesThePreviousValidCache()
     {
         if (!OperatingSystem.IsWindows()) Assert.Inconclusive("This check exercises Windows file sharing semantics.");
 
@@ -43,13 +44,38 @@ public sealed class CalendarCacheFileTests
         {
             await File.WriteAllTextAsync(path, "previous");
             await File.WriteAllTextAsync(temporary, "updated");
-            using var cacheLock = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var firstSnapshot = await CalendarCacheFile.WriteSnapshotAsync(temporary, path, CancellationToken.None);
+            await File.WriteAllTextAsync(temporary, "latest");
+            var secondSnapshot = await CalendarCacheFile.WriteSnapshotAsync(temporary, path, CancellationToken.None);
 
-            var error = await Assert.ThrowsAsync<Exception>(() => CalendarCacheFile.ReplaceAsync(temporary, path, CancellationToken.None));
-
-            Assert.IsTrue(error is IOException or UnauthorizedAccessException);
             Assert.AreEqual("previous", await File.ReadAllTextAsync(path));
-            Assert.IsTrue(File.Exists(temporary));
+            Assert.AreEqual("latest", await File.ReadAllTextAsync(secondSnapshot));
+            CollectionAssert.AreEqual(new[] { secondSnapshot, firstSnapshot, path }, CalendarCacheFile.ReadCandidates(path).ToArray());
+        }
+        finally
+        {
+            Directory.Delete(folder, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task SnapshotRotationKeepsLegacyCacheAndOnlyThreeSnapshots()
+    {
+        var folder = CreateTempFolder();
+        var path = Path.Combine(folder, "calendar.json");
+        var temporary = path + ".new";
+        try
+        {
+            await File.WriteAllTextAsync(path, "legacy");
+            for (var index = 0; index < 4; index++)
+            {
+                await File.WriteAllTextAsync(temporary, $"snapshot-{index}");
+                await CalendarCacheFile.WriteSnapshotAsync(temporary, path, CancellationToken.None);
+                await Task.Delay(2);
+            }
+
+            Assert.AreEqual("legacy", await File.ReadAllTextAsync(path));
+            Assert.HasCount(4, CalendarCacheFile.ReadCandidates(path));
         }
         finally
         {
