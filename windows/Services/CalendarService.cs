@@ -53,7 +53,6 @@ public sealed partial class CalendarService
         Exception? lastError = null;
         foreach (var candidate in CalendarCacheFile.ReadCandidates(_path))
         {
-            if (!File.Exists(candidate)) continue;
             try
             {
                 await using var file = File.OpenRead(candidate);
@@ -66,6 +65,7 @@ public sealed partial class CalendarService
                 lastError = null;
                 break;
             }
+            catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException) { }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
             {
                 lastError = ex;
@@ -481,6 +481,7 @@ public sealed partial class CalendarService
         ProviderException { Key: "Calendar_ErrorGoogleApiToken", Status: { } status } =>
             string.Format(Strings.Get("Calendar_ErrorGoogleApiToken"), (int)status),
         ProviderException => error.Message,
+        CalendarCredentialStoreException => Strings.Get("Calendar_ErrorCredentials"),
         TimeoutException => Strings.Get("Calendar_ErrorTimeout"),
         HttpRequestException or TaskCanceledException => Strings.Get("Calendar_ErrorOffline"),
         IOException or UnauthorizedAccessException => Strings.Get("Calendar_ErrorCache"),

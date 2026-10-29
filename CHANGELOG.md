@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.35.3] - 2026-10-29
+
+- Fix Google calendar cache and credential persistence, reminder scheduling, and connected-account settings. Clarify calendar setup in Planned.
+
 ## [0.35.2] - 2026-10-29
 
 - Prevent Google calendar connection failures when Windows locks the existing local cache.

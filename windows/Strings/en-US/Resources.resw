@@ -742,13 +742,10 @@
   <data name="Calendar_Range" xml:space="preserve"><value>Previous 7 days and next 30 days · Times in {0}</value></data>
   <data name="Calendar_Connect.Content" xml:space="preserve"><value>Connect Microsoft</value></data>
   <data name="Calendar_ConnectGoogle.Content" xml:space="preserve"><value>Connect Google</value></data>
+  <data name="Calendar_GoogleConnected.Content" xml:space="preserve"><value>Google connected</value></data>
+  <data name="Calendar_AddGoogleAccount.Content" xml:space="preserve"><value>Add another account</value></data>
   <data name="Calendar_ProviderMicrosoft" xml:space="preserve"><value>Microsoft</value></data>
   <data name="Calendar_ProviderGoogle" xml:space="preserve"><value>Google</value></data>
-  <data name="Calendar_BrowserReturn" xml:space="preserve"><value>Your Google account is authorized. Hatch is returning to the app to finish connecting your calendar.</value></data>
-  <data name="Calendar_Callback_ReceivedHeading" xml:space="preserve"><value>Authorization received</value></data>
-  <data name="Calendar_Callback_DeniedHeading" xml:space="preserve"><value>Connection not completed</value></data>
-  <data name="Calendar_Callback_InvalidHeading" xml:space="preserve"><value>Sign-in response not recognized</value></data>
-  <data name="Calendar_Callback_InvalidBody" xml:space="preserve"><value>Return to Hatch and start connecting Google Calendar again.</value></data>
   <data name="Calendar_ErrorLoopback" xml:space="preserve"><value>Hatch could not receive the local Google sign-in callback. Check that local loopback connections are allowed, then try again.</value></data>
   <data name="Calendar_Refresh.AutomationProperties.Name" xml:space="preserve"><value>Refresh calendars</value></data>
   <data name="Calendar_Refresh.ToolTipService.ToolTip" xml:space="preserve"><value>Refresh calendars</value></data>
@@ -833,6 +830,7 @@ Imported .ics files are snapshots of the previous 7 days and next 30 days at imp
   <data name="Calendar_LastRefreshedSingle" xml:space="preserve"><value>{0} calendar · Refreshed {1}</value></data>
   <data name="Calendar_NotRefreshed" xml:space="preserve"><value>Waiting for the first refresh.</value></data>
   <data name="Calendar_ErrorCache" xml:space="preserve"><value>Hatch could not read or save the local calendar cache. Your task data is unaffected.</value></data>
+  <data name="Calendar_ErrorGoogleConnection" xml:space="preserve"><value>Hatch could not finish connecting to Google Calendar. Check your connection and try again.</value></data>
   <data name="Calendar_ErrorOffline" xml:space="preserve"><value>Calendar refresh is unavailable. Showing the last saved events; Hatch will try again.</value></data>
   <data name="Calendar_ErrorProvider" xml:space="preserve"><value>The calendar could not be refreshed. Showing the last saved events; try Refresh again.</value></data>
   <data name="Calendar_ErrorReconnect" xml:space="preserve"><value>Reconnect this calendar account to restore calendar access.</value></data>
@@ -857,11 +855,10 @@ Imported .ics files are snapshots of the previous 7 days and next 30 days at imp
   <data name="Calendar_PastDay.Header" xml:space="preserve"><value>Earlier events</value></data>
   <data name="Calendar_QuickJoin.Content" xml:space="preserve"><value>Join</value></data>
   <data name="Calendar_DetailsName" xml:space="preserve"><value>View event: {0}</value></data>
-  <data name="Calendar_DayConnectHint" xml:space="preserve"><value>Open Calendar settings to connect an account or import an .ics file.</value></data>
+  <data name="Calendar_DayConnectHint" xml:space="preserve"><value>No calendar connected. Open Settings &gt; Calendars to connect an account or import an .ics file.</value></data>
   <data name="Calendar_DayEmpty" xml:space="preserve"><value>No events on this day.</value></data>
   <data name="Calendar_DayOutsideRange" xml:space="preserve"><value>This date is outside your saved calendar range. Refresh connected calendars or replace imported files to update available dates.</value></data>
   <data name="Calendar_DateEvents" xml:space="preserve"><value>{0} calendar events.</value></data>
-  <data name="Calendar_Settings.Text" xml:space="preserve"><value>Calendar settings</value></data>
   <data name="Settings_NavCalendars.Content" xml:space="preserve"><value>Calendars</value></data>
   <data name="Settings_Category_Calendars_Title" xml:space="preserve"><value>Calendars</value></data>
   <data name="Settings_Category_Calendars_Description" xml:space="preserve"><value>Manage optional calendar connections, imported files and reminder information. View meetings alongside task deadlines in Planned.</value></data>

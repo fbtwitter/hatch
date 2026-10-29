@@ -122,7 +122,7 @@ public sealed class GoogleCalendarTests
         using var receiver = new CalendarLoopbackReceiver();
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         using var http = new HttpClient(new HttpClientHandler { UseProxy = false });
-        var callback = receiver.WaitAsync("expected", "Return to Hatch", timeout.Token);
+        var callback = receiver.WaitAsync("expected", timeout.Token);
         using var wrongState = await http.GetAsync(new Uri(receiver.RedirectUri, "?state=wrong&code=private-code"), timeout.Token);
         Assert.AreEqual(HttpStatusCode.BadRequest, wrongState.StatusCode);
         using var badHost = new HttpRequestMessage(HttpMethod.Get, new Uri(receiver.RedirectUri, "?state=expected&code=private-code"));
@@ -130,7 +130,7 @@ public sealed class GoogleCalendarTests
         using var rejected = await http.SendAsync(badHost, timeout.Token);
         Assert.AreEqual(HttpStatusCode.BadRequest, rejected.StatusCode);
         using var valid = await http.GetAsync(new Uri(receiver.RedirectUri, "?state=expected&code=private-code"), timeout.Token);
-        Assert.AreEqual(HttpStatusCode.OK, valid.StatusCode);
+        Assert.AreEqual(HttpStatusCode.NoContent, valid.StatusCode);
         var html = await valid.Content.ReadAsStringAsync(timeout.Token);
         Assert.IsFalse(html.Contains("private-code", StringComparison.Ordinal));
         Assert.AreEqual("private-code", CalendarOAuthCallback.Parameter(await callback, "code"));
@@ -141,7 +141,7 @@ public sealed class GoogleCalendarTests
     {
         using var receiver = new CalendarLoopbackReceiver();
         using var cancellation = new CancellationTokenSource();
-        var callback = receiver.WaitAsync("expected", "Return", cancellation.Token);
+        var callback = receiver.WaitAsync("expected", cancellation.Token);
         cancellation.Cancel();
         await Assert.ThrowsAsync<OperationCanceledException>(async () => await callback);
     }

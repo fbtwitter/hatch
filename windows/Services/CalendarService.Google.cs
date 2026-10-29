@@ -11,72 +11,108 @@ public sealed partial class CalendarService
 {
     public async Task ConnectGoogleAsync(CancellationToken cancellationToken = default)
     {
-        await InitializeAsync();
-        if (!IsGoogleConfigured || AppDataPath.IsUiTest) throw new ProviderException("Calendar_NotConfigured");
-        await _gate.WaitAsync(cancellationToken);
+        var stage = "load calendar cache";
         try
         {
-            using var receiver = new CalendarLoopbackReceiver();
-            using var deadline = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-            using var authorization = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
-            _googleAuthorization = authorization;
-            StateChanged?.Invoke();
-            var state = Base64Url(RandomNumberGenerator.GetBytes(32));
-            var verifier = Base64Url(RandomNumberGenerator.GetBytes(32));
-            var url = "https://accounts.google.com/o/oauth2/v2/auth?" + Query(new()
+            await InitializeAsync();
+            if (!IsGoogleConfigured || AppDataPath.IsUiTest) throw new ProviderException("Calendar_NotConfigured");
+            stage = "wait for authorization";
+            await _gate.WaitAsync(cancellationToken);
+            try
             {
-                ["client_id"] = CalendarConfiguration.GoogleClientId,
-                ["redirect_uri"] = receiver.RedirectUri.AbsoluteUri, ["response_type"] = "code",
-                ["scope"] = CalendarConfiguration.GoogleScope, ["access_type"] = "offline",
-                ["prompt"] = "consent select_account", ["state"] = state,
-                ["code_challenge"] = Base64Url(SHA256.HashData(Encoding.ASCII.GetBytes(verifier))),
-                ["code_challenge_method"] = "S256"
-            });
-            if (!await Windows.System.Launcher.LaunchUriAsync(new Uri(url))) throw new ProviderException("Calendar_ErrorBrowser");
-            Uri callback;
-            try { callback = await receiver.WaitAsync(state, Strings.Get("Calendar_BrowserReturn"), authorization.Token); }
-            catch (OperationCanceledException) when (deadline.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
-            { throw new TimeoutException(); }
-            receiver.Dispose();
-            _googleAuthorization = null;
-            IsGoogleCallbackReceived = true;
-            StateChanged?.Invoke();
-            App.MainWindowInstance?.DispatcherQueue.TryEnqueue(() => App.MainWindowInstance?.ActivateAfterExternalAuthorization());
-            if (Parameter(callback, "error") != null) throw new ProviderException("Calendar_ErrorConsent");
-            var code = Parameter(callback, "code");
-            if (string.IsNullOrEmpty(code)) throw new ProviderException("Calendar_ErrorConsent");
-            var token = await RequestGoogleTokenAsync(new()
+                using var receiver = new CalendarLoopbackReceiver();
+                using var deadline = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+                using var authorization = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
+                _googleAuthorization = authorization;
+                StateChanged?.Invoke();
+                var state = Base64Url(RandomNumberGenerator.GetBytes(32));
+                var verifier = Base64Url(RandomNumberGenerator.GetBytes(32));
+                var url = "https://accounts.google.com/o/oauth2/v2/auth?" + Query(new()
+                {
+                    ["client_id"] = CalendarConfiguration.GoogleClientId,
+                    ["redirect_uri"] = receiver.RedirectUri.AbsoluteUri, ["response_type"] = "code",
+                    ["scope"] = CalendarConfiguration.GoogleScope, ["access_type"] = "offline",
+                    ["prompt"] = "consent select_account", ["state"] = state,
+                    ["code_challenge"] = Base64Url(SHA256.HashData(Encoding.ASCII.GetBytes(verifier))),
+                    ["code_challenge_method"] = "S256"
+                });
+                if (!await Windows.System.Launcher.LaunchUriAsync(new Uri(url))) throw new ProviderException("Calendar_ErrorBrowser");
+                Uri callback;
+                try { callback = await receiver.WaitAsync(state, authorization.Token); }
+                catch (OperationCanceledException) when (deadline.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+                { throw new TimeoutException(); }
+                receiver.Dispose();
+                _googleAuthorization = null;
+                IsGoogleCallbackReceived = true;
+                StateChanged?.Invoke();
+                App.MainWindowInstance?.DispatcherQueue.TryEnqueue(() => App.MainWindowInstance?.ActivateAfterExternalAuthorization());
+                if (Parameter(callback, "error") != null) throw new ProviderException("Calendar_ErrorConsent");
+                var code = Parameter(callback, "code");
+                if (string.IsNullOrEmpty(code)) throw new ProviderException("Calendar_ErrorConsent");
+
+                stage = "exchange Google authorization code";
+                var token = await RequestGoogleTokenAsync(new()
+                {
+                    ["grant_type"] = "authorization_code", ["code"] = code,
+                    ["code_verifier"] = verifier, ["redirect_uri"] = receiver.RedirectUri.AbsoluteUri
+                }, cancellationToken);
+                List<GoogleCalendar> calendars;
+                try
+                {
+                    stage = "read Google calendar list";
+                    calendars = await ReadGoogleCalendarsAsync(token.Access, cancellationToken);
+                }
+                catch (ProviderException ex) when (ex.Status == HttpStatusCode.Unauthorized)
+                { throw new ProviderException("Calendar_ErrorGoogleApiToken", ex.Status); }
+                var primary = calendars.FirstOrDefault(c => c.IsPrimary) ?? throw new JsonException("No primary Google calendar.");
+                var previous = _accounts.FirstOrDefault(a => a.Provider == CalendarProvider.Google &&
+                    string.Equals(a.Email, primary.Id, StringComparison.OrdinalIgnoreCase));
+                token = token with
+                {
+                    Refresh = GoogleCalendarClient.ResolveRefreshToken(token.Refresh,
+                        previous == null ? null : CalendarTokenStore.Load(previous))
+                };
+                if (string.IsNullOrEmpty(token.Refresh)) throw new ProviderException("Calendar_ErrorGoogleRefreshToken");
+                var id = previous?.Id ?? Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes("Google:" + primary.Id.ToLowerInvariant())));
+                var account = previous ?? new CalendarAccount
+                    { Id = id, Provider = CalendarProvider.Google, Email = primary.Id, DefaultCalendarId = primary.Id };
+                stage = "save Google credentials and calendar cache";
+                await StoreConnectionAsync(account, token, cancellationToken);
+            }
+            finally
             {
-                ["grant_type"] = "authorization_code", ["code"] = code,
-                ["code_verifier"] = verifier, ["redirect_uri"] = receiver.RedirectUri.AbsoluteUri
-            }, cancellationToken);
-            List<GoogleCalendar> calendars;
-            try { calendars = await ReadGoogleCalendarsAsync(token.Access, cancellationToken); }
-            catch (ProviderException ex) when (ex.Status == HttpStatusCode.Unauthorized)
-            { throw new ProviderException("Calendar_ErrorGoogleApiToken", ex.Status); }
-            var primary = calendars.FirstOrDefault(c => c.IsPrimary) ?? throw new JsonException("No primary Google calendar.");
-            var previous = _accounts.FirstOrDefault(a => a.Provider == CalendarProvider.Google &&
-                string.Equals(a.Email, primary.Id, StringComparison.OrdinalIgnoreCase));
-            token = token with
-            {
-                Refresh = GoogleCalendarClient.ResolveRefreshToken(token.Refresh,
-                    previous == null ? null : CalendarTokenStore.Load(previous))
-            };
-            if (string.IsNullOrEmpty(token.Refresh)) throw new ProviderException("Calendar_ErrorGoogleRefreshToken");
-            var id = previous?.Id ?? Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes("Google:" + primary.Id.ToLowerInvariant())));
-            var account = previous ?? new CalendarAccount
-                { Id = id, Provider = CalendarProvider.Google, Email = primary.Id, DefaultCalendarId = primary.Id };
-            await StoreConnectionAsync(account, token, cancellationToken);
+                _googleAuthorization = null;
+                IsGoogleCallbackReceived = false;
+                _gate.Release();
+                StateChanged?.Invoke();
+            }
+            EnsurePolling();
+            stage = "refresh Google calendar events";
+            await RefreshAsync(force: true, cancellationToken);
         }
-        finally
+        catch (Exception ex) when ((ex is IOException or UnauthorizedAccessException) &&
+            stage is not "load calendar cache")
         {
-            _googleAuthorization = null;
-            IsGoogleCallbackReceived = false;
-            _gate.Release();
-            StateChanged?.Invoke();
+            LogGoogleConnectFailure(stage, ex);
+            var key = stage == "save Google credentials and calendar cache"
+                ? "Calendar_ErrorCredentials"
+                : "Calendar_ErrorGoogleConnection";
+            throw new ProviderException(key);
         }
-        EnsurePolling();
-        await RefreshAsync(force: true, cancellationToken);
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            LogGoogleConnectFailure(stage, ex);
+            throw;
+        }
+    }
+
+    private static void LogGoogleConnectFailure(string stage, Exception error)
+    {
+        var response = error is ProviderException provider
+            ? $"{provider.Key}; HTTP {(provider.Status is { } status ? (int)status : "none")}; OAuth code {provider.GoogleOAuthErrorCode ?? "none"}"
+            : error.GetType().Name;
+        var details = $"{stage}: {response} (HRESULT 0x{error.HResult:X8}).";
+        CrashLog.Write("Google calendar connect", details);
     }
 
     private async Task<CalendarAccount> RefreshGoogleAccountAsync(CalendarAccount account, CancellationToken ct)

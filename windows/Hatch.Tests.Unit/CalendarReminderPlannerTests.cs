@@ -51,6 +51,13 @@ public sealed class CalendarReminderPlannerTests
     }
 
     [TestMethod]
+    public void ReminderIdentifierFitsWindowsScheduledToastLimit()
+    {
+        var reminder = CalendarReminderPlanner.CreateCandidates([Meeting()], Now).Single();
+        Assert.IsTrue(reminder.Fingerprint.Length <= 15);
+    }
+
+    [TestMethod]
     public void RescheduleReplacesTheTimeUnderTheSameOccurrenceTag()
     {
         var before = CalendarReminderPlanner.CreateCandidates([Meeting()], Now).Single();

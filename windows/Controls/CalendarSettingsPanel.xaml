@@ -83,8 +83,17 @@
                         <TextBlock x:Uid="Calendar_GoogleUnavailable" MinWidth="0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
                                    Visibility="{x:Bind ViewModel.IsGoogleUnavailable, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
                     </toolkit:SettingsCard.Description>
-                    <Button x:Uid="Calendar_ConnectGoogle" AutomationProperties.AutomationId="Calendar_ConnectGoogle"
-                            Command="{x:Bind ViewModel.GoogleConnectCommand, Mode=OneWay}" MinWidth="136" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Uid="Calendar_ConnectGoogle" AutomationProperties.AutomationId="Calendar_ConnectGoogle"
+                                Command="{x:Bind ViewModel.GoogleConnectCommand, Mode=OneWay}" MinWidth="136"
+                                Visibility="{x:Bind ViewModel.IsGoogleConnected, Mode=OneWay, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
+                        <Button x:Uid="Calendar_GoogleConnected" AutomationProperties.AutomationId="Calendar_GoogleConnected"
+                                IsEnabled="False"
+                                Visibility="{x:Bind ViewModel.IsGoogleConnected, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                        <Button x:Uid="Calendar_AddGoogleAccount" AutomationProperties.AutomationId="Calendar_AddGoogleAccount"
+                                Command="{x:Bind ViewModel.GoogleConnectCommand, Mode=OneWay}"
+                                Visibility="{x:Bind ViewModel.IsGoogleConnected, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                    </StackPanel>
                 </toolkit:SettingsCard>
             </toolkit:SettingsExpander.Items>
         </toolkit:SettingsExpander>
