@@ -289,13 +289,16 @@ public sealed class PlannedWorkflowTests
             accountOptions.Patterns.Invoke.Pattern.Invoke();
 
         var reminderDetails = Find("Calendar_ReminderDetails");
-        Assert.AreEqual("How calendar reminders work", reminderDetails.Name);
+        Assert.AreEqual("Reminders and updates", reminderDetails.Name);
         Assert.IsTrue(reminderDetails.Properties.IsKeyboardFocusable.ValueOrDefault);
-        Assert.IsTrue(reminderDetails.Patterns.ExpandCollapse.IsSupported);
-        reminderDetails.Patterns.ExpandCollapse.Pattern.Expand();
-        Wait(() => Find("Calendar_ReminderLimits").Name.Contains("Timed events get a Windows reminder", StringComparison.Ordinal),
-            "reminder details content after expansion");
-        reminderDetails.Patterns.ExpandCollapse.Pattern.Collapse();
+        Assert.IsTrue(reminderDetails.Patterns.Invoke.IsSupported);
+        reminderDetails.Patterns.Invoke.Pattern.Invoke();
+        var reminderBody = Find("Calendar_ReminderDialogBody");
+        StringAssert.Contains(reminderBody.Name, "Timed events get a Windows reminder 10 minutes before they start.");
+        Assert.IsFalse(reminderBody.IsOffscreen);
+        Assert.IsFalse(string.IsNullOrWhiteSpace(Find("Calendar_ReminderDialogRange").Name));
+        TaskWorkflowTests.CaptureState("calendar-reminder-modal");
+        Keyboard.Press(VirtualKeyShort.ESCAPE);
         TaskWorkflowTests.CaptureState("calendar-settings-bottom");
     }
 

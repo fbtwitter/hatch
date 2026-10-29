@@ -2,6 +2,7 @@
     x:Class="Hatch.Controls.CalendarSettingsPanel"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:toolkit="using:CommunityToolkit.WinUI.Controls"
     xmlns:vm="using:Hatch.ViewModels"
     xmlns:converters="using:Hatch.Converters">
     <UserControl.Resources>
@@ -29,7 +30,7 @@
                     <TextBlock x:Uid="Calendar_ImportHeading" Style="{ThemeResource BodyStrongTextBlockStyle}" />
                     <TextBlock x:Uid="Calendar_ImportDescription" Style="{ThemeResource CaptionTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" Margin="0,2,0,0"
-                               TextWrapping="Wrap" />
+                               MinWidth="0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
                 <Button Grid.Column="2" x:Uid="Calendar_Import" AutomationProperties.AutomationId="Calendar_Import"
                         Command="{x:Bind ViewModel.ImportCommand, Mode=OneWay}" MinWidth="108"
@@ -50,48 +51,43 @@
                 HorizontalAlignment="Right"
                 Visibility="{x:Bind ViewModel.IsConnecting, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
 
-        <TextBlock x:Uid="Calendar_AccountTitle" Style="{ThemeResource BodyStrongTextBlockStyle}"
-                   Margin="0,8,0,0" />
-
-        <Border Style="{StaticResource CalendarSettingsCardStyle}" Padding="0">
-            <StackPanel>
-                <Grid ColumnSpacing="16" Margin="16,12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel VerticalAlignment="Center">
-                        <TextBlock x:Uid="Calendar_ProviderMicrosoftLabel" Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                        <TextBlock x:Uid="Calendar_MicrosoftUnavailable" TextWrapping="Wrap"
-                                   Style="{ThemeResource CaptionTextBlockStyle}"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+        <toolkit:SettingsExpander IsExpanded="True" AutomationProperties.AutomationId="Calendar_Connections">
+            <toolkit:SettingsExpander.Header>
+                <TextBlock x:Uid="Calendar_AccountTitle" Style="{ThemeResource BodyStrongTextBlockStyle}" />
+            </toolkit:SettingsExpander.Header>
+            <toolkit:SettingsExpander.Description>
+                <TextBlock x:Uid="Calendar_AccountPrivacy" MinWidth="0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
+                           Style="{ThemeResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </toolkit:SettingsExpander.Description>
+            <toolkit:SettingsExpander.HeaderIcon>
+                <FontIcon Glyph="&#xE787;" />
+            </toolkit:SettingsExpander.HeaderIcon>
+            <toolkit:SettingsExpander.Items>
+                <toolkit:SettingsCard>
+                    <toolkit:SettingsCard.Header>
+                        <TextBlock x:Uid="Calendar_ProviderMicrosoftLabel" />
+                    </toolkit:SettingsCard.Header>
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock x:Uid="Calendar_MicrosoftUnavailable" MinWidth="0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
                                    Visibility="{x:Bind ViewModel.IsMicrosoftUnavailable, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
-                    </StackPanel>
-                    <Button Grid.Column="1" x:Uid="Calendar_Connect" AutomationProperties.AutomationId="Calendar_Connect"
-                            Command="{x:Bind ViewModel.ConnectCommand, Mode=OneWay}" MinWidth="136"
-                            VerticalAlignment="Center" />
-                </Grid>
-
-                <Border Height="1" Margin="16,0" Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
-
-                <Grid ColumnSpacing="16" Margin="16,12">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel VerticalAlignment="Center">
-                        <TextBlock x:Uid="Calendar_ProviderGoogleLabel" Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                        <TextBlock x:Uid="Calendar_GoogleUnavailable" TextWrapping="Wrap"
-                                   Style="{ThemeResource CaptionTextBlockStyle}"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    </toolkit:SettingsCard.Description>
+                    <Button x:Uid="Calendar_Connect" AutomationProperties.AutomationId="Calendar_Connect"
+                            Command="{x:Bind ViewModel.ConnectCommand, Mode=OneWay}" MinWidth="136" />
+                </toolkit:SettingsCard>
+                <toolkit:SettingsCard>
+                    <toolkit:SettingsCard.Header>
+                        <TextBlock x:Uid="Calendar_ProviderGoogleLabel" />
+                    </toolkit:SettingsCard.Header>
+                    <toolkit:SettingsCard.Description>
+                        <TextBlock x:Uid="Calendar_GoogleUnavailable" MinWidth="0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
                                    Visibility="{x:Bind ViewModel.IsGoogleUnavailable, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
-                    </StackPanel>
-                    <Button Grid.Column="1" x:Uid="Calendar_ConnectGoogle" AutomationProperties.AutomationId="Calendar_ConnectGoogle"
-                            Command="{x:Bind ViewModel.GoogleConnectCommand, Mode=OneWay}" MinWidth="136"
-                            VerticalAlignment="Center" />
-                </Grid>
-            </StackPanel>
-        </Border>
+                    </toolkit:SettingsCard.Description>
+                    <Button x:Uid="Calendar_ConnectGoogle" AutomationProperties.AutomationId="Calendar_ConnectGoogle"
+                            Command="{x:Bind ViewModel.GoogleConnectCommand, Mode=OneWay}" MinWidth="136" />
+                </toolkit:SettingsCard>
+            </toolkit:SettingsExpander.Items>
+        </toolkit:SettingsExpander>
 
         <Grid ColumnSpacing="8" Margin="0,8,0,0"
               Visibility="{x:Bind ViewModel.HasAccounts, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
@@ -121,8 +117,10 @@
                             <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                                 <TextBlock Text="{x:Bind ProviderName, Mode=OneTime}"
                                            Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                                <TextBlock Text="{x:Bind Email, Mode=OneTime}" TextWrapping="Wrap" />
-                                <TextBlock Text="{x:Bind Status, Mode=OneTime}" TextWrapping="Wrap"
+                                <TextBlock Text="{x:Bind Email, Mode=OneTime}" ToolTipService.ToolTip="{x:Bind Email, Mode=OneTime}"
+                                           MinWidth="0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Text="{x:Bind Status, Mode=OneTime}" ToolTipService.ToolTip="{x:Bind Status, Mode=OneTime}"
+                                           MinWidth="0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
                                            Style="{ThemeResource CaptionTextBlockStyle}"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
@@ -152,29 +150,13 @@
             </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <Border Style="{StaticResource CalendarSettingsCardStyle}" Padding="8,0">
-            <Expander x:Uid="Calendar_ReminderDetails" AutomationProperties.AutomationId="Calendar_ReminderDetails"
-                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
-                <StackPanel Spacing="8" Padding="8,8,8,16">
-                    <TextBlock x:Uid="Calendar_ReminderLimits" AutomationProperties.AutomationId="Calendar_ReminderLimits"
-                               TextWrapping="Wrap" />
-                    <TextBlock Text="{x:Bind ViewModel.RangeLabel, Mode=OneWay}" TextWrapping="Wrap"
-                               Style="{ThemeResource CaptionTextBlockStyle}"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                </StackPanel>
-            </Expander>
-        </Border>
+        <Button x:Uid="Calendar_ReminderDetails" AutomationProperties.AutomationId="Calendar_ReminderDetails"
+                HorizontalAlignment="Left" Click="ReminderDetailsButton_Click">
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <FontIcon Glyph="&#xE946;" FontSize="16" />
+                <TextBlock x:Uid="Calendar_ReminderDetailsLabel" />
+            </StackPanel>
+        </Button>
 
-        <Grid ColumnSpacing="8" Margin="0,4,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <FontIcon Glyph="&#xE72E;" FontSize="14" VerticalAlignment="Top" Margin="0,2,0,0"
-                      Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-            <TextBlock Grid.Column="1" x:Uid="Calendar_AccountPrivacy" TextWrapping="Wrap"
-                       Style="{ThemeResource CaptionTextBlockStyle}"
-                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-        </Grid>
     </StackPanel>
 </UserControl>
