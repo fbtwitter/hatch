@@ -49,22 +49,29 @@ public sealed partial class CalendarService
 
     private async Task LoadAsync()
     {
-        try
+        Exception? lastError = null;
+        foreach (var candidate in CalendarCacheFile.ReadCandidates(_path))
         {
-            if (File.Exists(_path))
+            if (!File.Exists(candidate)) continue;
+            try
             {
-                await using var file = File.OpenRead(_path);
-                _accounts = await JsonSerializer.DeserializeAsync(file,
+                await using var file = File.OpenRead(candidate);
+                var accounts = await JsonSerializer.DeserializeAsync(file,
                     CalendarJsonContext.Default.ListCalendarAccount) ?? [];
-                if (_accounts.Any(a => a == null || string.IsNullOrEmpty(a.Id) || string.IsNullOrEmpty(a.Email) ||
-                    a.Provider is not (CalendarProvider.Microsoft or CalendarProvider.Google or CalendarProvider.Ics) ||
-                    a.Calendars == null || a.Events == null ||
-                    a.Events.Any(e => e == null || e.AccountId != a.Id || string.IsNullOrEmpty(e.Id) ||
-                        string.IsNullOrEmpty(e.CalendarId) || e.End < e.Start)))
-                    throw new JsonException("Invalid calendar account cache.");
+                ValidateAccounts(accounts);
+                _accounts = accounts;
+                if (lastError != null)
+                    CrashLog.Write("Calendar cache recovery", "A newer snapshot could not be read; loaded the previous valid snapshot.");
+                lastError = null;
+                break;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+            {
+                lastError = ex;
+                CrashLog.Write("Calendar cache read", $"{Path.GetFileName(candidate)}: {ex.GetType().Name} (HRESULT 0x{ex.HResult:X8}).");
             }
         }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
+        if (lastError != null)
         {
             _accounts = [];
             Error = Strings.Get("Calendar_ErrorCache");
@@ -72,6 +79,16 @@ public sealed partial class CalendarService
         ReconcileReminders();
         StateChanged?.Invoke();
         EnsurePolling();
+    }
+
+    private static void ValidateAccounts(List<CalendarAccount> accounts)
+    {
+        if (accounts.Any(a => a == null || string.IsNullOrEmpty(a.Id) || string.IsNullOrEmpty(a.Email) ||
+            a.Provider is not (CalendarProvider.Microsoft or CalendarProvider.Google or CalendarProvider.Ics) ||
+            a.Calendars == null || a.Events == null ||
+            a.Events.Any(e => e == null || e.AccountId != a.Id || string.IsNullOrEmpty(e.Id) ||
+                string.IsNullOrEmpty(e.CalendarId) || e.End < e.Start)))
+            throw new JsonException("Invalid calendar account cache.");
     }
 
     public async Task ConnectAsync(CancellationToken cancellationToken = default)
@@ -385,7 +402,7 @@ public sealed partial class CalendarService
             await using (var file = File.Create(temporary))
                 await JsonSerializer.SerializeAsync(file, accounts, CalendarJsonContext.Default.ListCalendarAccount, ct);
 
-            await CalendarCacheFile.ReplaceAsync(temporary, _path, ct);
+            await CalendarCacheFile.WriteSnapshotAsync(temporary, _path, ct);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.35.2] - 2026-10-29
+
+- Prevent Google calendar connection failures when Windows locks the existing local cache.
+
 ## [0.35.1] - 2026-10-29
 
 - Improve calendar connection reliability and settings, and correct mascot frame handling.
