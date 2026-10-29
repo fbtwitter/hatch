@@ -726,7 +726,7 @@
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center"
                             Visibility="{x:Bind ViewModel.IsPlannedPage, Converter={StaticResource BoolToVisibility}, Mode=OneWay}">
-                <controls:CalendarSourcesButton x:Name="PlannedCalendarSources" />
+                <controls:CalendarSourcesButton x:Name="PlannedCalendarSources" Visibility="Collapsed" />
                 <Border BorderBrush="Transparent"
                         BorderThickness="0" CornerRadius="0" Padding="0"
                         Background="Transparent"

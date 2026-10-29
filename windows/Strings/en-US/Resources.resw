@@ -855,7 +855,7 @@ Imported .ics files are snapshots of the previous 7 days and next 30 days at imp
   <data name="Calendar_PastDay.Header" xml:space="preserve"><value>Earlier events</value></data>
   <data name="Calendar_QuickJoin.Content" xml:space="preserve"><value>Join</value></data>
   <data name="Calendar_DetailsName" xml:space="preserve"><value>View event: {0}</value></data>
-  <data name="Calendar_DayConnectHint" xml:space="preserve"><value>Open Calendar settings to connect an account or import an .ics file.</value></data>
+  <data name="Calendar_DayConnectHint" xml:space="preserve"><value>No calendar connected. Open Settings &gt; Calendars to connect an account or import an .ics file.</value></data>
   <data name="Calendar_DayEmpty" xml:space="preserve"><value>No events on this day.</value></data>
   <data name="Calendar_DayOutsideRange" xml:space="preserve"><value>This date is outside your saved calendar range. Refresh connected calendars or replace imported files to update available dates.</value></data>
   <data name="Calendar_DateEvents" xml:space="preserve"><value>{0} calendar events.</value></data>
