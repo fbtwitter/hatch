@@ -16,9 +16,10 @@ internal static class CalendarReminderPlanner
     internal static List<Reminder> CreateCandidates(IEnumerable<CalendarEvent> events, DateTimeOffset now) => events
         .Where(e => !e.IsAllDay && e.Start > now && e.Start.AddMinutes(-10) > now - DeliveryWindow)
         .DistinctBy(e => (e.AccountId, e.CalendarId, e.Id))
+        // This Windows scheduler rejects a 16-character Id with WPN_E_DEV_ID_SIZE.
         .Select(e => new Reminder(TagPrefix + Digest(Pack(e.AccountId, e.CalendarId, e.Id))[..12],
             Digest(Pack(e.Subject, e.CalendarName, e.EventUrl ?? string.Empty, e.MeetingUrl ?? string.Empty,
-                e.Start.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture)))[..16], e.Start.AddMinutes(-10), e))
+                e.Start.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture)))[..15], e.Start.AddMinutes(-10), e))
         .OrderBy(r => r.DeliveryTime).ThenBy(r => r.Tag, StringComparer.Ordinal).ToList();
 
     internal static bool CanScheduleNew(Reminder reminder, DateTimeOffset now) => reminder.DeliveryTime > now.AddSeconds(1);
