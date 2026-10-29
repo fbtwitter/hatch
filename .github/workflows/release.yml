@@ -90,6 +90,16 @@ jobs:
           $notes = "## What's new in $tag`n`n$entry`n`n$commitLink`n`n---`n`n$install"
           Set-Content (Join-Path $env:GITHUB_WORKSPACE 'release-notes.md') $notes -Encoding utf8NoBOM
 
+      - name: Validate Google Calendar configuration
+        shell: pwsh
+        run: |
+          $clientId = $env:HatchGoogleCalendarClientId
+          if ([string]::IsNullOrWhiteSpace($clientId) -or $clientId -ne $clientId.Trim() -or
+              $clientId.Length -le 30 -or -not $clientId.EndsWith('.apps.googleusercontent.com', [StringComparison]::Ordinal)) {
+            throw 'GOOGLE_CALENDAR_CLIENT_ID must contain the configured Google desktop OAuth client ID.'
+          }
+          Write-Host 'Google Calendar client ID configuration is present.'
+
       - name: Inject secrets
         shell: pwsh
         run: |
@@ -301,6 +311,17 @@ jobs:
             Write-Host "No change to publish"
           }
           Pop-Location
+
+      - name: Upload signed preview
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hatch-preview-${{ inputs.version }}
+          path: |
+            ${{ env.BUNDLE_PATH }}
+            ${{ github.workspace }}/install-cert.cer
+          if-no-files-found: error
+          retention-days: 7
 
       # Tag pushes only. A manual run is a dry run — it must never publish a release.
       - name: Create GitHub release
