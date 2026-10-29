@@ -78,7 +78,9 @@ public sealed partial class MainViewModel
     }
 
     public bool HasNewTaskDueDate => NewTaskDueDate.HasValue;
-    public string NewTaskDueDateLabel => NewTaskDueDate?.ToString("d", CultureInfo.CurrentCulture) ?? string.Empty;
+    public string NewTaskDueDateLabel => NewTaskDueDate is { } date
+        ? date.ToString(date.Year == DateTime.Today.Year ? "d MMM" : "d MMM yy", CultureInfo.CurrentCulture)
+        : string.Empty;
     public string NewTaskDueDateTooltip => NewTaskDueDate is { } date
         ? IsNewTaskDueDateRequired
             ? Strings.NewTask_DueDateRequired(date.ToString("D", CultureInfo.CurrentCulture))

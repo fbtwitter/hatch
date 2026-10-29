@@ -19,6 +19,9 @@ jobs:
     runs-on: windows-2022
     permissions:
       contents: write
+    env:
+      HatchGoogleCalendarClientId: ${{ secrets.GOOGLE_CALENDAR_CLIENT_ID }}
+      HatchGoogleCalendarClientSecret: ${{ secrets.GOOGLE_CALENDAR_CLIENT_SECRET }}
 
     # The WinUI app lives in windows/; every run step keeps its original relative paths.
     # Steps using ${{ github.workspace }} stay repo-root-relative and are unaffected.

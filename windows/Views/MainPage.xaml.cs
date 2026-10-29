@@ -229,7 +229,7 @@ public sealed partial class MainPage : Page
                 FontFamily = new FontFamily("Segoe UI Emoji"),
                 FontSize = 20
             };
-        return new SymbolIcon(Symbol.List);
+        return new FontIcon { Glyph = "\uE8B7" };
     }
 
     // ── Context menu ─────────────────────────────────────────────────────────
@@ -663,12 +663,16 @@ public sealed partial class MainPage : Page
         ContentFrame.Navigate(typeof(TaskListPage), _viewModel, transition ?? new EntranceNavigationTransitionInfo());
     }
 
-    public bool IsShowingPage(string tag) => tag == "summary"
-        ? ContentFrame.Content is StatsPage
-        : ContentFrame.Content is TaskListPage && _viewModel.ActiveNavItem == tag;
+    public bool IsShowingPage(string tag) => tag switch
+    {
+        "summary" => ContentFrame.Content is StatsPage,
+        "calendar" => ContentFrame.Content is TaskListPage && _viewModel.ActiveNavItem == "planned",
+        _ => ContentFrame.Content is TaskListPage && _viewModel.ActiveNavItem == tag
+    };
 
     public void NavigateTo(string tag)
     {
+        if (tag == "calendar") tag = "planned";
         if (_viewModel.IsSearchActive)
             _viewModel.SearchQuery = string.Empty;
 
@@ -706,9 +710,9 @@ public sealed partial class MainPage : Page
         _viewModel.SelectedTask = task;
     }
 
-    public void NavigateToSettingsPage()
+    public void NavigateToSettingsPage(string? category = null)
     {
-        ContentFrame.Navigate(typeof(SettingsPage), null, new EntranceNavigationTransitionInfo());
+        ContentFrame.Navigate(typeof(SettingsPage), category, new EntranceNavigationTransitionInfo());
         _suppressNavigation = true;
         NavView.SelectedItem = NavView.SettingsItem;
         _suppressNavigation = false;

@@ -96,6 +96,12 @@ fails. Branch protection must require that job's status to block merges. A
 `v*.*.*` tag triggers MSIX packaging, a GitHub release, and an App Installer feed update.
 Microsoft Store submission is manual.
 
+To enable Google Calendar in release packages, add repository Actions secrets
+`GOOGLE_CALENDAR_CLIENT_ID` and, optionally, `GOOGLE_CALENDAR_CLIENT_SECRET` for a
+Google Desktop app OAuth client. The release workflow supplies them to both architecture
+builds. An unset client ID leaves Google connection unavailable. These values are embedded
+in the desktop app; a desktop OAuth client secret cannot be kept confidential.
+
 Before pushing a release tag, move the relevant `Unreleased` changes into a dated
 `CHANGELOG.md` section headed `## [X.Y.Z] - YYYY-MM-DD` (or `X.Y.Z.W` for a revision),
 with at least one change bullet. The release workflow checks that the section matches the

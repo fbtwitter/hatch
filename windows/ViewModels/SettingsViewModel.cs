@@ -41,6 +41,7 @@ public sealed partial class SettingsViewModel : INotifyPropertyChanged
             OnPropertyChanged(nameof(MascotSettingsVisibility));
             OnPropertyChanged(nameof(TipsSettingsVisibility));
             OnPropertyChanged(nameof(SyncSettingsVisibility));
+            OnPropertyChanged(nameof(IsCalendarSettingsSelected));
             OnPropertyChanged(nameof(DataSettingsVisibility));
             OnPropertyChanged(nameof(AboutSettingsVisibility));
         }
@@ -57,6 +58,7 @@ public sealed partial class SettingsViewModel : INotifyPropertyChanged
     public Visibility MascotSettingsVisibility => CategoryVisibility("Mascot");
     public Visibility TipsSettingsVisibility => CategoryVisibility("Tips");
     public Visibility SyncSettingsVisibility => CategoryVisibility("Sync");
+    public bool IsCalendarSettingsSelected => _selectedSettingsCategory == "Calendars";
     public Visibility DataSettingsVisibility => CategoryVisibility("Data");
     public Visibility AboutSettingsVisibility => CategoryVisibility("About");
 

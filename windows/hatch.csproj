@@ -23,7 +23,7 @@
     <!-- Keep in sync with Package.appxmanifest's Identity Version and the release tag.
          Packaged builds read the manifest; unpackaged Debug builds have no package
          identity and fall back to this via SettingsViewModel.AppVersion. -->
-    <Version>0.34.0</Version>
+    <Version>0.35.0</Version>
     <!-- Signing and package generation are handled by CI; disabled locally -->
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
     <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>
@@ -96,6 +96,15 @@
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" Version="8.2.251219" />
     <PackageReference Include="CommunityToolkit.WinUI.Lottie" Version="8.2.250604" />
     <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.4.0" />
+  </ItemGroup>
+
+  <!-- Optional local provider configuration; release builds can supply MSBuild properties. -->
+  <Import Project="..\.dev-tools\calendar.local.props" Condition="Exists('..\.dev-tools\calendar.local.props')" />
+
+  <ItemGroup>
+    <AssemblyMetadata Include="HatchCalendarClientId" Value="$(HatchCalendarClientId)" />
+    <AssemblyMetadata Include="HatchGoogleCalendarClientId" Value="$(HatchGoogleCalendarClientId)" />
+    <AssemblyMetadata Include="HatchGoogleCalendarClientSecret" Value="$(HatchGoogleCalendarClientSecret)" />
   </ItemGroup>
 
   <!-- Generate package icons when their vector sources or renderer change.

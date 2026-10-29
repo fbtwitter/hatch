@@ -15,13 +15,17 @@ public static class TestSetup
     public static UIA3Automation? Auto { get; private set; }
     public static Window? MainWindow { get; private set; }
     public static string DataDirectory { get; private set; } = string.Empty;
+    public static bool IsMainWindowForeground => MainWindow is not null
+        && GetForegroundWindow() == new IntPtr(MainWindow.Properties.NativeWindowHandle.Value);
     private static string TestInstanceKey { get; set; } = string.Empty;
 
     public static void ResetUi()
     {
         if (App is null || Auto is null || MainWindow is null) return;
 
-        ShowWindow(new IntPtr(MainWindow.Properties.NativeWindowHandle.Value), 9);
+        var windowHandle = new IntPtr(MainWindow.Properties.NativeWindowHandle.Value);
+        ShowWindow(windowHandle, 9);
+        SetForegroundWindow(windowHandle);
         foreach (var id in new[] { "FocusMode_Exit", "Bubble_Close", "ProactiveTip_Close", "PaneCloseButton" })
         {
             try
@@ -39,7 +43,9 @@ public static class TestSetup
 
         try
         {
-            MainWindow.FindFirstDescendant(cf => cf.ByAutomationId("Nav_AllTasks"))?.Click();
+            var allTasks = MainWindow.FindFirstDescendant(cf => cf.ByAutomationId("Nav_AllTasks"));
+            if (allTasks?.Patterns.SelectionItem.IsSupported == true)
+                allTasks.Patterns.SelectionItem.Pattern.Select();
             var viewport = MainWindow.FindFirstDescendant(cf => cf.ByAutomationId("FlatListView"));
             if (viewport is { IsOffscreen: false } && viewport.Patterns.Scroll.IsSupported
                 && viewport.Patterns.Scroll.Pattern.VerticallyScrollable.Value)
@@ -87,6 +93,7 @@ public static class TestSetup
                 .Select(item => (object)new
                 {
                     Id = Guid.NewGuid(), Title = item.Item1, CreatedAt = DateTimeOffset.UtcNow, IsCompleted = false,
+                    Notes = item.Item1 == "Planned future" ? "Synthetic planned task notes" : null,
                     DueDate = new DateTimeOffset(DateTime.SpecifyKind(DateTime.Today.AddDays(item.Item2), DateTimeKind.Unspecified), TimeSpan.Zero),
                     Recurrence = item.Item3
                 }).ToArray();
@@ -126,6 +133,35 @@ public static class TestSetup
             Tasks = tasks,
             Lists = new[] { new { Id = Guid.NewGuid(), Name = "Runtime test list" } }
         }));
+
+        if (Environment.GetEnvironmentVariable("HATCH_TEST_PLANNED") == "1")
+        {
+            DateTimeOffset At(DateTime value) => new(DateTime.SpecifyKind(value, DateTimeKind.Unspecified),
+                TimeZoneInfo.Local.GetUtcOffset(value));
+            var meetingStart = DateTime.Today.AddDays(2).AddHours(10);
+            const string accountId = "planned-test-account";
+            const string calendarId = "planned-test-calendar";
+            File.WriteAllText(Path.Combine(DataDirectory, "calendar.json"), JsonSerializer.Serialize(new[]
+            {
+                new
+                {
+                    Id = accountId, Provider = 2, Email = "planner@example.test", DefaultCalendarId = calendarId,
+                    WindowStart = At(DateTime.Today.AddDays(-7)), WindowEnd = At(DateTime.Today.AddDays(31)),
+                    LastSyncedAt = (DateTimeOffset?)null,
+                    Calendars = new[] { new { Id = calendarId, Name = "Planned test calendar", DeltaLink = (string?)null } },
+                    Events = new[]
+                    {
+                        new
+                        {
+                            Id = "planned-test-meeting", CalendarId = calendarId, CalendarName = "Planned test calendar",
+                            AccountId = accountId, Subject = "Planned test meeting", Start = At(meetingStart),
+                            End = At(meetingStart.AddMinutes(30)), IsAllDay = false,
+                            EventUrl = "https://example.invalid/event", MeetingUrl = "https://example.invalid/join"
+                        }
+                    }
+                }
+            }));
+        }
 
         App = LaunchTestApp();
 
@@ -266,9 +302,24 @@ public static class TestSetup
         }
 
         if (hatchWindow is null)
+        {
+            string processState;
+            try
+            {
+                using var process = Process.GetProcessById(pid);
+                processState = process.HasExited
+                    ? $"exited with code {process.ExitCode}"
+                    : $"alive with title '{process.MainWindowTitle}' and handle {process.MainWindowHandle}";
+            }
+            catch (Exception ex) { processState = ex.Message; }
+            string windows;
+            try { windows = string.Join(", ", App!.GetAllTopLevelWindows(Auto!).Select(window => $"'{window.Title}'")); }
+            catch (Exception ex) { windows = ex.Message; }
             throw new InvalidOperationException(
-                "Could not find window titled 'Hatch' in process after 15 s. " +
+                $"Could not find window titled 'Hatch' in process {pid} after 15 s ({processState}). " +
+                $"Process windows: {windows}. Test data: {DataDirectory}. " +
                 "Ensure the selected app executable starts and HATCH_UI_TEST=1 was inherited.");
+        }
 
         // Step 2: widen to 800px so nav rail items are in the UIA tree, then single lookup
         var transform = hatchWindow.Patterns.Transform;
@@ -288,4 +339,10 @@ public static class TestSetup
 
     [DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr hwnd, int command);
+
+    [DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hwnd);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
 }

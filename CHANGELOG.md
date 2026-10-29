@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.35.0] - 2026-10-28
+
+- Bring calendar events and due tasks together in Planned, with optional Google and Microsoft connections and calendar file imports.
+
 ## [0.34.0] - 2026-10-19
 
 - Add categorized Settings, a customizable mascot click-through key, and direct key guidance in mascot help.

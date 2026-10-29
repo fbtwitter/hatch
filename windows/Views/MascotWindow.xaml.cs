@@ -1027,7 +1027,8 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         // Set transparent backdrop after the compositor is ready. Deferred here because
         // setting SystemBackdrop in the constructor races against DWM/WarpPal
         // initialisation and causes a null vtable crash (0xC0000005).
-        SystemBackdrop = new TransparentTintBackdrop();
+        // Use all-zero ARGB so DWM glass receives transparent black on Windows 10.
+        SystemBackdrop = new TransparentTintBackdrop(Windows.UI.Color.FromArgb(0, 0, 0, 0));
 
         // Re-apply all window styles after backdrop — the backdrop controller can reset
         // GWL_EXSTYLE (clearing WS_EX_NOREDIRECTIONBITMAP) and DwmExtendFrameIntoClientArea.

@@ -122,6 +122,7 @@
   <!-- ── Task row x:Uid mapped ──────────────────────────────── -->
   <data name="Task_CheckBox.ToolTipService.ToolTip" xml:space="preserve"><value>Mark as complete</value></data>
   <data name="Task_DateChipButton.ToolTipService.ToolTip" xml:space="preserve"><value>Change due date</value></data>
+  <data name="Task_DateChipButton.AutomationProperties.HelpText" xml:space="preserve"><value>Change this task's due date.</value></data>
   <data name="Task_AddDateButton.ToolTipService.ToolTip" xml:space="preserve"><value>Set a due date — makes this task appear in Planned</value></data>
   <data name="Task_AddDateText.Text" xml:space="preserve"><value>Add date</value></data>
   <data name="Task_EditButton.ToolTipService.ToolTip" xml:space="preserve"><value>Edit task</value></data>
@@ -698,13 +699,15 @@
   <data name="Settings_Update_InstallFailed" xml:space="preserve"><value>Couldn’t start the update. Try again later.</value></data>
   <data name="PlannedViewSelector.ToolTipService.ToolTip" xml:space="preserve"><value>Change Planned view</value></data>
   <data name="PlannedViewSelector.AutomationProperties.HelpText" xml:space="preserve"><value>Choose Agenda or Calendar.</value></data>
-  <data name="PlannedAgendaItem.Text" xml:space="preserve"><value>Agenda</value></data>
-  <data name="PlannedCalendarItem.Text" xml:space="preserve"><value>Calendar</value></data>
-  <data name="PlannedCalendar.AutomationProperties.Name" xml:space="preserve"><value>Task due dates</value></data>
-  <data name="PlannedDayList.AutomationProperties.Name" xml:space="preserve"><value>Tasks due on the selected day</value></data>
+  <data name="PlannedAgendaItem.AutomationProperties.Name" xml:space="preserve"><value>Agenda</value></data>
+  <data name="PlannedAgendaItem.ToolTipService.ToolTip" xml:space="preserve"><value>Agenda view</value></data>
+  <data name="PlannedCalendarItem.AutomationProperties.Name" xml:space="preserve"><value>Calendar</value></data>
+  <data name="PlannedCalendarItem.ToolTipService.ToolTip" xml:space="preserve"><value>Calendar view</value></data>
+  <data name="PlannedCalendar.AutomationProperties.Name" xml:space="preserve"><value>Task deadlines and calendar events</value></data>
+  <data name="PlannedDayList.AutomationProperties.Name" xml:space="preserve"><value>Calendar events and tasks due on the selected day</value></data>
   <data name="PlannedTodayButton.Content" xml:space="preserve"><value>Today</value></data>
   <data name="PlannedDateButton.ToolTipService.ToolTip" xml:space="preserve"><value>Choose a date</value></data>
-  <data name="PlannedDateButton.AutomationProperties.HelpText" xml:space="preserve"><value>Open the calendar to choose which day's tasks to show.</value></data>
+  <data name="PlannedDateButton.AutomationProperties.HelpText" xml:space="preserve"><value>Choose which day's calendar events and tasks to show.</value></data>
   <data name="PlannedDayEmptyText.Text" xml:space="preserve"><value>No tasks due on this day. Add a task to plan ahead.</value></data>
   <data name="PlannedCalendar_Overdue" xml:space="preserve"><value>Overdue · {0}</value></data>
   <data name="PlannedCalendar_OneTask" xml:space="preserve"><value>1 task</value></data>
@@ -732,4 +735,129 @@
   <data name="Mascot_DisableClickThrough" xml:space="preserve"><value>Disable click-through</value></data>
   <data name="Mascot_MenuClickThroughToolTipFormat" xml:space="preserve"><value>Let clicks pass through Hatch. Hold {0} to click or drag Hatch, or turn this off from its tray menu.</value></data>
   <data name="Mascot_ClickThroughLabel" xml:space="preserve"><value>Click-through</value></data>
+  <data name="Nav_Calendar.Content" xml:space="preserve"><value>Calendar</value></data>
+  <data name="Nav_Calendar.ToolTipService.ToolTip" xml:space="preserve"><value>Calendar events</value></data>
+  <data name="Calendar_Title.Text" xml:space="preserve"><value>Calendar</value></data>
+  <data name="Calendar_Description.Text" xml:space="preserve"><value>Calendar events stay separate from your tasks.</value></data>
+  <data name="Calendar_Range" xml:space="preserve"><value>Previous 7 days and next 30 days · Times in {0}</value></data>
+  <data name="Calendar_Connect.Content" xml:space="preserve"><value>Connect Microsoft</value></data>
+  <data name="Calendar_ConnectGoogle.Content" xml:space="preserve"><value>Connect Google</value></data>
+  <data name="Calendar_ProviderMicrosoft" xml:space="preserve"><value>Microsoft</value></data>
+  <data name="Calendar_ProviderGoogle" xml:space="preserve"><value>Google</value></data>
+  <data name="Calendar_BrowserReturn" xml:space="preserve"><value>Google sent you back to Hatch. Return to the app while it finishes connecting your calendar.</value></data>
+  <data name="Calendar_Callback_ReceivedHeading" xml:space="preserve"><value>Authorization received</value></data>
+  <data name="Calendar_Callback_DeniedHeading" xml:space="preserve"><value>Connection not completed</value></data>
+  <data name="Calendar_Callback_InvalidHeading" xml:space="preserve"><value>Sign-in response not recognized</value></data>
+  <data name="Calendar_Callback_InvalidBody" xml:space="preserve"><value>Return to Hatch and start connecting Google Calendar again.</value></data>
+  <data name="Calendar_ErrorLoopback" xml:space="preserve"><value>Hatch could not receive the local Google sign-in callback. Check that local loopback connections are allowed, then try again.</value></data>
+  <data name="Calendar_Refresh.AutomationProperties.Name" xml:space="preserve"><value>Refresh calendars</value></data>
+  <data name="Calendar_Refresh.ToolTipService.ToolTip" xml:space="preserve"><value>Refresh calendars</value></data>
+  <data name="Calendar_Cancel.Content" xml:space="preserve"><value>Cancel sign-in</value></data>
+  <data name="Calendar_Disconnect.Content" xml:space="preserve"><value>Disconnect</value></data>
+  <data name="Calendar_DisconnectName" xml:space="preserve"><value>Disconnect {0}</value></data>
+  <data name="Calendar_OpenName" xml:space="preserve"><value>Open event: {0}</value></data>
+  <data name="Calendar_JoinName" xml:space="preserve"><value>Join meeting: {0}</value></data>
+  <data name="Calendar_Activity.AutomationProperties.Name" xml:space="preserve"><value>Calendar activity</value></data>
+  <data name="Calendar_Import.Content" xml:space="preserve"><value>Import .ics</value></data>
+  <data name="Calendar_Import.AutomationProperties.Name" xml:space="preserve"><value>Import a calendar file</value></data>
+  <data name="Calendar_ImportHeading.Text" xml:space="preserve"><value>Import a calendar file</value></data>
+  <data name="Calendar_ImportDescription.Text" xml:space="preserve"><value>Import an offline .ics snapshot. Replace the file to load updates.</value></data>
+  <data name="Calendar_ProviderMicrosoftLabel.Text" xml:space="preserve"><value>Microsoft</value></data>
+  <data name="Calendar_ProviderGoogleLabel.Text" xml:space="preserve"><value>Google</value></data>
+  <data name="Calendar_ProviderIcs" xml:space="preserve"><value>Imported .ics</value></data>
+  <data name="Calendar_ReplaceImport.Text" xml:space="preserve"><value>Replace file…</value></data>
+  <data name="Calendar_RemoveImport" xml:space="preserve"><value>Remove calendar</value></data>
+  <data name="Calendar_RemoveImportName" xml:space="preserve"><value>Remove imported calendar {0}</value></data>
+  <data name="Calendar_DisconnectLabel" xml:space="preserve"><value>Disconnect</value></data>
+  <data name="Calendar_Importing" xml:space="preserve"><value>Importing a calendar file…</value></data>
+  <data name="Calendar_ImportStatus" xml:space="preserve"><value>Imported {0} · Covers through {1}. Replace file to update.</value></data>
+  <data name="Calendar_ImportHint" xml:space="preserve"><value>Import an .ics file for an offline snapshot, or connect Microsoft or Google in Calendars. Events stay separate from tasks and My Day.</value></data>
+  <data name="Calendar_ImportInvalid" xml:space="preserve"><value>This file could not be imported. Use a valid iCalendar (.ics) export with event IDs and start times. Some custom timezones or advanced recurrence changes may be unsupported. Your saved calendars are unchanged.</value></data>
+  <data name="Calendar_ImportTooLarge" xml:space="preserve"><value>This calendar exceeds the 4 MB size or 50,000-line import limit. Export a smaller calendar and try again.</value></data>
+  <data name="Calendar_ImportTooMany" xml:space="preserve"><value>This calendar produces too many occurrences. Export a smaller date range or fewer recurring events.</value></data>
+  <data name="Calendar_ImportRead" xml:space="preserve"><value>Hatch could not read that calendar file. Check its encoding and file access, then try again. Your saved calendars are unchanged.</value></data>
+  <data name="Calendar_ImportMissing" xml:space="preserve"><value>The imported calendar was removed. Import the file as a new calendar.</value></data>
+  <data name="Calendar_ImportExists" xml:space="preserve"><value>A calendar with that file name is already imported. Use its options menu in Calendars and choose Replace file to update it. Your saved events are unchanged.</value></data>
+  <data name="Calendar_Accounts.Content" xml:space="preserve"><value>Calendars</value></data>
+  <data name="Calendar_Accounts.AutomationProperties.Name" xml:space="preserve"><value>Manage calendar accounts</value></data>
+  <data name="Calendar_AccountTitle.Text" xml:space="preserve"><value>Connect a calendar</value></data>
+  <data name="Calendar_ConnectedAccounts.Text" xml:space="preserve"><value>Saved calendars</value></data>
+  <data name="Calendar_AccountOptionsName" xml:space="preserve"><value>Options for {0}</value></data>
+  <data name="Calendar_DisconnectMenu.Text" xml:space="preserve"><value>Disconnect</value></data>
+  <data name="Calendar_AccountPrivacy.Text" xml:space="preserve"><value>Read-only calendars and imported files stay separate from tasks. Removing a source clears its saved events and reminders from Hatch.</value></data>
+  <data name="Calendar_MicrosoftUnavailable.Text" xml:space="preserve"><value>Microsoft sign-in is not configured in this build.</value></data>
+  <data name="Calendar_GoogleUnavailable.Text" xml:space="preserve"><value>Google sign-in is not configured in this build.</value></data>
+  <data name="Calendar_Today" xml:space="preserve"><value>Today · {0}</value></data>
+  <data name="Calendar_Tomorrow" xml:space="preserve"><value>Tomorrow · {0}</value></data>
+  <data name="Calendar_AgendaRefreshed" xml:space="preserve"><value>Saved events · Last refreshed {0}</value></data>
+  <data name="Calendar_Refreshing" xml:space="preserve"><value>Refreshing calendars…</value></data>
+  <data name="Calendar_SigningIn" xml:space="preserve"><value>Finish signing in to your calendar in your browser.</value></data>
+  <data name="Calendar_Connecting" xml:space="preserve"><value>Connecting your calendar…</value></data>
+  <data name="Calendar_EmptyTitle" xml:space="preserve"><value>No calendar events</value></data>
+  <data name="Calendar_ConnectTitle" xml:space="preserve"><value>Add your calendar</value></data>
+  <data name="Calendar_UnavailableTitle" xml:space="preserve"><value>Calendar connection unavailable</value></data>
+  <data name="Calendar_ReminderDetails.ToolTipService.ToolTip" xml:space="preserve"><value>Reminders and sync details</value></data>
+  <data name="Calendar_ReminderDetails.AutomationProperties.Name" xml:space="preserve"><value>How calendar reminders work</value></data>
+  <data name="Calendar_ReminderDetails.Header" xml:space="preserve"><value>Reminders and updates</value></data>
+  <data name="Calendar_ReminderTitle.Text" xml:space="preserve"><value>How reminders work</value></data>
+  <data name="Calendar_OpenEvent.Content" xml:space="preserve"><value>Open event</value></data>
+  <data name="Calendar_JoinMeeting.Content" xml:space="preserve"><value>Join meeting</value></data>
+  <data name="Calendar_AllDay" xml:space="preserve"><value>All day</value></data>
+  <data name="Calendar_Untitled" xml:space="preserve"><value>Untitled event</value></data>
+  <data name="Calendar_Upcoming" xml:space="preserve"><value>Upcoming</value></data>
+  <data name="Calendar_Past" xml:space="preserve"><value>Recent past</value></data>
+  <data name="Calendar_Empty" xml:space="preserve"><value>No events in the previous 7 days or next 30 days. You can refresh your calendars or manage connections in Accounts.</value></data>
+  <data name="Calendar_ConnectHint" xml:space="preserve"><value>Open Accounts to connect Microsoft or Google with read-only access. Hatch remains usable offline without a calendar account.</value></data>
+  <data name="Calendar_NotConfigured" xml:space="preserve"><value>This version cannot connect new calendar accounts yet. Hatch remains usable offline, and any saved events are still available.</value></data>
+  <data name="Calendar_ReminderBody" xml:space="preserve"><value>Starts in 10 minutes</value></data>
+  <data name="Calendar_ReminderOpenEvent" xml:space="preserve"><value>Open event</value></data>
+  <data name="Calendar_ReminderJoinMeeting" xml:space="preserve"><value>Join meeting</value></data>
+  <data name="Calendar_OpenCalendar" xml:space="preserve"><value>Open calendar</value></data>
+  <data name="Calendar_ReminderLimits.Text" xml:space="preserve"><value>Timed events get a Windows reminder 10 minutes before they start. All-day events stay silent.
+
+Hatch checks for changes every 5 minutes while running, including in the tray. Events can be out of date until the next successful refresh.
+
+Scheduled reminders can appear after Hatch closes, but reschedules and cancellations cannot sync while it is closed. Reminders can be missed while the PC is asleep or off.
+
+Imported .ics files are snapshots of the previous 7 days and next 30 days at import time. They never refresh automatically. Use Replace file in the calendar's options menu to load changes, cancellations and later dates. Replacement replaces every event in that imported source.</value></data>
+  <data name="Calendar_ErrorNotifications" xml:space="preserve"><value>Windows could not schedule calendar reminders. Your agenda remains available.</value></data>
+  <data name="Calendar_NotificationsDisabled" xml:space="preserve"><value>Windows notifications are disabled for Hatch. Enable them in Windows Settings to receive calendar reminders.</value></data>
+  <data name="Calendar_ReminderCapacity" xml:space="preserve"><value>Windows' reminder queue is full. Hatch scheduled the nearest calendar events in the available space.</value></data>
+  <data name="Calendar_LastRefreshed" xml:space="preserve"><value>{0} calendars · Refreshed {1}</value></data>
+  <data name="Calendar_LastRefreshedSingle" xml:space="preserve"><value>{0} calendar · Refreshed {1}</value></data>
+  <data name="Calendar_NotRefreshed" xml:space="preserve"><value>Waiting for the first refresh.</value></data>
+  <data name="Calendar_ErrorCache" xml:space="preserve"><value>Hatch could not read or save the local calendar cache. Your task data is unaffected.</value></data>
+  <data name="Calendar_ErrorOffline" xml:space="preserve"><value>Calendar refresh is unavailable. Showing the last saved events; Hatch will try again.</value></data>
+  <data name="Calendar_ErrorProvider" xml:space="preserve"><value>The calendar could not be refreshed. Showing the last saved events; try Refresh again.</value></data>
+  <data name="Calendar_ErrorReconnect" xml:space="preserve"><value>Reconnect this calendar account to restore calendar access.</value></data>
+  <data name="Calendar_ErrorGoogleGrant" xml:space="preserve"><value>Google rejected the sign-in code or PKCE verifier (HTTP {0}). Start sign-in again from Hatch and complete the same browser session.</value></data>
+  <data name="Calendar_ErrorGoogleRedirect" xml:space="preserve"><value>Google rejected Hatch's local callback address (HTTP {0}). Confirm this is a Desktop app OAuth client.</value></data>
+  <data name="Calendar_ErrorGoogleClient" xml:space="preserve"><value>Google rejected Hatch's OAuth client (HTTP {0}). Confirm the client ID belongs to a Desktop app in this Google Cloud project.</value></data>
+  <data name="Calendar_ErrorGoogleTokenCode" xml:space="preserve"><value>Google rejected the sign-in exchange (HTTP {0}, {1}). Check the Desktop OAuth client configuration and try again.</value></data>
+  <data name="Calendar_ErrorGoogleToken" xml:space="preserve"><value>Google rejected the sign-in exchange (HTTP {0}). Check the Desktop OAuth client configuration and try again.</value></data>
+  <data name="Calendar_ErrorGoogleRefreshToken" xml:space="preserve"><value>Google signed you in but did not return an offline refresh token. Revoke Hatch's Google access, then connect again.</value></data>
+  <data name="Calendar_ErrorGoogleApiToken" xml:space="preserve"><value>Google issued a token, but the Calendar API rejected it (HTTP {0}). Confirm Calendar API is enabled in the same Google Cloud project, then connect again.</value></data>
+  <data name="Calendar_ErrorPermission" xml:space="preserve"><value>Calendar access was denied. Your organization may require an administrator to approve Hatch.</value></data>
+  <data name="Calendar_ErrorThrottled" xml:space="preserve"><value>Your calendar provider has temporarily limited requests. Hatch will wait before trying again.</value></data>
+  <data name="Calendar_ErrorBrowser" xml:space="preserve"><value>Hatch could not open your browser for calendar sign-in.</value></data>
+  <data name="Calendar_ErrorConsent" xml:space="preserve"><value>Calendar permission was not granted. You can try connecting again.</value></data>
+  <data name="Calendar_ErrorTimeout" xml:space="preserve"><value>Calendar sign-in timed out. Connect again to retry.</value></data>
+  <data name="Calendar_ErrorCredentials" xml:space="preserve"><value>Windows could not access Hatch's protected calendar credentials. Try connecting again.</value></data>
+  <data name="Calendar_Meetings.Text" xml:space="preserve"><value>Events</value></data>
+  <data name="Calendar_RefreshAction.Content" xml:space="preserve"><value>Refresh calendars</value></data>
+  <data name="Calendar_TasksDue.Text" xml:space="preserve"><value>Tasks due</value></data>
+  <data name="PlannedAgenda_Meetings" xml:space="preserve"><value>Events</value></data>
+  <data name="PlannedAgenda_TasksDue" xml:space="preserve"><value>Tasks due</value></data>
+  <data name="Calendar_PastDay.Header" xml:space="preserve"><value>Earlier events</value></data>
+  <data name="Calendar_ReminderExpander.Header" xml:space="preserve"><value>Reminders and updates</value></data>
+  <data name="Calendar_QuickJoin.Content" xml:space="preserve"><value>Join</value></data>
+  <data name="Calendar_DetailsName" xml:space="preserve"><value>View event: {0}</value></data>
+  <data name="Calendar_DayConnectHint" xml:space="preserve"><value>Open Calendar settings to connect an account or import an .ics file.</value></data>
+  <data name="Calendar_DayEmpty" xml:space="preserve"><value>No events on this day.</value></data>
+  <data name="Calendar_DayOutsideRange" xml:space="preserve"><value>This date is outside your saved calendar range. Refresh connected calendars or replace imported files to update available dates.</value></data>
+  <data name="Calendar_DateEvents" xml:space="preserve"><value>{0} calendar events.</value></data>
+  <data name="Calendar_Settings.Text" xml:space="preserve"><value>Calendar settings</value></data>
+  <data name="Settings_NavCalendars.Content" xml:space="preserve"><value>Calendars</value></data>
+  <data name="Settings_Category_Calendars_Title" xml:space="preserve"><value>Calendars</value></data>
+  <data name="Settings_Category_Calendars_Description" xml:space="preserve"><value>Manage optional calendar connections, imported files and reminder information. View meetings alongside task deadlines in Planned.</value></data>
 </root>
