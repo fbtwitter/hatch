@@ -52,7 +52,7 @@ public sealed partial class CalendarViewModel : INotifyPropertyChanged
     public bool IsGoogleUnavailable => !_service.IsGoogleConfigured;
     public bool HasStatus => IsBusy || HasOnlineAccounts;
     public string StatusLabel => IsBusy ? Strings.Get(_importing ? "Calendar_Importing" : IsConnecting ? "Calendar_SigningIn" :
-        _connecting ? "Calendar_Connecting" : "Calendar_Refreshing") :
+        _service.IsGoogleCallbackReceived ? "Calendar_GoogleConnecting" : _connecting ? "Calendar_Connecting" : "Calendar_Refreshing") :
         _service.Accounts.Any(a => a.Provider != CalendarProvider.Ics && a.LastSyncedAt == null) ? Strings.Get("Calendar_NotRefreshed") :
         HasOnlineAccounts ? string.Format(Strings.Get("Calendar_AgendaRefreshed"),
             _service.Accounts.Where(a => a.Provider != CalendarProvider.Ics).Min(a => a.LastSyncedAt)!.Value.ToLocalTime().ToString("g")) : string.Empty;

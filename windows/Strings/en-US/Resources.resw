@@ -744,7 +744,7 @@
   <data name="Calendar_ConnectGoogle.Content" xml:space="preserve"><value>Connect Google</value></data>
   <data name="Calendar_ProviderMicrosoft" xml:space="preserve"><value>Microsoft</value></data>
   <data name="Calendar_ProviderGoogle" xml:space="preserve"><value>Google</value></data>
-  <data name="Calendar_BrowserReturn" xml:space="preserve"><value>Google sent you back to Hatch. Return to the app while it finishes connecting your calendar.</value></data>
+  <data name="Calendar_BrowserReturn" xml:space="preserve"><value>Your Google account is authorized. Hatch is returning to the app to finish connecting your calendar.</value></data>
   <data name="Calendar_Callback_ReceivedHeading" xml:space="preserve"><value>Authorization received</value></data>
   <data name="Calendar_Callback_DeniedHeading" xml:space="preserve"><value>Connection not completed</value></data>
   <data name="Calendar_Callback_InvalidHeading" xml:space="preserve"><value>Sign-in response not recognized</value></data>
@@ -797,6 +797,7 @@
   <data name="Calendar_Refreshing" xml:space="preserve"><value>Refreshing calendars…</value></data>
   <data name="Calendar_SigningIn" xml:space="preserve"><value>Finish signing in to your calendar in your browser.</value></data>
   <data name="Calendar_Connecting" xml:space="preserve"><value>Connecting your calendar…</value></data>
+  <data name="Calendar_GoogleConnecting" xml:space="preserve"><value>Authorization received. Hatch is finishing the Google calendar connection…</value></data>
   <data name="Calendar_EmptyTitle" xml:space="preserve"><value>No calendar events</value></data>
   <data name="Calendar_ConnectTitle" xml:space="preserve"><value>Add your calendar</value></data>
   <data name="Calendar_UnavailableTitle" xml:space="preserve"><value>Calendar connection unavailable</value></data>

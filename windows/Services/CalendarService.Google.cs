@@ -39,8 +39,9 @@ public sealed partial class CalendarService
             { throw new TimeoutException(); }
             receiver.Dispose();
             _googleAuthorization = null;
+            IsGoogleCallbackReceived = true;
             StateChanged?.Invoke();
-            App.MainWindowInstance?.DispatcherQueue.TryEnqueue(() => App.MainWindowInstance?.Activate());
+            App.MainWindowInstance?.DispatcherQueue.TryEnqueue(() => App.MainWindowInstance?.ActivateAfterExternalAuthorization());
             if (Parameter(callback, "error") != null) throw new ProviderException("Calendar_ErrorConsent");
             var code = Parameter(callback, "code");
             if (string.IsNullOrEmpty(code)) throw new ProviderException("Calendar_ErrorConsent");
@@ -70,6 +71,7 @@ public sealed partial class CalendarService
         finally
         {
             _googleAuthorization = null;
+            IsGoogleCallbackReceived = false;
             _gate.Release();
             StateChanged?.Invoke();
         }

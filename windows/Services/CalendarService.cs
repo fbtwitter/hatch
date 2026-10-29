@@ -40,6 +40,7 @@ public sealed partial class CalendarService
     public bool IsConfigured => IsMicrosoftConfigured || IsGoogleConfigured;
     public bool IsRefreshing { get; private set; }
     public bool IsAuthorizing => (_authorization != null && !_authorization.Task.IsCompleted) || _googleAuthorization != null;
+    public bool IsGoogleCallbackReceived { get; private set; }
     public string? Error { get; private set; }
     public string? ReminderError { get; private set; }
     public event Action? StateChanged;
