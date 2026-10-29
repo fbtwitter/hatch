@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.35.1] - 2026-10-29
+
+- Improve calendar connection reliability and settings, and correct mascot frame handling.
+
 ## [0.35.0] - 2026-10-28
 
 - Bring calendar events and due tasks together in Planned, with optional Google and Microsoft connections and calendar file imports.

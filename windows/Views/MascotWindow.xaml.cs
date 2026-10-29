@@ -211,7 +211,15 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         ExtendsContentIntoTitleBar = true;
 
         // Suppress Alt+Tab / taskbar entry — mascot is ambient UI
-        AppWindow.IsShownInSwitchers = false;
+        try
+        {
+            AppWindow.IsShownInSwitchers = false;
+        }
+        catch (NotImplementedException)
+        {
+            // Some Windows App SDK/runtime combinations do not implement this property.
+            // Keep startup working there; the mascot may appear in the switcher.
+        }
 
         AppWindow.Resize(new SizeInt32(ViewModel.WindowSize, ViewModel.WindowSize));
 
@@ -824,6 +832,10 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             updated = (updated & ~NativeMethods.WS_EX_NOREDIRECTIONBITMAP) | NativeMethods.WS_EX_LAYERED;
             if (passThrough) updated |= NativeMethods.WS_EX_TRANSPARENT;
         }
+        else
+        {
+            updated |= NativeMethods.WS_EX_NOREDIRECTIONBITMAP;
+        }
         if (updated == style) return;
         NativeMethods.SetWindowLong(_hwnd, NativeMethods.GWL_EXSTYLE, updated);
         if (!passThrough && ViewModel.ClickThrough) ResetInactivity();
@@ -976,11 +988,6 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
             NativeMethods.GCLP_HBRBACKGROUND,
             NativeMethods.GetStockObject(NativeMethods.NULL_BRUSH));
 
-        // Flush presenter changes to DWM.
-        NativeMethods.SetWindowPos(_hwnd, IntPtr.Zero, 0, 0, 0, 0,
-            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_FRAMECHANGED |
-            NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
-
         // Strip all border style bits. SetBorderAndTitleBar(true, false) prevents DWM from
         // injecting WS_DLGFRAME (thin white border artifact on Windows 10 22H2); stripping
         // all three here ensures no visible frame remains.
@@ -994,6 +1001,11 @@ public sealed partial class MascotWindow : Window, IHotkeyRegistration
         NativeMethods.SetWindowLong(_hwnd, NativeMethods.GWL_EXSTYLE,
             (exStyle | NativeMethods.WS_EX_NOREDIRECTIONBITMAP)
             & ~NativeMethods.WS_EX_WINDOWEDGE);
+
+        // Apply the new frame styles after changing them.
+        NativeMethods.SetWindowPos(_hwnd, IntPtr.Zero, 0, 0, 0, 0,
+            NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOSIZE | NativeMethods.SWP_FRAMECHANGED |
+            NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
 
         if (Helpers.OsVersionHelper.IsWindows11OrGreater)
         {

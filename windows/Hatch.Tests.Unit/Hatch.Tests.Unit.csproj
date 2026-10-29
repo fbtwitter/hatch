@@ -40,6 +40,7 @@
     <Compile Include="..\Services\CalendarLoopbackReceiver.cs" Link="Source\Services\CalendarLoopbackReceiver.cs" />
     <Compile Include="..\Helpers\CalendarReminderPlanner.cs" Link="Source\Helpers\CalendarReminderPlanner.cs" />
     <Compile Include="..\Helpers\CalendarAgenda.cs" Link="Source\Helpers\CalendarAgenda.cs" />
+    <Compile Include="..\Helpers\CalendarCacheFile.cs" Link="Source\Helpers\CalendarCacheFile.cs" />
     <Compile Include="..\Models\Tip.cs" Link="Source\Models\Tip.cs" />
     <Compile Include="..\Models\AppSettings.cs" Link="Source\Models\AppSettings.cs" />
     <Compile Include="..\Helpers\TipSchedule.cs" Link="Source\Helpers\TipSchedule.cs" />

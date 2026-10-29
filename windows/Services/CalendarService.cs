@@ -378,16 +378,25 @@ public sealed partial class CalendarService
 
     private async Task SaveAsync(List<CalendarAccount> accounts, CancellationToken ct)
     {
+        var temporary = _path + "." + Guid.NewGuid().ToString("N") + ".new";
         try
         {
             Directory.CreateDirectory(AppDataPath.Folder);
-            var temporary = _path + ".new";
             await using (var file = File.Create(temporary))
                 await JsonSerializer.SerializeAsync(file, accounts, CalendarJsonContext.Default.ListCalendarAccount, ct);
-            File.Move(temporary, _path, overwrite: true);
+
+            await CalendarCacheFile.ReplaceAsync(temporary, _path, ct);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        { throw new ProviderException("Calendar_ErrorCache"); }
+        {
+            CrashLog.Write("Calendar cache save", $"{ex.GetType().Name} (HRESULT 0x{ex.HResult:X8}).");
+            throw new ProviderException("Calendar_ErrorCache");
+        }
+        finally
+        {
+            try { if (File.Exists(temporary)) File.Delete(temporary); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        }
     }
 
     private void ReconcileReminders() => ReminderError = _notifications.Reconcile(_accounts.SelectMany(a => a.Events));

@@ -762,6 +762,7 @@
   <data name="Calendar_Import.AutomationProperties.Name" xml:space="preserve"><value>Import a calendar file</value></data>
   <data name="Calendar_ImportHeading.Text" xml:space="preserve"><value>Import a calendar file</value></data>
   <data name="Calendar_ImportDescription.Text" xml:space="preserve"><value>Import an offline .ics snapshot. Replace the file to load updates.</value></data>
+  <data name="Calendar_ImportDescription.ToolTipService.ToolTip" xml:space="preserve"><value>Import an offline .ics snapshot. Replace the file to load updates.</value></data>
   <data name="Calendar_ProviderMicrosoftLabel.Text" xml:space="preserve"><value>Microsoft</value></data>
   <data name="Calendar_ProviderGoogleLabel.Text" xml:space="preserve"><value>Google</value></data>
   <data name="Calendar_ProviderIcs" xml:space="preserve"><value>Imported .ics</value></data>
@@ -784,9 +785,12 @@
   <data name="Calendar_ConnectedAccounts.Text" xml:space="preserve"><value>Saved calendars</value></data>
   <data name="Calendar_AccountOptionsName" xml:space="preserve"><value>Options for {0}</value></data>
   <data name="Calendar_DisconnectMenu.Text" xml:space="preserve"><value>Disconnect</value></data>
-  <data name="Calendar_AccountPrivacy.Text" xml:space="preserve"><value>Read-only calendars and imported files stay separate from tasks. Removing a source clears its saved events and reminders from Hatch.</value></data>
+  <data name="Calendar_AccountPrivacy.Text" xml:space="preserve"><value>Calendar connections are read-only. Calendar events stay separate from tasks. Removing a calendar clears its saved events and reminders from Hatch.</value></data>
+  <data name="Calendar_AccountPrivacy.ToolTipService.ToolTip" xml:space="preserve"><value>Calendar connections are read-only. Calendar events stay separate from tasks. Removing a calendar clears its saved events and reminders from Hatch.</value></data>
   <data name="Calendar_MicrosoftUnavailable.Text" xml:space="preserve"><value>Microsoft sign-in is not configured in this build.</value></data>
+  <data name="Calendar_MicrosoftUnavailable.ToolTipService.ToolTip" xml:space="preserve"><value>Microsoft sign-in is not configured in this build.</value></data>
   <data name="Calendar_GoogleUnavailable.Text" xml:space="preserve"><value>Google sign-in is not configured in this build.</value></data>
+  <data name="Calendar_GoogleUnavailable.ToolTipService.ToolTip" xml:space="preserve"><value>Google sign-in is not configured in this build.</value></data>
   <data name="Calendar_Today" xml:space="preserve"><value>Today · {0}</value></data>
   <data name="Calendar_Tomorrow" xml:space="preserve"><value>Tomorrow · {0}</value></data>
   <data name="Calendar_AgendaRefreshed" xml:space="preserve"><value>Saved events · Last refreshed {0}</value></data>
@@ -796,9 +800,10 @@
   <data name="Calendar_EmptyTitle" xml:space="preserve"><value>No calendar events</value></data>
   <data name="Calendar_ConnectTitle" xml:space="preserve"><value>Add your calendar</value></data>
   <data name="Calendar_UnavailableTitle" xml:space="preserve"><value>Calendar connection unavailable</value></data>
-  <data name="Calendar_ReminderDetails.ToolTipService.ToolTip" xml:space="preserve"><value>Reminders and sync details</value></data>
-  <data name="Calendar_ReminderDetails.AutomationProperties.Name" xml:space="preserve"><value>How calendar reminders work</value></data>
-  <data name="Calendar_ReminderDetails.Header" xml:space="preserve"><value>Reminders and updates</value></data>
+  <data name="Calendar_ReminderDetails.ToolTipService.ToolTip" xml:space="preserve"><value>Learn how calendar reminders and updates work</value></data>
+  <data name="Calendar_ReminderDetails.AutomationProperties.Name" xml:space="preserve"><value>Reminders and updates</value></data>
+  <data name="Calendar_ReminderDetailsLabel.Text" xml:space="preserve"><value>Reminders and updates</value></data>
+  <data name="Calendar_ReminderDialogTitle" xml:space="preserve"><value>Reminders and updates</value></data>
   <data name="Calendar_ReminderTitle.Text" xml:space="preserve"><value>How reminders work</value></data>
   <data name="Calendar_OpenEvent.Content" xml:space="preserve"><value>Open event</value></data>
   <data name="Calendar_JoinMeeting.Content" xml:space="preserve"><value>Join meeting</value></data>
@@ -813,7 +818,7 @@
   <data name="Calendar_ReminderOpenEvent" xml:space="preserve"><value>Open event</value></data>
   <data name="Calendar_ReminderJoinMeeting" xml:space="preserve"><value>Join meeting</value></data>
   <data name="Calendar_OpenCalendar" xml:space="preserve"><value>Open calendar</value></data>
-  <data name="Calendar_ReminderLimits.Text" xml:space="preserve"><value>Timed events get a Windows reminder 10 minutes before they start. All-day events stay silent.
+  <data name="Calendar_ReminderDialogBody" xml:space="preserve"><value>Timed events get a Windows reminder 10 minutes before they start. All-day events stay silent.
 
 Hatch checks for changes every 5 minutes while running, including in the tray. Events can be out of date until the next successful refresh.
 
@@ -849,7 +854,6 @@ Imported .ics files are snapshots of the previous 7 days and next 30 days at imp
   <data name="PlannedAgenda_Meetings" xml:space="preserve"><value>Events</value></data>
   <data name="PlannedAgenda_TasksDue" xml:space="preserve"><value>Tasks due</value></data>
   <data name="Calendar_PastDay.Header" xml:space="preserve"><value>Earlier events</value></data>
-  <data name="Calendar_ReminderExpander.Header" xml:space="preserve"><value>Reminders and updates</value></data>
   <data name="Calendar_QuickJoin.Content" xml:space="preserve"><value>Join</value></data>
   <data name="Calendar_DetailsName" xml:space="preserve"><value>View event: {0}</value></data>
   <data name="Calendar_DayConnectHint" xml:space="preserve"><value>Open Calendar settings to connect an account or import an .ics file.</value></data>
