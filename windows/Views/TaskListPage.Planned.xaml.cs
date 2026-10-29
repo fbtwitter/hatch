@@ -245,7 +245,6 @@ public sealed partial class TaskListPage
         {
             if (ReferenceEquals(focused, PlannedCalendar) || ReferenceEquals(focused, PlannedViewSelector)
                 || ReferenceEquals(focused, PlannedDateButton) || ReferenceEquals(focused, PlannedMeetingsHeader)
-                || ReferenceEquals(focused, PlannedCalendarSources)
                 || focused is FrameworkElement { DataContext: Hatch.ViewModels.CalendarEventRow }) return true;
             focused = VisualTreeHelper.GetParent(focused);
         }

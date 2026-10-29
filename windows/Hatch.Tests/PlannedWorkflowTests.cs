@@ -240,24 +240,12 @@ public sealed class PlannedWorkflowTests
     }
 
     [TestMethod]
-    public void CalendarSettingsButton_OpensTheCalendarsCategory()
+    public void CalendarSettingsNavigation_OpensTheCalendarsCategory()
     {
-        var settingsButton = Find("Calendar_Settings");
-        Assert.AreEqual("Calendar settings", settingsButton.Name);
-        Assert.IsTrue(settingsButton.Properties.IsKeyboardFocusable.ValueOrDefault);
-        Assert.IsTrue(settingsButton.Patterns.Invoke.IsSupported);
-        settingsButton.Focus();
-        Assert.IsTrue(settingsButton.Properties.HasKeyboardFocus.ValueOrDefault, "Calendar settings must receive keyboard focus.");
-        if (TestSetup.IsMainWindowForeground)
-            Mouse.Click(Center(settingsButton.BoundingRectangle));
-        else
-        {
-            TestContext.WriteLine("No foreground desktop; activating Calendar settings through its Invoke pattern.");
-            settingsButton.Patterns.Invoke.Pattern.Invoke();
-        }
+        Find("SettingsItem").Patterns.SelectionItem.Pattern.Select();
         var calendarsCategory = Find("Settings_NavCalendars");
         Wait(() => calendarsCategory.Patterns.SelectionItem.Pattern.IsSelected,
-            "Clicking Calendar settings opens the Calendars category");
+            "Opening Settings allows navigation to the Calendars category");
 
         var import = Find("Calendar_Import");
         Assert.AreEqual("Import a calendar file", import.Name);

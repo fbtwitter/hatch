@@ -859,7 +859,6 @@ Imported .ics files are snapshots of the previous 7 days and next 30 days at imp
   <data name="Calendar_DayEmpty" xml:space="preserve"><value>No events on this day.</value></data>
   <data name="Calendar_DayOutsideRange" xml:space="preserve"><value>This date is outside your saved calendar range. Refresh connected calendars or replace imported files to update available dates.</value></data>
   <data name="Calendar_DateEvents" xml:space="preserve"><value>{0} calendar events.</value></data>
-  <data name="Calendar_Settings.Text" xml:space="preserve"><value>Calendar settings</value></data>
   <data name="Settings_NavCalendars.Content" xml:space="preserve"><value>Calendars</value></data>
   <data name="Settings_Category_Calendars_Title" xml:space="preserve"><value>Calendars</value></data>
   <data name="Settings_Category_Calendars_Description" xml:space="preserve"><value>Manage optional calendar connections, imported files and reminder information. View meetings alongside task deadlines in Planned.</value></data>
