@@ -1,56 +1,76 @@
+using System.Security.Cryptography;
+using System.Text;
 using Windows.Security.Credentials;
 
 namespace Hatch.Services;
 
-// Separate vault resource from SyncTokenStore: token refresh clears Hatch.Sync wholesale,
-// which must never take the passphrase with it. Salt is generated once when the passphrase
-// is set and reused for every push so the PBKDF2 key derivation is a one-time cost.
+// Keep the passphrase and salt together in one DPAPI-protected file. Credential Locker
+// remains a migration source, but is not required for new saves because it may be
+// uninitialized or unavailable for the current Windows user profile.
 internal static class SyncPassphraseStore
 {
-    private const string Resource       = "Hatch.SyncCrypto";
+    private const string Resource = "Hatch.SyncCrypto";
     private const string PassphraseName = "sync_passphrase";
-    private const string SaltName       = "sync_salt";
+    private const string SaltName = "sync_salt";
+    private static readonly string Folder = Path.Combine(Hatch.Helpers.AppDataPath.Folder, "sync-credentials");
 
     public static (string? Passphrase, byte[]? Salt) Load()
     {
+        var saved = ProtectedSecretFile.Load(Folder, Resource, "passphrase-and-salt");
+        if (saved != null) return Decode(saved);
+
         var passphrase = Retrieve(PassphraseName);
-        var saltB64 = Retrieve(SaltName);
-        if (passphrase == null || saltB64 == null) return (null, null);
-        try { return (passphrase, Convert.FromBase64String(saltB64)); }
-        catch { return (null, null); }
+        var salt = Retrieve(SaltName);
+        if (passphrase == null || salt == null) return (null, null);
+
+        var encodedSalt = Convert.FromBase64String(salt);
+        ProtectedSecretFile.Save(Folder, Resource, "passphrase-and-salt", Encode(passphrase, encodedSalt));
+        RemoveLegacyCredentials();
+        return (passphrase, encodedSalt);
     }
 
     public static void Save(string passphrase)
     {
-        Clear();
-        var vault = new PasswordVault();
-        vault.Add(new PasswordCredential(Resource, PassphraseName, passphrase));
-        vault.Add(new PasswordCredential(Resource, SaltName,
-            Convert.ToBase64String(SyncCrypto.CreateSalt())));
+        var salt = SyncCrypto.CreateSalt();
+        ProtectedSecretFile.Save(Folder, Resource, "passphrase-and-salt", Encode(passphrase, salt));
+        RemoveLegacyCredentials();
     }
 
     public static void Clear()
     {
-        try
-        {
-            var vault = new PasswordVault();
-            foreach (var cred in vault.FindAllByResource(Resource))
-                vault.Remove(cred);
-        }
-        catch
-        {
-            // FindAllByResource throws when the resource has no entries — nothing to clear.
-        }
+        ProtectedSecretFile.Delete(Folder, Resource, "passphrase-and-salt");
+        RemoveLegacyCredentials();
+    }
+
+    private static string Encode(string passphrase, byte[] salt) =>
+        Convert.ToBase64String(Encoding.UTF8.GetBytes(passphrase)) + "." + Convert.ToBase64String(salt);
+
+    private static (string? Passphrase, byte[]? Salt) Decode(string value)
+    {
+        var parts = value.Split('.', 2);
+        if (parts.Length != 2) return (null, null);
+        try { return (Encoding.UTF8.GetString(Convert.FromBase64String(parts[0])), Convert.FromBase64String(parts[1])); }
+        catch (FormatException) { return (null, null); }
     }
 
     private static string? Retrieve(string name)
     {
         try
         {
-            var cred = new PasswordVault().Retrieve(Resource, name);
-            cred.RetrievePassword();
-            return cred.Password;
+            var credential = new PasswordVault().Retrieve(Resource, name);
+            credential.RetrievePassword();
+            return credential.Password;
         }
         catch { return null; }
+    }
+
+    private static void RemoveLegacyCredentials()
+    {
+        try
+        {
+            var vault = new PasswordVault();
+            foreach (var credential in vault.FindAllByResource(Resource)) vault.Remove(credential);
+        }
+        catch { }
     }
 }

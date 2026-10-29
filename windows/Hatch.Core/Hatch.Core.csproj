@@ -10,7 +10,12 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="hatch" />
+    <InternalsVisibleTo Include="Hatch.Tests.Unit" />
     <InternalsVisibleTo Include="Hatch.Tests.Integration" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="8.0.0" />
   </ItemGroup>
 
 </Project>
