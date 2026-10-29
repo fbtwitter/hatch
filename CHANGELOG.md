@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.35.4] - 2026-10-29
+
+- Keep sync credentials encrypted and available when Windows Credential Locker cannot save them.
+
 ## [0.35.3] - 2026-10-29
 
 - Fix Google calendar cache and credential persistence, reminder scheduling, and connected-account settings. Clarify calendar setup in Planned.
