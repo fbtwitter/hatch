@@ -48,7 +48,7 @@ internal static class CalendarEventParser
     }
 
     internal static string? Text(JsonElement item, string name) =>
-        item.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
+        item.ValueKind == JsonValueKind.Object && item.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String
             ? value.GetString() : null;
 
     internal static string? HttpsUrl(string? value) =>

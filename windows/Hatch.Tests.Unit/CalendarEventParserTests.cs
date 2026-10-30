@@ -50,6 +50,14 @@ public sealed class CalendarEventParserTests
     }
 
     [TestMethod]
+    public void NullResponseStatusDoesNotBreakEventParsing()
+    {
+        Dictionary<string, CalendarEvent> events = [];
+        Apply(events, Event(extra: ",\"responseStatus\":null"));
+        Assert.HasCount(1, events);
+    }
+
+    [TestMethod]
     public void RecurringOccurrencesRemainDistinct()
     {
         Dictionary<string, CalendarEvent> events = [];
