@@ -100,6 +100,9 @@ To enable Microsoft Calendar in release packages, add the repository Actions sec
 `MICROSOFT_CALENDAR_CLIENT_ID` with the Application (client) ID from a Microsoft Entra app
 registration. Hatch uses OAuth with PKCE, so no client secret is needed. The release workflow
 passes this ID to both architecture builds; an unset ID leaves Microsoft connection unavailable.
+In the app registration, add `http://localhost` under **Authentication > Add a platform >
+Mobile and desktop applications** as a redirect URI. Hatch uses a random local port for the
+sign-in callback, so register the localhost URI without a port.
 
 To enable Google Calendar in release packages, add repository Actions secrets
 `GOOGLE_CALENDAR_CLIENT_ID` and, optionally, `GOOGLE_CALENDAR_CLIENT_SECRET` for a

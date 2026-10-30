@@ -26,8 +26,7 @@ public sealed partial class CalendarService
     private List<CalendarAccount> _accounts = [];
     private Task? _initialization;
     private CancellationTokenSource? _pollCancellation;
-    private TaskCompletionSource<Uri>? _authorization;
-    private string? _state;
+    private CancellationTokenSource? _microsoftAuthorization;
     private CancellationTokenSource? _googleAuthorization;
 
     public CalendarService() => _googleClient = new(_http, CalendarConfiguration.GoogleClientId,
@@ -39,7 +38,7 @@ public sealed partial class CalendarService
         CalendarConfiguration.GoogleClientId.EndsWith(".apps.googleusercontent.com", StringComparison.Ordinal);
     public bool IsConfigured => IsMicrosoftConfigured || IsGoogleConfigured;
     public bool IsRefreshing { get; private set; }
-    public bool IsAuthorizing => (_authorization != null && !_authorization.Task.IsCompleted) || _googleAuthorization != null;
+    public bool IsAuthorizing => _microsoftAuthorization != null || _googleAuthorization != null;
     public bool IsGoogleCallbackReceived { get; private set; }
     public string? Error { get; private set; }
     public string? ReminderError { get; private set; }
@@ -100,22 +99,35 @@ public sealed partial class CalendarService
         await _gate.WaitAsync(cancellationToken);
         try
         {
-            var verifier = Base64Url(RandomNumberGenerator.GetBytes(32));
-            _state = Base64Url(RandomNumberGenerator.GetBytes(32));
-            _authorization = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var receiver = new CalendarLoopbackReceiver(useLocalhost: true);
+            using var deadline = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+            using var authorization = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
+            _microsoftAuthorization = authorization;
             StateChanged?.Invoke();
+            var verifier = Base64Url(RandomNumberGenerator.GetBytes(32));
+            var state = Base64Url(RandomNumberGenerator.GetBytes(32));
             var url = Authority + "/authorize?" + Query(new()
             {
                 ["client_id"] = CalendarConfiguration.ClientId,
-                ["redirect_uri"] = CalendarConfiguration.RedirectUri,
+                ["redirect_uri"] = receiver.RedirectUri.AbsoluteUri,
                 ["response_type"] = "code", ["response_mode"] = "query",
-                ["scope"] = CalendarConfiguration.Scope, ["state"] = _state,
+                ["scope"] = CalendarConfiguration.Scope, ["state"] = state,
                 ["code_challenge"] = Base64Url(SHA256.HashData(Encoding.ASCII.GetBytes(verifier))),
                 ["code_challenge_method"] = "S256", ["prompt"] = "select_account"
             });
             if (!await Windows.System.Launcher.LaunchUriAsync(new Uri(url)))
                 throw new ProviderException("Calendar_ErrorBrowser");
-            var callback = await _authorization.Task.WaitAsync(TimeSpan.FromMinutes(5), cancellationToken);
+            Uri callback;
+            try
+            {
+                callback = await receiver.WaitAsync(state,
+                    succeeded => CalendarOAuthCompletionPage.Render(Strings.Get("Calendar_OAuthMicrosoft"), succeeded),
+                    authorization.Token);
+            }
+            catch (OperationCanceledException) when (deadline.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
+            { throw new TimeoutException(); }
+            receiver.Dispose();
+            App.MainWindowInstance?.DispatcherQueue.TryEnqueue(() => App.MainWindowInstance?.ActivateAfterExternalAuthorization());
             if (Parameter(callback, "error") != null)
                 throw new ProviderException("Calendar_ErrorConsent");
             var code = Parameter(callback, "code");
@@ -123,7 +135,7 @@ public sealed partial class CalendarService
             var token = await RequestTokenAsync(new()
             {
                 ["grant_type"] = "authorization_code", ["code"] = code,
-                ["code_verifier"] = verifier, ["redirect_uri"] = CalendarConfiguration.RedirectUri
+                ["code_verifier"] = verifier, ["redirect_uri"] = receiver.RedirectUri.AbsoluteUri
             }, cancellationToken);
             if (string.IsNullOrEmpty(token.Refresh))
                 throw new ProviderException("Calendar_ErrorReconnect");
@@ -140,29 +152,14 @@ public sealed partial class CalendarService
                 : previous with { Email = email, DefaultCalendarId = defaultId };
             await StoreConnectionAsync(account, token, cancellationToken);
         }
-        finally
-        {
-            _state = null;
-            _authorization = null;
-            _gate.Release();
-            StateChanged?.Invoke();
-        }
+        finally { _microsoftAuthorization = null; _gate.Release(); StateChanged?.Invoke(); }
         EnsurePolling();
         await RefreshAsync(force: true, cancellationToken);
     }
 
-    public void HandleOAuthCallback(Uri uri)
-    {
-        if (!CalendarOAuthCallback.IsExpectedRedirect(uri, CalendarConfiguration.RedirectUri) || _state == null ||
-            !CalendarOAuthCallback.HasMatchingState(uri, _state)) return;
-        _state = null;
-        _authorization?.TrySetResult(uri);
-        StateChanged?.Invoke();
-    }
-
     public void CancelConnect()
     {
-        _authorization?.TrySetCanceled();
+        _microsoftAuthorization?.Cancel();
         _googleAuthorization?.Cancel();
     }
 

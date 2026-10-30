@@ -4,12 +4,6 @@ namespace Hatch.Helpers;
 
 internal static class CalendarConfiguration
 {
-#if DEBUG
-    // The installed Store app may own hatch:// on the developer's PC.
-    internal const string RedirectUri = "hatch-dev://calendar-auth-callback";
-#else
-    internal const string RedirectUri = "hatch://calendar-auth-callback";
-#endif
     internal const string Scope = "https://graph.microsoft.com/Calendars.Read offline_access";
     internal const string GoogleScope = "https://www.googleapis.com/auth/calendar.events.owned.readonly https://www.googleapis.com/auth/calendar.calendarlist.readonly";
 

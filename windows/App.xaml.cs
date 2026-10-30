@@ -62,10 +62,6 @@ public partial class App : Application
             // Empty exePath means "this executable".
             ActivationRegistrationManager.RegisterForProtocolActivation(
                 scheme: "hatch", logo: string.Empty, displayName: "Hatch", exePath: string.Empty);
-#if DEBUG
-            ActivationRegistrationManager.RegisterForProtocolActivation(
-                scheme: "hatch-dev", logo: string.Empty, displayName: "Hatch development", exePath: string.Empty);
-#endif
         }
         catch
         {
@@ -97,11 +93,6 @@ public partial class App : Application
     private void HandleProtocolUri(Uri uri)
     {
         var queue = MainWindowInstance?.DispatcherQueue;
-        if (uri.Host == "calendar-auth-callback")
-        {
-            CalendarService.HandleOAuthCallback(uri);
-            return;
-        }
         if (uri.Host == "auth-callback")
         {
             if (queue != null)

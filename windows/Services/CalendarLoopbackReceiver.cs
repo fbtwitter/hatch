@@ -10,14 +10,15 @@ internal sealed partial class CalendarLoopbackReceiver : IDisposable
     private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
     internal Uri RedirectUri { get; }
 
-    internal CalendarLoopbackReceiver()
+    internal CalendarLoopbackReceiver(bool useLocalhost = false)
     {
         _listener.ExclusiveAddressUse = true;
         _listener.Start();
-        RedirectUri = new Uri($"http://127.0.0.1:{((IPEndPoint)_listener.LocalEndpoint).Port}/");
+        var host = useLocalhost ? "localhost" : "127.0.0.1";
+        RedirectUri = new Uri($"http://{host}:{((IPEndPoint)_listener.LocalEndpoint).Port}/");
     }
 
-    internal async Task<Uri> WaitAsync(string state, CancellationToken ct)
+    internal async Task<Uri> WaitAsync(string state, Func<bool, (string Html, string Nonce)> completionPage, CancellationToken ct)
     {
         while (true)
         {
@@ -28,12 +29,18 @@ internal sealed partial class CalendarLoopbackReceiver : IDisposable
             try
             {
                 var callback = await ReadCallbackAsync(stream, state, requestTimeout.Token);
-                var status = callback == null ? "400 Bad Request" : "204 No Content";
+                var status = callback == null ? "400 Bad Request" : "200 OK";
+                var document = callback == null ? default : completionPage(CalendarOAuthCallback.Parameter(callback, "code") != null);
+                var body = document.Html == null ? [] : Encoding.UTF8.GetBytes(document.Html);
+                var nonce = document.Nonce ?? string.Empty;
                 var headers = Encoding.ASCII.GetBytes("HTTP/1.1 " + status +
                     "\r\nCache-Control: no-store\r\nPragma: no-cache" +
                     "\r\nReferrer-Policy: no-referrer\r\nX-Content-Type-Options: nosniff" +
-                    "\r\nConnection: close\r\nContent-Length: 0\r\n\r\n");
+                    "\r\nContent-Security-Policy: default-src 'none'; img-src data:; style-src 'nonce-" + nonce + "'; script-src 'nonce-" + nonce + "'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'" +
+                    "\r\nContent-Type: text/html; charset=utf-8" +
+                    "\r\nConnection: close\r\nContent-Length: " + body.Length + "\r\n\r\n");
                 await stream.WriteAsync(headers, requestTimeout.Token);
+                if (body.Length > 0) await stream.WriteAsync(body, requestTimeout.Token);
                 if (callback != null) return callback;
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested) { }

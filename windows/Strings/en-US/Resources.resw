@@ -850,6 +850,15 @@ Imported .ics files are snapshots of the previous 7 days and next 30 days at imp
   <data name="Calendar_ErrorConsent" xml:space="preserve"><value>Calendar permission was not granted. You can try connecting again.</value></data>
   <data name="Calendar_ErrorTimeout" xml:space="preserve"><value>Calendar sign-in timed out. Connect again to retry.</value></data>
   <data name="Calendar_ErrorCredentials" xml:space="preserve"><value>Windows could not access Hatch's protected calendar credentials. Try connecting again.</value></data>
+  <data name="Calendar_OAuthAuthorizationComplete" xml:space="preserve"><value>Authorization complete</value></data>
+  <data name="Calendar_OAuthSignedIn" xml:space="preserve"><value>You're signed in</value></data>
+  <data name="Calendar_OAuthGranted" xml:space="preserve"><value>{0} has granted access to Hatch.</value></data>
+  <data name="Calendar_OAuthClose" xml:space="preserve"><value>You can close this tab and return to Hatch. Setup continues there automatically.</value></data>
+  <data name="Calendar_OAuthFailedTitle" xml:space="preserve"><value>Sign-in not completed</value></data>
+  <data name="Calendar_OAuthFailed" xml:space="preserve"><value>Access was not granted. Return to Hatch and try again.</value></data>
+  <data name="Calendar_OAuthSignIn" xml:space="preserve"><value>Calendar sign-in</value></data>
+  <data name="Calendar_OAuthGoogle" xml:space="preserve"><value>Google Calendar</value></data>
+  <data name="Calendar_OAuthMicrosoft" xml:space="preserve"><value>Microsoft Outlook</value></data>
   <data name="Calendar_Meetings.Text" xml:space="preserve"><value>Events</value></data>
   <data name="Calendar_RefreshAction.Content" xml:space="preserve"><value>Refresh calendars</value></data>
   <data name="Calendar_TasksDue.Text" xml:space="preserve"><value>Tasks due</value></data>

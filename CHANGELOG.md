@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.35.9] - 2026-10-30
+
+- Show a shared Hatch-branded completion page after Google or Microsoft calendar authorization.
+
 ## [0.35.8] - 2026-10-30
 
 - Show Microsoft calendar connection status after sign-in and allow adding another account.
