@@ -193,11 +193,12 @@ public sealed partial class TaskListPage
         var date = day.Date.ToLocalTime();
         int count = _vm.GetPlannedTaskCount(date);
         int events = CalendarViewModel.GetEventCount(date);
-        var colour = ThemeResourceHelper.GetBrush("AccentTextFillColorPrimaryBrush") as SolidColorBrush;
-        // Color arrays require boxed IReferenceArray support unavailable in Native AOT.
-        day.SetDensityColors(count + events > 0 && colour != null
-            ? new List<Windows.UI.Color> { colour.Color }
-            : null);
+        var taskColour = ThemeResourceHelper.GetBrush("AccentTextFillColorPrimaryBrush") as SolidColorBrush;
+        var eventColour = ThemeResourceHelper.GetBrush("TextFillColorSecondaryBrush") as SolidColorBrush;
+        var colours = new List<Windows.UI.Color>();
+        if (count > 0 && taskColour != null) colours.Add(taskColour.Color);
+        if (events > 0 && eventColour != null) colours.Add(eventColour.Color);
+        day.SetDensityColors(colours.Count > 0 ? colours : null);
         var description = Strings.PlannedCalendar_DateTasks(date.ToString("D", CultureInfo.CurrentCulture), count);
         if (events > 0) description += " " + string.Format(Strings.Get("Calendar_DateEvents"), events);
         AutomationProperties.SetHelpText(day, description);

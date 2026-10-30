@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.35.10] - 2026-10-31
+
+- Constrain and tidy My Day suggestions, improve the Planned calendar warning in light mode, and distinguish task and event date markers.
+
 ## [0.35.9] - 2026-10-30
 
 - Show a shared Hatch-branded completion page after Google or Microsoft calendar authorization.

@@ -654,7 +654,7 @@
                                         <Setter Property="MaxWidth" Value="400" />
                                     </Style>
                                 </Flyout.FlyoutPresenterStyle>
-                                <StackPanel Spacing="12">
+                                <StackPanel Spacing="12" Width="352">
                                     <TextBlock x:Uid="Suggestions_Description"
                                                Text="Choose tasks to add to your My Day plan."
                                                Style="{ThemeResource BodyStrongTextBlockStyle}" TextWrapping="WrapWholeWords" />
@@ -1137,7 +1137,7 @@
                         <ListView.Header>
                             <StackPanel x:Name="PlannedMeetingsHeader" Spacing="8" HorizontalAlignment="Stretch" Margin="0,0,0,8">
                                 <InfoBar IsOpen="{x:Bind CalendarViewModel.HasMessage, Mode=OneWay}" IsClosable="False"
-                                         Message="{x:Bind CalendarViewModel.Message, Mode=OneWay}" Severity="Warning" />
+                                         Message="{x:Bind CalendarViewModel.Message, Mode=OneWay}" Severity="Warning" Background="{ThemeResource SystemFillColorCautionBackgroundBrush}" Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
                                 <TextBlock x:Uid="Calendar_Meetings" AutomationProperties.AutomationId="Planned_Meetings"
                                            Style="{ThemeResource BodyStrongTextBlockStyle}" />
                                 <TextBlock Text="{x:Bind CalendarViewModel.DayHint, Mode=OneWay}" AutomationProperties.AutomationId="Calendar_DayHint"
