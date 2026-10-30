@@ -13,6 +13,7 @@ the previous sub-50 MB idle target was disproven and is not a release gate. See
 
 | Task-flow update | Status |
 |---|---|
+| Unified calendar OAuth handoff | Included in v0.35.9; Google and Microsoft show the same Hatch-branded completion page after validated loopback callbacks |
 | Microsoft calendar connection status | Included in v0.35.8; show the connected state after sign-in and retain add-account access |
 | Windows App SDK 2.6.4 upgrade | Included in v0.35.7; use the current stable SDK and runtime |
 | Calendar connection reliability and mascot frame handling | Included in v0.35.1; calendar connection settings are grouped and mascot frame handling is corrected |

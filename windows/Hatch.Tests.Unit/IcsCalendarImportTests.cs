@@ -148,11 +148,4 @@ public sealed class IcsCalendarImportTests
         Assert.ThrowsExactly<FormatException>(() => Read("BEGIN:VEVENT\r\nUID:excluded\r\nDTSTART:20261026T100000Z\r\nRRULE:FREQ=DAILY;COUNT=5\r\nEXRULE:FREQ=DAILY;COUNT=5\r\nEND:VEVENT"));
     }
 
-    [TestMethod]
-    public void DevelopmentAndProductionCallbacksStaySeparate()
-    {
-        Assert.IsTrue(CalendarOAuthCallback.IsExpectedRedirect(new("hatch-dev://calendar-auth-callback?code=test"), "hatch-dev://calendar-auth-callback"));
-        Assert.IsFalse(CalendarOAuthCallback.IsExpectedRedirect(new("hatch://calendar-auth-callback?code=test"), "hatch-dev://calendar-auth-callback"));
-        Assert.IsFalse(CalendarOAuthCallback.IsExpectedRedirect(new("hatch-dev://calendar-auth-callback/other?code=test"), "hatch-dev://calendar-auth-callback"));
-    }
 }

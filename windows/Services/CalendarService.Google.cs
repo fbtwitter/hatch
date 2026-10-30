@@ -38,7 +38,12 @@ public sealed partial class CalendarService
                 });
                 if (!await Windows.System.Launcher.LaunchUriAsync(new Uri(url))) throw new ProviderException("Calendar_ErrorBrowser");
                 Uri callback;
-                try { callback = await receiver.WaitAsync(state, authorization.Token); }
+                try
+                {
+                    callback = await receiver.WaitAsync(state,
+                        succeeded => CalendarOAuthCompletionPage.Render(Strings.Get("Calendar_OAuthGoogle"), succeeded),
+                        authorization.Token);
+                }
                 catch (OperationCanceledException) when (deadline.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
                 { throw new TimeoutException(); }
                 receiver.Dispose();
