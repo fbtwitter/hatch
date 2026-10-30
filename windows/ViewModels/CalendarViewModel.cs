@@ -48,6 +48,7 @@ public sealed partial class CalendarViewModel : INotifyPropertyChanged
     public bool IsBusy => _busy || _service.IsRefreshing;
     public bool IsConnecting => _connecting && _service.IsAuthorizing;
     public bool HasAccounts => Accounts.Count > 0;
+    public bool IsMicrosoftConnected => _service.Accounts.Any(a => a.Provider == CalendarProvider.Microsoft);
     public bool IsGoogleConnected => _service.Accounts.Any(a => a.Provider == CalendarProvider.Google);
     public bool IsMicrosoftUnavailable => !_service.IsMicrosoftConfigured;
     public bool IsGoogleUnavailable => !_service.IsGoogleConfigured;
@@ -158,7 +159,7 @@ public sealed partial class CalendarViewModel : INotifyPropertyChanged
                 new RelayCommand(async _ => await PickAndImportAsync(account.Id), _ => !IsBusy)));
         }
         RefreshEvents(force: true);
-        foreach (var name in new[] { nameof(IsBusy), nameof(CanImport), nameof(IsConnecting), nameof(HasAccounts), nameof(IsGoogleConnected), nameof(HasOnlineAccounts),
+        foreach (var name in new[] { nameof(IsBusy), nameof(CanImport), nameof(IsConnecting), nameof(HasAccounts), nameof(IsMicrosoftConnected), nameof(IsGoogleConnected), nameof(HasOnlineAccounts),
                      nameof(StatusLabel), nameof(HasStatus),
                      nameof(Message), nameof(HasMessage), nameof(MessageSeverity), nameof(RangeLabel), nameof(IsDayEmpty), nameof(DayHint) })
             PropertyChanged?.Invoke(this, new(name));

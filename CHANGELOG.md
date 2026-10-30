@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.35.8] - 2026-10-30
+
+- Show Microsoft calendar connection status after sign-in and allow adding another account.
+
 ## [0.35.7] - 2026-10-30
 
 - Upgrade the Windows App SDK and bundled runtime to stable 2.6.4.

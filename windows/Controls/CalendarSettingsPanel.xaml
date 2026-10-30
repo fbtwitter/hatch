@@ -72,8 +72,17 @@
                         <TextBlock x:Uid="Calendar_MicrosoftUnavailable" MinWidth="0" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis"
                                    Visibility="{x:Bind ViewModel.IsMicrosoftUnavailable, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
                     </toolkit:SettingsCard.Description>
-                    <Button x:Uid="Calendar_Connect" AutomationProperties.AutomationId="Calendar_Connect"
-                            Command="{x:Bind ViewModel.ConnectCommand, Mode=OneWay}" MinWidth="136" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button x:Uid="Calendar_Connect" AutomationProperties.AutomationId="Calendar_Connect"
+                                Command="{x:Bind ViewModel.ConnectCommand, Mode=OneWay}" MinWidth="136"
+                                Visibility="{x:Bind ViewModel.IsMicrosoftConnected, Mode=OneWay, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
+                        <Button x:Uid="Calendar_MicrosoftConnected" AutomationProperties.AutomationId="Calendar_MicrosoftConnected"
+                                IsEnabled="False"
+                                Visibility="{x:Bind ViewModel.IsMicrosoftConnected, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                        <Button x:Uid="Calendar_AddMicrosoftAccount" AutomationProperties.AutomationId="Calendar_AddMicrosoftAccount"
+                                Command="{x:Bind ViewModel.ConnectCommand, Mode=OneWay}"
+                                Visibility="{x:Bind ViewModel.IsMicrosoftConnected, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                    </StackPanel>
                 </toolkit:SettingsCard>
                 <toolkit:SettingsCard>
                     <toolkit:SettingsCard.Header>

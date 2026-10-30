@@ -741,6 +741,9 @@
   <data name="Calendar_Description.Text" xml:space="preserve"><value>Calendar events stay separate from your tasks.</value></data>
   <data name="Calendar_Range" xml:space="preserve"><value>Previous 7 days and next 30 days · Times in {0}</value></data>
   <data name="Calendar_Connect.Content" xml:space="preserve"><value>Connect Microsoft</value></data>
+  <data name="Calendar_MicrosoftConnected.Content" xml:space="preserve"><value>Microsoft connected</value></data>
+  <data name="Calendar_AddMicrosoftAccount.Content" xml:space="preserve"><value>Add another account</value></data>
+  <data name="Calendar_AddMicrosoftAccount.AutomationProperties.Name" xml:space="preserve"><value>Add another Microsoft account</value></data>
   <data name="Calendar_ConnectGoogle.Content" xml:space="preserve"><value>Connect Google</value></data>
   <data name="Calendar_GoogleConnected.Content" xml:space="preserve"><value>Google connected</value></data>
   <data name="Calendar_AddGoogleAccount.Content" xml:space="preserve"><value>Add another account</value></data>
