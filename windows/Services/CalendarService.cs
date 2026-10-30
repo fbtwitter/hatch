@@ -237,7 +237,11 @@ public sealed partial class CalendarService
                 catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException)
                 { _errors[account.Id] = Strings.Get("Calendar_ErrorOffline"); }
                 catch (Exception ex) when (ex is JsonException or KeyNotFoundException or FormatException or InvalidOperationException)
-                { _errors[account.Id] = Strings.Get("Calendar_ErrorProvider"); }
+                {
+                    if (account.Provider == CalendarProvider.Microsoft)
+                        CrashLog.Write("Microsoft calendar refresh", $"Response parsing failed ({ex.GetType().Name}).");
+                    _errors[account.Id] = Strings.Get("Calendar_ErrorProvider");
+                }
                 catch (Exception ex) { _errors[account.Id] = FriendlyError(ex); }
             }
         }
@@ -379,6 +383,11 @@ public sealed partial class CalendarService
         using var response = await _http.SendAsync(request, ct);
         if (!response.IsSuccessStatusCode)
         {
+            var graphErrorCode = await ReadGraphErrorCodeAsync(response.Content, ct);
+            var requestId = response.Headers.TryGetValues("request-id", out var requestIds)
+                ? requestIds.FirstOrDefault() : null;
+            CrashLog.Write("Microsoft calendar Graph request",
+                $"{GraphOperation(uri)} returned HTTP {(int)response.StatusCode}; Graph error {graphErrorCode ?? "unknown"}; request ID {requestId ?? "unavailable"}.");
             var key = response.StatusCode switch
             {
                 HttpStatusCode.Forbidden => "Calendar_ErrorPermission",
@@ -393,6 +402,27 @@ public sealed partial class CalendarService
         }
         return await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(ct), cancellationToken: ct);
     }
+
+    private static async Task<string?> ReadGraphErrorCodeAsync(HttpContent content, CancellationToken ct)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(await content.ReadAsStringAsync(ct));
+            return document.RootElement.ValueKind == JsonValueKind.Object &&
+                document.RootElement.TryGetProperty("error", out var error) && error.ValueKind == JsonValueKind.Object
+                    ? CalendarEventParser.Text(error, "code") : null;
+        }
+        catch (JsonException) { return null; }
+    }
+
+    private static string GraphOperation(Uri uri) => uri.AbsolutePath switch
+    {
+        "/v1.0/me/calendar" => "primary calendar",
+        "/v1.0/me/calendars" => "calendar list",
+        "/v1.0/me/calendarView/delta" => "primary event delta",
+        _ when uri.AbsolutePath.Contains("/calendarView", StringComparison.Ordinal) => "other calendar events",
+        _ => "calendar request"
+    };
 
     private async Task SaveAsync(List<CalendarAccount> accounts, CancellationToken ct)
     {

@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+- Record sanitized Microsoft Graph failures locally so calendar refresh errors can be diagnosed.
+
 ## [0.35.5] - 2026-10-30
 
 - Enable Microsoft Calendar in release builds when `MICROSOFT_CALENDAR_CLIENT_ID` is configured.
