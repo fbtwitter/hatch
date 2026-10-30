@@ -96,6 +96,11 @@ fails. Branch protection must require that job's status to block merges. A
 `v*.*.*` tag triggers MSIX packaging, a GitHub release, and an App Installer feed update.
 Microsoft Store submission is manual.
 
+To enable Microsoft Calendar in release packages, add the repository Actions secret
+`MICROSOFT_CALENDAR_CLIENT_ID` with the Application (client) ID from a Microsoft Entra app
+registration. Hatch uses OAuth with PKCE, so no client secret is needed. The release workflow
+passes this ID to both architecture builds; an unset ID leaves Microsoft connection unavailable.
+
 To enable Google Calendar in release packages, add repository Actions secrets
 `GOOGLE_CALENDAR_CLIENT_ID` and, optionally, `GOOGLE_CALENDAR_CLIENT_SECRET` for a
 Google Desktop app OAuth client. The release workflow supplies them to both architecture

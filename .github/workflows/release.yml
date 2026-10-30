@@ -20,6 +20,7 @@ jobs:
     permissions:
       contents: write
     env:
+      HatchCalendarClientId: ${{ secrets.MICROSOFT_CALENDAR_CLIENT_ID }}
       HatchGoogleCalendarClientId: ${{ secrets.GOOGLE_CALENDAR_CLIENT_ID }}
       HatchGoogleCalendarClientSecret: ${{ secrets.GOOGLE_CALENDAR_CLIENT_SECRET }}
 

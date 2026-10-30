@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.35.5] - 2026-10-30
+
+- Enable Microsoft Calendar in release builds when `MICROSOFT_CALENDAR_CLIENT_ID` is configured.
+
 ## [0.35.4] - 2026-10-29
 
 - Keep sync credentials encrypted and available when Windows Credential Locker cannot save them.
