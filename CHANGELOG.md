@@ -6,8 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
-- Handle null Microsoft Graph event fields during calendar refresh.
-- Record sanitized Microsoft Graph failures locally so calendar refresh errors can be diagnosed.
+## [0.35.6] - 2026-10-30
+
+- Handle null Microsoft Graph event fields during calendar refresh and record sanitized diagnostics for failures.
 
 ## [0.35.5] - 2026-10-30
 
