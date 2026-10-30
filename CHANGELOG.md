@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.35.7] - 2026-10-30
+
+- Upgrade the Windows App SDK and bundled runtime to stable 2.6.4.
+
 ## [0.35.6] - 2026-10-30
 
 - Handle null Microsoft Graph event fields during calendar refresh and record sanitized diagnostics for failures.

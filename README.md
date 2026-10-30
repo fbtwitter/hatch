@@ -64,7 +64,7 @@ Break a bigger task into steps and keep useful notes alongside it. Set a due dat
 
 - Windows 10 (build 17763+) or Windows 11.
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
-- [Windows App SDK 2.5.1 runtime](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads) for the unpackaged Debug build.
+- [Windows App SDK 2.6.4 runtime](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads) for the unpackaged Debug build.
 - Internet access for the first NuGet restore.
 
 For a new PC, follow Microsoft's [command-line WinUI setup guide](https://learn.microsoft.com/en-us/windows/apps/get-started/start-here?tabs=stable).

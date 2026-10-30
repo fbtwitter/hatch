@@ -13,6 +13,7 @@ the previous sub-50 MB idle target was disproven and is not a release gate. See
 
 | Task-flow update | Status |
 |---|---|
+| Windows App SDK 2.6.4 upgrade | Included in v0.35.7; use the current stable SDK and runtime |
 | Calendar connection reliability and mascot frame handling | Included in v0.35.1; calendar connection settings are grouped and mascot frame handling is corrected |
 | Google Calendar cache recovery | Included in v0.35.2; account and event snapshots survive a locked or unreadable latest cache |
 | Planned calendar events and task deadlines | Included in v0.35.0; optional Google and Microsoft connections, calendar file imports, and shared Agenda and Calendar views |

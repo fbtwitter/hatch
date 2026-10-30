@@ -23,7 +23,7 @@
     <!-- Keep in sync with Package.appxmanifest's Identity Version and the release tag.
          Packaged builds read the manifest; unpackaged Debug builds have no package
          identity and fall back to this via SettingsViewModel.AppVersion. -->
-    <Version>0.35.4</Version>
+    <Version>0.35.7</Version>
     <!-- Signing and package generation are handled by CI; disabled locally -->
     <AppxPackageSigningEnabled>false</AppxPackageSigningEnabled>
     <GenerateAppxPackageOnBuild>false</GenerateAppxPackageOnBuild>
@@ -79,7 +79,7 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <ProjectReference Include="Hatch.Core\Hatch.Core.csproj" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.6.4" />
     <!-- Hatch has no AI/ML feature. The metapackage pulls in Microsoft.WindowsAppSDK.ML
          transitively, which carries onnxruntime.dll + DirectML.dll for x64/arm64/arm64ec
          (~120MB combined, unused) — excluded here rather than dropped from the metapackage
@@ -87,8 +87,8 @@
          InteractiveExperiences/etc., all wired up by the metapackage's own targets) stays
          untouched. Confirmed via `Get-Process -Id ... | Modules` that these DLLs were never
          actually loaded at runtime even before this change — this trims install size only. -->
-    <PackageReference Include="Microsoft.WindowsAppSDK.ML" Version="2.1.94" ExcludeAssets="all" />
-    <PackageReference Include="Microsoft.Windows.AI.MachineLearning" Version="2.1.74" ExcludeAssets="all" />
+    <PackageReference Include="Microsoft.WindowsAppSDK.ML" Version="2.6.4" ExcludeAssets="all" />
+    <PackageReference Include="Microsoft.Windows.AI.MachineLearning" Version="2.4.89" ExcludeAssets="all" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2526" PrivateAssets="all" />
     <!-- Required: MSIX build tasks were compiled against .NET 8 and probe for this assembly at build time -->
     <PackageReference Include="System.Security.Permissions" Version="10.0.10" />
