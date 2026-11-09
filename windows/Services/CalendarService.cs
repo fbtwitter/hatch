@@ -22,6 +22,7 @@ public sealed partial class CalendarService
     private readonly Dictionary<string, DateTimeOffset> _nextRefresh = [];
     private readonly Dictionary<string, DateTimeOffset> _throttledUntil = [];
     private readonly Dictionary<string, string> _errors = [];
+    private readonly HashSet<string> _reconnectAccounts = [];
     private readonly CalendarNotificationSchedulerService _notifications = new();
     private List<CalendarAccount> _accounts = [];
     private Task? _initialization;
@@ -45,6 +46,7 @@ public sealed partial class CalendarService
     public event Action? StateChanged;
 
     public string? GetAccountError(string id) => _errors.GetValueOrDefault(id);
+    public bool NeedsReconnect(string id) => _reconnectAccounts.Contains(id);
     public Task InitializeAsync() => _initialization ??= LoadAsync();
 
     private async Task LoadAsync()
@@ -91,7 +93,7 @@ public sealed partial class CalendarService
             throw new JsonException("Invalid calendar account cache.");
     }
 
-    public async Task ConnectAsync(CancellationToken cancellationToken = default)
+    public async Task ConnectAsync(string? expectedAccountId = null, CancellationToken cancellationToken = default)
     {
         await InitializeAsync();
         if (!IsMicrosoftConfigured || AppDataPath.IsUiTest)
@@ -147,6 +149,7 @@ public sealed partial class CalendarService
             if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(defaultId)) throw new JsonException();
             var previous = _accounts.FirstOrDefault(a => a.Provider == CalendarProvider.Microsoft &&
                 (a.DefaultCalendarId == defaultId || string.Equals(a.Email, email, StringComparison.OrdinalIgnoreCase)));
+            if (expectedAccountId != null && previous?.Id != expectedAccountId) throw new ProviderException("Calendar_ErrorWrongAccount");
             var id = previous?.Id ?? Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(email.ToLowerInvariant())));
             var account = previous == null ? new CalendarAccount { Id = id, Email = email, DefaultCalendarId = defaultId }
                 : previous with { Email = email, DefaultCalendarId = defaultId };
@@ -185,6 +188,7 @@ public sealed partial class CalendarService
             _nextRefresh.Remove(accountId);
             _throttledUntil.Remove(accountId);
             _errors.Remove(accountId);
+            _reconnectAccounts.Remove(accountId);
             ReconcileReminders();
             if (!_accounts.Any(a => a.Provider != CalendarProvider.Ics))
             {
@@ -222,6 +226,7 @@ public sealed partial class CalendarService
                     _accounts = accounts;
                     ReconcileReminders();
                     _errors.Remove(account.Id);
+                    _reconnectAccounts.Remove(account.Id);
                     _throttledUntil.Remove(account.Id);
                     Error = null;
                 }
@@ -229,6 +234,7 @@ public sealed partial class CalendarService
                 catch (ProviderException ex)
                 {
                     _errors[account.Id] = ex.Message;
+                    if (ex.Key == "Calendar_ErrorReconnect") _reconnectAccounts.Add(account.Id);
                     if (ex.RetryAt is { } retry) _throttledUntil[account.Id] = retry;
                 }
                 catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException)

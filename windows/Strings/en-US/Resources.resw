@@ -837,6 +837,10 @@ Imported .ics files are snapshots of the previous 7 days and next 30 days at imp
   <data name="Calendar_ErrorOffline" xml:space="preserve"><value>Calendar refresh is unavailable. Showing the last saved events; Hatch will try again.</value></data>
   <data name="Calendar_ErrorProvider" xml:space="preserve"><value>The calendar could not be refreshed. Showing the last saved events; try Refresh again.</value></data>
   <data name="Calendar_ErrorReconnect" xml:space="preserve"><value>Reconnect this calendar account to restore calendar access.</value></data>
+  <data name="Calendar_Reconnect.Content" xml:space="preserve"><value>Reconnect</value></data>
+  <data name="Calendar_ReconnectName" xml:space="preserve"><value>Reconnect {0}</value></data>
+  <data name="Calendar_ReconnectStatus" xml:space="preserve"><value>A calendar account needs to reconnect.</value></data>
+  <data name="Calendar_ErrorWrongAccount" xml:space="preserve"><value>Choose the same calendar account to reconnect it. No account was added.</value></data>
   <data name="Calendar_ErrorGoogleGrant" xml:space="preserve"><value>Google rejected the sign-in code or PKCE verifier (HTTP {0}). Start sign-in again from Hatch and complete the same browser session.</value></data>
   <data name="Calendar_ErrorGoogleRedirect" xml:space="preserve"><value>Google rejected Hatch's local callback address (HTTP {0}). Confirm this is a Desktop app OAuth client.</value></data>
   <data name="Calendar_ErrorGoogleClient" xml:space="preserve"><value>Google rejected Hatch's OAuth client (HTTP {0}). Confirm the client ID belongs to a Desktop app in this Google Cloud project.</value></data>

@@ -9,7 +9,7 @@ namespace Hatch.Services;
 
 public sealed partial class CalendarService
 {
-    public async Task ConnectGoogleAsync(CancellationToken cancellationToken = default)
+    public async Task ConnectGoogleAsync(string? expectedAccountId = null, CancellationToken cancellationToken = default)
     {
         var stage = "load calendar cache";
         try
@@ -72,10 +72,11 @@ public sealed partial class CalendarService
                 var primary = calendars.FirstOrDefault(c => c.IsPrimary) ?? throw new JsonException("No primary Google calendar.");
                 var previous = _accounts.FirstOrDefault(a => a.Provider == CalendarProvider.Google &&
                     string.Equals(a.Email, primary.Id, StringComparison.OrdinalIgnoreCase));
+                if (expectedAccountId != null && previous?.Id != expectedAccountId) throw new ProviderException("Calendar_ErrorWrongAccount");
                 token = token with
                 {
                     Refresh = GoogleCalendarClient.ResolveRefreshToken(token.Refresh,
-                        previous == null ? null : CalendarTokenStore.Load(previous))
+                        previous == null || expectedAccountId != null ? null : CalendarTokenStore.Load(previous))
                 };
                 if (string.IsNullOrEmpty(token.Refresh)) throw new ProviderException("Calendar_ErrorGoogleRefreshToken");
                 var id = previous?.Id ?? Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes("Google:" + primary.Id.ToLowerInvariant())));

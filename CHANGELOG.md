@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/) and this 
 
 ## [Unreleased]
 
+## [0.35.11] - 2026-11-09
+
+- Make calendar reconnect actionable and update Windows App SDK to 2.6.5.
+
 ## [0.35.10] - 2026-10-31
 
 - Constrain and tidy My Day suggestions, improve the Planned calendar warning in light mode, and distinguish task and event date markers.

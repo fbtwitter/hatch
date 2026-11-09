@@ -48,13 +48,16 @@ public sealed partial class CalendarViewModel : INotifyPropertyChanged
     public bool IsBusy => _busy || _service.IsRefreshing;
     public bool IsConnecting => _connecting && _service.IsAuthorizing;
     public bool HasAccounts => Accounts.Count > 0;
-    public bool IsMicrosoftConnected => _service.Accounts.Any(a => a.Provider == CalendarProvider.Microsoft);
-    public bool IsGoogleConnected => _service.Accounts.Any(a => a.Provider == CalendarProvider.Google);
+    public bool HasMicrosoftAccounts => _service.Accounts.Any(a => a.Provider == CalendarProvider.Microsoft);
+    public bool HasGoogleAccounts => _service.Accounts.Any(a => a.Provider == CalendarProvider.Google);
+    public bool IsMicrosoftConnected => _service.Accounts.Any(a => a.Provider == CalendarProvider.Microsoft && !_service.NeedsReconnect(a.Id));
+    public bool IsGoogleConnected => _service.Accounts.Any(a => a.Provider == CalendarProvider.Google && !_service.NeedsReconnect(a.Id));
     public bool IsMicrosoftUnavailable => !_service.IsMicrosoftConfigured;
     public bool IsGoogleUnavailable => !_service.IsGoogleConfigured;
     public bool HasStatus => IsBusy || HasOnlineAccounts;
     public string StatusLabel => IsBusy ? Strings.Get(_importing ? "Calendar_Importing" : IsConnecting ? "Calendar_SigningIn" :
         _service.IsGoogleCallbackReceived ? "Calendar_GoogleConnecting" : _connecting ? "Calendar_Connecting" : "Calendar_Refreshing") :
+        _service.Accounts.Any(a => _service.NeedsReconnect(a.Id)) ? Strings.Get("Calendar_ReconnectStatus") :
         _service.Accounts.Any(a => a.Provider != CalendarProvider.Ics && a.LastSyncedAt == null) ? Strings.Get("Calendar_NotRefreshed") :
         HasOnlineAccounts ? string.Format(Strings.Get("Calendar_AgendaRefreshed"),
             _service.Accounts.Where(a => a.Provider != CalendarProvider.Ics).Min(a => a.LastSyncedAt)!.Value.ToLocalTime().ToString("g")) : string.Empty;
@@ -156,10 +159,18 @@ public sealed partial class CalendarViewModel : INotifyPropertyChanged
                 : Strings.Get("Calendar_NotRefreshed"));
             Accounts.Add(new(account.Id, account.Email, ProviderName(account.Provider), status, new RelayCommand(
                 async _ => await RunAsync(() => _service.DisconnectAsync(account.Id)), _ => !IsBusy), imported,
-                new RelayCommand(async _ => await PickAndImportAsync(account.Id), _ => !IsBusy)));
+                new RelayCommand(async _ => await PickAndImportAsync(account.Id), _ => !IsBusy),
+                _service.NeedsReconnect(account.Id),
+                new RelayCommand(async _ =>
+                {
+                    _connecting = true;
+                    await RunAsync(() => account.Provider == CalendarProvider.Google
+                        ? _service.ConnectGoogleAsync(account.Id) : _service.ConnectAsync(account.Id));
+                }, _ => !IsBusy && !AppDataPath.IsUiTest && (account.Provider == CalendarProvider.Google
+                    ? _service.IsGoogleConfigured : _service.IsMicrosoftConfigured))));
         }
         RefreshEvents(force: true);
-        foreach (var name in new[] { nameof(IsBusy), nameof(CanImport), nameof(IsConnecting), nameof(HasAccounts), nameof(IsMicrosoftConnected), nameof(IsGoogleConnected), nameof(HasOnlineAccounts),
+        foreach (var name in new[] { nameof(IsBusy), nameof(CanImport), nameof(IsConnecting), nameof(HasAccounts), nameof(IsMicrosoftConnected), nameof(IsGoogleConnected), nameof(HasMicrosoftAccounts), nameof(HasGoogleAccounts), nameof(HasOnlineAccounts),
                      nameof(StatusLabel), nameof(HasStatus),
                      nameof(Message), nameof(HasMessage), nameof(MessageSeverity), nameof(RangeLabel), nameof(IsDayEmpty), nameof(DayHint) })
             PropertyChanged?.Invoke(this, new(name));
